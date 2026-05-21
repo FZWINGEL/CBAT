@@ -1,0 +1,16 @@
+schema_version: "gate1.audit.v1"
+required_modalities:
+  - cfg
+  - eoc
+  - eis
+  - pulse
+  - log
+  - log_age
+known_issue_checks:
+  - pool_temperature_incidents
+  - peltier_failure
+  - ethernet_gaps
+  - reboots
+  - interpolation
+  - eol_truncation
+

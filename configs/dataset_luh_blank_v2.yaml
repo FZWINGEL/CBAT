@@ -1,0 +1,15 @@
+dataset_id: "luh_blank_v2"
+title: "Luh-Blank comprehensive battery aging dataset, version 2"
+doi: null
+source_url: null
+expected_cells: 228
+expected_parameter_sets: 76
+expected_replicates_per_parameter_set: 3
+canonical_records:
+  - CFG
+  - EOC
+  - EIS
+  - PULSE
+  - LOG
+  - LOG_AGE
+

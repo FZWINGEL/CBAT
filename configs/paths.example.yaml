@@ -1,0 +1,5 @@
+data_root: "data/raw/luh_blank_v2"
+manifest_dir: "data/manifests"
+report_dir: "reports/audit"
+split_dir: "data/splits"
+
