@@ -132,6 +132,44 @@ EXCLUDED_RECORDS_SCHEMA = pa.schema(
     ]
 )
 
+# 8. Modality Table Log Age Schema (LOG_AGE)
+MODALITY_TABLE_LOG_AGE_SCHEMA = pa.schema(
+    [
+        ("cell_id", pa.string(), False),
+        ("timestamp_s", pa.float64(), False),
+        ("v_raw_V", pa.float64(), False),
+        ("ocv_est_V", pa.float64(), False),
+        ("i_raw_A", pa.float64(), False),
+        ("t_cell_degC", pa.float64(), False),
+        ("soc_est", pa.float64(), False),
+        ("delta_q_Ah", pa.float64(), False),
+        ("EFC", pa.float64(), False),
+        ("cap_aged_est_Ah", pa.float64(), False),
+        ("R0_mOhm", pa.float64(), False),
+        ("R1_mOhm", pa.float64(), False),
+        ("source_file", pa.string(), False),
+        ("source_archive", pa.string(), False),
+        ("quality_flags", pa.string(), False),
+    ]
+)
+
+# 9. Split Registry Table Schema
+SPLIT_REGISTRY_SCHEMA = pa.schema(
+    [
+        ("cell_id", pa.string(), False),
+        ("parameter_set", pa.int32(), False),
+        ("replicate_id", pa.int32(), False),
+        ("condition_fold", pa.int32(), False),
+        ("temperature_holdout_fold", pa.int32(), False),
+        ("soc_window_holdout_fold", pa.int32(), False),
+        ("c_rate_holdout_fold", pa.int32(), False),
+        ("profile_holdout_fold", pa.int32(), False),
+        ("replicate_calibration_fold", pa.int32(), False),
+        ("time_horizon_fold", pa.int32(), False),
+        ("schema_version", pa.string(), False),
+    ]
+)
+
 
 def validate_table(table: pa.Table, schema: pa.Schema, strict: bool = True) -> bool:
     """Validate that a pyarrow Table matches the expected schema.

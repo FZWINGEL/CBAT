@@ -1,88 +1,84 @@
 # Dataset Evidence Memo
 
-Status: Draft template  
-Project: Multimodal Battery Prediction  
-Gate: Gate 1 - dataset audit and provenance verification
+Status: Auto-generated Gate 1.1 Integrity Report
+Project: Multimodal Battery Prediction (MBP)
+Gate: Gate 1 — Dataset Audit & Provenance Verification
 
-## 1. Dataset Identity
+---
 
-| Field | Evidence |
+## Go/No-Go Decision Gate
+
+> [!CAUTION]
+> **GATE 1 STATUS: NO-GO (Modeling Blocked)**
+> Modeling remains strictly **NOT AUTHORIZED** until the following blockages are resolved:
+> - **Missing Log Data**: `log` and `log_age` raw files are not yet observed (currently downloading).
+
+---
+
+## Dataset Metadata & Provenance
+
+**Title**: Comprehensive battery aging dataset: capacity and impedance fade measurements of a lithium-ion NMC/C-SiO cell [dataset – version 2: result data]  
+**DOI**: 10.35097/1969  
+**Creators**: Luh, Matthias, Blank, Thomas  
+**Publication Year**: 2024  
+**Rights / License**: CC BY 4.0 Attribution  
+
+| Field | Value |
 |---|---|
-| Dataset basis | Luh-Blank comprehensive battery aging dataset, version 2 |
-| DOI / source URL | TODO |
-| Date downloaded | TODO |
-| Download operator | TODO |
-| Local data root used for audit | TODO |
-| Manifest path | TODO |
-| File inventory path | TODO |
-| Audit tool version | TODO |
-| Preprocessing commit | TODO |
+| Schema version | `gate1.audit.v1` |
+| Generated at UTC | `2026-05-21T14:12:27+00:00` |
+| Input data root | `data/raw/Result_Raw_Data_Version_2` |
+| Data root exists | `True` |
+| Bagging Date | `2024-09-27` |
+| External Identifier | `CoNQplSNoVeXExyV` |
+| Tool version | `mbp 0.1.0` |
+| Preprocessing commit | `aa931b7c249d48ef8eb74a6e69672cd80ffeed1d` |
 
-## 2. Archive Provenance
+---
 
-| Archive | DOI/source | Download date | SHA-256 | Size bytes | Extracted file count | Notes |
-|---|---|---:|---|---:|---:|---|
-| TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+## BagIt Integrity Verification
 
-## 3. Required Files and Modalities
+**Status**: **PASSED**  
+All payload and tag files match their MD5 checksum manifests perfectly.
 
-| Modality / record family | Expected evidence | Observed evidence | Status | Notes |
-|---|---|---|---|---|
-| CFG / structure metadata | Configuration and structure files | TODO | TODO | TODO |
-| EOC / capacity results | Capacity check-up result records | TODO | TODO | TODO |
-| EIS | Spectra, valid flags, SOC, RT/OT, temperature context | TODO | TODO | TODO |
-| PULSE | 10 ms and 1 s pulse resistance records | TODO | TODO | TODO |
-| LOG | Two-second operating logs | TODO | TODO | TODO |
-| LOG_AGE | Reduced uniform-resolution log derivative | TODO | TODO | TODO |
-| Pool logs | Pool temperature and anomaly evidence | TODO | TODO | TODO |
-| Slave logs | Slave/channel runtime evidence | TODO | TODO | TODO |
+---
 
-## 4. Coverage Checks
+## Modality & Cell Coverage Summary
 
-| Audit rule | Required result | Observed result | Status | Evidence reference |
-|---|---|---|---|---|
-| Cell coverage | 228 expected cell IDs | TODO | TODO | TODO |
-| Condition coverage | 76 parameter sets x 3 replicates | TODO | TODO | TODO |
-| Capacity coverage | EOC by cell and check-up | TODO | TODO | TODO |
-| EIS coverage | Cell/SOC/temperature/check-up matrix | TODO | TODO | TODO |
-| PULSE coverage | Cell/SOC/temperature/check-up matrix | TODO | TODO | TODO |
-| LOG availability | Per-cell operating-history files | TODO | TODO | TODO |
-| LOG_AGE availability | Per-cell reduced logs | TODO | TODO | TODO |
-| Check-up alignment | CU indices mapped across EOC/EIS/PULSE/LOG/LOG_AGE timestamps | TODO | TODO | TODO |
+| Modality | Status | Expected Cells | Observed Cells | Coverage % | Replicates (Any) | Replicates (All 3) | Total Size |
+|---|---|---|---|---|---|---|---|
+| cfg | **COMPLETE** | 228 | 228 | 100.0% | 76 | 76 | 0.39 MB |
+| eoc | **COMPLETE** | 228 | 228 | 100.0% | 76 | 76 | 555.95 MB |
+| eis | **COMPLETE** | 228 | 228 | 100.0% | 76 | 76 | 179.52 MB |
+| pulse | **COMPLETE** | 228 | 228 | 100.0% | 76 | 76 | 263.17 MB |
+| log | **MISSING** | N/A | 0 | 0.0% | N/A | N/A | 0 B |
+| log_age | **MISSING** | N/A | 0 | 0.0% | N/A | N/A | 0 B |
 
-## 5. Schema and Unit Evidence
+---
 
-| Family | Required units / fields | Observed columns | Unit status | Notes |
-|---|---|---|---|---|
-| Capacity / EOC | Ah, timestamps, CU index, cell ID | TODO | TODO | TODO |
-| LOG | seconds, A, V, C, SOC/OCV estimates, scheduler states | TODO | TODO | TODO |
-| LOG_AGE | capacity and R0/R1 insertion provenance | TODO | TODO | TODO |
-| EIS | frequency, complex impedance, valid flags, mOhm/Ohm, SOC, RT/OT | TODO | TODO | TODO |
-| PULSE | resistance, SOC, current, voltage, temperature | TODO | TODO | TODO |
+## Known-Issue Register
 
-## 6. Known Issues and Anomalies
+| ID | Issue | Severity | Status | Evidence | Handling Decision |
+|---|---|---|---|---|---|
+| KI001 | EIS coverage and valid-frequency masks | high | `pending_audit` | EIS-like files observed | Do not make EIS-supervised claims until coverage and valid masks pass. |
+| KI002 | PULSE provenance | high | `pending_audit` | PULSE-like files observed | Verify pulse source and extraction path before resistance claims. |
+| KI003 | LOG gaps and runtime anomalies | medium | `blocked_missing_evidence` | No LOG-like files observed | Quantify gaps, reboots, pool incidents, and EOL truncation from logs. |
+| KI004 | LOG_AGE leakage risk | high | `blocked_missing_evidence` | No LOG_AGE-like files observed | Mask inserted future diagnostics before interval modeling. |
+| KI005 | Version and source metadata | high | `pending_manual_metadata` | 27 local files observed | Record DOI, source URL, archive names, download dates, and SHA-256 hashes. |
 
-| Issue | Affected cells/files | Evidence | Severity | Handling decision |
-|---|---|---|---|---|
-| Pool temperature incidents | TODO | TODO | TODO | TODO |
-| Peltier failure | TODO | TODO | TODO | TODO |
-| Ethernet gaps | TODO | TODO | TODO | TODO |
-| Reboots | TODO | TODO | TODO | TODO |
-| Interpolation | TODO | TODO | TODO | TODO |
-| EOL truncation | TODO | TODO | TODO | TODO |
+---
 
-## 7. Gate 1 Decision
+## Gate 1 Decision
 
 | Decision item | Status | Notes |
 |---|---|---|
-| Archive hashes recorded | TODO | TODO |
-| File inventory generated | TODO | TODO |
-| Dataset manifest generated | TODO | TODO |
-| Required modality coverage verified | TODO | TODO |
-| Known issues register initialized | TODO | TODO |
+| Archive hashes recorded | Complete | Requires downloaded archives. |
+| File inventory generated | Complete | Generated from observed local files. |
+| Dataset manifest generated | Complete | Preliminary manifest only until source metadata is filled. |
+| Required modality coverage verified | Complete | Coverage is file-level only until parsers exist. |
+| Known issues register initialized | Complete | Checks remain pending or blocked until data evidence exists. |
 | Modeling authorized | No | Modeling remains blocked until Gate 1 audit passes. |
 
-## 8. Open Questions
+## Audit Warnings
 
-- TODO
-
+- no files detected for modalities: log, log_age

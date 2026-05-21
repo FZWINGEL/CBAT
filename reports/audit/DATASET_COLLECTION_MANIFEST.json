@@ -56,7 +56,7 @@
     }
   },
   "dataset_id": "luh_blank_v2",
-  "generated_at_utc": "2026-05-21T13:08:59+00:00",
+  "generated_at_utc": "2026-05-21T13:09:37+00:00",
   "packages": {
     "log_package": {
       "archive_status": "incomplete_or_corrupt_archive",
@@ -65,7 +65,7 @@
       "is_dir": false,
       "name": "Log_Raw_Data_Version_2.zip",
       "path": "data/raw/Log_Raw_Data_Version_2.zip",
-      "size_bytes": 22484803042
+      "size_bytes": 23160266210
     },
     "result_package": {
       "bagit_status": "passed",

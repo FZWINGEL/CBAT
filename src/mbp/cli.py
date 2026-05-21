@@ -18,10 +18,12 @@ app = typer.Typer(help="Multimodal Battery Prediction research tooling.")
 audit_app = typer.Typer(help="Gate 1 dataset audit and provenance commands.")
 report_app = typer.Typer(help="Report generation commands.")
 ingest_app = typer.Typer(help="Gate 2 result-data ingestion commands.")
+split_app = typer.Typer(help="Reproducible dataset splitting commands.")
 
 app.add_typer(audit_app, name="audit")
 app.add_typer(report_app, name="report")
 app.add_typer(ingest_app, name="ingest")
+app.add_typer(split_app, name="split")
 
 
 @audit_app.command("inventory")
@@ -431,6 +433,101 @@ def ingest_qa(
         raise typer.Exit(code=1)
     else:
         typer.echo("\nAll quality gates passed successfully!")
+
+
+@ingest_app.command("log-age")
+def ingest_log_age_cmd(
+    archive: Path = typer.Option(
+        ...,
+        "--archive",
+        help="Path to the cell_log_age_ultracompr.7z archive.",
+    ),
+    out_dir: Path = typer.Option(
+        ...,
+        "--out-dir",
+        help="Output directory to save the interim modality_table_log_age.parquet.",
+    ),
+    exclusions_report: Path | None = typer.Option(
+        None,
+        "--exclusions-report",
+        help="Optional path to output the excluded records report (CSV).",
+    ),
+) -> None:
+    """Ingest cell operating logs from cell_log_age_ultracompr.7z into interim Parquet."""
+    from mbp.data.luh_blank.parse_log import ingest_log_age
+
+    typer.echo(f"Ingesting LOG_AGE data from {archive}...")
+    table = ingest_log_age(archive, out_dir, exclusions_report_path=exclusions_report)
+    typer.echo(f"LOG_AGE ingestion complete: {len(table)} rows written to {out_dir / 'modality_table_log_age.parquet'}")
+
+
+@split_app.command("generate")
+def split_generate(
+    condition_table: Path = typer.Option(
+        ...,
+        "--condition-table",
+        help="Path to cell_condition_table.parquet.",
+    ),
+    out_dir: Path = typer.Option(
+        ...,
+        "--out-dir",
+        help="Output directory for split_registry_v1.parquet.",
+    ),
+) -> None:
+    """Generate the deterministic, condition-grouped split registry."""
+    from mbp.data.splitting import generate_split_registry
+
+    typer.echo(f"Generating split registry from {condition_table}...")
+    table = generate_split_registry(condition_table, out_dir)
+    typer.echo(f"Split registry generated: {len(table)} rows written to {out_dir / 'split_registry_v1.parquet'}")
+
+
+@audit_app.command("report")
+def audit_report(
+    manifest: Path = typer.Option(
+        ...,
+        "--manifest",
+        help="Path to DATASET_COLLECTION_MANIFEST.json.",
+    ),
+    out: Path = typer.Option(
+        ...,
+        "--out",
+        help="Output markdown path for the evidence memo.",
+    ),
+) -> None:
+    """Auto-compile the Dataset Evidence Memo from a collection manifest."""
+    if not manifest.exists():
+        typer.echo(f"Collection manifest not found: {manifest}")
+        raise typer.Exit(code=1)
+
+    with manifest.open("r", encoding="utf-8") as f:
+        collection = json.load(f)
+
+    # Extract result package info to build per-package evidence
+    result_pkg = collection.get("packages", {}).get("result_package", {})
+    result_path_str = result_pkg.get("path")
+
+    if result_path_str and Path(result_path_str).exists():
+        manifest_obj = build_manifest(Path(result_path_str))
+        generated_at_utc = manifest_obj.provenance.generated_at_utc
+        coverage = build_modality_coverage(manifest_obj.file_inventory, generated_at_utc)
+        known_issues = build_known_issue_checks(manifest_obj.file_inventory, generated_at_utc)
+
+        # Try to load existing bagit report
+        bagit_report = None
+        bagit_path = manifest.parent / "bagit_validation.json"
+        if bagit_path.exists():
+            try:
+                with bagit_path.open("r", encoding="utf-8") as bf:
+                    bagit_report = json.load(bf)
+            except Exception:
+                pass
+
+        write_evidence_memo(manifest_obj, coverage, known_issues, out, bagit_report=bagit_report)
+        typer.echo(f"Evidence memo compiled and written to {out}")
+    else:
+        typer.echo(f"Result package path not found or does not exist: {result_path_str}")
+        raise typer.Exit(code=1)
 
 
 if __name__ == "__main__":
