@@ -30,20 +30,20 @@
     "log": {
       "coverage_ratio": 0.0,
       "expected_cells": 0,
-      "file_count": 0,
+      "file_count": 2,
       "observed_cells": 0,
       "row_count": null,
-      "status": "missing",
-      "total_size_bytes": 0
+      "status": "observed",
+      "total_size_bytes": 4921326445
     },
     "log_age": {
       "coverage_ratio": 0.0,
       "expected_cells": 0,
-      "file_count": 0,
+      "file_count": 1,
       "observed_cells": 0,
       "row_count": null,
-      "status": "missing",
-      "total_size_bytes": 0
+      "status": "observed",
+      "total_size_bytes": 7138760906
     },
     "pulse": {
       "coverage_ratio": 1.0,
@@ -56,16 +56,16 @@
     }
   },
   "dataset_id": "luh_blank_v2",
-  "generated_at_utc": "2026-05-21T13:09:37+00:00",
+  "generated_at_utc": "2026-05-21T19:15:53+00:00",
   "packages": {
     "log_package": {
-      "archive_status": "incomplete_or_corrupt_archive",
+      "archive_status": "ok",
       "exists": true,
-      "file_count": null,
-      "is_dir": false,
-      "name": "Log_Raw_Data_Version_2.zip",
-      "path": "data/raw/Log_Raw_Data_Version_2.zip",
-      "size_bytes": 23160266210
+      "file_count": 10,
+      "is_dir": true,
+      "name": "Log_Raw_Data_Version_2",
+      "path": "data/raw/Log_Raw_Data_Version_2",
+      "size_bytes": 4096
     },
     "result_package": {
       "bagit_status": "passed",

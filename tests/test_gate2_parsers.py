@@ -16,6 +16,7 @@ from mbp.data.schema_contracts import (
     CHECKUP_EVENT_TABLE_SCHEMA,
     CONDITION_TABLE_SCHEMA,
     MODALITY_TABLE_EIS_SCHEMA,
+    MODALITY_TABLE_LOG_AGE_SCHEMA,
     MODALITY_TABLE_PULSE_SCHEMA,
     MODALITY_TABLE_PULSE_SUMMARY_SCHEMA,
     EIS_SPECTRUM_QUALITY_SCHEMA,
@@ -454,6 +455,28 @@ def test_qa_checks_runner(temp_workspace: Path) -> None:
     pq.write_table(
         pa.Table.from_pydict(eis_qual_data, schema=EIS_SPECTRUM_QUALITY_SCHEMA),
         interim_dir / "eis_spectrum_quality.parquet",
+    )
+
+    log_age_data = {
+        "cell_id": cell_ids,
+        "timestamp_s": [100.0] * 228,
+        "v_raw_V": [3.5] * 228,
+        "ocv_est_V": [3.55] * 228,
+        "i_raw_A": [0.0] * 228,
+        "t_cell_degC": [25.0] * 228,
+        "soc_est": [50.0] * 228,
+        "delta_q_Ah": [0.0] * 228,
+        "EFC": [0.0] * 228,
+        "cap_aged_est_Ah": [None] * 228,
+        "R0_mOhm": [None] * 228,
+        "R1_mOhm": [None] * 228,
+        "source_file": ["log_age.csv"] * 228,
+        "source_archive": ["cell_log_age_ultracompr.7z"] * 228,
+        "quality_flags": [""] * 228,
+    }
+    pq.write_table(
+        pa.Table.from_pydict(log_age_data, schema=MODALITY_TABLE_LOG_AGE_SCHEMA),
+        interim_dir / "modality_table_log_age.parquet",
     )
 
     # Run QA

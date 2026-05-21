@@ -9,11 +9,14 @@ import pyarrow.parquet as pq
 import pytest
 
 from mbp.data.schema_contracts import (
+    CHECKUP_EVENT_TABLE_SCHEMA,
     CONDITION_TABLE_SCHEMA,
+    INTERVAL_TABLE_SCHEMA,
     MODALITY_TABLE_LOG_AGE_SCHEMA,
     SPLIT_REGISTRY_SCHEMA,
     validate_table,
 )
+from mbp.data.products.interval_table import build_interval_table
 from mbp.data.splitting import generate_split_registry
 
 
@@ -64,6 +67,56 @@ def _make_condition_parquet(tmp_path: Path, n_params: int = 5) -> Path:
     out_path = tmp_path / "cell_condition_table.parquet"
     pq.write_table(table, out_path)
     return out_path
+
+
+def _make_checkup_parquet(interim_dir: Path) -> Path:
+    records = {
+        "cell_id": ["P001_1", "P001_1", "P001_1"],
+        "parameter_set": [1, 1, 1],
+        "replicate_id": [1, 1, 1],
+        "checkup_k": [0, 1, 2],
+        "timestamp": [100.0, 200.0, 350.0],
+        "capacity_Ah": [3.0, 2.9, 2.7],
+        "capacity_soh": [1.0, 0.966, 0.9],
+        "charge_energy_Wh": [10.0, 9.0, 8.0],
+        "discharge_energy_Wh": [9.0, 8.0, 7.0],
+        "temperature_context": ["RT", "RT", "RT"],
+        "source_file": ["eoc.csv", "eoc.csv", "eoc.csv"],
+        "source_archive": ["eoc.zip", "eoc.zip", "eoc.zip"],
+        "schema_version": ["gate2.eoc.v2", "gate2.eoc.v2", "gate2.eoc.v2"],
+        "quality_flags": ["", "", ""],
+    }
+    path = interim_dir / "checkup_event_table.parquet"
+    pq.write_table(pa.Table.from_pydict(records, schema=CHECKUP_EVENT_TABLE_SCHEMA), path)
+    return path
+
+
+def _make_log_age_parquet(interim_dir: Path, *, out_of_order: bool = False) -> Path:
+    timestamps = [120.0, 180.0, 240.0, 300.0]
+    efc = [10.0, 11.0, 12.0, 13.0]
+    if out_of_order:
+        timestamps = [120.0, 180.0, 170.0, 300.0]
+        efc = [10.0, 11.0, 10.5, 13.0]
+    records = {
+        "cell_id": ["P001_1"] * 4,
+        "timestamp_s": timestamps,
+        "v_raw_V": [3.4, 3.5, 3.6, 3.7],
+        "ocv_est_V": [3.45, 3.55, 3.65, 3.75],
+        "i_raw_A": [-1.0, -2.0, 1.0, 2.0],
+        "t_cell_degC": [24.0, 25.0, 26.0, 27.0],
+        "soc_est": [40.0, 45.0, 50.0, 55.0],
+        "delta_q_Ah": [0.0, 1.0, 2.0, 3.0],
+        "EFC": efc,
+        "cap_aged_est_Ah": [None, 2.9, None, None],
+        "R0_mOhm": [None, None, 20.0, None],
+        "R1_mOhm": [None, None, None, 25.0],
+        "source_file": ["log.csv"] * 4,
+        "source_archive": ["log.7z"] * 4,
+        "quality_flags": [""] * 4,
+    }
+    path = interim_dir / "modality_table_log_age.parquet"
+    pq.write_table(pa.Table.from_pydict(records, schema=MODALITY_TABLE_LOG_AGE_SCHEMA), path)
+    return path
 
 
 # ---------------------------------------------------------------------------
@@ -204,6 +257,110 @@ class TestSplittingEngine:
 
 
 # ---------------------------------------------------------------------------
+# Interval Table Tests
+# ---------------------------------------------------------------------------
+
+
+class TestIntervalTable:
+    """Tests for the Gate 2 interval-table MVP."""
+
+    def test_builds_interval_rows_and_log_age_summaries(self, tmp_path: Path) -> None:
+        interim_dir = tmp_path / "interim"
+        interim_dir.mkdir()
+        cond_path = _make_condition_parquet(interim_dir, n_params=1)
+        _make_checkup_parquet(interim_dir)
+        _make_log_age_parquet(interim_dir)
+        generate_split_registry(cond_path, tmp_path / "splits")
+
+        out_path = interim_dir / "interval_table.parquet"
+        table = build_interval_table(interim_dir, out_path)
+
+        assert validate_table(table, INTERVAL_TABLE_SCHEMA, strict=True)
+        assert out_path.exists()
+        assert len(table) == 2
+
+        rows = table.to_pylist()
+        first = rows[0]
+        assert first["cell_id"] == "P001_1"
+        assert first["checkup_k"] == 0
+        assert first["checkup_k_next"] == 1
+        assert first["log_age_row_count"] == 2
+        assert first["log_age_efc_delta"] == 1.0
+        assert first["log_age_delta_q_Ah"] == 1.0
+        assert first["log_age_mean_voltage_V"] == 3.45
+        assert first["log_age_capacity_diag_rows_masked"] == 1
+        assert first["log_age_r0_diag_rows_masked"] == 0
+        assert "LOG_AGE_inserted_diagnostics_masked" in first["quality_flags"]
+
+        metadata = pq.read_metadata(out_path).metadata
+        assert metadata is not None
+        assert metadata[b"schema_version"] == b"gate2.interval.v1"
+        assert b"split_registry_sha256" in metadata
+
+    def test_interval_cli(self, tmp_path: Path) -> None:
+        from typer.testing import CliRunner
+        from mbp.cli import app
+
+        interim_dir = tmp_path / "interim"
+        interim_dir.mkdir()
+        cond_path = _make_condition_parquet(interim_dir, n_params=1)
+        _make_checkup_parquet(interim_dir)
+        _make_log_age_parquet(interim_dir)
+        generate_split_registry(cond_path, tmp_path / "splits")
+
+        runner = CliRunner()
+        out_path = interim_dir / "interval_table.parquet"
+        result = runner.invoke(
+            app,
+            [
+                "ingest", "intervals",
+                "--interim-dir", str(interim_dir),
+                "--out", str(out_path),
+            ],
+        )
+        assert result.exit_code == 0, f"CLI failed: {result.output}"
+        assert "Interval table generated: 2 rows written" in result.output
+
+
+# ---------------------------------------------------------------------------
+# LOG_AGE QA Tests
+# ---------------------------------------------------------------------------
+
+
+class TestLogAgeQA:
+    """Tests for LOG_AGE QA checks that avoid full-table materialization."""
+
+    def test_log_age_qa_flags_out_of_order_timestamp_and_efc(self, tmp_path: Path) -> None:
+        from mbp.data.luh_blank.qa_result_data import _qa_log_age
+
+        interim_dir = tmp_path / "interim"
+        interim_dir.mkdir()
+        log_age_path = _make_log_age_parquet(interim_dir, out_of_order=True)
+        report = {"status": "passed", "tables": {}, "failures": []}
+
+        _qa_log_age(log_age_path, report)
+
+        assert report["status"] == "failed"
+        assert report["tables"]["modality_table_log_age"]["monotonic_timestamp_efc_violations"] == 1
+        assert any("monotonicity violations" in failure for failure in report["failures"])
+
+    def test_log_age_qa_reports_diagnostic_null_rates(self, tmp_path: Path) -> None:
+        from mbp.data.luh_blank.qa_result_data import _qa_log_age
+
+        interim_dir = tmp_path / "interim"
+        interim_dir.mkdir()
+        log_age_path = _make_log_age_parquet(interim_dir)
+        report = {"status": "passed", "tables": {}, "failures": []}
+
+        _qa_log_age(log_age_path, report)
+
+        meta = report["tables"]["modality_table_log_age"]
+        assert meta["row_count"] == 4
+        assert meta["diagnostic_null_counts"]["cap_aged_est_Ah"] == 3
+        assert meta["diagnostic_nonnull_counts"]["R0_mOhm"] == 1
+
+
+# ---------------------------------------------------------------------------
 # LOG_AGE Schema Tests
 # ---------------------------------------------------------------------------
 
@@ -305,3 +462,89 @@ class TestCLISubcommands:
         )
         assert result.exit_code != 0
 
+    def test_ingest_log_age_cli(self, tmp_path: Path) -> None:
+        """Test `mbp ingest log-age` CLI command."""
+        from typer.testing import CliRunner
+        from mbp.cli import app
+        import py7zr
+
+        archive_path = tmp_path / "cell_log_age_ultracompr.7z"
+        out_dir = tmp_path / "interim"
+        exclusions_path = tmp_path / "excluded_records_report.csv"
+
+        csv_header = "timestamp_s;v_raw_V;ocv_est_V;i_raw_A;t_cell_degC;soc_est;delta_q_Ah;EFC;cap_aged_est_Ah;R0_mOhm;R1_mOhm\n"
+        cohort_csv = csv_header + "100.0;3.4;3.5;-1.0;25.0;50.0;1.2;10.0;2.9;20.0;25.0\n"
+
+        with py7zr.SevenZipFile(archive_path, "w") as z:
+            z.writestr(cohort_csv, "cell_log_age_2s_P001_1_S01_C01.csv")
+
+        runner = CliRunner()
+        result = runner.invoke(
+            app,
+            [
+                "ingest", "log-age",
+                "--archive", str(archive_path),
+                "--out-dir", str(out_dir),
+                "--exclusions-report", str(exclusions_path),
+                "--csv-block-size-bytes", "128",
+            ],
+        )
+        assert result.exit_code == 0, f"CLI failed: {result.output}"
+        assert (out_dir / "modality_table_log_age.parquet").exists()
+        assert "LOG_AGE ingestion complete: 1 rows written" in result.output
+
+
+class TestLogAgeIngestion:
+    """Tests verifying the LOG_AGE ingestion logic, semicolon CSV parsing, and cohort filtering."""
+
+    def test_ingest_log_age_parser(self, tmp_path: Path) -> None:
+        """Test LOG_AGE ingestion from a synthetic 7z archive."""
+        import py7zr
+        from mbp.data.luh_blank.parse_log import ingest_log_age
+
+        archive_path = tmp_path / "cell_log_age_ultracompr.7z"
+        out_dir = tmp_path / "interim"
+        exclusions_path = tmp_path / "excluded_records_report.csv"
+
+        csv_header = "timestamp_s;v_raw_V;ocv_est_V;i_raw_A;t_cell_degC;soc_est;delta_q_Ah;EFC;cap_aged_est_Ah;R0_mOhm;R1_mOhm\n"
+        cohort_csv = csv_header + "100.0;3.4;3.5;-1.0;25.0;50.0;1.2;10.0;2.9;20.0;25.0\n" + "200.0;3.3;3.4;-1.0;25.0;48.0;1.4;10.5;nan;nan;nan\n"
+        auxiliary_csv = csv_header + "100.0;3.4;3.5;-1.0;25.0;50.0;1.2;10.0;2.9;20.0;25.0\n"
+
+        # Create synthetic 7z archive
+        with py7zr.SevenZipFile(archive_path, "w") as z:
+            z.writestr(cohort_csv, "cell_log_age_2s_P001_1_S01_C01.csv")
+            z.writestr(auxiliary_csv, "cell_log_age_2s_P000_0_S01_C01.csv")
+
+        # Parse and ingest
+        table = ingest_log_age(
+            archive_path,
+            out_dir,
+            exclusions_report_path=exclusions_path,
+            csv_block_size_bytes=128,
+        )
+        assert isinstance(table, pa.Table)
+
+        # Verify return value and parquet exist
+        assert out_dir.exists()
+        parquet_path = out_dir / "modality_table_log_age.parquet"
+        assert parquet_path.exists()
+
+        # Read back table and validate
+        table_read = pq.read_table(parquet_path)
+        assert validate_table(table_read, MODALITY_TABLE_LOG_AGE_SCHEMA, strict=True)
+
+        # Assert cohort data is correct and parsed cleanly
+        pydict = table_read.to_pydict()
+        assert pydict["cell_id"] == ["P001_1", "P001_1"]
+        assert pydict["timestamp_s"] == [100.0, 200.0]
+        assert pydict["cap_aged_est_Ah"] == [2.9, None]  # nan mapped to null
+        assert pydict["R0_mOhm"] == [20.0, None]
+        assert pydict["R1_mOhm"] == [25.0, None]
+        assert pydict["source_file"] == ["cell_log_age_2s_P001_1_S01_C01.csv", "cell_log_age_2s_P001_1_S01_C01.csv"]
+        assert pydict["source_archive"] == ["cell_log_age_ultracompr.7z", "cell_log_age_ultracompr.7z"]
+
+        # Verify exclusion of auxiliary cell
+        assert exclusions_path.exists()
+        exclusions_text = exclusions_path.read_text(encoding="utf-8")
+        assert "P000_0" in exclusions_text
+        assert "Auxiliary cell outside expected 228-cell cohort" in exclusions_text

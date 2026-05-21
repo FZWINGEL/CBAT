@@ -1,6 +1,6 @@
 {
-  "status": "passed",
-  "timestamp_utc": "2026-05-21T13:08:12.747893Z",
+  "status": "failed",
+  "timestamp_utc": "2026-05-21T22:52:45.645927Z",
   "tables": {
     "cell_condition_table": {
       "exists": true,
@@ -52,7 +52,34 @@
       "exists": true,
       "row_count": 39368,
       "schema_valid": true
+    },
+    "modality_table_log_age": {
+      "exists": true,
+      "row_count": 904977105,
+      "file_size_bytes": 28360384828,
+      "row_groups": 257311,
+      "unique_cells": 228,
+      "schema_valid": true,
+      "diagnostic_null_counts": {
+        "cap_aged_est_Ah": 904972331,
+        "R0_mOhm": 904972350,
+        "R1_mOhm": 904972350
+      },
+      "diagnostic_nonnull_counts": {
+        "cap_aged_est_Ah": 4774,
+        "R0_mOhm": 4755,
+        "R1_mOhm": 4755
+      },
+      "diagnostic_null_rates": {
+        "cap_aged_est_Ah": 0.9999947247284229,
+        "R0_mOhm": 0.9999947457234291,
+        "R1_mOhm": 0.9999947457234291
+      },
+      "monotonic_timestamp_efc_violations": 7107,
+      "non_cohort_cell_count": 0
     }
   },
-  "failures": []
+  "failures": [
+    "modality_table_log_age: 7107 timestamp/EFC monotonicity violations detected!"
+  ]
 }

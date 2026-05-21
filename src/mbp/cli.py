@@ -452,13 +452,60 @@ def ingest_log_age_cmd(
         "--exclusions-report",
         help="Optional path to output the excluded records report (CSV).",
     ),
+    skip_extract: bool = typer.Option(
+        False,
+        "--skip-extract",
+        help="Skip extraction if CSV files are already present in the temp directory.",
+    ),
+    csv_block_size_bytes: int = typer.Option(
+        1 << 20,
+        "--csv-block-size-bytes",
+        min=1,
+        help="Maximum PyArrow CSV stream block size. Lower values reduce peak memory.",
+    ),
 ) -> None:
     """Ingest cell operating logs from cell_log_age_ultracompr.7z into interim Parquet."""
+    import pyarrow.parquet as pq
+
     from mbp.data.luh_blank.parse_log import ingest_log_age
 
-    typer.echo(f"Ingesting LOG_AGE data from {archive}...")
-    table = ingest_log_age(archive, out_dir, exclusions_report_path=exclusions_report)
-    typer.echo(f"LOG_AGE ingestion complete: {len(table)} rows written to {out_dir / 'modality_table_log_age.parquet'}")
+    typer.echo(
+        "Ingesting LOG_AGE data from "
+        f"{archive} (skip_extract={skip_extract}, csv_block_size_bytes={csv_block_size_bytes})..."
+    )
+    ingest_log_age(
+        archive,
+        out_dir,
+        exclusions_report_path=exclusions_report,
+        skip_extract=skip_extract,
+        csv_block_size_bytes=csv_block_size_bytes,
+    )
+    parquet_out = out_dir / "modality_table_log_age.parquet"
+    row_count = pq.ParquetFile(parquet_out).metadata.num_rows
+    typer.echo(
+        f"LOG_AGE ingestion complete: {row_count} rows written to {parquet_out}"
+    )
+
+
+@ingest_app.command("intervals")
+def ingest_intervals(
+    interim_dir: Path = typer.Option(
+        ...,
+        "--interim-dir",
+        help="Directory containing Gate 2 interim Parquet data products.",
+    ),
+    out: Path = typer.Option(
+        ...,
+        "--out",
+        help="Output path for interval_table.parquet.",
+    ),
+) -> None:
+    """Build the Gate 2 interval table from check-up events and LOG_AGE exposure."""
+    from mbp.data.products.interval_table import build_interval_table
+
+    typer.echo(f"Building interval table from interim products in {interim_dir}...")
+    table = build_interval_table(interim_dir, out)
+    typer.echo(f"Interval table generated: {len(table)} rows written to {out}")
 
 
 @split_app.command("generate")
@@ -503,31 +550,41 @@ def audit_report(
     with manifest.open("r", encoding="utf-8") as f:
         collection = json.load(f)
 
-    # Extract result package info to build per-package evidence
+    # Extract result package info to build the primary manifest
     result_pkg = collection.get("packages", {}).get("result_package", {})
     result_path_str = result_pkg.get("path")
 
-    if result_path_str and Path(result_path_str).exists():
-        manifest_obj = build_manifest(Path(result_path_str))
-        generated_at_utc = manifest_obj.provenance.generated_at_utc
-        coverage = build_modality_coverage(manifest_obj.file_inventory, generated_at_utc)
-        known_issues = build_known_issue_checks(manifest_obj.file_inventory, generated_at_utc)
-
-        # Try to load existing bagit report
-        bagit_report = None
-        bagit_path = manifest.parent / "bagit_validation.json"
-        if bagit_path.exists():
-            try:
-                with bagit_path.open("r", encoding="utf-8") as bf:
-                    bagit_report = json.load(bf)
-            except Exception:
-                pass
-
-        write_evidence_memo(manifest_obj, coverage, known_issues, out, bagit_report=bagit_report)
-        typer.echo(f"Evidence memo compiled and written to {out}")
-    else:
+    if not (result_path_str and Path(result_path_str).exists()):
         typer.echo(f"Result package path not found or does not exist: {result_path_str}")
         raise typer.Exit(code=1)
+
+    manifest_obj = build_manifest(Path(result_path_str))
+    generated_at_utc = manifest_obj.provenance.generated_at_utc
+
+    # Merge log package file inventory if available
+    all_files = list(manifest_obj.file_inventory)
+    log_pkg = collection.get("packages", {}).get("log_package", {})
+    log_path_str = log_pkg.get("path")
+    if log_path_str and Path(log_path_str).exists() and Path(log_path_str).is_dir():
+        log_files = build_inventory(Path(log_path_str), generated_at_utc=generated_at_utc)
+        all_files.extend(log_files)
+        typer.echo(f"Merged {len(log_files)} log package files into coverage assessment.")
+
+    coverage = build_modality_coverage(all_files, generated_at_utc)
+    known_issues = build_known_issue_checks(all_files, generated_at_utc)
+
+    # Try to load existing bagit report
+    bagit_report = None
+    bagit_path = manifest.parent / "bagit_validation.json"
+    if bagit_path.exists():
+        try:
+            with bagit_path.open("r", encoding="utf-8") as bf:
+                bagit_report = json.load(bf)
+        except Exception:
+            pass
+
+    write_evidence_memo(manifest_obj, coverage, known_issues, out, bagit_report=bagit_report)
+    typer.echo(f"Evidence memo compiled and written to {out}")
 
 
 if __name__ == "__main__":
