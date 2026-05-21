@@ -1,0 +1,1 @@
+"""Modality table schema placeholders."""

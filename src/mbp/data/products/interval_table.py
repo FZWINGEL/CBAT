@@ -1,0 +1,1 @@
+"""Interval table schema placeholder."""

@@ -1,0 +1,1 @@
+"""Condition table schema placeholder."""
