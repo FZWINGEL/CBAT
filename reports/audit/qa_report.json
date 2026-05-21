@@ -1,0 +1,36 @@
+{
+  "status": "passed",
+  "timestamp_utc": "2026-05-21T12:04:14.813713Z",
+  "tables": {
+    "cell_condition_table": {
+      "exists": true,
+      "row_count": 240,
+      "unique_cells": 229,
+      "schema_valid": true
+    },
+    "checkup_event_table": {
+      "exists": true,
+      "row_count": 4055,
+      "unique_cells": 228,
+      "schema_valid": true,
+      "range_violations": 0
+    },
+    "modality_table_pulse": {
+      "exists": true,
+      "row_count": 2475563,
+      "unique_cells": 228,
+      "schema_valid": true,
+      "r_10ms_violations": 0,
+      "r_1s_violations": 0
+    },
+    "modality_table_eis": {
+      "exists": true,
+      "row_count": 1177835,
+      "unique_cells": 228,
+      "schema_valid": true,
+      "valid_modeling_freq_count": 851063,
+      "valid_modeling_freq_fraction": 0.7225655545980549
+    }
+  },
+  "failures": []
+}

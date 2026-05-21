@@ -1,0 +1,6 @@
+schema_version,issue_id,issue_name,severity,status,evidence,handling_decision,provenance_tool,provenance_generated_at_utc
+gate1.audit.v1,KI001,EIS coverage and valid-frequency masks,high,pending_audit,EIS-like files observed,Do not make EIS-supervised claims until coverage and valid masks pass.,mbp audit manifest,2026-05-21T12:25:56+00:00
+gate1.audit.v1,KI002,PULSE provenance,high,pending_audit,PULSE-like files observed,Verify pulse source and extraction path before resistance claims.,mbp audit manifest,2026-05-21T12:25:56+00:00
+gate1.audit.v1,KI003,LOG gaps and runtime anomalies,medium,blocked_missing_evidence,No LOG-like files observed,"Quantify gaps, reboots, pool incidents, and EOL truncation from logs.",mbp audit manifest,2026-05-21T12:25:56+00:00
+gate1.audit.v1,KI004,LOG_AGE leakage risk,high,blocked_missing_evidence,No LOG_AGE-like files observed,Mask inserted future diagnostics before interval modeling.,mbp audit manifest,2026-05-21T12:25:56+00:00
+gate1.audit.v1,KI005,Version and source metadata,high,pending_manual_metadata,27 local files observed,"Record DOI, source URL, archive names, download dates, and SHA-256 hashes.",mbp audit manifest,2026-05-21T12:25:56+00:00

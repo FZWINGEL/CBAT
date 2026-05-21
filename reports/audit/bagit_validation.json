@@ -1,0 +1,129 @@
+{
+  "errors": [],
+  "manifest_status": "passed",
+  "provenance": {
+    "data_root_exists": true,
+    "data_root_input": "data/raw/Result_Raw_Data_Version_2",
+    "generated_at_utc": "2026-05-21T12:25:46+00:00",
+    "preprocessing_commit": "a5e45880529a2a965b25b55de16b56b7e8e8e5b5",
+    "schema_version": "gate1.audit.bagit.v1",
+    "tool_name": "mbp audit bagit",
+    "tool_version": "0.1.0"
+  },
+  "status": "passed",
+  "tagmanifest_status": "passed",
+  "validated_files": [
+    {
+      "actual_hash": "9e5ad981e0d29adc278f6a294b8c2aca",
+      "expected_hash": "9e5ad981e0d29adc278f6a294b8c2aca",
+      "file": "bagit.txt",
+      "status": "ok",
+      "type": "tag"
+    },
+    {
+      "actual_hash": "bf9c76b3b144d1097f6faeb5973f8de4",
+      "expected_hash": "bf9c76b3b144d1097f6faeb5973f8de4",
+      "file": "manifest-md5.txt",
+      "status": "ok",
+      "type": "tag"
+    },
+    {
+      "actual_hash": "1f7dc9797e69d0c18e5a7edea64eaf89",
+      "expected_hash": "1f7dc9797e69d0c18e5a7edea64eaf89",
+      "file": "data/dataset/Battery Aging Data Plausibility Check v05.3 (colored).xlsx",
+      "status": "ok",
+      "type": "payload"
+    },
+    {
+      "actual_hash": "ddcbe26e2ad8038e38a4991447d2e5e1",
+      "expected_hash": "ddcbe26e2ad8038e38a4991447d2e5e1",
+      "file": "data/dataset/Cycling Experiment Cell Overview (2024-09-26 15-31).pdf",
+      "status": "ok",
+      "type": "payload"
+    },
+    {
+      "actual_hash": "7a5fc1770ee595c6c44a51a0bf344e65",
+      "expected_hash": "7a5fc1770ee595c6c44a51a0bf344e65",
+      "file": "data/dataset/Cycling Experiment Cell Overview (2024-09-26 15-31).xlsx",
+      "status": "ok",
+      "type": "payload"
+    },
+    {
+      "actual_hash": "576711692fd3b5aaa6e0bf7f09bff1e9",
+      "expected_hash": "576711692fd3b5aaa6e0bf7f09bff1e9",
+      "file": "data/dataset/Data Structure v05.3.xlsx",
+      "status": "ok",
+      "type": "payload"
+    },
+    {
+      "actual_hash": "9c77a65ecdb274ecf2544bcfde462a86",
+      "expected_hash": "9c77a65ecdb274ecf2544bcfde462a86",
+      "file": "data/dataset/Readme v2.pdf",
+      "status": "ok",
+      "type": "payload"
+    },
+    {
+      "actual_hash": "dbe338f8774af83f19c1074bcf8968a1",
+      "expected_hash": "dbe338f8774af83f19c1074bcf8968a1",
+      "file": "data/dataset/WLTP_Class_3b_cycle_power_profile.xlsx",
+      "status": "ok",
+      "type": "payload"
+    },
+    {
+      "actual_hash": "6eb09ae51c8a9e9b4b02b33e739787ab",
+      "expected_hash": "6eb09ae51c8a9e9b4b02b33e739787ab",
+      "file": "data/dataset/cell_eisv2.zip",
+      "status": "ok",
+      "type": "payload"
+    },
+    {
+      "actual_hash": "b4f42914c8eaf176fd47e33e6f112d7c",
+      "expected_hash": "b4f42914c8eaf176fd47e33e6f112d7c",
+      "file": "data/dataset/cell_eocv2.zip",
+      "status": "ok",
+      "type": "payload"
+    },
+    {
+      "actual_hash": "5c660fc53ac4ae4de5850143f629242a",
+      "expected_hash": "5c660fc53ac4ae4de5850143f629242a",
+      "file": "data/dataset/cell_plsv2.zip",
+      "status": "ok",
+      "type": "payload"
+    },
+    {
+      "actual_hash": "b894469e86712b6021bb5364f7296891",
+      "expected_hash": "b894469e86712b6021bb5364f7296891",
+      "file": "data/dataset/cfg.zip",
+      "status": "ok",
+      "type": "payload"
+    },
+    {
+      "actual_hash": "44e1b2ef9d3fac36aef6ba7ae15db3c1",
+      "expected_hash": "44e1b2ef9d3fac36aef6ba7ae15db3c1",
+      "file": "data/dataset/result_plot_examples.7z",
+      "status": "ok",
+      "type": "payload"
+    },
+    {
+      "actual_hash": "ae899b2330ab735aea745b66fac09854",
+      "expected_hash": "ae899b2330ab735aea745b66fac09854",
+      "file": "data/descriptive-md/dataset.desc_md.xml",
+      "status": "ok",
+      "type": "payload"
+    },
+    {
+      "actual_hash": "ea9e1ec73d290b2ad3953f34206a1d3c",
+      "expected_hash": "ea9e1ec73d290b2ad3953f34206a1d3c",
+      "file": "data/readme.txt",
+      "status": "ok",
+      "type": "payload"
+    },
+    {
+      "actual_hash": "cfd1ccfe4c6b8d04d5dbb9198c3c321f",
+      "expected_hash": "cfd1ccfe4c6b8d04d5dbb9198c3c321f",
+      "file": "data/technical-md/dataset.tech_md.xml",
+      "status": "ok",
+      "type": "payload"
+    }
+  ]
+}
