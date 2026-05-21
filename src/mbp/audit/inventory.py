@@ -68,6 +68,10 @@ def build_inventory(
 
 def build_archive_inventory(
     file_records: list[FileInventoryRecord],
+    doi: str | None = None,
+    source: str | None = None,
+    date_downloaded: str | None = None,
+    extracted_file_counts: dict[str, int] | None = None,
 ) -> list[ArchiveInventoryRecord]:
     """Return archive inventory records derived from file inventory records."""
 
@@ -75,6 +79,11 @@ def build_archive_inventory(
     for record in file_records:
         if not record.is_archive:
             continue
+
+        extracted_file_count = None
+        if extracted_file_counts and record.file_name in extracted_file_counts:
+            extracted_file_count = extracted_file_counts[record.file_name]
+
         archives.append(
             ArchiveInventoryRecord(
                 schema_version=record.schema_version,
@@ -82,10 +91,10 @@ def build_archive_inventory(
                 relative_path=record.relative_path,
                 size_bytes=record.size_bytes,
                 sha256=record.sha256,
-                extracted_file_count=None,
-                doi=None,
-                source=None,
-                date_downloaded=None,
+                extracted_file_count=extracted_file_count,
+                doi=doi,
+                source=source,
+                date_downloaded=date_downloaded,
                 provenance_data_root=record.provenance_data_root,
                 provenance_tool=record.provenance_tool,
                 provenance_generated_at_utc=record.provenance_generated_at_utc,

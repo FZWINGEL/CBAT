@@ -84,6 +84,7 @@ class DatasetManifest:
     expected_audit_requirements: list[str] = field(default_factory=list)
     known_anomalies: list[str] = field(default_factory=list)
     audit_warnings: list[str] = field(default_factory=list)
+    dataset_metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -99,4 +100,5 @@ class DatasetManifest:
             "expected_audit_requirements": self.expected_audit_requirements,
             "known_anomalies": self.known_anomalies,
             "audit_warnings": self.audit_warnings,
+            "dataset_metadata": self.dataset_metadata,
         }

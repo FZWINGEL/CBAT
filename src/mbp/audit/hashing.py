@@ -14,3 +14,13 @@ def sha256_file(path: Path, chunk_size: int = 1024 * 1024) -> str:
         for chunk in iter(lambda: file_obj.read(chunk_size), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def md5_file(path: Path, chunk_size: int = 1024 * 1024) -> str:
+    """Return the MD5 hex digest for a file."""
+
+    digest = hashlib.md5()
+    with path.open("rb") as file_obj:
+        for chunk in iter(lambda: file_obj.read(chunk_size), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
