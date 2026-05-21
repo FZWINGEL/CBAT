@@ -24,7 +24,7 @@ FAMILY_KEYWORDS = {
     "cfg": ("cfg", "config", "structure"),
     "eoc": ("eoc",),
     "eis": ("eis", "impedance"),
-    "pulse": ("pulse",),
+    "pulse": ("pulse", "pls"),
     "log_age": ("log_age", "log-age", "logage"),
     "log": ("log",),
     "pool_log": ("pool",),
