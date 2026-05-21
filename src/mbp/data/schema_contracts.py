@@ -54,12 +54,32 @@ MODALITY_TABLE_PULSE_SCHEMA = pa.schema(
         ("pulse_1s_resistance", pa.float64(), False),
         ("voltage", pa.float64(), False),
         ("current", pa.float64(), False),
+        ("alignment_method", pa.string(), False),
+        ("alignment_delta_s", pa.float64(), False),
         ("source_file", pa.string(), False),
         ("quality_flags", pa.string(), False),
     ]
 )
 
-# 4. Modality Table EIS Schema (EIS)
+# 4. Modality Table Pulse Summary Schema
+MODALITY_TABLE_PULSE_SUMMARY_SCHEMA = pa.schema(
+    [
+        ("cell_id", pa.string(), False),
+        ("checkup_k", pa.int32(), False),
+        ("soc_percent", pa.float64(), False),
+        ("temperature_context", pa.string(), False),
+        ("temperature_C", pa.float64(), False),
+        ("pulse_direction", pa.string(), False),
+        ("pulse_10ms_resistance", pa.float64(), False),
+        ("pulse_1s_resistance", pa.float64(), False),
+        ("alignment_method", pa.string(), False),
+        ("alignment_delta_s", pa.float64(), False),
+        ("source_file", pa.string(), False),
+        ("quality_flags", pa.string(), False),
+    ]
+)
+
+# 5. Modality Table EIS Schema (EIS)
 MODALITY_TABLE_EIS_SCHEMA = pa.schema(
     [
         ("cell_id", pa.string(), False),
@@ -74,9 +94,41 @@ MODALITY_TABLE_EIS_SCHEMA = pa.schema(
         ("phase", pa.float64(), False),
         ("is_valid_raw", pa.bool_(), False),
         ("is_valid_modeling_frequency", pa.bool_(), False),
+        ("alignment_method", pa.string(), False),
+        ("alignment_delta_s", pa.float64(), False),
         ("source_file", pa.string(), False),
         ("source_archive", pa.string(), False),
         ("quality_flags", pa.string(), False),
+    ]
+)
+
+# 6. EIS Spectrum Quality Table Schema
+EIS_SPECTRUM_QUALITY_SCHEMA = pa.schema(
+    [
+        ("cell_id", pa.string(), False),
+        ("checkup_k", pa.int32(), False),
+        ("soc_percent", pa.float64(), False),
+        ("temperature_context", pa.string(), False),
+        ("temperature_C_mean", pa.float64(), False),
+        ("total_frequencies", pa.int32(), False),
+        ("valid_raw_frequencies", pa.int32(), False),
+        ("valid_modeling_frequencies", pa.int32(), False),
+        ("valid_modeling_fraction", pa.float64(), False),
+        ("alignment_method", pa.string(), False),
+        ("alignment_delta_s", pa.float64(), False),
+        ("quality_flags", pa.string(), False),
+        ("source_file", pa.string(), False),
+        ("source_archive", pa.string(), False),
+    ]
+)
+
+# 7. Excluded Records Table Schema (for auxiliary metadata tracking)
+EXCLUDED_RECORDS_SCHEMA = pa.schema(
+    [
+        ("cell_id", pa.string(), False),
+        ("source_archive", pa.string(), False),
+        ("source_file", pa.string(), False),
+        ("reason", pa.string(), False),
     ]
 )
 
@@ -104,3 +156,24 @@ def validate_table(table: pa.Table, schema: pa.Schema, strict: bool = True) -> b
             except KeyError:
                 return False
         return True
+
+
+def record_exclusions(exclusions: list[dict], exclusions_path) -> None:
+    """Record excluded records into a shared CSV report."""
+    if not exclusions_path or not exclusions:
+        return
+    from pathlib import Path
+    import csv
+
+    ex_path = Path(exclusions_path)
+    ex_path.parent.mkdir(parents=True, exist_ok=True)
+    file_exists = ex_path.exists()
+
+    with ex_path.open("a", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(
+            f, fieldnames=["cell_id", "source_archive", "source_file", "reason"]
+        )
+        if not file_exists:
+            writer.writeheader()
+        for exc in exclusions:
+            writer.writerow(exc)

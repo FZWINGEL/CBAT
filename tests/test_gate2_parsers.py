@@ -17,6 +17,8 @@ from mbp.data.schema_contracts import (
     CONDITION_TABLE_SCHEMA,
     MODALITY_TABLE_EIS_SCHEMA,
     MODALITY_TABLE_PULSE_SCHEMA,
+    MODALITY_TABLE_PULSE_SUMMARY_SCHEMA,
+    EIS_SPECTRUM_QUALITY_SCHEMA,
     validate_table,
 )
 
@@ -37,15 +39,15 @@ def test_find_closest_checkup_k() -> None:
         ]
     }
     # Exactly on checkup 0
-    assert find_closest_checkup_k("P001_1", 1000.0, eoc_lookup) == 0
+    assert find_closest_checkup_k("P001_1", 1000.0, eoc_lookup) == (0, 0.0)
     # Closer to checkup 0
-    assert find_closest_checkup_k("P001_1", 1200.0, eoc_lookup) == 0
+    assert find_closest_checkup_k("P001_1", 1200.0, eoc_lookup) == (0, 200.0)
     # Closer to checkup 1
-    assert find_closest_checkup_k("P001_1", 1800.0, eoc_lookup) == 1
+    assert find_closest_checkup_k("P001_1", 1800.0, eoc_lookup) == (1, 200.0)
     # Closer to checkup 2
-    assert find_closest_checkup_k("P001_1", 2900.0, eoc_lookup) == 2
+    assert find_closest_checkup_k("P001_1", 2900.0, eoc_lookup) == (2, 100.0)
     # Missing cell defaults to 0
-    assert find_closest_checkup_k("P002_1", 1000.0, eoc_lookup) == 0
+    assert find_closest_checkup_k("P002_1", 1000.0, eoc_lookup) == (0, 0.0)
 
 
 def test_eis_modeling_mask() -> None:
@@ -93,7 +95,7 @@ def test_ingest_cfg_parser(temp_workspace: Path) -> None:
                 "age_profile",
             ]
         )
-        writer.writerow(["1", "2", "3", "25.0", "2.5", "4.2", "80", "1.0", "1.5", "5"])
+        writer.writerow(["1", "2", "2", "25.0", "2.5", "4.2", "80", "1.0", "1.5", "5"])
         z.writestr("cell_cfg_P001_2_S01_C10.csv", csv_buffer.getvalue())
 
     # Ingest
@@ -166,7 +168,8 @@ def test_ingest_pulse_parser(temp_workspace: Path) -> None:
     """Test PULSE parser on a synthetic cell_plsv2.zip file."""
     zip_path = temp_workspace / "cell_plsv2.zip"
     eoc_path = temp_workspace / "checkup_event_table.parquet"
-    out_path = temp_workspace / "modality_table_pulse.parquet"
+    out_raw_path = temp_workspace / "modality_table_pulse_raw.parquet"
+    out_sum_path = temp_workspace / "modality_table_pulse_summary.parquet"
 
     # Create dummy EOC parquet
     eoc_data = {
@@ -208,11 +211,12 @@ def test_ingest_pulse_parser(temp_workspace: Path) -> None:
         z.writestr("cell_plsv2_P001_1_S01_C10.csv", csv_buffer.getvalue())
 
     # Ingest
-    ingest_pulse(zip_path, eoc_path, out_path)
-    assert out_path.exists()
+    ingest_pulse(zip_path, eoc_path, out_raw_path, out_sum_path)
+    assert out_raw_path.exists()
+    assert out_sum_path.exists()
 
     # Read back and validate schema
-    table = pq.read_table(out_path)
+    table = pq.read_table(out_raw_path)
     assert validate_table(table, MODALITY_TABLE_PULSE_SCHEMA)
     pydict = table.to_pydict()
     assert pydict["cell_id"] == ["P001_1"]
@@ -225,13 +229,16 @@ def test_ingest_pulse_parser(temp_workspace: Path) -> None:
     assert pydict["pulse_1s_resistance"] == [0.0252]  # Converted to Ohm
     assert pydict["voltage"] == [3.35]
     assert pydict["current"] == [-1.0]
+    assert pydict["alignment_method"] == ["nearest_eoc_timestamp"]
+    assert pydict["alignment_delta_s"] == [50.0]
 
 
 def test_ingest_eis_parser(temp_workspace: Path) -> None:
     """Test EIS parser on a synthetic cell_eisv2.zip file."""
     zip_path = temp_workspace / "cell_eisv2.zip"
     eoc_path = temp_workspace / "checkup_event_table.parquet"
-    out_path = temp_workspace / "modality_table_eis.parquet"
+    out_eis_path = temp_workspace / "modality_table_eis.parquet"
+    out_qual_path = temp_workspace / "eis_spectrum_quality.parquet"
 
     # Create dummy EOC parquet
     eoc_data = {
@@ -276,11 +283,12 @@ def test_ingest_eis_parser(temp_workspace: Path) -> None:
         z.writestr("cell_eisv2_P001_1_S01_C10.csv", csv_buffer.getvalue())
 
     # Ingest
-    ingest_eis(zip_path, eoc_path, out_path)
-    assert out_path.exists()
+    ingest_eis(zip_path, eoc_path, out_eis_path, out_qual_path)
+    assert out_eis_path.exists()
+    assert out_qual_path.exists()
 
     # Read back and validate schema
-    table = pq.read_table(out_path)
+    table = pq.read_table(out_eis_path)
     assert validate_table(table, MODALITY_TABLE_EIS_SCHEMA)
     pydict = table.to_pydict()
     assert pydict["cell_id"] == ["P001_1"]
@@ -295,6 +303,8 @@ def test_ingest_eis_parser(temp_workspace: Path) -> None:
     assert pydict["phase"] == [-15.0]
     assert pydict["is_valid_raw"] == [True]
     assert pydict["is_valid_modeling_frequency"] == [True]  # Passes modeling mask criteria
+    assert pydict["alignment_method"] == ["nearest_eoc_timestamp"]
+    assert pydict["alignment_delta_s"] == [50.0]
 
 
 def test_qa_checks_runner(temp_workspace: Path) -> None:
@@ -303,21 +313,37 @@ def test_qa_checks_runner(temp_workspace: Path) -> None:
     interim_dir.mkdir()
     report_json = temp_workspace / "qa_report.json"
 
-    # Save dummy Parquet tables to interim
+    # Save dummy 228-cell Parquet table to interim to pass cohort sizes QA checks
+    cell_ids = []
+    param_sets = []
+    replicates = []
+    aging_modes = []
+    for p in range(1, 77):
+        for r in range(1, 4):
+            cell_ids.append(f"P{p:03d}_{r}")
+            param_sets.append(p)
+            replicates.append(r)
+            if p <= 16:
+                aging_modes.append("calendar")
+            elif p <= 64:
+                aging_modes.append("cyclic")
+            else:
+                aging_modes.append("profile")
+
     cfg_data = {
-        "cell_id": ["P001_1"],
-        "parameter_set": [1],
-        "replicate_id": [1],
-        "aging_mode": ["cyclic"],
-        "nominal_temperature_C": [25.0],
-        "voltage_window": ["2.5 V - 4.2 V"],
-        "soc_window_approx": ["80%"],
-        "nominal_charge_C_rate": [1.0],
-        "nominal_discharge_C_rate": [1.5],
-        "profile_label": ["5"],
-        "source_file": ["file.csv"],
-        "source_archive": ["cfg.zip"],
-        "schema_version": ["1.0"],
+        "cell_id": cell_ids,
+        "parameter_set": param_sets,
+        "replicate_id": replicates,
+        "aging_mode": aging_modes,
+        "nominal_temperature_C": [25.0] * 228,
+        "voltage_window": ["2.50 V - 4.20 V"] * 228,
+        "soc_window_approx": ["80%"] * 228,
+        "nominal_charge_C_rate": [1.0] * 228,
+        "nominal_discharge_C_rate": [1.5] * 228,
+        "profile_label": ["5"] * 228,
+        "source_file": ["file.csv"] * 228,
+        "source_archive": ["cfg.zip"] * 228,
+        "schema_version": ["1.0"] * 228,
     }
     pq.write_table(
         pa.Table.from_pydict(cfg_data, schema=CONDITION_TABLE_SCHEMA),
@@ -345,7 +371,7 @@ def test_qa_checks_runner(temp_workspace: Path) -> None:
         interim_dir / "checkup_event_table.parquet",
     )
 
-    pulse_data = {
+    pulse_raw_data = {
         "cell_id": ["P001_1"],
         "checkup_k": [0],
         "soc_percent": [50.0],
@@ -356,12 +382,33 @@ def test_qa_checks_runner(temp_workspace: Path) -> None:
         "pulse_1s_resistance": [0.025],  # Normal range
         "voltage": [3.35],
         "current": [-1.0],
+        "alignment_method": ["nearest_eoc_timestamp"],
+        "alignment_delta_s": [50.0],
         "source_file": ["file.csv"],
         "quality_flags": ["OK"],
     }
     pq.write_table(
-        pa.Table.from_pydict(pulse_data, schema=MODALITY_TABLE_PULSE_SCHEMA),
-        interim_dir / "modality_table_pulse.parquet",
+        pa.Table.from_pydict(pulse_raw_data, schema=MODALITY_TABLE_PULSE_SCHEMA),
+        interim_dir / "modality_table_pulse_raw.parquet",
+    )
+
+    pulse_sum_data = {
+        "cell_id": ["P001_1"],
+        "checkup_k": [0],
+        "soc_percent": [50.0],
+        "temperature_context": ["RT"],
+        "temperature_C": [25.0],
+        "pulse_direction": ["discharge"],
+        "pulse_10ms_resistance": [0.02],  # Normal range
+        "pulse_1s_resistance": [0.025],  # Normal range
+        "alignment_method": ["nearest_eoc_timestamp"],
+        "alignment_delta_s": [50.0],
+        "source_file": ["file.csv"],
+        "quality_flags": ["OK"],
+    }
+    pq.write_table(
+        pa.Table.from_pydict(pulse_sum_data, schema=MODALITY_TABLE_PULSE_SUMMARY_SCHEMA),
+        interim_dir / "modality_table_pulse_summary.parquet",
     )
 
     eis_data = {
@@ -377,6 +424,8 @@ def test_qa_checks_runner(temp_workspace: Path) -> None:
         "phase": [-15.0],
         "is_valid_raw": [True],
         "is_valid_modeling_frequency": [True],
+        "alignment_method": ["nearest_eoc_timestamp"],
+        "alignment_delta_s": [50.0],
         "source_file": ["file.csv"],
         "source_archive": ["eis.zip"],
         "quality_flags": ["OK"],
@@ -384,6 +433,27 @@ def test_qa_checks_runner(temp_workspace: Path) -> None:
     pq.write_table(
         pa.Table.from_pydict(eis_data, schema=MODALITY_TABLE_EIS_SCHEMA),
         interim_dir / "modality_table_eis.parquet",
+    )
+
+    eis_qual_data = {
+        "cell_id": ["P001_1"],
+        "checkup_k": [0],
+        "soc_percent": [50.0],
+        "temperature_context": ["RT"],
+        "temperature_C_mean": [25.0],
+        "total_frequencies": [1],
+        "valid_raw_frequencies": [1],
+        "valid_modeling_frequencies": [1],
+        "valid_modeling_fraction": [1.0],
+        "alignment_method": ["nearest_eoc_timestamp"],
+        "alignment_delta_s": [50.0],
+        "quality_flags": ["OK"],
+        "source_file": ["file.csv"],
+        "source_archive": ["eis.zip"],
+    }
+    pq.write_table(
+        pa.Table.from_pydict(eis_qual_data, schema=EIS_SPECTRUM_QUALITY_SCHEMA),
+        interim_dir / "eis_spectrum_quality.parquet",
     )
 
     # Run QA
@@ -394,5 +464,67 @@ def test_qa_checks_runner(temp_workspace: Path) -> None:
     with report_json.open("r", encoding="utf-8") as f:
         data = json.load(f)
     assert data["status"] == "passed"
-    assert data["tables"]["cell_condition_table"]["row_count"] == 1
+    assert data["tables"]["cell_condition_table"]["row_count"] == 228
     assert data["tables"]["checkup_event_table"]["range_violations"] == 0
+
+
+def test_audit_collection_cmd(temp_workspace: Path) -> None:
+    """Test multi-package config collection manifest creation via CLI."""
+    # Write a dummy dataset config yaml
+    config_path = temp_workspace / "dataset_config.yaml"
+    config_path.write_text(
+        "dataset_id: test_dataset\n"
+        "title: Test multi-package dataset\n"
+        "doi: 10.1234/test\n"
+        "source_url: http://test.org\n",
+        encoding="utf-8",
+    )
+
+    # Create directories
+    result_root = temp_workspace / "fake_results"
+    result_root.mkdir()
+
+    # Create simple bag info file to avoid parse exceptions
+    (result_root / "bag-info.txt").write_text("Source-Organization: Test Org\n", encoding="utf-8")
+
+    # Empty log zip path
+    log_zip = temp_workspace / "Log_Raw_Data_Version_2.zip"
+    log_zip.write_text("", encoding="utf-8")  # Empty file is invalid zip
+
+    # Invoke CLI Command
+    manifest_out = temp_workspace / "COLLECTION_MANIFEST.json"
+    from typer.testing import CliRunner
+    from mbp.cli import app
+
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "audit",
+            "collection",
+            "--config",
+            str(config_path),
+            "--out",
+            str(manifest_out),
+            "--result-root",
+            str(result_root),
+            "--log-root",
+            str(log_zip),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "Wrote unified collection manifest" in result.output
+    assert manifest_out.exists()
+
+    with manifest_out.open("r", encoding="utf-8") as f:
+        manifest_data = json.load(f)
+
+    assert manifest_data["schema_version"] == "gate1.collection.v1"
+    assert manifest_data["dataset_id"] == "test_dataset"
+    assert manifest_data["packages"]["result_package"]["exists"] is True
+    assert manifest_data["packages"]["log_package"]["exists"] is True
+    assert (
+        manifest_data["packages"]["log_package"]["archive_status"]
+        == "incomplete_or_corrupt_archive"
+    )

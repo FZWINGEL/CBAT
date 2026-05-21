@@ -1,0 +1,121 @@
+{
+  "aggregated_modality_coverage": {
+    "cfg": {
+      "coverage_ratio": 1.0,
+      "expected_cells": 228,
+      "file_count": 269,
+      "observed_cells": 228,
+      "row_count": null,
+      "status": "complete",
+      "total_size_bytes": 408230
+    },
+    "eis": {
+      "coverage_ratio": 1.0,
+      "expected_cells": 228,
+      "file_count": 242,
+      "observed_cells": 228,
+      "row_count": null,
+      "status": "complete",
+      "total_size_bytes": 188239372
+    },
+    "eoc": {
+      "coverage_ratio": 1.0,
+      "expected_cells": 228,
+      "file_count": 242,
+      "observed_cells": 228,
+      "row_count": null,
+      "status": "complete",
+      "total_size_bytes": 582954275
+    },
+    "log": {
+      "coverage_ratio": 0.0,
+      "expected_cells": 0,
+      "file_count": 0,
+      "observed_cells": 0,
+      "row_count": null,
+      "status": "missing",
+      "total_size_bytes": 0
+    },
+    "log_age": {
+      "coverage_ratio": 0.0,
+      "expected_cells": 0,
+      "file_count": 0,
+      "observed_cells": 0,
+      "row_count": null,
+      "status": "missing",
+      "total_size_bytes": 0
+    },
+    "pulse": {
+      "coverage_ratio": 1.0,
+      "expected_cells": 228,
+      "file_count": 230,
+      "observed_cells": 228,
+      "row_count": null,
+      "status": "complete",
+      "total_size_bytes": 275956623
+    }
+  },
+  "dataset_id": "luh_blank_v2",
+  "generated_at_utc": "2026-05-21T13:08:59+00:00",
+  "packages": {
+    "log_package": {
+      "archive_status": "incomplete_or_corrupt_archive",
+      "exists": true,
+      "file_count": null,
+      "is_dir": false,
+      "name": "Log_Raw_Data_Version_2.zip",
+      "path": "data/raw/Log_Raw_Data_Version_2.zip",
+      "size_bytes": 22484803042
+    },
+    "result_package": {
+      "bagit_status": "passed",
+      "doi": "10.35097/1969",
+      "exists": true,
+      "file_count": 27,
+      "is_dir": true,
+      "metadata": {
+        "bag_info": {
+          "Bag-Size": "333.4 MB",
+          "Bagging-Date": "2024-09-27",
+          "External-Identifier": "CoNQplSNoVeXExyV",
+          "Payload-Oxum": "333383570.14"
+        },
+        "descriptive": {
+          "creators": [
+            {
+              "affiliation": "Institut f\u00fcr Programmstrukturen und Datenorganisation (IPD), Karlsruher Institut f\u00fcr Technologie (KIT), Institut f\u00fcr Prozessdatenverarbeitung und Elektronik (IPE), Karlsruher Institut f\u00fcr Technologie (KIT)",
+              "name": "Luh, Matthias",
+              "orcid": "0000-0003-4731-2207"
+            },
+            {
+              "affiliation": "Institut f\u00fcr Prozessdatenverarbeitung und Elektronik (IPE), Karlsruher Institut f\u00fcr Technologie (KIT)",
+              "name": "Blank, Thomas",
+              "orcid": "0000-0002-7543-5653"
+            }
+          ],
+          "doi": "10.35097/1969",
+          "production_year": "2024",
+          "publication_year": "2024",
+          "rights": "CC BY 4.0 Attribution",
+          "source_url": "https://publikationen.bibliothek.kit.edu/1000169196",
+          "title": "Comprehensive battery aging dataset: capacity and impedance fade measurements of a lithium-ion NMC/C-SiO cell [dataset \u2013 version 2: result data]"
+        },
+        "technical": {
+          "archive_date": "2024-09-27T13:45:10.488",
+          "responsible_email": "matthias.luh@kit.edu",
+          "size_bytes_technical": 333375210
+        },
+        "title": "Comprehensive battery aging dataset: capacity and impedance fade measurements of a lithium-ion NMC/C-SiO cell [dataset \u2013 version 2: result data]"
+      },
+      "name": "Result_Raw_Data_Version_2",
+      "path": "data/raw/Result_Raw_Data_Version_2",
+      "source_url": "https://publikationen.bibliothek.kit.edu/1000169196"
+    }
+  },
+  "provenance": {
+    "tool_name": "mbp audit collection",
+    "tool_version": "0.1.0"
+  },
+  "schema_version": "gate1.collection.v1",
+  "title": "Luh-Blank comprehensive battery aging dataset, version 2"
+}

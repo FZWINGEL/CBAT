@@ -2,18 +2,20 @@
 
 import csv
 import io
+import re
 import zipfile
 from pathlib import Path
 import pyarrow as pa
 import pyarrow.parquet as pq
 
 from mbp.audit.archives import extract_cell_id
-from mbp.data.schema_contracts import CONDITION_TABLE_SCHEMA, validate_table
+from mbp.data.schema_contracts import CONDITION_TABLE_SCHEMA, validate_table, record_exclusions
 
-SCHEMA_VERSION = "gate2.cfg.v1"
+SCHEMA_VERSION = "gate2.cfg.v2"
+EXPECTED_EXPERIMENTAL_CELL_IDS = {f"P{p:03d}_{r}" for p in range(1, 77) for r in range(1, 4)}
 
 
-def parse_cfg_zip(zip_path: Path) -> pa.Table:
+def parse_cfg_zip(zip_path: Path, exclusions_path: Path | None = None) -> pa.Table:
     """Parse the cfg.zip file containing nominal cell conditions."""
     data = {
         "cell_id": [],
@@ -31,6 +33,8 @@ def parse_cfg_zip(zip_path: Path) -> pa.Table:
         "schema_version": [],
     }
 
+    exclusions = []
+
     with zipfile.ZipFile(zip_path, "r") as z:
         for name in z.namelist():
             # Skip metadata/directories
@@ -40,6 +44,33 @@ def parse_cfg_zip(zip_path: Path) -> pa.Table:
             cell_id = extract_cell_id(name)
             if not cell_id:
                 continue
+
+            # Cohort filter check
+            if cell_id not in EXPECTED_EXPERIMENTAL_CELL_IDS:
+                exclusions.append(
+                    {
+                        "cell_id": cell_id,
+                        "source_archive": zip_path.name,
+                        "source_file": name,
+                        "reason": "Auxiliary cell outside expected 228-cell cohort",
+                    }
+                )
+                continue
+
+            # Filename parsing matching P###_#
+            match = re.search(r"P(\d{3})_(\d)", cell_id)
+            if not match:
+                exclusions.append(
+                    {
+                        "cell_id": cell_id,
+                        "source_archive": zip_path.name,
+                        "source_file": name,
+                        "reason": "Malformed cell ID pattern",
+                    }
+                )
+                continue
+            fn_param_set = int(match.group(1))
+            fn_rep_id = int(match.group(2))
 
             # Read the CSV member
             content = z.read(name).decode("utf-8")
@@ -51,15 +82,24 @@ def parse_cfg_zip(zip_path: Path) -> pa.Table:
             row = rows[0]
 
             # Parse parameter mapping
-            parameter_set = int(row.get("parameter_id", 0))
-            replicate_id = int(row.get("parameter_nr", 0))
+            parameter_set = int(float(row.get("parameter_id", 0)))
+            replicate_id = int(float(row.get("parameter_nr", 0)))
 
-            # Map age_type to aging_mode
-            age_type_val = int(row.get("age_type", 0))
+            # Filename vs CSV consistency check
+            if fn_param_set != parameter_set or fn_rep_id != replicate_id:
+                raise ValueError(
+                    f"Inconsistent metadata for {name}: filename has P{fn_param_set:03d}_{fn_rep_id}, "
+                    f"but CSV has parameter_id={parameter_set}, parameter_nr={replicate_id}!"
+                )
+
+            # Map age_type to aging_mode (1 = calendar, 2 = cyclic, 3 = profile)
+            age_type_val = int(float(row.get("age_type", 0)))
             if age_type_val == 1:
                 aging_mode = "calendar"
-            elif age_type_val == 3:
+            elif age_type_val == 2:
                 aging_mode = "cyclic"
+            elif age_type_val == 3:
+                aging_mode = "profile"
             else:
                 aging_mode = f"unknown_{age_type_val}"
 
@@ -93,13 +133,17 @@ def parse_cfg_zip(zip_path: Path) -> pa.Table:
             data["source_archive"].append(zip_path.name)
             data["schema_version"].append(SCHEMA_VERSION)
 
+    # Record any exclusions found
+    if exclusions:
+        record_exclusions(exclusions, exclusions_path)
+
     table = pa.Table.from_pydict(data, schema=CONDITION_TABLE_SCHEMA)
     return table
 
 
-def ingest_cfg(zip_path: Path, out_path: Path) -> None:
+def ingest_cfg(zip_path: Path, out_path: Path, exclusions_path: Path | None = None) -> None:
     """Read cfg.zip and save parsed condition table to Parquet."""
-    table = parse_cfg_zip(zip_path)
+    table = parse_cfg_zip(zip_path, exclusions_path)
     if not validate_table(table, CONDITION_TABLE_SCHEMA):
         raise ValueError("Condition table schema validation failed!")
 

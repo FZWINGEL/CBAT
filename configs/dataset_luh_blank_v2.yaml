@@ -12,4 +12,13 @@ canonical_records:
   - PULSE
   - LOG
   - LOG_AGE
+packages:
+  results:
+    name: "Result_Raw_Data_Version_2"
+    path: "data/raw/Result_Raw_Data_Version_2"
+    required: true
+  logs:
+    name: "Log_Raw_Data_Version_2.zip"
+    path: "data/raw/Log_Raw_Data_Version_2.zip"
+    required: false
 

@@ -11,11 +11,12 @@ import pyarrow.parquet as pq
 from mbp.audit.archives import extract_cell_id
 from mbp.data.schema_contracts import CHECKUP_EVENT_TABLE_SCHEMA, validate_table
 
-SCHEMA_VERSION = "gate2.eoc.v1"
+SCHEMA_VERSION = "gate2.eoc.v2"
 CELL_ID_PARSER = re.compile(r"P(\d{3})_(\d)")
+EXPECTED_EXPERIMENTAL_CELL_IDS = {f"P{p:03d}_{r}" for p in range(1, 77) for r in range(1, 4)}
 
 
-def parse_eoc_zip(zip_path: Path) -> pa.Table:
+def parse_eoc_zip(zip_path: Path, exclusions_path: Path | None = None) -> pa.Table:
     """Parse the cell_eocv2.zip file and aggregate checkup events."""
     data = {
         "cell_id": [],
@@ -34,6 +35,8 @@ def parse_eoc_zip(zip_path: Path) -> pa.Table:
         "quality_flags": [],
     }
 
+    exclusions = []
+
     with zipfile.ZipFile(zip_path, "r") as z:
         for name in z.namelist():
             if name.endswith("/") or name.startswith("__") or ":Zone.Identifier" in name:
@@ -43,9 +46,29 @@ def parse_eoc_zip(zip_path: Path) -> pa.Table:
             if not cell_id:
                 continue
 
+            # Cohort filter check
+            if cell_id not in EXPECTED_EXPERIMENTAL_CELL_IDS:
+                exclusions.append(
+                    {
+                        "cell_id": cell_id,
+                        "source_archive": zip_path.name,
+                        "source_file": name,
+                        "reason": "Auxiliary cell outside expected 228-cell cohort",
+                    }
+                )
+                continue
+
             # Infer parameter set and replicate ID from cell ID P###_#
             match = CELL_ID_PARSER.search(cell_id)
             if not match:
+                exclusions.append(
+                    {
+                        "cell_id": cell_id,
+                        "source_archive": zip_path.name,
+                        "source_file": name,
+                        "reason": "Malformed cell ID pattern",
+                    }
+                )
                 continue
 
             param_set = int(match.group(1))
@@ -110,13 +133,19 @@ def parse_eoc_zip(zip_path: Path) -> pa.Table:
                 data["schema_version"].append(SCHEMA_VERSION)
                 data["quality_flags"].append("OK")
 
+    # Record exclusions if any
+    if exclusions:
+        from mbp.data.schema_contracts import record_exclusions
+
+        record_exclusions(exclusions, exclusions_path)
+
     table = pa.Table.from_pydict(data, schema=CHECKUP_EVENT_TABLE_SCHEMA)
     return table
 
 
-def ingest_eoc(zip_path: Path, out_path: Path) -> None:
+def ingest_eoc(zip_path: Path, out_path: Path, exclusions_path: Path | None = None) -> None:
     """Read cell_eocv2.zip and save checkup event table to Parquet."""
-    table = parse_eoc_zip(zip_path)
+    table = parse_eoc_zip(zip_path, exclusions_path)
     if not validate_table(table, CHECKUP_EVENT_TABLE_SCHEMA):
         raise ValueError("Checkup event table schema validation failed!")
 

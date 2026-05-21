@@ -210,6 +210,41 @@ def audit_manifest(
     typer.echo(f"Wrote evidence memo to {evidence_memo_path}")
 
 
+@audit_app.command("collection")
+def audit_collection(
+    config: Path = typer.Option(
+        ...,
+        "--config",
+        help="Path to the collection configuration YAML file.",
+    ),
+    out: Path = typer.Option(
+        ...,
+        "--out",
+        help="Output JSON path for the collection manifest.",
+    ),
+    result_root: Path | None = typer.Option(
+        None,
+        "--result-root",
+        help="Optional override path for the Result package root.",
+    ),
+    log_root: Path | None = typer.Option(
+        None,
+        "--log-root",
+        help="Optional override path for the Log package root.",
+    ),
+) -> None:
+    """Audit a multi-package dataset collection and write a unified manifest."""
+    from mbp.audit.collection import build_collection_manifest
+
+    manifest = build_collection_manifest(config, result_root=result_root, log_root=log_root)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with out.open("w", encoding="utf-8") as f:
+        json.dump(manifest, f, indent=2, sort_keys=True)
+        f.write("\n")
+
+    typer.echo(f"Wrote unified collection manifest to {out}")
+
+
 @report_app.command("evidence-memo")
 def report_evidence_memo(
     manifest_path: Path = typer.Option(
@@ -275,6 +310,11 @@ def ingest_run_pipeline(
         "--out-dir",
         help="Output directory to save interim Parquet files.",
     ),
+    exclusions_report: Path | None = typer.Option(
+        None,
+        "--exclusions-report",
+        help="Optional path to output the excluded records report (CSV).",
+    ),
 ) -> None:
     """Run the complete Gate 2 result-data ingestion pipeline (CFG -> EOC -> PULSE -> EIS)."""
     if not data_root.exists():
@@ -309,36 +349,50 @@ def ingest_run_pipeline(
     out_dir.mkdir(parents=True, exist_ok=True)
     cfg_parquet = out_dir / "cell_condition_table.parquet"
     eoc_parquet = out_dir / "checkup_event_table.parquet"
-    pulse_parquet = out_dir / "modality_table_pulse.parquet"
+    pulse_raw_parquet = out_dir / "modality_table_pulse_raw.parquet"
+    pulse_sum_parquet = out_dir / "modality_table_pulse_summary.parquet"
     eis_parquet = out_dir / "modality_table_eis.parquet"
+    eis_qual_parquet = out_dir / "eis_spectrum_quality.parquet"
 
     # Ingest CFG
     typer.echo("Ingesting CFG (condition metadata)...")
     from mbp.data.luh_blank.parse_cfg import ingest_cfg
 
-    ingest_cfg(cfg_zip, cfg_parquet)
+    ingest_cfg(cfg_zip, cfg_parquet, exclusions_path=exclusions_report)
     typer.echo(f"  Wrote {cfg_parquet}")
 
     # Ingest EOC
     typer.echo("Ingesting EOC (capacity check-ups)...")
     from mbp.data.luh_blank.parse_eoc import ingest_eoc
 
-    ingest_eoc(eoc_zip, eoc_parquet)
+    ingest_eoc(eoc_zip, eoc_parquet, exclusions_path=exclusions_report)
     typer.echo(f"  Wrote {eoc_parquet}")
 
     # Ingest PULSE
     typer.echo("Ingesting PULSE (resistance diagnostics)...")
     from mbp.data.luh_blank.parse_pulse import ingest_pulse
 
-    ingest_pulse(pulse_zip, eoc_parquet, pulse_parquet)
-    typer.echo(f"  Wrote {pulse_parquet}")
+    ingest_pulse(
+        pulse_zip,
+        eoc_parquet,
+        pulse_raw_parquet,
+        pulse_sum_parquet,
+        exclusions_path=exclusions_report,
+    )
+    typer.echo(f"  Wrote {pulse_raw_parquet} and {pulse_sum_parquet}")
 
     # Ingest EIS
     typer.echo("Ingesting EIS (impedance spectra)...")
     from mbp.data.luh_blank.parse_eis import ingest_eis
 
-    ingest_eis(eis_zip, eoc_parquet, eis_parquet)
-    typer.echo(f"  Wrote {eis_parquet}")
+    ingest_eis(
+        eis_zip,
+        eoc_parquet,
+        eis_parquet,
+        eis_qual_parquet,
+        exclusions_path=exclusions_report,
+    )
+    typer.echo(f"  Wrote {eis_parquet} and {eis_qual_parquet}")
 
     typer.echo("Ingestion pipeline successfully completed!")
 

@@ -1,12 +1,17 @@
 {
   "status": "passed",
-  "timestamp_utc": "2026-05-21T12:04:14.813713Z",
+  "timestamp_utc": "2026-05-21T13:08:12.747893Z",
   "tables": {
     "cell_condition_table": {
       "exists": true,
-      "row_count": 240,
-      "unique_cells": 229,
-      "schema_valid": true
+      "row_count": 228,
+      "unique_cells": 228,
+      "schema_valid": true,
+      "aging_mode_counts": {
+        "calendar": 16,
+        "cyclic": 48,
+        "profile": 12
+      }
     },
     "checkup_event_table": {
       "exists": true,
@@ -15,13 +20,19 @@
       "schema_valid": true,
       "range_violations": 0
     },
-    "modality_table_pulse": {
+    "modality_table_pulse_summary": {
       "exists": true,
-      "row_count": 2475563,
+      "row_count": 39365,
       "unique_cells": 228,
       "schema_valid": true,
       "r_10ms_violations": 0,
-      "r_1s_violations": 0
+      "r_1s_violations": 0,
+      "alignment_delta_stats": {
+        "min_s": 1775.0,
+        "median_s": 41485.0,
+        "p95_s": 108601.0,
+        "max_s": 192748.0
+      }
     },
     "modality_table_eis": {
       "exists": true,
@@ -29,7 +40,18 @@
       "unique_cells": 228,
       "schema_valid": true,
       "valid_modeling_freq_count": 851063,
-      "valid_modeling_freq_fraction": 0.7225655545980549
+      "valid_modeling_freq_fraction": 0.7225655545980549,
+      "alignment_delta_stats": {
+        "min_s": 1265.0,
+        "median_s": 42904.0,
+        "p95_s": 129111.0,
+        "max_s": 192238.0
+      }
+    },
+    "eis_spectrum_quality": {
+      "exists": true,
+      "row_count": 39368,
+      "schema_valid": true
     }
   },
   "failures": []

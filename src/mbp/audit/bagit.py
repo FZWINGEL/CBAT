@@ -185,7 +185,11 @@ def validate_bagit(data_root: Path) -> dict[str, Any]:
             for p in sorted(data_dir.rglob("*")):
                 if p.is_file():
                     rel_p = p.relative_to(data_root).as_posix()
-                    if ":Zone.Identifier" in rel_p or p.name.startswith(".") or p.name == "Thumbs.db":
+                    if (
+                        ":Zone.Identifier" in rel_p
+                        or p.name.startswith(".")
+                        or p.name == "Thumbs.db"
+                    ):
                         continue
                     if rel_p not in expected_payload_paths:
                         # Exclude some common system/git ignore artifacts if needed,
