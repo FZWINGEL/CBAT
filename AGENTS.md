@@ -52,6 +52,14 @@ Forbidden work:
 - The local Codex sandbox restricts network access, so networked `gh` commands may need to be run with tool escalation even when `gh auth status` works in the user's terminal.
 - `gh` is authenticated for the `FZWINGEL` account; if a command cannot infer the repository from the local checkout, pass `--repo OWNER/REPO` explicitly.
 
+## CodeGraph
+
+- CodeGraph is initialized and indexed for this codebase.
+- Coding agents should primarily use CodeGraph for structural code search and navigation: symbol definitions, signatures, callers, callees, impact analysis, and focused area context.
+- Use native search tools such as `rg` for literal text only: strings, comments, documentation prose, log messages, config keys, or when CodeGraph does not cover the file type.
+- Do not grep first when looking for where a function, class, method, or module symbol is defined; use CodeGraph symbol/context tools first.
+- After editing files, allow for CodeGraph index lag before relying on fresh query results.
+
 ## Scientific Guardrails
 
 - Treat 228 cells as 76 condition triplets, not 228 independent regimes.
