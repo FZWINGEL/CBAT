@@ -11,6 +11,12 @@ C-rate failure modes without adding new modalities or model classes. Milestone
 bias-correction diagnostics, and narrow cold/current stress feature groups.
 These milestones are not modality or architecture expansions.
 
+Milestone 0.7 opens PULSE as a separate QA-first resistance endpoint. It
+authorizes PULSE QA, canonical PULSE target extraction, PULSE interval target
+tables, and scalar grouped PULSE resistance baselines. It does not authorize
+EIS modeling, capacity+PULSE multimodal claims, sequence models, neural models,
+policy ranking, or CBAT.
+
 Required split discipline:
 
 - Primary evidence uses condition-level grouped splits.
@@ -188,6 +194,38 @@ report metrics must evaluate predictions back in `delta_capacity_Ah` units. The
 true target-derived rates must never enter predictive input feature groups.
 Residual correction must be fit inside each train fold only; test-fold
 residuals must not be used for correction.
+
+Required Milestone 0.7 PULSE artifacts:
+
+- `docs/PULSE_TARGET_POLICY.md`
+- `reports/audit/pulse_qa_report.json`
+- `reports/audit/pulse_alignment_report.json`
+- `reports/audit/pulse_target_coverage.csv`
+- `data/interim/pulse_target_table.parquet` (ignored generated data)
+- `reports/baselines/pulse_resistance_l0_l3_report.json`
+- `reports/baselines/pulse_resistance_l0_l3/leaderboard.csv`
+- `reports/baselines/pulse_resistance_l0_l3/baseline_summary.md`
+- `reports/baselines/pulse_resistance_l0_l3/pulse_diagnostics.md`
+
+Allowed Milestone 0.7 PULSE targets:
+
+- `delta_pulse_1s_resistance`
+- `pulse_1s_resistance_k1`
+- `delta_pulse_10ms_resistance`
+- `pulse_10ms_resistance_k1`
+
+Allowed Milestone 0.7 PULSE feature groups:
+
+- `P0_persistence`
+- `P1_state_time`
+- `P2_state_capacity`
+- `P3_state_nominal`
+- `P4_state_log_age_scalar`
+- `P5_stress_v1_1`
+
+Milestone 0.7 reports must use grouped split views and report target coverage.
+PULSE results are resistance-baseline diagnostics only; they are not evidence
+for a capacity+PULSE multimodal claim.
 
 Blocked until later milestones:
 

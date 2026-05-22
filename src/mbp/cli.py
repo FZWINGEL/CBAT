@@ -21,6 +21,7 @@ ingest_app = typer.Typer(help="Gate 2 result-data ingestion commands.")
 split_app = typer.Typer(help="Reproducible dataset splitting commands.")
 baseline_app = typer.Typer(help="Milestone 0.5 baseline commands.")
 features_app = typer.Typer(help="Milestone 0.6 scalar feature-engineering commands.")
+pulse_app = typer.Typer(help="Milestone 0.7 PULSE QA and target commands.")
 
 app.add_typer(audit_app, name="audit")
 app.add_typer(report_app, name="report")
@@ -28,6 +29,7 @@ app.add_typer(ingest_app, name="ingest")
 app.add_typer(split_app, name="split")
 app.add_typer(baseline_app, name="baseline")
 app.add_typer(features_app, name="features")
+app.add_typer(pulse_app, name="pulse")
 
 
 def _load_optional_json(path: Path) -> dict[str, object] | None:
@@ -954,6 +956,81 @@ def baseline_diagnose_target_consistency(
 
     diagnose_target_consistency_report(report, predictions, out_dir)
     typer.echo(f"Target-consistency diagnostics written to {out_dir}")
+
+
+@baseline_app.command("run-pulse")
+def baseline_run_pulse(
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    interval_subsets: Path = typer.Option(..., "--interval-subsets", help="Path to interval_subset_registry_v1.parquet."),
+    pulse_targets: Path = typer.Option(..., "--pulse-targets", help="Path to pulse_target_table.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output JSON path for PULSE baseline metrics."),
+    predictions_out: Path = typer.Option(..., "--predictions-out", help="Output Parquet path for row-level PULSE predictions."),
+    stress_features: Path | None = typer.Option(None, "--stress-features", help="Optional interval_stress_features_v1_1.parquet sidecar."),
+    report_dir: Path | None = typer.Option(None, "--report-dir", help="Optional report artifact directory."),
+    subset: str = typer.Option("baseline_clean_tolerant", "--subset", help="Interval subset flag to use."),
+    seed: int = typer.Option(42, "--seed", help="Deterministic model seed."),
+    hgb_max_iter: int = typer.Option(50, "--hgb-max-iter", min=1, help="HGB max iterations."),
+    model_levels: str = typer.Option("L0_persistence,L1_ridge,L2_hist_gradient_boosting", "--model-levels", help="Comma-separated PULSE model levels."),
+    feature_groups: str = typer.Option("P0_persistence,P1_state_time,P2_state_capacity,P3_state_nominal,P4_state_log_age_scalar", "--feature-groups", help="Comma-separated PULSE feature groups."),
+    targets: str = typer.Option("delta_pulse_1s_resistance", "--targets", help="Comma-separated PULSE targets."),
+    split_views: str = typer.Option("condition_fold,temperature_holdout_fold,c_rate_holdout_fold,profile_holdout_fold,voltage_window_holdout_fold", "--split-views", help="Comma-separated split views."),
+) -> None:
+    """Run grouped scalar PULSE resistance baselines."""
+    from mbp.baselines.pulse import run_pulse_baselines
+
+    report = run_pulse_baselines(
+        interval_table,
+        interval_subsets,
+        pulse_targets,
+        out,
+        predictions_out,
+        stress_features_path=stress_features,
+        report_dir=report_dir,
+        subset=subset,
+        seed=seed,
+        hgb_max_iter=hgb_max_iter,
+        model_levels=_comma_values(model_levels),
+        feature_groups=_comma_values(feature_groups),
+        targets=_comma_values(targets),
+        split_views=_comma_values(split_views),
+    )
+    typer.echo(f"PULSE baseline report generated: {len(report['metrics'])} metric rows written to {out}")
+
+
+@pulse_app.command("qa")
+def pulse_qa(
+    pulse_summary: Path = typer.Option(..., "--pulse-summary", help="Path to modality_table_pulse_summary.parquet."),
+    checkup_table: Path = typer.Option(..., "--checkup-table", help="Path to checkup_event_table.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output PULSE QA JSON path."),
+    coverage_out: Path = typer.Option(..., "--coverage-out", help="Output PULSE target coverage CSV."),
+    alignment_out: Path = typer.Option(..., "--alignment-out", help="Output PULSE alignment JSON report."),
+) -> None:
+    """Write PULSE target coverage and alignment QA reports."""
+    from mbp.data.products.pulse_targets import write_pulse_qa_report
+
+    report = write_pulse_qa_report(pulse_summary, checkup_table, out, coverage_out, alignment_out)
+    typer.echo(f"PULSE QA report generated: {report['row_count']} rows written to {out}")
+
+
+@pulse_app.command("build-targets")
+def pulse_build_targets(
+    pulse_summary: Path = typer.Option(..., "--pulse-summary", help="Path to modality_table_pulse_summary.parquet."),
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output pulse_target_table.parquet path."),
+    soc_percent: float = typer.Option(50.0, "--soc-percent", help="Canonical SOC percent."),
+    temperature_context: str = typer.Option("RT", "--temperature-context", help="Canonical temperature context."),
+) -> None:
+    """Build canonical PULSE interval target table."""
+    from mbp.data.products.pulse_targets import build_pulse_target_table
+
+    table = build_pulse_target_table(
+        pulse_summary,
+        interval_table,
+        out,
+        soc_percent=soc_percent,
+        temperature_context=temperature_context,
+    )
+    typer.echo(f"PULSE target table generated: {table.num_rows} rows written to {out}")
 
 
 def _comma_values(value: str) -> list[str]:

@@ -1,0 +1,17 @@
+{
+  "alignment_delta_s": {
+    "count": 39365,
+    "max": 192748.0,
+    "median": 41485.0,
+    "min": 1775.0,
+    "p95": 108597.99999999994
+  },
+  "alignment_method_counts": {
+    "nearest_eoc_timestamp": 39365
+  },
+  "generated_at_utc": "2026-05-22T23:14:34.674673+00:00",
+  "large_alignment_delta_rows": 5060,
+  "large_alignment_delta_s": 86400.0,
+  "schema_version": "gate7.pulse_targets.v1",
+  "status": "passed"
+}

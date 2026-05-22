@@ -1,0 +1,60 @@
+{
+  "alignment": {
+    "alignment_delta_s": {
+      "count": 39365,
+      "max": 192748.0,
+      "median": 41485.0,
+      "min": 1775.0,
+      "p95": 108597.99999999994
+    },
+    "alignment_method_counts": {
+      "nearest_eoc_timestamp": 39365
+    },
+    "generated_at_utc": "2026-05-22T23:14:34.674673+00:00",
+    "large_alignment_delta_rows": 5060,
+    "large_alignment_delta_s": 86400.0,
+    "schema_version": "gate7.pulse_targets.v1",
+    "status": "passed"
+  },
+  "canonical_target": {
+    "available_cell_checkups": 3980,
+    "duplicate_cell_checkups": 0,
+    "missing_cell_checkups": 75,
+    "soc_percent": 50.0,
+    "temperature_context": "RT"
+  },
+  "checkup_event_rows": 4055,
+  "direction_counts": {
+    "charge": 19908,
+    "discharge": 19457
+  },
+  "generated_at_utc": "2026-05-22T23:14:34.688571+00:00",
+  "inputs": {
+    "checkup_table": "data/interim/checkup_event_table.parquet",
+    "pulse_summary": "data/interim/modality_table_pulse_summary.parquet"
+  },
+  "outputs": {
+    "alignment": "reports/audit/pulse_alignment_report.json",
+    "coverage": "reports/audit/pulse_target_coverage.csv"
+  },
+  "policy_version": "pulse_target_policy.v1",
+  "row_count": 39365,
+  "schema_version": "gate7.pulse_targets.v1",
+  "soc_context_counts": {
+    "10": 7874,
+    "30": 7874,
+    "50": 7871,
+    "70": 7871,
+    "90": 7875
+  },
+  "status": "warning",
+  "temperature_context_counts": {
+    "OT": 19457,
+    "RT": 19908
+  },
+  "unique_cells": 228,
+  "warnings": [
+    "missing_canonical_target_keys=75",
+    "large_alignment_delta_rows=5060"
+  ]
+}

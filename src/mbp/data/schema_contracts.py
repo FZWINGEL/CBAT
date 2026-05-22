@@ -334,6 +334,29 @@ INTERVAL_STRESS_FEATURES_SCHEMA = pa.schema(
     ]
 )
 
+# 13. PULSE interval target table schema
+PULSE_TARGET_TABLE_SCHEMA = pa.schema(
+    [
+        ("cell_id", pa.string(), False),
+        ("parameter_set", pa.int32(), False),
+        ("replicate_id", pa.int32(), False),
+        ("checkup_k", pa.int32(), False),
+        ("checkup_k_next", pa.int32(), False),
+        ("soc_percent", pa.float64(), False),
+        ("temperature_context", pa.string(), False),
+        ("pulse_1s_resistance_k", pa.float64(), True),
+        ("pulse_1s_resistance_k1", pa.float64(), True),
+        ("delta_pulse_1s_resistance", pa.float64(), True),
+        ("pulse_10ms_resistance_k", pa.float64(), True),
+        ("pulse_10ms_resistance_k1", pa.float64(), True),
+        ("delta_pulse_10ms_resistance", pa.float64(), True),
+        ("alignment_delta_s_k", pa.float64(), True),
+        ("alignment_delta_s_k1", pa.float64(), True),
+        ("quality_flags", pa.string(), False),
+        ("schema_version", pa.string(), False),
+    ]
+)
+
 
 def validate_table(table: pa.Table, schema: pa.Schema, strict: bool = True) -> bool:
     """Validate that a pyarrow Table matches the expected schema.

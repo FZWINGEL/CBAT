@@ -11,13 +11,14 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 0.6.3: C-rate Delta Failure and Bias-Controlled Target Pass**.
+The repository is in **Milestone 0.7: PULSE QA and Resistance Baseline**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
 complete. Milestone 0.6.1 stress-feature hardening and Milestone 0.6.2 target
-consistency diagnostics are complete. Milestone 0.6.3 remains capacity-only and
-scalar-interval only.
+consistency diagnostics are complete. Milestone 0.6.3 closed the broad
+LOG_AGE-only scalar stress-feature path for the current C-rate delta problem.
+Milestone 0.7 opens a scoped PULSE QA-first resistance evidence stream.
 
 No EIS/PULSE supervised claims, sequence models, neural architecture, policy
 ranking, CBAT architecture, or EIS embedding work has been started.
@@ -63,6 +64,9 @@ Current state:
 - Milestone 0.6.3 normalized-rate target checks, train-fold bias-correction
   diagnostics, and narrow F11-F13 cold/current feature groups are implemented
   and run. None beats the F4 C-rate `delta_capacity_Ah` threshold.
+- Milestone 0.7 PULSE target policy, PULSE QA, canonical RT/50% SOC interval
+  target table, and first grouped scalar PULSE resistance baseline are
+  implemented and run.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -651,6 +655,66 @@ Decision:
   QA/baseline work, while EIS/PULSE supervised claims remain blocked until that
   milestone is explicitly opened.
 
+### Milestone 0.7
+
+Milestone 0.7 opens PULSE as a QA-first resistance endpoint. It does not
+authorize EIS, sequence/neural models, policy ranking, CBAT, or capacity+PULSE
+multimodal claims.
+
+Implemented artifacts:
+
+- Policy: `docs/PULSE_TARGET_POLICY.md`
+- CLI: `mbp pulse qa`
+- CLI: `mbp pulse build-targets`
+- CLI: `mbp baseline run-pulse`
+- QA report: `reports/audit/pulse_qa_report.json`
+- Alignment report: `reports/audit/pulse_alignment_report.json`
+- Coverage table: `reports/audit/pulse_target_coverage.csv`
+- Target table: `data/interim/pulse_target_table.parquet` (ignored generated data)
+- Baseline report: `reports/baselines/pulse_resistance_l0_l3_report.json`
+- Diagnostics: `reports/baselines/pulse_resistance_l0_l3/pulse_diagnostics.md`
+- Experiment note: `docs/experiments/2026-05-23_pulse_qa_resistance_baseline.md`
+
+PULSE QA findings:
+
+| Field | Value |
+|---|---:|
+| PULSE summary rows | `39,365` |
+| Unique cells | `228` |
+| Canonical RT/50% cell-checkups available | `3,980` |
+| Canonical RT/50% cell-checkups missing | `75` |
+| Duplicate canonical cell-checkups | `0` |
+| Large alignment-delta rows > 1 day | `5,060` |
+
+Canonical target-table findings:
+
+| Field | Finite intervals |
+|---|---:|
+| `pulse_1s_resistance_k` | `3,826` |
+| `pulse_1s_resistance_k1` | `3,752` |
+| `delta_pulse_1s_resistance` | `3,751` |
+| `delta_pulse_10ms_resistance` | `3,751` |
+
+First PULSE baseline result for `delta_pulse_1s_resistance`:
+
+| Split | Best model | Feature group | Condition-mean MAE |
+|---|---|---|---:|
+| `condition_fold` | `L2_hist_gradient_boosting` | `P5_stress_v1_1` | `0.000960407` |
+| `temperature_holdout_fold` | `L2_hist_gradient_boosting` | `P5_stress_v1_1` | `0.00109610` |
+| `c_rate_holdout_fold` | `L2_hist_gradient_boosting` | `P3_state_nominal` | `0.00185842` |
+| `profile_holdout_fold` | `L2_hist_gradient_boosting` | `P3_state_nominal` | `0.000953406` |
+| `voltage_window_holdout_fold` | `L2_hist_gradient_boosting` | `P1_state_time` | `0.00117733` |
+
+Decision:
+
+- PULSE RT/50% target coverage is good enough for first baseline diagnostics,
+  but missing canonical endpoints and large alignment deltas must remain visible
+  in reports.
+- The first PULSE resistance baseline is diagnostic only; no scientific PULSE
+  claim or capacity+PULSE multimodal claim is authorized yet.
+- Next work should harden PULSE alignment/target coverage interpretation before
+  considering broader PULSE target sets.
+
 ## Important Implementation Notes
 
 The interval builder preserves result-table timestamps in the public schema, but
@@ -692,10 +756,9 @@ exist. First baseline work must use:
   architecture
 
 EIS and PULSE scientific claims remain blocked by their known audit issues.
-The next authorized engineering direction should be a scoped PULSE QA/baseline
-planning milestone, unless the project owner explicitly requests another
-capacity-only diagnostic. EIS/PULSE supervised claims remain blocked until that
-milestone defines its QA and validation gates.
+The next authorized engineering direction is PULSE target/alignment hardening
+and resistance-baseline interpretation. EIS modeling, capacity+PULSE multimodal
+claims, sequence/neural models, policy ranking, and CBAT remain blocked.
 
 ## Validation
 
@@ -706,17 +769,15 @@ PYTHONDONTWRITEBYTECODE=1 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/ruff check . --no
 All checks passed.
 
 PYTHONDONTWRITEBYTECODE=1 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/pytest -p no:cacheprovider
-91 passed, 1 warning.
+96 passed.
 ```
 
-The one warning is the existing `datetime.utcnow()` deprecation warning in
-`src/mbp/data/luh_blank/qa_result_data.py`; it is not a Milestone 0.6/0.6.2
-correctness failure.
+The previous `datetime.utcnow()` deprecation warning in
+`src/mbp/data/luh_blank/qa_result_data.py` has been fixed.
 
 ## Recommended Next Step
 
-Review the **Milestone 0.6.3 C-rate Delta Failure and Bias-Controlled Target
-Pass** before adding new modalities. The 0.6.3 result did not beat the F4
-C-rate delta threshold, so the recommended next step is to stop broad LOG_AGE
-stress-feature expansion and prepare a PULSE QA/baseline milestone as an
-independent evidence stream.
+Review the **Milestone 0.7 PULSE QA and Resistance Baseline** before expanding
+PULSE targets or making PULSE claims. The next bounded step is PULSE alignment
+and target-coverage hardening, not EIS, sequence models, neural models, policy
+ranking, CBAT, or capacity+PULSE multimodal claims.

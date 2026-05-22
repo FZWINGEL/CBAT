@@ -27,6 +27,9 @@ Schema version prefix: `gate1.audit.v1`
 | `stress_feature_diagnostics` | Implemented | `mbp.baselines.capacity` | stress-feature baseline report path, HGB-50 F4 baseline report path, L0 reference report path, C-rate success criteria |
 | `target_consistency_diagnostics` | Implemented | `mbp.baselines.capacity` | capacity report path, prediction Parquet path, interval-table join, direct-vs-derived target metrics, C-rate residual groupings, stress-feature ablation gains |
 | `c_rate_delta_failure_diagnostics` | Implemented | `mbp.baselines.capacity` | normalized delta-rate target report, train-fold residual correction report, narrow F11-F13 feature report, direct F4 threshold comparison |
+| `pulse_qa_report` | Implemented | `mbp.data.products.pulse_targets` | PULSE summary path, check-up table path, canonical target policy, coverage CSV, alignment report |
+| `pulse_target_table` | Implemented | `mbp.data.products.pulse_targets` | PULSE summary path, interval table path, canonical SOC/temperature context, policy version, schema version |
+| `pulse_resistance_baseline_report` | Implemented | `mbp.baselines.pulse` | interval table path, interval subset registry path, PULSE target table path, optional stress-feature sidecar, grouped split view, target coverage |
 
 ## Gate 2/3 Schema Contracts
 
@@ -37,3 +40,5 @@ Schema version prefix: `gate1.audit.v1`
 - `INTERVAL_SUBSET_REGISTRY_SCHEMA` defines strict/tolerant clean interval labels, sensitivity flags, exclusion reasons, and the monotonicity policy version used for baseline readiness.
 - `INTERVAL_STRESS_FEATURES_SCHEMA` is a modular sidecar keyed by `cell_id`, `checkup_k`, and `checkup_k_next`. It contains LOG_AGE-derived scalar dwell, current, SOC, coupled-stress, coverage/gap, event-segmented, and diagnostic normalized-rate fields. Target-derived normalized-rate fields are excluded from F5-F13 predictive feature groups.
 - `BASELINE_PREDICTION_SCHEMA` records row-level capacity predictions for the Milestone 0.5 baseline ladder and later capacity-only diagnostics. Normalized delta-rate target modes are evaluated back in `delta_capacity_Ah` units. The JSON report aggregates metrics by held-out parameter-set condition; generated prediction Parquet remains ignored by default. The report renderer also emits leaderboard CSV, baseline summary markdown, evaluation-card JSON files, diagnostic markdown, C-rate error analysis, rate-target comparisons, train-fold bias-correction tables, and plot-ready CSV tables.
+- `PULSE_TARGET_TABLE_SCHEMA` is one row per interval for the canonical PULSE target context. It records RT/50% SOC resistance at check-up `k` and `k+1`, resistance deltas, alignment deltas, quality flags, and schema version.
+- `PULSE_PREDICTION_SCHEMA` records row-level scalar PULSE resistance baseline predictions. Generated prediction Parquet remains ignored by default; JSON/CSV/markdown report artifacts are trackable.

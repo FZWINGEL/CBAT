@@ -1,5 +1,6 @@
 import json
 import math
+from datetime import UTC, datetime
 from pathlib import Path
 import re
 import pyarrow.parquet as pq
@@ -194,9 +195,7 @@ def run_qa_checks(interim_dir: Path, out_report_path: Path) -> dict:
         "failures": [],
     }
 
-    import datetime
-
-    report["timestamp_utc"] = datetime.datetime.utcnow().isoformat() + "Z"
+    report["timestamp_utc"] = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     # Define paths
     cfg_path = interim_dir / "cell_condition_table.parquet"

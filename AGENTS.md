@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 0.6.3: C-rate delta failure and bias-controlled target pass.
+Milestone 0.7: PULSE QA and resistance baseline.
 
 Current state:
 - Gate 2b implementation and reports are committed.
@@ -27,10 +27,10 @@ Current state:
 - Milestone 0.5b diagnostics, Ridge scaling, HGB-50 robustness, and quantile
   metrics are implemented.
 - Milestone 0.5c synthesis and claim-readiness artifacts are committed.
-- Milestone 0.6.3 is limited to capacity-only C-rate delta diagnostics,
-  normalized delta-rate target checks, train-fold residual/bias correction
-  diagnostics, narrow scalar cold/current feature groups, and focused HGB/Ridge
-  reruns only.
+- Milestone 0.7 opens a scoped PULSE evidence stream after the LOG_AGE-only
+  C-rate delta pass failed to beat the F4 threshold. It is limited to PULSE QA,
+  PULSE target policy, PULSE interval target tables, and first scalar resistance
+  baselines under grouped validation.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 - LOG_AGE monotonicity has been triaged and propagated into interval quality
@@ -67,15 +67,22 @@ Allowed work:
 - Ridge numeric standardization and bounded HGB robustness checks
 - LOG_AGE-derived stress feature diagnostics
 - documentation/evidence memo updates
+- PULSE QA
+- PULSE target policy
+- PULSE alignment diagnostics
+- PULSE interval target table construction
+- PULSE resistance baselines
 
 Forbidden work:
 - EIS/PULSE modeling
+- EIS modeling
+- EIS embeddings
 - knee prediction
 - sequence models
 - neural models
 - CBAT architecture
 - policy ranking
-- EIS embeddings
+- capacity+PULSE multimodal claims
 
 ## Coding Standards
 
