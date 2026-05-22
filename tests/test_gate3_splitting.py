@@ -11,6 +11,7 @@ import pytest
 from mbp.data.schema_contracts import (
     CHECKUP_EVENT_TABLE_SCHEMA,
     CONDITION_TABLE_SCHEMA,
+    INTERVAL_SUBSET_REGISTRY_SCHEMA,
     INTERVAL_TABLE_SCHEMA,
     MODALITY_TABLE_LOG_AGE_SCHEMA,
     SPLIT_REGISTRY_SCHEMA,
@@ -19,6 +20,8 @@ from mbp.data.schema_contracts import (
 from mbp.audit.log_age_monotonicity import write_log_age_monotonicity_report
 from mbp.data.products.interval_table import build_interval_table
 from mbp.data.products.interval_table import run_interval_qa
+from mbp.data.products.interval_subsets import build_interval_subset_registry
+from mbp.data.products.interval_subsets import classify_interval_policy
 from mbp.data.splitting import audit_split_registry, generate_split_registry
 
 
@@ -36,6 +39,7 @@ def _make_condition_parquet(tmp_path: Path, n_params: int = 5) -> Path:
         "aging_mode": [],
         "nominal_temperature_C": [],
         "voltage_window": [],
+        "voltage_window_family": [],
         "soc_window_approx": [],
         "nominal_charge_C_rate": [],
         "nominal_discharge_C_rate": [],
@@ -46,7 +50,14 @@ def _make_condition_parquet(tmp_path: Path, n_params: int = 5) -> Path:
     }
     aging_modes = ["calendar", "cyclic", "profile"]
     temps = [25.0, 0.0, 40.0, 10.0, 35.0]
-    soc_windows = ["10-90", "0-100", "40-60", "20-80", "45-55"]
+    voltage_windows = [
+        ("2.50 V - 4.20 V", "approx_0_100"),
+        ("3.25 V - 4.20 V", "approx_10_100"),
+        ("3.25 V - 4.09 V", "approx_10_90"),
+        ("3.30 V - 3.30 V", "calendar_soc_50"),
+        ("4.20 V - 4.20 V", "calendar_soc_100"),
+    ]
+    soc_windows = ["10%", "0%", "90%", "50%", "100%"]
     charge_rates = [1.0, 0.5, 5.0 / 3.0, 1.5, 3.0]
 
     for p in range(1, n_params + 1):
@@ -56,7 +67,9 @@ def _make_condition_parquet(tmp_path: Path, n_params: int = 5) -> Path:
             records["replicate_id"].append(r)
             records["aging_mode"].append(aging_modes[p % len(aging_modes)])
             records["nominal_temperature_C"].append(temps[p % len(temps)])
-            records["voltage_window"].append("2.5-4.2")
+            voltage_window, voltage_family = voltage_windows[p % len(voltage_windows)]
+            records["voltage_window"].append(voltage_window)
+            records["voltage_window_family"].append(voltage_family)
             records["soc_window_approx"].append(soc_windows[p % len(soc_windows)])
             records["nominal_charge_C_rate"].append(charge_rates[p % len(charge_rates)])
             records["nominal_discharge_C_rate"].append(1.0)
@@ -275,6 +288,31 @@ class TestSplittingEngine:
         assert report["replicates_grouped_by_parameter_set"] is True
         assert report["temperature_holdout_fold_counts"]["2"] > 0
         assert report["c_rate_holdout_fold_counts"]["1"] > 0
+        assert report["voltage_window_holdout_fold_counts"]["1"] > 0
+        assert report["voltage_window_holdout_fold_counts"]["2"] > 0
+
+    def test_replicates_share_all_split_views(self, tmp_path: Path) -> None:
+        cond_path = _make_condition_parquet(tmp_path, n_params=10)
+        table = generate_split_registry(cond_path, tmp_path / "splits")
+        rows = table.to_pylist()
+        split_columns = [
+            "condition_fold",
+            "temperature_holdout_fold",
+            "voltage_window_holdout_fold",
+            "soc_window_holdout_fold",
+            "c_rate_holdout_fold",
+            "profile_holdout_fold",
+            "replicate_calibration_fold",
+            "time_horizon_fold",
+        ]
+
+        for column in split_columns:
+            folds_by_param: dict[int, set[int]] = {}
+            for row in rows:
+                if column == "replicate_calibration_fold":
+                    continue
+                folds_by_param.setdefault(row["parameter_set"], set()).add(row[column])
+            assert all(len(folds) == 1 for folds in folds_by_param.values())
 
 
 # ---------------------------------------------------------------------------
@@ -430,6 +468,79 @@ class TestIntervalTable:
 
 
 # ---------------------------------------------------------------------------
+# Interval Subset Registry Tests
+# ---------------------------------------------------------------------------
+
+
+class TestIntervalSubsetRegistry:
+    """Tests for baseline-readiness interval subset policy outputs."""
+
+    def test_monotonicity_policy_classification(self) -> None:
+        small = classify_interval_policy(
+            duration_s=100.0,
+            log_age_available=True,
+            log_age_row_count=10,
+            monotonicity_violation_count=1,
+            timestamp_decrease_count=0,
+            max_timestamp_drop_s=0.0,
+            max_efc_drop=0.0002,
+        )
+        assert small.baseline_clean_strict is False
+        assert small.baseline_clean_tolerant is True
+        assert small.small_efc_jitter is True
+
+        timestamp_drop = classify_interval_policy(
+            duration_s=100.0,
+            log_age_available=True,
+            log_age_row_count=10,
+            monotonicity_violation_count=1,
+            timestamp_decrease_count=1,
+            max_timestamp_drop_s=1.0,
+            max_efc_drop=0.0,
+        )
+        assert timestamp_drop.baseline_clean_tolerant is False
+        assert timestamp_drop.excluded_due_to_timestamp_drop is True
+
+        large_efc = classify_interval_policy(
+            duration_s=100.0,
+            log_age_available=True,
+            log_age_row_count=10,
+            monotonicity_violation_count=1,
+            timestamp_decrease_count=0,
+            max_timestamp_drop_s=0.0,
+            max_efc_drop=0.001,
+        )
+        assert large_efc.baseline_clean_tolerant is False
+        assert large_efc.excluded_due_to_large_efc_drop is True
+
+    def test_interval_subset_registry_generation(self, tmp_path: Path) -> None:
+        interim_dir = tmp_path / "interim"
+        interim_dir.mkdir()
+        cond_path = _make_condition_parquet(interim_dir, n_params=1)
+        _make_checkup_parquet(interim_dir)
+        log_age_path = _make_log_age_parquet(interim_dir, out_of_order=True)
+        generate_split_registry(cond_path, tmp_path / "splits")
+        violations_path = tmp_path / "violations.parquet"
+        write_log_age_monotonicity_report(log_age_path, violations_path, tmp_path / "summary.csv")
+        interval_path = interim_dir / "interval_table.parquet"
+        build_interval_table(interim_dir, interval_path, monotonicity_violations_path=violations_path)
+
+        registry_path = tmp_path / "interval_subset_registry_v1.parquet"
+        report_path = tmp_path / "interval_subset_report.json"
+        table = build_interval_subset_registry(interval_path, registry_path, report_path)
+
+        assert validate_table(table, INTERVAL_SUBSET_REGISTRY_SCHEMA, strict=True)
+        rows = table.to_pylist()
+        assert rows[0]["baseline_clean_strict"] is False
+        assert rows[0]["baseline_clean_tolerant"] is False
+        assert rows[0]["excluded_due_to_timestamp_drop"] is True
+        assert rows[1]["baseline_clean_strict"] is True
+        assert rows[1]["baseline_clean_tolerant"] is True
+        report = report_path.read_text(encoding="utf-8")
+        assert '"row_count": 2' in report
+
+
+# ---------------------------------------------------------------------------
 # LOG_AGE QA Tests
 # ---------------------------------------------------------------------------
 
@@ -508,14 +619,15 @@ class TestSplitRegistrySchema:
     """Tests verifying the split registry schema contract."""
 
     def test_split_registry_schema_field_count(self) -> None:
-        """SPLIT_REGISTRY_SCHEMA should have 11 fields."""
-        assert len(SPLIT_REGISTRY_SCHEMA) == 11
+        """SPLIT_REGISTRY_SCHEMA should have 12 fields."""
+        assert len(SPLIT_REGISTRY_SCHEMA) == 12
 
     def test_split_registry_schema_required_fields(self) -> None:
         """All required field names should be present."""
         expected = {
             "cell_id", "parameter_set", "replicate_id",
             "condition_fold", "temperature_holdout_fold",
+            "voltage_window_holdout_fold",
             "soc_window_holdout_fold", "c_rate_holdout_fold",
             "profile_holdout_fold", "replicate_calibration_fold",
             "time_horizon_fold", "schema_version",

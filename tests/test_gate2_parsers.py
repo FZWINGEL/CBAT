@@ -113,6 +113,7 @@ def test_ingest_cfg_parser(temp_workspace: Path) -> None:
     assert pydict["aging_mode"] == ["cyclic"]
     assert pydict["nominal_temperature_C"] == [25.0]
     assert pydict["voltage_window"] == ["2.50 V - 4.20 V"]
+    assert pydict["voltage_window_family"] == ["approx_0_100"]
     assert pydict["soc_window_approx"] == ["80%"]
     assert pydict["nominal_charge_C_rate"] == [1.0]
     assert pydict["nominal_discharge_C_rate"] == [1.5]
@@ -338,6 +339,7 @@ def test_qa_checks_runner(temp_workspace: Path) -> None:
         "aging_mode": aging_modes,
         "nominal_temperature_C": [25.0] * 228,
         "voltage_window": ["2.50 V - 4.20 V"] * 228,
+        "voltage_window_family": ["approx_0_100"] * 228,
         "soc_window_approx": ["80%"] * 228,
         "nominal_charge_C_rate": [1.0] * 228,
         "nominal_discharge_C_rate": [1.5] * 228,

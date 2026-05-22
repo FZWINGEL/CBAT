@@ -39,11 +39,18 @@
   "replicates_grouped_by_parameter_set": true,
   "row_count": 228,
   "soc_window_holdout_fold_counts": {
-    "0": 228
+    "1": 84,
+    "2": 96,
+    "3": 48
   },
   "soc_window_holdout_represented_windows": {
-    "0": [
-      "0%",
+    "1": [
+      "0%"
+    ],
+    "2": [
+      "0%"
+    ],
+    "3": [
       "10%",
       "100%",
       "50%",
@@ -67,6 +74,26 @@
     ],
     "2": [
       40.0
+    ]
+  },
+  "voltage_window_holdout_fold_counts": {
+    "1": 84,
+    "2": 96,
+    "3": 48
+  },
+  "voltage_window_holdout_represented_families": {
+    "1": [
+      "approx_0_100"
+    ],
+    "2": [
+      "approx_10_100",
+      "approx_10_90"
+    ],
+    "3": [
+      "calendar_soc_10",
+      "calendar_soc_100",
+      "calendar_soc_50",
+      "calendar_soc_90"
     ]
   }
 }

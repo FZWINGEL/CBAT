@@ -49,7 +49,10 @@ def generate_split_registry(
         except KeyError:
             return [default_val] * len(cell_ids)
 
-    soc_windows = get_list_col("soc_window_approx", "40-60")
+    voltage_window_families = [
+        _voltage_window_family(row)
+        for row in condition_table.to_pylist()
+    ]
     charge_rates = get_list_col("nominal_charge_C_rate", 1.0)
     discharge_rates = get_list_col("nominal_discharge_C_rate", 1.0)
 
@@ -71,6 +74,7 @@ def generate_split_registry(
     # 3. Process splits for each cell record
     condition_folds: list[int] = []
     temperature_holdouts: list[int] = []
+    voltage_window_holdouts: list[int] = []
     soc_window_holdouts: list[int] = []
     c_rate_holdouts: list[int] = []
     profile_holdouts: list[int] = []
@@ -82,7 +86,7 @@ def generate_split_registry(
         rep = replicate_ids[i]
         mode = aging_modes[i]
         temp = nominal_temps[i]
-        soc = str(soc_windows[i])
+        voltage_family = str(voltage_window_families[i])
         chg_r = charge_rates[i]
         dis_r = discharge_rates[i]
 
@@ -98,14 +102,13 @@ def generate_split_registry(
         else:
             temperature_holdouts.append(0)
 
-        # S2: SOC Window holdout fold
-        # 0 = Nominal, 1 = Wide SOC OOD (e.g. containing 0-100 or 0-90), 2 = Narrow SOC OOD
-        if "0-100" in soc or "0-90" in soc:
-            soc_window_holdouts.append(1)
-        elif "40-60" in soc or "45-55" in soc:
-            soc_window_holdouts.append(2)
-        else:
-            soc_window_holdouts.append(0)
+        # S2: Voltage/SOC window holdout fold.
+        # 0 = nominal/other, 1 = full/wide voltage window, 2 = reduced cyclic window,
+        # 3 = calendar idle-SOC family. Keep the legacy soc_window_holdout_fold
+        # populated from the corrected voltage-window logic for backward compatibility.
+        voltage_window_fold = _voltage_window_holdout_fold(voltage_family)
+        voltage_window_holdouts.append(voltage_window_fold)
+        soc_window_holdouts.append(voltage_window_fold)
 
         # S2: C-rate holdout fold
         # 0 = Nominal, 1 = High Charge/Discharge C-rate OOD (>= 5/3 C)
@@ -137,6 +140,7 @@ def generate_split_registry(
         "replicate_id": [int(x) for x in replicate_ids],
         "condition_fold": condition_folds,
         "temperature_holdout_fold": temperature_holdouts,
+        "voltage_window_holdout_fold": voltage_window_holdouts,
         "soc_window_holdout_fold": soc_window_holdouts,
         "c_rate_holdout_fold": c_rate_holdouts,
         "profile_holdout_fold": profile_holdouts,
@@ -181,6 +185,8 @@ def audit_split_registry(
     temperature_values: dict[int, set[float]] = {}
     soc_counts: dict[int, int] = {}
     soc_values: dict[int, set[str]] = {}
+    voltage_window_counts: dict[int, int] = {}
+    voltage_window_values: dict[int, set[str]] = {}
     c_rate_counts: dict[int, int] = {}
     c_rate_values: dict[int, set[str]] = {}
     profile_counts: dict[int, int] = {}
@@ -202,6 +208,12 @@ def audit_split_registry(
         soc_counts[soc_fold] = soc_counts.get(soc_fold, 0) + 1
         soc_values.setdefault(soc_fold, set()).add(str(condition["soc_window_approx"]))
 
+        voltage_fold = int(row.get("voltage_window_holdout_fold", soc_fold))
+        voltage_window_counts[voltage_fold] = voltage_window_counts.get(voltage_fold, 0) + 1
+        voltage_window_values.setdefault(voltage_fold, set()).add(
+            _voltage_window_family(condition)
+        )
+
         c_fold = int(row["c_rate_holdout_fold"])
         c_rate_counts[c_fold] = c_rate_counts.get(c_fold, 0) + 1
         c_rate_values.setdefault(c_fold, set()).add(
@@ -219,6 +231,8 @@ def audit_split_registry(
     headline_folds = {
         "temperature_holdout_fold cold": temperature_counts.get(1, 0),
         "temperature_holdout_fold hot": temperature_counts.get(2, 0),
+        "voltage_window_holdout_fold wide": voltage_window_counts.get(1, 0),
+        "voltage_window_holdout_fold reduced": voltage_window_counts.get(2, 0),
         "c_rate_holdout_fold high": c_rate_counts.get(1, 0),
         "profile_holdout_fold profile": profile_counts.get(1, 0),
     }
@@ -239,6 +253,10 @@ def audit_split_registry(
         ),
         "temperature_holdout_fold_counts": _string_key_counts(temperature_counts),
         "temperature_holdout_represented_temperatures": _string_key_values(temperature_values),
+        "voltage_window_holdout_fold_counts": _string_key_counts(voltage_window_counts),
+        "voltage_window_holdout_represented_families": _string_key_values(
+            voltage_window_values
+        ),
         "soc_window_holdout_fold_counts": _string_key_counts(soc_counts),
         "soc_window_holdout_represented_windows": _string_key_values(soc_values),
         "c_rate_holdout_fold_counts": _string_key_counts(c_rate_counts),
@@ -258,3 +276,31 @@ def _string_key_counts(counts: dict[int, int]) -> dict[str, int]:
 
 def _string_key_values(values: dict[int, set]) -> dict[str, list]:
     return {str(key): sorted(values[key]) for key in sorted(values)}
+
+
+def _voltage_window_family(row: dict[str, object]) -> str:
+    existing = row.get("voltage_window_family")
+    if existing:
+        return str(existing)
+    aging_mode = str(row.get("aging_mode", ""))
+    soc = str(row.get("soc_window_approx", "0%")).replace("%", "")
+    if aging_mode == "calendar":
+        return f"calendar_soc_{soc}"
+    voltage_window = str(row.get("voltage_window", ""))
+    if voltage_window.startswith("2.50 V - 4.20 V") or voltage_window.startswith("2.5-4.2"):
+        return "approx_0_100"
+    if voltage_window.startswith("3.25 V - 4.20 V") or voltage_window.startswith("3.249-4.20"):
+        return "approx_10_100"
+    if voltage_window.startswith("3.25 V - 4.09 V") or voltage_window.startswith("3.249-4.092"):
+        return "approx_10_90"
+    return f"custom_{voltage_window}"
+
+
+def _voltage_window_holdout_fold(family: str) -> int:
+    if family == "approx_0_100":
+        return 1
+    if family in {"approx_10_100", "approx_10_90"}:
+        return 2
+    if family.startswith("calendar_soc_"):
+        return 3
+    return 0

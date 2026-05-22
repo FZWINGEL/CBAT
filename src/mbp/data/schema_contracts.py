@@ -11,6 +11,7 @@ CONDITION_TABLE_SCHEMA = pa.schema(
         ("aging_mode", pa.string(), False),
         ("nominal_temperature_C", pa.float64(), False),
         ("voltage_window", pa.string(), False),
+        ("voltage_window_family", pa.string(), False),
         ("soc_window_approx", pa.string(), False),
         ("nominal_charge_C_rate", pa.float64(), False),
         ("nominal_discharge_C_rate", pa.float64(), False),
@@ -161,6 +162,7 @@ SPLIT_REGISTRY_SCHEMA = pa.schema(
         ("replicate_id", pa.int32(), False),
         ("condition_fold", pa.int32(), False),
         ("temperature_holdout_fold", pa.int32(), False),
+        ("voltage_window_holdout_fold", pa.int32(), False),
         ("soc_window_holdout_fold", pa.int32(), False),
         ("c_rate_holdout_fold", pa.int32(), False),
         ("profile_holdout_fold", pa.int32(), False),
@@ -179,6 +181,7 @@ INTERVAL_TABLE_SCHEMA = pa.schema(
         ("aging_mode", pa.string(), False),
         ("nominal_temperature_C", pa.float64(), False),
         ("voltage_window", pa.string(), False),
+        ("voltage_window_family", pa.string(), False),
         ("soc_window_approx", pa.string(), False),
         ("nominal_charge_C_rate", pa.float64(), False),
         ("nominal_discharge_C_rate", pa.float64(), False),
@@ -196,6 +199,7 @@ INTERVAL_TABLE_SCHEMA = pa.schema(
         ("delta_capacity_soh", pa.float64(), False),
         ("condition_fold", pa.int32(), False),
         ("temperature_holdout_fold", pa.int32(), False),
+        ("voltage_window_holdout_fold", pa.int32(), False),
         ("soc_window_holdout_fold", pa.int32(), False),
         ("c_rate_holdout_fold", pa.int32(), False),
         ("profile_holdout_fold", pa.int32(), False),
@@ -228,6 +232,28 @@ INTERVAL_TABLE_SCHEMA = pa.schema(
         ("log_age_max_efc_drop", pa.float64(), False),
         ("LOG_AGE_monotonicity_clean", pa.bool_(), False),
         ("quality_flags", pa.string(), False),
+        ("schema_version", pa.string(), False),
+    ]
+)
+
+# 11. Interval Subset Registry Schema
+INTERVAL_SUBSET_REGISTRY_SCHEMA = pa.schema(
+    [
+        ("cell_id", pa.string(), False),
+        ("parameter_set", pa.int32(), False),
+        ("replicate_id", pa.int32(), False),
+        ("checkup_k", pa.int32(), False),
+        ("checkup_k_next", pa.int32(), False),
+        ("interval_id", pa.string(), False),
+        ("baseline_clean_strict", pa.bool_(), False),
+        ("baseline_clean_tolerant", pa.bool_(), False),
+        ("sensitivity_flagged_monotonicity", pa.bool_(), False),
+        ("small_efc_jitter", pa.bool_(), False),
+        ("excluded_due_to_large_efc_drop", pa.bool_(), False),
+        ("excluded_due_to_timestamp_drop", pa.bool_(), False),
+        ("excluded_due_to_missing_log_age", pa.bool_(), False),
+        ("excluded_due_to_duration_error", pa.bool_(), False),
+        ("monotonicity_policy_version", pa.string(), False),
         ("schema_version", pa.string(), False),
     ]
 )

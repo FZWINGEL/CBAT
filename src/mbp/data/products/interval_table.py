@@ -256,6 +256,9 @@ def _build_interval_spine(
                     "aging_mode": condition["aging_mode"],
                     "nominal_temperature_C": float(condition["nominal_temperature_C"]),
                     "voltage_window": condition["voltage_window"],
+                    "voltage_window_family": condition.get(
+                        "voltage_window_family", condition["voltage_window"]
+                    ),
                     "soc_window_approx": condition["soc_window_approx"],
                     "nominal_charge_C_rate": float(condition["nominal_charge_C_rate"]),
                     "nominal_discharge_C_rate": float(condition["nominal_discharge_C_rate"]),
@@ -275,6 +278,12 @@ def _build_interval_spine(
                     "delta_capacity_soh": float(right["capacity_soh"]) - float(left["capacity_soh"]),
                     "condition_fold": int(split["condition_fold"]),
                     "temperature_holdout_fold": int(split["temperature_holdout_fold"]),
+                    "voltage_window_holdout_fold": int(
+                        split.get(
+                            "voltage_window_holdout_fold",
+                            split["soc_window_holdout_fold"],
+                        )
+                    ),
                     "soc_window_holdout_fold": int(split["soc_window_holdout_fold"]),
                     "c_rate_holdout_fold": int(split["c_rate_holdout_fold"]),
                     "profile_holdout_fold": int(split["profile_holdout_fold"]),

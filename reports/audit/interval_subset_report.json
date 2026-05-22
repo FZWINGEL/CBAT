@@ -1,0 +1,16 @@
+{
+  "baseline_clean_strict_count": 2773,
+  "baseline_clean_tolerant_count": 3827,
+  "efc_jitter_threshold": 0.00025,
+  "excluded_due_to_duration_error_count": 0,
+  "excluded_due_to_large_efc_drop_count": 0,
+  "excluded_due_to_missing_log_age_count": 0,
+  "excluded_due_to_timestamp_drop_count": 0,
+  "interval_subset_registry": "data/splits/interval_subset_registry_v1.parquet",
+  "interval_table": "data/interim/interval_table.parquet",
+  "monotonicity_policy_version": "log_age_monotonicity.v1",
+  "row_count": 3827,
+  "sensitivity_flagged_monotonicity_count": 1054,
+  "small_efc_jitter_count": 1054,
+  "status": "passed"
+}

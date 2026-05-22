@@ -45,6 +45,9 @@ def _load_gate2_reports(report_dir: Path) -> dict[str, object]:
     split_report = _load_optional_json(report_dir / "split_registry_report.json")
     if split_report:
         reports["split_registry"] = split_report
+    interval_subset_report = _load_optional_json(report_dir / "interval_subset_report.json")
+    if interval_subset_report:
+        reports["interval_subset"] = interval_subset_report
 
     try:
         import pyarrow.parquet as pq
@@ -627,6 +630,42 @@ def split_generate(
     typer.echo(f"Generating split registry from {condition_table}...")
     table = generate_split_registry(condition_table, out_dir)
     typer.echo(f"Split registry generated: {len(table)} rows written to {out_dir / 'split_registry_v1.parquet'}")
+
+
+@split_app.command("interval-subsets")
+def split_interval_subsets(
+    interval_table: Path = typer.Option(
+        ...,
+        "--interval-table",
+        help="Path to interval_table.parquet.",
+    ),
+    out: Path = typer.Option(
+        ...,
+        "--out",
+        help="Output path for interval_subset_registry_v1.parquet.",
+    ),
+    report: Path = typer.Option(
+        ...,
+        "--report",
+        help="Output JSON path for interval subset policy report.",
+    ),
+    efc_jitter_threshold: float = typer.Option(
+        0.00025,
+        "--efc-jitter-threshold",
+        min=0.0,
+        help="EFC drop threshold treated as small LOG_AGE jitter.",
+    ),
+) -> None:
+    """Generate strict/tolerant interval subset labels for baseline readiness."""
+    from mbp.data.products.interval_subsets import build_interval_subset_registry
+
+    table = build_interval_subset_registry(
+        interval_table,
+        out,
+        report,
+        efc_jitter_threshold=efc_jitter_threshold,
+    )
+    typer.echo(f"Interval subset registry generated: {len(table)} rows written to {out}")
 
 
 @audit_app.command("report")

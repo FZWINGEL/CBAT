@@ -24,6 +24,7 @@ def parse_cfg_zip(zip_path: Path, exclusions_path: Path | None = None) -> pa.Tab
         "aging_mode": [],
         "nominal_temperature_C": [],
         "voltage_window": [],
+        "voltage_window_family": [],
         "soc_window_approx": [],
         "nominal_charge_C_rate": [],
         "nominal_discharge_C_rate": [],
@@ -113,6 +114,9 @@ def parse_cfg_zip(zip_path: Path, exclusions_path: Path | None = None) -> pa.Tab
             # SOC Window
             age_soc = row.get("age_soc", "0")
             soc_window_approx = f"{age_soc}%"
+            voltage_window_family = classify_voltage_window_family(
+                v_min, v_max, aging_mode, age_soc
+            )
 
             nominal_chg = float(row.get("age_chg_rate", 0.0))
             nominal_dis = float(row.get("age_dischg_rate", 0.0))
@@ -125,6 +129,7 @@ def parse_cfg_zip(zip_path: Path, exclusions_path: Path | None = None) -> pa.Tab
             data["aging_mode"].append(aging_mode)
             data["nominal_temperature_C"].append(nominal_temp)
             data["voltage_window"].append(voltage_window)
+            data["voltage_window_family"].append(voltage_window_family)
             data["soc_window_approx"].append(soc_window_approx)
             data["nominal_charge_C_rate"].append(nominal_chg)
             data["nominal_discharge_C_rate"].append(nominal_dis)
@@ -149,3 +154,34 @@ def ingest_cfg(zip_path: Path, out_path: Path, exclusions_path: Path | None = No
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     pq.write_table(table, out_path)
+
+
+def classify_voltage_window_family(
+    v_min: float,
+    v_max: float,
+    aging_mode: str,
+    age_soc: str | float | int,
+) -> str:
+    """Map CFG voltage/SOC settings to a holdout-ready window family."""
+    if aging_mode == "calendar":
+        soc = _format_soc_value(age_soc)
+        return f"calendar_soc_{soc}"
+    if _near(v_min, 2.50) and _near(v_max, 4.20):
+        return "approx_0_100"
+    if _near(v_min, 3.249) and _near(v_max, 4.20):
+        return "approx_10_100"
+    if _near(v_min, 3.249) and _near(v_max, 4.092):
+        return "approx_10_90"
+    return f"custom_{v_min:.2f}_{v_max:.2f}".replace(".", "p")
+
+
+def _near(value: float, target: float, tolerance: float = 0.011) -> bool:
+    return abs(float(value) - target) <= tolerance
+
+
+def _format_soc_value(value: str | float | int) -> str:
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        return str(value).strip().replace("%", "")
+    return str(int(numeric)) if numeric.is_integer() else str(numeric).replace(".", "p")
