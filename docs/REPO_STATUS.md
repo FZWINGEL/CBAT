@@ -11,13 +11,13 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 0.4: Baseline Readiness Gate**. The Gate 2b
-LOG_AGE integrity triage is complete, and Milestone 0.4 now adds the policy and
-subset artifacts needed to authorize the first baseline ladder in a later work
-block.
+The repository is in **Milestone 0.5: L0-L3 Capacity Baseline Ladder**. Gate 2b
+LOG_AGE integrity triage and Milestone 0.4 baseline readiness are complete.
+Milestone 0.5 now adds the first capacity-baseline runner while keeping the
+project scoped to scalar interval features.
 
-No model training, baseline leaderboard, neural architecture, policy ranking, or
-EIS embedding work has been started.
+No EIS/PULSE supervised claims, sequence models, neural architecture, policy
+ranking, CBAT architecture, or EIS embedding work has been started.
 
 Current state:
 
@@ -31,6 +31,8 @@ Current state:
   derived from `voltage_window_family`, not scalar `age_soc`.
 - `pyarrow` and `py7zr` are core dependencies; baseline and GBM packages are
   optional extras only.
+- `mbp baseline run-capacity` implements the first L0-L3 capacity baseline
+  runner and is gated by `interval_subset_registry_v1.parquet`.
 
 ## Git And Artifact Hygiene
 
@@ -61,6 +63,10 @@ The large Parquet outputs remain local generated artifacts:
 | `data/splits/split_registry_v1.parquet` | 228 | ignored |
 | `data/splits/interval_subset_registry_v1.parquet` | 3,827 | ignored |
 | `reports/audit/raw_log_archive_inventory.parquet` | 541 | ignored |
+
+Milestone 0.5 generated predictions are also ignored by default:
+
+- `data/processed/capacity_baseline_predictions.parquet`
 
 ## Gate Status
 
@@ -176,6 +182,45 @@ The legacy `soc_window_holdout_fold` remains present for compatibility but is
 now populated from corrected voltage-window semantics. New work should prefer
 `voltage_window_holdout_fold`.
 
+### Milestone 0.5
+
+Milestone 0.5 baseline tooling is implemented:
+
+- CLI: `mbp baseline run-capacity`
+- Runner: `mbp.baselines.capacity`
+- Prediction schema: `BASELINE_PREDICTION_SCHEMA`
+- Default primary subset: `baseline_clean_tolerant`
+- Mandatory sensitivity scope: exclude
+  `sensitivity_flagged_monotonicity == true`
+- Targets: `capacity_Ah_k1` and `delta_capacity_Ah`
+- Split views:
+  - `condition_fold`
+  - `temperature_holdout_fold`
+  - `c_rate_holdout_fold`
+  - `profile_holdout_fold`
+  - `voltage_window_holdout_fold`
+
+Implemented model levels:
+
+- `L0_persistence`
+- `L1_ridge`
+- `L2_hist_gradient_boosting`
+- `L3_quantile_hist_gradient_boosting`
+
+`L0_persistence` is dependency-free. L1-L3 require the optional baseline extra
+(`uv sync --extra baseline`) because the current local `.venv` does not include
+`numpy`, `pandas`, or `scikit-learn`.
+
+Implemented feature groups:
+
+- `F0_time_only`
+- `F1_time_efc`
+- `F2_nominal_protocol`
+- `F3_log_age_scalar`
+
+Inserted LOG_AGE diagnostics (`cap_aged_est_Ah`, `R0_mOhm`, `R1_mOhm`) are not
+eligible baseline features.
+
 ## Important Implementation Notes
 
 The interval builder preserves result-table timestamps in the public schema, but
@@ -204,11 +249,8 @@ The interval subset registry writes Parquet metadata for:
 
 ## Baseline Authorization
 
-Baseline data-product prerequisites now exist, but baseline modeling has not
-started in this milestone. The next milestone can begin the first L0-L3 capacity
-baseline ladder if explicitly requested.
-
-First baseline work must use:
+Baseline data-product prerequisites and the first capacity baseline runner now
+exist. First baseline work must use:
 
 - primary subset: `baseline_clean_tolerant`
 - mandatory sensitivity subset: exclude
@@ -230,16 +272,25 @@ UV_CACHE_DIR=/tmp/uv-cache .venv/bin/ruff check .
 All checks passed.
 
 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/pytest
-59 passed, 1 warning.
+67 passed, 1 warning.
 ```
 
 The one warning is the existing `datetime.utcnow()` deprecation warning in
-`src/mbp/data/luh_blank/qa_result_data.py`; it is not a Milestone 0.4
+`src/mbp/data/luh_blank/qa_result_data.py`; it is not a Milestone 0.5
 correctness failure.
 
 ## Recommended Next Step
 
-Start **Milestone 0.5: L0-L3 Baseline Ladder** only after confirming that the
-baseline code will consume `interval_subset_registry_v1.parquet` and report
-strict-vs-tolerant sensitivity results. Keep the first baseline deliberately
-limited to capacity targets and scalar interval features.
+Install the optional baseline extra and run the real-data capacity baseline
+ladder:
+
+```text
+UV_CACHE_DIR=/tmp/uv-cache uv sync --extra baseline
+UV_CACHE_DIR=/tmp/uv-cache .venv/bin/mbp baseline run-capacity \
+  --interval-table data/interim/interval_table.parquet \
+  --interval-subsets data/splits/interval_subset_registry_v1.parquet \
+  --out reports/baselines/capacity_baseline_report.json \
+  --predictions-out data/processed/capacity_baseline_predictions.parquet
+```
+
+Keep the first report limited to capacity targets and scalar interval features.

@@ -83,8 +83,12 @@ def render_evidence_memo(
     raw_log_report = _dict_report(gate2_reports, "raw_log_inventory")
     interval_passed = interval_report.get("status") == "passed"
     split_passed = split_report.get("status") == "passed"
+    interval_subset_passed = interval_subset_report.get("status") == "passed"
     gate2b_complete = bool(interval_passed and split_passed and monotonicity_report)
     modeling_authorized = gate2_data_products_ready and qa_passed and gate2b_complete
+    capacity_baseline_authorized = bool(
+        gate2_data_products_ready and gate2b_complete and interval_subset_passed
+    )
 
     lines = [
         "# Dataset Evidence Memo",
@@ -101,9 +105,13 @@ def render_evidence_memo(
 
     if gate2_data_products_ready:
         gate_note = (
-            "Gate 2b interval QA and split-registry audits have passed; modeling remains blocked until a LOG_AGE monotonicity handling policy selects the clean baseline subset."
-            if gate2b_complete
-            else "Modeling remains blocked until LOG_AGE QA failures, leakage mitigation, and baseline gates are resolved."
+            "Gate 2b interval QA and split-registry audits have passed; Milestone 0.4 defines strict/tolerant interval subsets, and Milestone 0.5 authorizes only the first scalar capacity baseline ladder."
+            if capacity_baseline_authorized
+            else (
+                "Gate 2b interval QA and split-registry audits have passed; modeling remains blocked until a LOG_AGE monotonicity handling policy selects the clean baseline subset."
+                if gate2b_complete
+                else "Modeling remains blocked until LOG_AGE QA failures, leakage mitigation, and baseline gates are resolved."
+            )
         )
         lines.extend(
             [
@@ -280,7 +288,7 @@ def render_evidence_memo(
                     f"sampled header available `{raw_log_report.get('sampled_header_available', 'N/A')}` |"
                 ),
                 "",
-                "Gate 2b classifies the LOG_AGE monotonicity issue as small EFC decreases in the reduced table and propagates affected rows into interval quality flags. Milestone 0.4 defines strict and tolerant clean subsets; baseline training remains a separate milestone and must consume the interval subset registry.",
+                "Gate 2b classifies the LOG_AGE monotonicity issue as small EFC decreases in the reduced table and propagates affected rows into interval quality flags. Milestone 0.4 defines strict and tolerant clean subsets; Milestone 0.5 baseline tooling must consume the interval subset registry and report sensitivity excluding monotonicity-flagged intervals.",
             ]
         )
 
@@ -313,19 +321,33 @@ def render_evidence_memo(
         else 0
     )
     if monotonic_violations:
+        monotonic_status = "policy_defined" if interval_subset_passed else "flagged_by_qa"
+        monotonic_handling = (
+            "`docs/LOG_AGE_MONOTONICITY_POLICY.md` defines strict and tolerant baseline subsets; Milestone 0.5 baselines must report sensitivity excluding flagged intervals."
+            if interval_subset_passed
+            else "Investigate or quality-flag affected intervals before treating them as clean exposure evidence."
+        )
         lines.append(
             f"| KI006 | LOG_AGE timestamp/EFC monotonicity violations | medium | "
-            f"`flagged_by_qa` | {monotonic_violations:,} timestamp/EFC decreases detected | "
-            "Investigate or quality-flag affected intervals before treating them as clean exposure evidence. |"
+            f"`{monotonic_status}` | {monotonic_violations:,} timestamp/EFC decreases detected | "
+            f"{monotonic_handling} |"
         )
 
     # 4. Gate 1 Decision Table
-    modeling_auth = "Yes" if modeling_authorized else "No"
-    modeling_notes = (
-        "All Gate 1 and Gate 2 QA checks passed successfully."
-        if modeling_authorized
-        else "Gate 2 data products are authorized; model training waits for an explicit baseline milestone and must consume the interval subset registry."
-    )
+    if capacity_baseline_authorized:
+        modeling_auth = "Limited"
+        modeling_notes = (
+            "Milestone 0.5 authorizes only scalar capacity baselines using "
+            "`interval_subset_registry_v1.parquet`; EIS, PULSE, sequence, neural, "
+            "policy-ranking, and CBAT claims remain blocked."
+        )
+    else:
+        modeling_auth = "Yes" if modeling_authorized else "No"
+        modeling_notes = (
+            "All Gate 1 and Gate 2 QA checks passed successfully."
+            if modeling_authorized
+            else "Gate 2 data products are authorized; model training waits for an explicit baseline milestone and must consume the interval subset registry."
+        )
 
     lines.extend(
         [

@@ -19,11 +19,13 @@ audit_app = typer.Typer(help="Gate 1 dataset audit and provenance commands.")
 report_app = typer.Typer(help="Report generation commands.")
 ingest_app = typer.Typer(help="Gate 2 result-data ingestion commands.")
 split_app = typer.Typer(help="Reproducible dataset splitting commands.")
+baseline_app = typer.Typer(help="Milestone 0.5 baseline commands.")
 
 app.add_typer(audit_app, name="audit")
 app.add_typer(report_app, name="report")
 app.add_typer(ingest_app, name="ingest")
 app.add_typer(split_app, name="split")
+app.add_typer(baseline_app, name="baseline")
 
 
 def _load_optional_json(path: Path) -> dict[str, object] | None:
@@ -666,6 +668,72 @@ def split_interval_subsets(
         efc_jitter_threshold=efc_jitter_threshold,
     )
     typer.echo(f"Interval subset registry generated: {len(table)} rows written to {out}")
+
+
+@baseline_app.command("run-capacity")
+def baseline_run_capacity(
+    interval_table: Path = typer.Option(
+        ...,
+        "--interval-table",
+        help="Path to interval_table.parquet.",
+    ),
+    interval_subsets: Path = typer.Option(
+        ...,
+        "--interval-subsets",
+        help="Path to interval_subset_registry_v1.parquet.",
+    ),
+    out: Path = typer.Option(
+        ...,
+        "--out",
+        help="Output JSON path for capacity baseline metrics.",
+    ),
+    predictions_out: Path = typer.Option(
+        ...,
+        "--predictions-out",
+        help="Output Parquet path for row-level predictions.",
+    ),
+    subset: str = typer.Option(
+        "baseline_clean_tolerant",
+        "--subset",
+        help="Interval subset flag to use as the primary baseline population.",
+    ),
+    seed: int = typer.Option(42, "--seed", help="Deterministic model seed."),
+    model_levels: str = typer.Option(
+        "L0_persistence,L1_ridge,L2_hist_gradient_boosting,L3_quantile_hist_gradient_boosting",
+        "--model-levels",
+        help="Comma-separated model levels to run.",
+    ),
+    feature_groups: str = typer.Option(
+        "F0_time_only,F1_time_efc,F2_nominal_protocol,F3_log_age_scalar",
+        "--feature-groups",
+        help="Comma-separated feature groups for L1-L3 models.",
+    ),
+) -> None:
+    """Run the first L0-L3 scalar capacity baseline ladder."""
+    from mbp.baselines.capacity import run_capacity_baselines
+
+    try:
+        report = run_capacity_baselines(
+            interval_table,
+            interval_subsets,
+            out,
+            predictions_out,
+            subset=subset,
+            seed=seed,
+            model_levels=_comma_values(model_levels),
+            feature_groups=_comma_values(feature_groups),
+        )
+    except RuntimeError as exc:
+        typer.echo(str(exc))
+        raise typer.Exit(code=1) from exc
+    typer.echo(
+        "Capacity baseline report generated: "
+        f"{len(report['metrics'])} metric rows written to {out}"
+    )
+
+
+def _comma_values(value: str) -> list[str]:
+    return [item.strip() for item in value.split(",") if item.strip()]
 
 
 @audit_app.command("report")

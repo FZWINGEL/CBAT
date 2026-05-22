@@ -16,35 +16,32 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 0.4: Baseline Readiness Gate.
+Milestone 0.5: L0-L3 capacity baseline ladder.
 
 Current state:
 - Gate 2b implementation and reports are committed.
+- Milestone 0.4 baseline-readiness artifacts are committed: LOG_AGE policy,
+  interval subset registry, split audit, and dependency metadata.
+- Milestone 0.5 is limited to first capacity baselines on interval data.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 - LOG_AGE monotonicity has been triaged and propagated into interval quality
   flags.
-- Baselines remain blocked until the LOG_AGE monotonicity handling policy,
-  interval subset registry, voltage-window split audit, and dependency contract
-  are current and validated.
+- Capacity baseline code must consume `interval_subset_registry_v1.parquet` and
+  report strict-vs-tolerant monotonicity sensitivity.
 
 Allowed work:
-- LOG_AGE monotonicity investigation
-- interval-table QA
-- quality flags for contaminated intervals
-- split-registry audit
-- raw LOG audit scaffolding
-- documentation/evidence memo updates
 - small tests with synthetic fixtures
-- LOG_AGE monotonicity handling policy documentation
-- clean interval subset definition after policy approval
-- interval subset registry QA
-- voltage-window split semantics fixes
-- dependency metadata cleanup
+- capacity targets: `capacity_Ah_k1` and `delta_capacity_Ah`
+- scalar interval feature baselines using time, EFC/Ah, nominal protocol, and
+  LOG_AGE summary features
+- condition-level grouped validation
+- strict/tolerant interval subset sensitivity reporting
+- documentation/evidence memo updates
 
 Forbidden work:
-- model training
-- baseline leaderboard
+- EIS or PULSE supervised claims
+- sequence models
 - CBAT architecture
 - neural models
 - policy ranking

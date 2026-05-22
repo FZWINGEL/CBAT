@@ -18,6 +18,7 @@ Schema version prefix: `gate1.audit.v1`
 | `split_registry_v1` | Implemented | `mbp.data.splitting` | condition table, deterministic seed, grouped parameter-set folds, voltage-window holdout |
 | `interval_table` | Implemented MVP | `mbp.data.products.interval_table` | joined inputs, split registry SHA-256, LOG_AGE row-group exposure scan, monotonicity report path, leakage checks |
 | `interval_subset_registry_v1` | Implemented | `mbp.data.products.interval_subsets` | interval table path, LOG_AGE monotonicity policy version, EFC jitter threshold, schema version |
+| `capacity_baseline_predictions` | Implemented | `mbp.baselines.capacity` | interval table path, interval subset registry path, split view, subset, model level, feature group, schema version |
 
 ## Gate 2/3 Schema Contracts
 
@@ -26,3 +27,4 @@ Schema version prefix: `gate1.audit.v1`
 - `INTERVAL_TABLE_SCHEMA` is one row per adjacent `checkup_event_table` transition. It includes condition metadata, split labels, prior/post capacity targets, LOG_AGE exposure summaries, masked diagnostic-row counts, monotonicity violation counts/drop magnitudes, `LOG_AGE_monotonicity_clean`, quality flags, and schema provenance.
 - `SPLIT_REGISTRY_SCHEMA` keeps replicates of each 76-parameter condition triplet grouped for headline validation and includes `voltage_window_holdout_fold`. The legacy `soc_window_holdout_fold` is retained as a compatibility alias populated from the corrected voltage-window semantics.
 - `INTERVAL_SUBSET_REGISTRY_SCHEMA` defines strict/tolerant clean interval labels, sensitivity flags, exclusion reasons, and the monotonicity policy version used for baseline readiness.
+- `BASELINE_PREDICTION_SCHEMA` records row-level capacity predictions for the Milestone 0.5 baseline ladder. The JSON report aggregates metrics by held-out parameter-set condition; generated prediction Parquet remains ignored by default.

@@ -10,7 +10,7 @@ Gate: Gate 1 — Dataset Audit & Provenance Verification
 
 > [!TIP]
 > **GATE 1 STATUS: GO FOR DATA PRODUCTS**
-> Result and reduced-log modalities are observed, BagIt validation passed successfully for the result package, and Gate 2 data-product construction is authorized. Gate 2b interval QA and split-registry audits have passed; modeling remains blocked until a LOG_AGE monotonicity handling policy selects the clean baseline subset.
+> Result and reduced-log modalities are observed, BagIt validation passed successfully for the result package, and Gate 2 data-product construction is authorized. Gate 2b interval QA and split-registry audits have passed; Milestone 0.4 defines strict/tolerant interval subsets, and Milestone 0.5 authorizes only the first scalar capacity baseline ladder.
 
 ---
 
@@ -90,7 +90,7 @@ Inserted LOG_AGE diagnostics (`cap_aged_est_Ah`, `R0_mOhm`, `R1_mOhm`) are activ
 | Interval subset registry | `passed` | `2,773` strict-clean; `3,827` tolerant-clean; threshold `0.00025` EFC |
 | Raw LOG archive inventory | `generated` | `541` archive members inventoried; sampled header available `True` |
 
-Gate 2b classifies the LOG_AGE monotonicity issue as small EFC decreases in the reduced table and propagates affected rows into interval quality flags. Milestone 0.4 defines strict and tolerant clean subsets; baseline training remains a separate milestone and must consume the interval subset registry.
+Gate 2b classifies the LOG_AGE monotonicity issue as small EFC decreases in the reduced table and propagates affected rows into interval quality flags. Milestone 0.4 defines strict and tolerant clean subsets; Milestone 0.5 baseline tooling must consume the interval subset registry and report sensitivity excluding monotonicity-flagged intervals.
 
 ---
 
@@ -120,4 +120,4 @@ Gate 2b classifies the LOG_AGE monotonicity issue as small EFC decreases in the 
 | Gate 2b split audit | `passed` | Headline OOD folds are non-empty and parameter-set triplets remain grouped. |
 | Baseline subset registry | `passed` | 3,827 tolerant-clean intervals defined by policy. |
 | Known issues register initialized | Complete | Checks remain pending or blocked until data evidence exists. |
-| Modeling authorized | No | Gate 2 data products are authorized; model training waits for an explicit baseline milestone and must consume the interval subset registry. |
+| Modeling authorized | Limited | Milestone 0.5 authorizes only scalar capacity baselines using `interval_subset_registry_v1.parquet`; EIS, PULSE, sequence, neural, policy-ranking, and CBAT claims remain blocked. |
