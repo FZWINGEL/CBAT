@@ -26,6 +26,68 @@ app.add_typer(ingest_app, name="ingest")
 app.add_typer(split_app, name="split")
 
 
+def _load_optional_json(path: Path) -> dict[str, object] | None:
+    if not path.exists():
+        return None
+    try:
+        with path.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception:
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _load_gate2_reports(report_dir: Path) -> dict[str, object]:
+    reports: dict[str, object] = {}
+    interval_report = _load_optional_json(report_dir / "interval_qa_report.json")
+    if interval_report:
+        reports["interval_qa"] = interval_report
+    split_report = _load_optional_json(report_dir / "split_registry_report.json")
+    if split_report:
+        reports["split_registry"] = split_report
+
+    try:
+        import pyarrow.parquet as pq
+
+        monotonicity_path = report_dir / "log_age_monotonicity_violations.parquet"
+        if monotonicity_path.exists():
+            reports["log_age_monotonicity"] = {
+                "path": str(monotonicity_path),
+                "row_count": pq.ParquetFile(monotonicity_path).metadata.num_rows,
+                "summary_lines": _line_count(report_dir / "log_age_monotonicity_summary.csv"),
+            }
+        raw_inventory_path = report_dir / "raw_log_archive_inventory.parquet"
+        if raw_inventory_path.exists():
+            raw_table = pq.read_table(
+                raw_inventory_path,
+                columns=["sampled_header", "cell_id", "pool_logs_exist", "slave_logs_exist"],
+            )
+            sampled_headers = [
+                value for value in raw_table.column("sampled_header").to_pylist() if value
+            ]
+            reports["raw_log_inventory"] = {
+                "path": str(raw_inventory_path),
+                "row_count": raw_table.num_rows,
+                "unique_cells": len(
+                    {value for value in raw_table.column("cell_id").to_pylist() if value}
+                ),
+                "sampled_header_available": bool(sampled_headers),
+            }
+    except Exception:
+        pass
+    return reports
+
+
+def _line_count(path: Path) -> int | None:
+    if not path.exists():
+        return None
+    try:
+        with path.open("r", encoding="utf-8") as f:
+            return sum(1 for _ in f)
+    except OSError:
+        return None
+
+
 @audit_app.command("inventory")
 def audit_inventory(
     data_root: Path = typer.Option(
@@ -191,18 +253,19 @@ def audit_manifest(
     write_modality_coverage(coverage, coverage_path)
     write_known_issue_checks(known_issues, known_issues_path)
 
-    # If the bagit validation report was already generated, pass it, otherwise let rendering compute it
-    bagit_report = None
-    bagit_report_path = out.parent / "bagit_validation.json"
-    if bagit_report_path.exists():
-        try:
-            with bagit_report_path.open("r", encoding="utf-8") as f:
-                bagit_report = json.load(f)
-        except Exception:
-            pass
+    # If sidecar reports were already generated, include them in the rendered memo.
+    bagit_report = _load_optional_json(out.parent / "bagit_validation.json")
+    qa_report = _load_optional_json(out.parent / "qa_report.json")
+    gate2_reports = _load_gate2_reports(out.parent)
 
     write_evidence_memo(
-        manifest, coverage, known_issues, evidence_memo_path, bagit_report=bagit_report
+        manifest,
+        coverage,
+        known_issues,
+        evidence_memo_path,
+        bagit_report=bagit_report,
+        qa_report=qa_report,
+        gate2_reports=gate2_reports,
     )
 
     typer.echo(f"Wrote dataset manifest with {manifest.file_count} files to {out}")
@@ -286,17 +349,20 @@ def report_evidence_memo(
     coverage = build_modality_coverage(manifest.file_inventory, provenance.generated_at_utc)
     known_issues = build_known_issue_checks(manifest.file_inventory, provenance.generated_at_utc)
 
-    # Try to load bagit validation report if it exists beside the manifest
-    bagit_report = None
-    bagit_report_path = manifest_path.parent / "bagit_validation.json"
-    if bagit_report_path.exists():
-        try:
-            with bagit_report_path.open("r", encoding="utf-8") as f:
-                bagit_report = json.load(f)
-        except Exception:
-            pass
+    # Try to load sidecar reports if they exist beside the manifest.
+    bagit_report = _load_optional_json(manifest_path.parent / "bagit_validation.json")
+    qa_report = _load_optional_json(manifest_path.parent / "qa_report.json")
+    gate2_reports = _load_gate2_reports(manifest_path.parent)
 
-    write_evidence_memo(manifest, coverage, known_issues, out, bagit_report=bagit_report)
+    write_evidence_memo(
+        manifest,
+        coverage,
+        known_issues,
+        out,
+        bagit_report=bagit_report,
+        qa_report=qa_report,
+        gate2_reports=gate2_reports,
+    )
     typer.echo(f"Generated dataset evidence memo at {out}")
 
 
@@ -499,13 +565,47 @@ def ingest_intervals(
         "--out",
         help="Output path for interval_table.parquet.",
     ),
+    monotonicity_violations: Path | None = typer.Option(
+        None,
+        "--monotonicity-violations",
+        help="Optional LOG_AGE monotonicity violation detail Parquet to map onto intervals.",
+    ),
 ) -> None:
     """Build the Gate 2 interval table from check-up events and LOG_AGE exposure."""
     from mbp.data.products.interval_table import build_interval_table
 
     typer.echo(f"Building interval table from interim products in {interim_dir}...")
-    table = build_interval_table(interim_dir, out)
+    table = build_interval_table(
+        interim_dir, out, monotonicity_violations_path=monotonicity_violations
+    )
     typer.echo(f"Interval table generated: {len(table)} rows written to {out}")
+
+
+@ingest_app.command("intervals-qa")
+def ingest_intervals_qa(
+    interval_table: Path = typer.Option(
+        ...,
+        "--interval-table",
+        help="Path to interval_table.parquet.",
+    ),
+    out: Path = typer.Option(
+        ...,
+        "--out",
+        help="Output JSON path for interval QA report.",
+    ),
+    checkup_table: Path | None = typer.Option(
+        None,
+        "--checkup-table",
+        help="Optional path to checkup_event_table.parquet. Defaults beside interval table.",
+    ),
+) -> None:
+    """Run QA checks on the Gate 2 interval table."""
+    from mbp.data.products.interval_table import run_interval_qa
+
+    report = run_interval_qa(interval_table, out, checkup_table_path=checkup_table)
+    typer.echo(f"Interval QA {report['status']}: wrote {out}")
+    if report["status"] == "failed":
+        raise typer.Exit(code=1)
 
 
 @split_app.command("generate")
@@ -573,18 +673,140 @@ def audit_report(
     coverage = build_modality_coverage(all_files, generated_at_utc)
     known_issues = build_known_issue_checks(all_files, generated_at_utc)
 
-    # Try to load existing bagit report
-    bagit_report = None
-    bagit_path = manifest.parent / "bagit_validation.json"
-    if bagit_path.exists():
-        try:
-            with bagit_path.open("r", encoding="utf-8") as bf:
-                bagit_report = json.load(bf)
-        except Exception:
-            pass
+    # Try to load existing sidecar reports
+    bagit_report = _load_optional_json(manifest.parent / "bagit_validation.json")
+    qa_report = _load_optional_json(manifest.parent / "qa_report.json")
+    gate2_reports = _load_gate2_reports(manifest.parent)
 
-    write_evidence_memo(manifest_obj, coverage, known_issues, out, bagit_report=bagit_report)
+    write_evidence_memo(
+        manifest_obj,
+        coverage,
+        known_issues,
+        out,
+        bagit_report=bagit_report,
+        qa_report=qa_report,
+        gate2_reports=gate2_reports,
+    )
     typer.echo(f"Evidence memo compiled and written to {out}")
+
+
+@audit_app.command("log-age-monotonicity")
+def audit_log_age_monotonicity(
+    log_age: Path = typer.Option(
+        ...,
+        "--log-age",
+        help="Path to modality_table_log_age.parquet.",
+    ),
+    out: Path = typer.Option(
+        ...,
+        "--out",
+        help="Output Parquet path for monotonicity violation details.",
+    ),
+    summary: Path = typer.Option(
+        ...,
+        "--summary",
+        help="Output CSV path for per-cell and per-source-file summaries.",
+    ),
+    timestamp_epsilon_s: float = typer.Option(
+        0.0,
+        "--timestamp-epsilon-s",
+        min=0.0,
+        help="Allowed timestamp decrease tolerance in seconds.",
+    ),
+    efc_epsilon: float = typer.Option(
+        1e-9,
+        "--efc-epsilon",
+        min=0.0,
+        help="Allowed EFC decrease tolerance.",
+    ),
+    workers: int | None = typer.Option(
+        None,
+        "--workers",
+        min=1,
+        help="PyArrow reader threads for streaming LOG_AGE batches. Defaults to min(cpu_count, 10).",
+    ),
+    batch_size_rows: int = typer.Option(
+        1_048_576,
+        "--batch-size-rows",
+        min=1,
+        help="Rows per streamed LOG_AGE batch. Larger values reduce overhead but use more memory.",
+    ),
+) -> None:
+    """Classify LOG_AGE timestamp/EFC monotonicity violations."""
+    from mbp.audit.log_age_monotonicity import write_log_age_monotonicity_report
+
+    report = write_log_age_monotonicity_report(
+        log_age,
+        out,
+        summary,
+        timestamp_epsilon_s=timestamp_epsilon_s,
+        efc_epsilon=efc_epsilon,
+        workers=workers,
+        batch_size_rows=batch_size_rows,
+    )
+    typer.echo(
+        "LOG_AGE monotonicity audit complete: "
+        f"{report['violation_count']} violations, "
+        f"{report['cells_with_violations']} cells, "
+        f"{report['source_files_with_violations']} source files."
+    )
+    top = report.get("top_20_worst", [])
+    if top:
+        typer.echo("Top violations:")
+        for row in top[:20]:
+            typer.echo(
+                "  "
+                f"{row['cell_id']} {row['violation_type']} "
+                f"dt={row['delta_timestamp_s']} dEFC={row['delta_EFC']} "
+                f"row_group={row['row_group_idx']} local_row={row['local_row_idx']}"
+            )
+
+
+@audit_app.command("split-registry")
+def audit_split_registry_cmd(
+    split_registry: Path = typer.Option(
+        ...,
+        "--split-registry",
+        help="Path to split_registry_v1.parquet.",
+    ),
+    condition_table: Path = typer.Option(
+        ...,
+        "--condition-table",
+        help="Path to cell_condition_table.parquet.",
+    ),
+    out: Path = typer.Option(
+        ...,
+        "--out",
+        help="Output JSON path for split registry audit report.",
+    ),
+) -> None:
+    """Audit grouped split registry semantics and OOD fold coverage."""
+    from mbp.data.splitting import audit_split_registry
+
+    report = audit_split_registry(split_registry, condition_table, out)
+    typer.echo(f"Split registry audit {report['status']}: wrote {out}")
+    if report["status"] == "failed":
+        raise typer.Exit(code=1)
+
+
+@audit_app.command("raw-log-archives")
+def audit_raw_log_archives(
+    data_root: Path = typer.Option(
+        ...,
+        "--data-root",
+        help="Raw Log_Raw_Data_Version_2 root.",
+    ),
+    out: Path = typer.Option(
+        ...,
+        "--out",
+        help="Output Parquet path for raw LOG archive inventory.",
+    ),
+) -> None:
+    """Inventory raw LOG archives without full parsing."""
+    from mbp.audit.raw_log_archives import inventory_raw_log_archives
+
+    table = inventory_raw_log_archives(data_root, out)
+    typer.echo(f"Raw LOG archive inventory written: {len(table)} rows to {out}")
 
 
 if __name__ == "__main__":

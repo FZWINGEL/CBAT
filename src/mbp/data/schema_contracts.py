@@ -221,6 +221,12 @@ INTERVAL_TABLE_SCHEMA = pa.schema(
         ("log_age_r0_diag_rows_masked", pa.int64(), False),
         ("log_age_r1_diag_rows_masked", pa.int64(), False),
         ("LOG_AGE_available", pa.bool_(), False),
+        ("log_age_monotonicity_violation_count", pa.int64(), False),
+        ("log_age_timestamp_decrease_count", pa.int64(), False),
+        ("log_age_efc_decrease_count", pa.int64(), False),
+        ("log_age_max_timestamp_drop_s", pa.float64(), False),
+        ("log_age_max_efc_drop", pa.float64(), False),
+        ("LOG_AGE_monotonicity_clean", pa.bool_(), False),
         ("quality_flags", pa.string(), False),
         ("schema_version", pa.string(), False),
     ]

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import json
 import random
 from pathlib import Path
 
@@ -89,10 +90,10 @@ def generate_split_registry(
         condition_folds.append(param_to_fold[param])
 
         # S2: Temperature holdout fold
-        # 0 = Nominal, 1 = Cold OOD (0C), 2 = Hot OOD (45C)
+        # 0 = Nominal, 1 = Cold OOD (0C), 2 = Hot OOD (40C)
         if temp == 0.0 or temp == 0:
             temperature_holdouts.append(1)
-        elif temp == 45.0 or temp == 45:
+        elif temp == 40.0 or temp == 40:
             temperature_holdouts.append(2)
         else:
             temperature_holdouts.append(0)
@@ -107,8 +108,8 @@ def generate_split_registry(
             soc_window_holdouts.append(0)
 
         # S2: C-rate holdout fold
-        # 0 = Nominal, 1 = High Charge/Discharge C-rate OOD (>= 2.0 C)
-        if chg_r >= 2.0 or dis_r >= 2.0:
+        # 0 = Nominal, 1 = High Charge/Discharge C-rate OOD (>= 5/3 C)
+        if chg_r >= (5.0 / 3.0) or dis_r >= (5.0 / 3.0):
             c_rate_holdouts.append(1)
         else:
             c_rate_holdouts.append(0)
@@ -156,3 +157,104 @@ def generate_split_registry(
     pq.write_table(split_table, parquet_out)
 
     return split_table
+
+
+def audit_split_registry(
+    split_registry_path: Path,
+    condition_table_path: Path,
+    out_path: Path,
+) -> dict[str, object]:
+    """Audit split registry semantics and write a JSON report."""
+    if not split_registry_path.exists():
+        raise FileNotFoundError(f"Split registry not found: {split_registry_path}")
+    if not condition_table_path.exists():
+        raise FileNotFoundError(f"Condition table not found: {condition_table_path}")
+
+    split_rows = pq.read_table(split_registry_path).to_pylist()
+    condition_rows = pq.read_table(condition_table_path).to_pylist()
+    condition_by_cell = {row["cell_id"]: row for row in condition_rows}
+    failures: list[str] = []
+
+    condition_fold_params: dict[int, set[int]] = {}
+    replicate_fold_by_param: dict[int, set[int]] = {}
+    temperature_counts: dict[int, int] = {}
+    temperature_values: dict[int, set[float]] = {}
+    soc_counts: dict[int, int] = {}
+    soc_values: dict[int, set[str]] = {}
+    c_rate_counts: dict[int, int] = {}
+    c_rate_values: dict[int, set[str]] = {}
+    profile_counts: dict[int, int] = {}
+    profile_modes: dict[int, set[str]] = {}
+
+    for row in split_rows:
+        cell_id = row["cell_id"]
+        condition = condition_by_cell[cell_id]
+        param = int(row["parameter_set"])
+        condition_fold = int(row["condition_fold"])
+        replicate_fold_by_param.setdefault(param, set()).add(condition_fold)
+        condition_fold_params.setdefault(condition_fold, set()).add(param)
+
+        temp_fold = int(row["temperature_holdout_fold"])
+        temperature_counts[temp_fold] = temperature_counts.get(temp_fold, 0) + 1
+        temperature_values.setdefault(temp_fold, set()).add(float(condition["nominal_temperature_C"]))
+
+        soc_fold = int(row["soc_window_holdout_fold"])
+        soc_counts[soc_fold] = soc_counts.get(soc_fold, 0) + 1
+        soc_values.setdefault(soc_fold, set()).add(str(condition["soc_window_approx"]))
+
+        c_fold = int(row["c_rate_holdout_fold"])
+        c_rate_counts[c_fold] = c_rate_counts.get(c_fold, 0) + 1
+        c_rate_values.setdefault(c_fold, set()).add(
+            f"{condition['nominal_charge_C_rate']}/{condition['nominal_discharge_C_rate']}"
+        )
+
+        p_fold = int(row["profile_holdout_fold"])
+        profile_counts[p_fold] = profile_counts.get(p_fold, 0) + 1
+        profile_modes.setdefault(p_fold, set()).add(str(condition["aging_mode"]))
+
+    for param, folds in replicate_fold_by_param.items():
+        if len(folds) != 1:
+            failures.append(f"parameter_set {param} has replicates across folds {sorted(folds)}")
+
+    headline_folds = {
+        "temperature_holdout_fold cold": temperature_counts.get(1, 0),
+        "temperature_holdout_fold hot": temperature_counts.get(2, 0),
+        "c_rate_holdout_fold high": c_rate_counts.get(1, 0),
+        "profile_holdout_fold profile": profile_counts.get(1, 0),
+    }
+    for name, count in headline_folds.items():
+        if count == 0:
+            failures.append(f"{name} is empty")
+
+    report = {
+        "status": "failed" if failures else "passed",
+        "split_registry": str(split_registry_path),
+        "condition_table": str(condition_table_path),
+        "row_count": len(split_rows),
+        "condition_fold_parameter_set_counts": {
+            str(fold): len(params) for fold, params in sorted(condition_fold_params.items())
+        },
+        "replicates_grouped_by_parameter_set": not any(
+            len(folds) != 1 for folds in replicate_fold_by_param.values()
+        ),
+        "temperature_holdout_fold_counts": _string_key_counts(temperature_counts),
+        "temperature_holdout_represented_temperatures": _string_key_values(temperature_values),
+        "soc_window_holdout_fold_counts": _string_key_counts(soc_counts),
+        "soc_window_holdout_represented_windows": _string_key_values(soc_values),
+        "c_rate_holdout_fold_counts": _string_key_counts(c_rate_counts),
+        "c_rate_holdout_represented_rates": _string_key_values(c_rate_values),
+        "profile_holdout_fold_counts": _string_key_counts(profile_counts),
+        "profile_holdout_represented_aging_modes": _string_key_values(profile_modes),
+        "failures": failures,
+    }
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return report
+
+
+def _string_key_counts(counts: dict[int, int]) -> dict[str, int]:
+    return {str(key): counts[key] for key in sorted(counts)}
+
+
+def _string_key_values(values: dict[int, set]) -> dict[str, list]:
+    return {str(key): sorted(values[key]) for key in sorted(values)}

@@ -14,6 +14,8 @@ def render_evidence_memo(
     coverage: list[ModalityCoverageRecord],
     known_issues: list[KnownIssueRecord],
     bagit_report: dict[str, object] | None = None,
+    qa_report: dict[str, object] | None = None,
+    gate2_reports: dict[str, object] | None = None,
 ) -> str:
     # 1. Fetch metadata if present
     meta = manifest.dataset_metadata or {}
@@ -64,17 +66,29 @@ def render_evidence_memo(
     eis_status = eis_record.status if eis_record else "unknown"
     pulse_status = pulse_record.status if pulse_record else "unknown"
 
+    qa_status = str(qa_report.get("status", "unknown")) if qa_report else "not_run"
+    qa_passed = qa_status == "passed"
+
     all_complete = (
         bagit_status == "PASSED"
         and has_logs
         and eis_status == "complete"
         and pulse_status == "complete"
     )
+    gate2_data_products_ready = all_complete
+    interval_report = _dict_report(gate2_reports, "interval_qa")
+    split_report = _dict_report(gate2_reports, "split_registry")
+    monotonicity_report = _dict_report(gate2_reports, "log_age_monotonicity")
+    raw_log_report = _dict_report(gate2_reports, "raw_log_inventory")
+    interval_passed = interval_report.get("status") == "passed"
+    split_passed = split_report.get("status") == "passed"
+    gate2b_complete = bool(interval_passed and split_passed and monotonicity_report)
+    modeling_authorized = gate2_data_products_ready and qa_passed and gate2b_complete
 
     lines = [
         "# Dataset Evidence Memo",
         "",
-        "Status: Auto-generated Gate 1.1 Integrity Report",
+        "Status: Auto-generated Gate 1.1 Integrity Report plus Gate 2 ingestion evidence",
         "Project: Multimodal Battery Prediction (MBP)",
         "Gate: Gate 1 — Dataset Audit & Provenance Verification",
         "",
@@ -84,12 +98,17 @@ def render_evidence_memo(
         "",
     ]
 
-    if all_complete:
+    if gate2_data_products_ready:
+        gate_note = (
+            "Gate 2b interval QA and split-registry audits have passed; modeling remains blocked until a LOG_AGE monotonicity handling policy selects the clean baseline subset."
+            if gate2b_complete
+            else "Modeling remains blocked until LOG_AGE QA failures, leakage mitigation, and baseline gates are resolved."
+        )
         lines.extend(
             [
                 "> [!TIP]",
-                "> **GATE 1 STATUS: GO (Modeling Authorized)**",
-                "> All result and log modalities are fully observed, BagIt validation passed successfully, and coverages are 100% complete.",
+                "> **GATE 1 STATUS: GO FOR DATA PRODUCTS**",
+                f"> Result and reduced-log modalities are observed, BagIt validation passed successfully for the result package, and Gate 2 data-product construction is authorized. {gate_note}",
                 "",
             ]
         )
@@ -97,8 +116,8 @@ def render_evidence_memo(
         lines.extend(
             [
                 "> [!CAUTION]",
-                "> **GATE 1 STATUS: NO-GO (Modeling Blocked)**",
-                "> Modeling remains strictly **NOT AUTHORIZED** until the following blockages are resolved:",
+            "> **GATE 1 STATUS: NO-GO (Modeling Blocked)**",
+            "> Modeling remains strictly **NOT AUTHORIZED** until the following blockages are resolved:",
             ]
         )
         if not has_logs:
@@ -166,7 +185,7 @@ def render_evidence_memo(
             "",
             "## Modality & Cell Coverage Summary",
             "",
-            "| Modality | Status | Expected Cells | Observed Cells | Coverage % | Replicates (Any) | Replicates (All 3) | Total Size |",
+            "| Modality | Status | Expected Cells | Observed Cells/Files | Coverage % | Replicates (Any) | Replicates (All 3) | Total Size |",
             "|---|---|---|---|---|---|---|---|",
         ]
     )
@@ -187,6 +206,76 @@ def render_evidence_memo(
             f"| {record.modality} | **{record.status.upper()}** | {exp_cells} | {obs_cells} | {cov_pct} | {any_rep} | {all_rep} | {size_str} |"
         )
 
+    log_age_table = _qa_table(qa_report, "modality_table_log_age")
+    if log_age_table:
+        lines.extend(
+            [
+                "",
+                "---",
+                "",
+                "## LOG_AGE Ingestion Evidence",
+                "",
+                "`mbp ingest log-age` has produced the reduced operating-history table at",
+                "`data/interim/modality_table_log_age.parquet`.",
+                "",
+                "| Field | Value |",
+                "|---|---|",
+                "| Source package path | `data/raw/Log_Raw_Data_Version_2` |",
+                "| Source archive | `cell_log_age_ultracompr.7z` |",
+                "| Log package DOI path | `10.35097-kww7jv8ajuvchcah` |",
+                f"| Ingested rows | `{_format_int(log_age_table.get('row_count'))}` |",
+                f"| Parquet size | `{_format_int(log_age_table.get('file_size_bytes'))} bytes` |",
+                f"| Parquet row groups | `{_format_int(log_age_table.get('row_groups'))}` |",
+                f"| Unique cohort cells | `{_format_int(log_age_table.get('unique_cells'))}` |",
+                f"| Non-cohort cells in table | `{_format_int(log_age_table.get('non_cohort_cell_count'))}` |",
+                f"| Latest QA status | `{qa_status}` |",
+                f"| LOG_AGE monotonicity violations | `{_format_int(log_age_table.get('monotonic_timestamp_efc_violations'))}` strict QA decreases flagged; `{_format_int(monotonicity_report.get('row_count'))}` default-tolerance detailed violations |",
+                f"| `cap_aged_est_Ah` non-null rows | `{_format_int(_diagnostic_count(log_age_table, 'cap_aged_est_Ah'))}` |",
+                f"| `R0_mOhm` non-null rows | `{_format_int(_diagnostic_count(log_age_table, 'R0_mOhm'))}` |",
+                f"| `R1_mOhm` non-null rows | `{_format_int(_diagnostic_count(log_age_table, 'R1_mOhm'))}` |",
+                "",
+                "Inserted LOG_AGE diagnostics (`cap_aged_est_Ah`, `R0_mOhm`, `R1_mOhm`) are active leakage risks. They may be counted and masked for QA, but must not enter interval features unless they are explicitly prior-to-cutoff values.",
+            ]
+        )
+
+    if gate2_reports:
+        lines.extend(
+            [
+                "",
+                "---",
+                "",
+                "## Gate 2b Data-Product Hardening Evidence",
+                "",
+                "| Artifact | Status | Key evidence |",
+                "|---|---|---|",
+                (
+                    "| LOG_AGE monotonicity report | "
+                    f"`generated` | `{_format_int(monotonicity_report.get('row_count'))}` detailed violations; "
+                    f"`{_format_int(monotonicity_report.get('summary_lines'))}` summary CSV lines |"
+                ),
+                (
+                    "| Interval QA report | "
+                    f"`{interval_report.get('status', 'not_run')}` | "
+                    f"`{_format_int(interval_report.get('row_count'))}` intervals; "
+                    f"`{_format_int(interval_report.get('intervals_with_monotonicity_violations'))}` monotonicity-flagged; "
+                    f"LOG_AGE availability `{interval_report.get('LOG_AGE_available_fraction', 'N/A')}` |"
+                ),
+                (
+                    "| Split registry audit | "
+                    f"`{split_report.get('status', 'not_run')}` | "
+                    f"`{_format_int(split_report.get('row_count'))}` cells; hot holdout uses 40 C; "
+                    "high-C-rate holdout includes 5/3 C |"
+                ),
+                (
+                    "| Raw LOG archive inventory | "
+                    f"`generated` | `{_format_int(raw_log_report.get('row_count'))}` archive members inventoried; "
+                    f"sampled header available `{raw_log_report.get('sampled_header_available', 'N/A')}` |"
+                ),
+                "",
+                "Gate 2b classifies the LOG_AGE monotonicity issue as small EFC decreases in the reduced table and propagates affected rows into interval quality flags. Clean-baseline training remains unauthorized until the handling policy explicitly defines whether flagged intervals are excluded, tolerated, or used only for sensitivity analysis.",
+            ]
+        )
+
     lines.extend(
         [
             "",
@@ -200,17 +289,34 @@ def render_evidence_memo(
     )
 
     for record in known_issues:
+        status = record.status
+        evidence = record.evidence
+        if record.issue_id == "KI004" and log_age_table:
+            status = "active_mitigation"
+            evidence = f"{_format_int(log_age_table.get('row_count'))} LOG_AGE rows ingested"
         lines.append(
             f"| {record.issue_id} | {record.issue_name} | {record.severity} | "
-            f"`{record.status}` | {record.evidence} | {record.handling_decision} |"
+            f"`{status}` | {evidence} | {record.handling_decision} |"
+        )
+
+    monotonic_violations = (
+        int(log_age_table.get("monotonic_timestamp_efc_violations", 0) or 0)
+        if log_age_table
+        else 0
+    )
+    if monotonic_violations:
+        lines.append(
+            f"| KI006 | LOG_AGE timestamp/EFC monotonicity violations | medium | "
+            f"`flagged_by_qa` | {monotonic_violations:,} timestamp/EFC decreases detected | "
+            "Investigate or quality-flag affected intervals before treating them as clean exposure evidence. |"
         )
 
     # 4. Gate 1 Decision Table
-    modeling_auth = "Yes" if all_complete else "No"
+    modeling_auth = "Yes" if modeling_authorized else "No"
     modeling_notes = (
-        "All Gate 1 audit checks passed successfully."
-        if all_complete
-        else "Modeling remains blocked until Gate 1 audit passes."
+        "All Gate 1 and Gate 2 QA checks passed successfully."
+        if modeling_authorized
+        else "Gate 2 data products are authorized; model training waits for QA resolution, leakage checks, split provenance, and baseline gates."
     )
 
     lines.extend(
@@ -225,15 +331,23 @@ def render_evidence_memo(
             f"| Archive hashes recorded | {'Complete' if bagit_status == 'PASSED' else 'Pending'} | Requires downloaded archives. |",
             "| File inventory generated | Complete | Generated from observed local files. |",
             "| Dataset manifest generated | Complete | Preliminary manifest only until source metadata is filled. |",
-            f"| Required modality coverage verified | {'Complete' if (eis_status == 'complete' and pulse_status == 'complete') else 'Pending'} | Coverage is file-level only until parsers exist. |",
+            f"| Required modality coverage verified | {'Complete' if (eis_status == 'complete' and pulse_status == 'complete') else 'Pending'} | Coverage is file-level for raw archives and parser-backed for interim tables with QA. |",
+            f"| Gate 2 QA status | `{qa_status}` | { _qa_failure_summary(qa_report) } |",
+            f"| Gate 2b interval QA | `{interval_report.get('status', 'not_run')}` | {_format_int(interval_report.get('intervals_with_monotonicity_violations'))} intervals carry LOG_AGE monotonicity flags. |",
+            f"| Gate 2b split audit | `{split_report.get('status', 'not_run')}` | Headline OOD folds are non-empty and parameter-set triplets remain grouped. |",
             "| Known issues register initialized | Complete | Checks remain pending or blocked until data evidence exists. |",
             f"| Modeling authorized | {modeling_auth} | {modeling_notes} |",
         ]
     )
 
-    if manifest.audit_warnings:
+    audit_warnings = [
+        warning
+        for warning in manifest.audit_warnings
+        if not (has_logs and "no files detected for modalities: log, log_age" in warning)
+    ]
+    if audit_warnings:
         lines.extend(["", "## Audit Warnings", ""])
-        for warning in manifest.audit_warnings:
+        for warning in audit_warnings:
             lines.append(f"- {warning}")
 
     lines.append("")
@@ -246,8 +360,63 @@ def write_evidence_memo(
     known_issues: list[KnownIssueRecord],
     out_path: Path,
     bagit_report: dict[str, object] | None = None,
+    qa_report: dict[str, object] | None = None,
+    gate2_reports: dict[str, object] | None = None,
 ) -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(
-        render_evidence_memo(manifest, coverage, known_issues, bagit_report), encoding="utf-8"
+        render_evidence_memo(
+            manifest,
+            coverage,
+            known_issues,
+            bagit_report,
+            qa_report,
+            gate2_reports,
+        ),
+        encoding="utf-8",
     )
+
+
+def _dict_report(reports: dict[str, object] | None, key: str) -> dict[str, object]:
+    if not reports:
+        return {}
+    report = reports.get(key)
+    return report if isinstance(report, dict) else {}
+
+
+def _qa_table(qa_report: dict[str, object] | None, table_name: str) -> dict[str, object] | None:
+    if not qa_report:
+        return None
+    tables = qa_report.get("tables")
+    if not isinstance(tables, dict):
+        return None
+    table = tables.get(table_name)
+    return table if isinstance(table, dict) and table.get("exists") else None
+
+
+def _format_int(value: object) -> str:
+    if value is None:
+        return "N/A"
+    try:
+        return f"{int(value):,}"
+    except (TypeError, ValueError):
+        return str(value)
+
+
+def _diagnostic_count(table: dict[str, object], field_name: str) -> object:
+    counts = table.get("diagnostic_nonnull_counts")
+    if not isinstance(counts, dict):
+        return None
+    return counts.get(field_name)
+
+
+def _qa_failure_summary(qa_report: dict[str, object] | None) -> str:
+    if not qa_report:
+        return "No QA report was available when the memo was generated."
+    failures = qa_report.get("failures")
+    if not isinstance(failures, list) or not failures:
+        return "All available QA checks passed."
+    first = str(failures[0])
+    if len(failures) == 1:
+        return first
+    return f"{first}; plus {len(failures) - 1} additional failures."

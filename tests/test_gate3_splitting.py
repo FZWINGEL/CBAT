@@ -16,8 +16,10 @@ from mbp.data.schema_contracts import (
     SPLIT_REGISTRY_SCHEMA,
     validate_table,
 )
+from mbp.audit.log_age_monotonicity import write_log_age_monotonicity_report
 from mbp.data.products.interval_table import build_interval_table
-from mbp.data.splitting import generate_split_registry
+from mbp.data.products.interval_table import run_interval_qa
+from mbp.data.splitting import audit_split_registry, generate_split_registry
 
 
 # ---------------------------------------------------------------------------
@@ -43,9 +45,9 @@ def _make_condition_parquet(tmp_path: Path, n_params: int = 5) -> Path:
         "schema_version": [],
     }
     aging_modes = ["calendar", "cyclic", "profile"]
-    temps = [25.0, 0.0, 45.0, 10.0, 35.0]
+    temps = [25.0, 0.0, 40.0, 10.0, 35.0]
     soc_windows = ["10-90", "0-100", "40-60", "20-80", "45-55"]
-    charge_rates = [1.0, 0.5, 2.0, 1.5, 3.0]
+    charge_rates = [1.0, 0.5, 5.0 / 3.0, 1.5, 3.0]
 
     for p in range(1, n_params + 1):
         for r in range(1, 4):
@@ -69,13 +71,17 @@ def _make_condition_parquet(tmp_path: Path, n_params: int = 5) -> Path:
     return out_path
 
 
-def _make_checkup_parquet(interim_dir: Path) -> Path:
+def _make_checkup_parquet(interim_dir: Path, *, timestamp_offset: float = 0.0) -> Path:
     records = {
         "cell_id": ["P001_1", "P001_1", "P001_1"],
         "parameter_set": [1, 1, 1],
         "replicate_id": [1, 1, 1],
         "checkup_k": [0, 1, 2],
-        "timestamp": [100.0, 200.0, 350.0],
+        "timestamp": [
+            timestamp_offset + 100.0,
+            timestamp_offset + 200.0,
+            timestamp_offset + 350.0,
+        ],
         "capacity_Ah": [3.0, 2.9, 2.7],
         "capacity_soh": [1.0, 0.966, 0.9],
         "charge_energy_Wh": [10.0, 9.0, 8.0],
@@ -92,10 +98,10 @@ def _make_checkup_parquet(interim_dir: Path) -> Path:
 
 
 def _make_log_age_parquet(interim_dir: Path, *, out_of_order: bool = False) -> Path:
-    timestamps = [120.0, 180.0, 240.0, 300.0]
+    timestamps = [20.0, 80.0, 140.0, 200.0]
     efc = [10.0, 11.0, 12.0, 13.0]
     if out_of_order:
-        timestamps = [120.0, 180.0, 170.0, 300.0]
+        timestamps = [20.0, 80.0, 70.0, 200.0]
         efc = [10.0, 11.0, 10.5, 13.0]
     records = {
         "cell_id": ["P001_1"] * 4,
@@ -186,7 +192,7 @@ class TestSplittingEngine:
             )
 
     def test_temperature_holdout_mapping(self, tmp_path: Path) -> None:
-        """Temperature OOD holdouts: 0°C → 1, 45°C → 2, otherwise → 0."""
+        """Temperature OOD holdouts: 0°C -> 1, 40°C -> 2, otherwise -> 0."""
         cond_path = _make_condition_parquet(tmp_path, n_params=5)
         out_dir = tmp_path / "splits"
 
@@ -205,8 +211,8 @@ class TestSplittingEngine:
             temp = temp_by_cell[cell_id]
             if temp == 0.0:
                 assert fold == 1, f"Cell {cell_id} at 0°C should have temp_holdout=1"
-            elif temp == 45.0:
-                assert fold == 2, f"Cell {cell_id} at 45°C should have temp_holdout=2"
+            elif temp == 40.0:
+                assert fold == 2, f"Cell {cell_id} at 40°C should have temp_holdout=2"
             else:
                 assert fold == 0, f"Cell {cell_id} at {temp}°C should have temp_holdout=0"
 
@@ -255,6 +261,47 @@ class TestSplittingEngine:
         versions = table.column("schema_version").to_pylist()
         assert all(v == "gate3.split.v1" for v in versions)
 
+    def test_split_registry_audit_reports_non_empty_ood_folds(self, tmp_path: Path) -> None:
+        cond_path = _make_condition_parquet(tmp_path, n_params=10)
+        out_dir = tmp_path / "splits"
+        split_table = generate_split_registry(cond_path, out_dir)
+        report_path = tmp_path / "split_registry_report.json"
+
+        report = audit_split_registry(out_dir / "split_registry_v1.parquet", cond_path, report_path)
+
+        assert report_path.exists()
+        assert len(split_table) == report["row_count"]
+        assert report["status"] == "passed"
+        assert report["replicates_grouped_by_parameter_set"] is True
+        assert report["temperature_holdout_fold_counts"]["2"] > 0
+        assert report["c_rate_holdout_fold_counts"]["1"] > 0
+
+
+# ---------------------------------------------------------------------------
+# LOG_AGE Monotonicity Report Tests
+# ---------------------------------------------------------------------------
+
+
+class TestLogAgeMonotonicityReport:
+    """Tests for detailed LOG_AGE monotonicity violation reporting."""
+
+    def test_writes_detail_parquet_and_summary_csv(self, tmp_path: Path) -> None:
+        interim_dir = tmp_path / "interim"
+        interim_dir.mkdir()
+        log_age_path = _make_log_age_parquet(interim_dir, out_of_order=True)
+        out = tmp_path / "violations.parquet"
+        summary = tmp_path / "summary.csv"
+
+        report = write_log_age_monotonicity_report(log_age_path, out, summary)
+
+        assert report["violation_count"] == 1
+        assert report["timestamp_decrease_count"] == 1
+        assert report["efc_decrease_count"] == 1
+        detail = pq.read_table(out).to_pylist()
+        assert detail[0]["violation_type"] == "both"
+        assert detail[0]["cell_id"] == "P001_1"
+        assert "cell,P001_1,1,1,1,1" in summary.read_text(encoding="utf-8")
+
 
 # ---------------------------------------------------------------------------
 # Interval Table Tests
@@ -290,12 +337,72 @@ class TestIntervalTable:
         assert first["log_age_mean_voltage_V"] == 3.45
         assert first["log_age_capacity_diag_rows_masked"] == 1
         assert first["log_age_r0_diag_rows_masked"] == 0
+        assert first["log_age_monotonicity_violation_count"] == 0
+        assert first["LOG_AGE_monotonicity_clean"] is True
         assert "LOG_AGE_inserted_diagnostics_masked" in first["quality_flags"]
 
         metadata = pq.read_metadata(out_path).metadata
         assert metadata is not None
         assert metadata[b"schema_version"] == b"gate2.interval.v1"
         assert b"split_registry_sha256" in metadata
+
+    def test_aligns_epoch_checkups_to_relative_log_age_time(self, tmp_path: Path) -> None:
+        interim_dir = tmp_path / "interim"
+        interim_dir.mkdir()
+        cond_path = _make_condition_parquet(interim_dir, n_params=1)
+        _make_checkup_parquet(interim_dir, timestamp_offset=1_665_626_000.0)
+        _make_log_age_parquet(interim_dir)
+        generate_split_registry(cond_path, tmp_path / "splits")
+
+        table = build_interval_table(interim_dir, interim_dir / "interval_table.parquet")
+
+        first = table.to_pylist()[0]
+        assert first["t_result_k_s"] > 1_000_000_000
+        assert first["log_age_row_count"] == 2
+        assert first["LOG_AGE_available"] is True
+
+    def test_maps_log_age_monotonicity_violations_to_intervals(self, tmp_path: Path) -> None:
+        interim_dir = tmp_path / "interim"
+        interim_dir.mkdir()
+        cond_path = _make_condition_parquet(interim_dir, n_params=1)
+        _make_checkup_parquet(interim_dir)
+        log_age_path = _make_log_age_parquet(interim_dir, out_of_order=True)
+        generate_split_registry(cond_path, tmp_path / "splits")
+        violations_path = tmp_path / "violations.parquet"
+        summary_path = tmp_path / "summary.csv"
+        write_log_age_monotonicity_report(log_age_path, violations_path, summary_path)
+
+        table = build_interval_table(
+            interim_dir,
+            interim_dir / "interval_table.parquet",
+            monotonicity_violations_path=violations_path,
+        )
+
+        first = table.to_pylist()[0]
+        assert first["log_age_monotonicity_violation_count"] == 1
+        assert first["log_age_timestamp_decrease_count"] == 1
+        assert first["log_age_efc_decrease_count"] == 1
+        assert first["LOG_AGE_monotonicity_clean"] is False
+        assert "LOG_AGE_monotonicity_violation" in first["quality_flags"]
+
+    def test_interval_qa_reports_contaminated_intervals(self, tmp_path: Path) -> None:
+        interim_dir = tmp_path / "interim"
+        interim_dir.mkdir()
+        cond_path = _make_condition_parquet(interim_dir, n_params=1)
+        _make_checkup_parquet(interim_dir)
+        log_age_path = _make_log_age_parquet(interim_dir, out_of_order=True)
+        generate_split_registry(cond_path, tmp_path / "splits")
+        violations_path = tmp_path / "violations.parquet"
+        write_log_age_monotonicity_report(log_age_path, violations_path, tmp_path / "summary.csv")
+        interval_path = interim_dir / "interval_table.parquet"
+        build_interval_table(interim_dir, interval_path, monotonicity_violations_path=violations_path)
+
+        report = run_interval_qa(interval_path, tmp_path / "interval_qa_report.json")
+
+        assert report["status"] == "passed"
+        assert report["row_count"] == 2
+        assert report["expected_interval_count"] == 2
+        assert report["intervals_with_monotonicity_violations"] == 1
 
     def test_interval_cli(self, tmp_path: Path) -> None:
         from typer.testing import CliRunner

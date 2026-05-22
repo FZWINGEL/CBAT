@@ -15,25 +15,24 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Gate 1: Dataset audit and provenance verification.
+Gate 2b: LOG_AGE integrity triage and interval-table hardening.
 
 Allowed work:
-- repo scaffolding
-- dataset inventory
-- manifest generation
-- file hashing
-- schema definitions
-- audit reports
+- LOG_AGE monotonicity investigation
+- interval-table QA
+- quality flags for contaminated intervals
+- split-registry audit
+- raw LOG audit scaffolding
+- documentation/evidence memo updates
 - small tests with synthetic fixtures
-- documentation templates
 
 Forbidden work:
-- neural models
+- model training
+- baseline leaderboard
 - CBAT architecture
+- neural models
+- policy ranking
 - EIS embeddings
-- training loops
-- hyperparameter optimization
-- claims about performance
 
 ## Coding Standards
 

@@ -1,0 +1,72 @@
+{
+  "c_rate_holdout_fold_counts": {
+    "0": 192,
+    "1": 36
+  },
+  "c_rate_holdout_represented_rates": {
+    "0": [
+      "0.0/0.0",
+      "0.33/0.33",
+      "0.33/1.0",
+      "1.0/1.0"
+    ],
+    "1": [
+      "1.67/1.0"
+    ]
+  },
+  "condition_fold_parameter_set_counts": {
+    "0": 16,
+    "1": 15,
+    "2": 15,
+    "3": 15,
+    "4": 15
+  },
+  "condition_table": "data/interim/cell_condition_table.parquet",
+  "failures": [],
+  "profile_holdout_fold_counts": {
+    "0": 192,
+    "1": 36
+  },
+  "profile_holdout_represented_aging_modes": {
+    "0": [
+      "calendar",
+      "cyclic"
+    ],
+    "1": [
+      "profile"
+    ]
+  },
+  "replicates_grouped_by_parameter_set": true,
+  "row_count": 228,
+  "soc_window_holdout_fold_counts": {
+    "0": 228
+  },
+  "soc_window_holdout_represented_windows": {
+    "0": [
+      "0%",
+      "10%",
+      "100%",
+      "50%",
+      "90%"
+    ]
+  },
+  "split_registry": "data/splits/split_registry_v1.parquet",
+  "status": "passed",
+  "temperature_holdout_fold_counts": {
+    "0": 114,
+    "1": 57,
+    "2": 57
+  },
+  "temperature_holdout_represented_temperatures": {
+    "0": [
+      10.0,
+      25.0
+    ],
+    "1": [
+      0.0
+    ],
+    "2": [
+      40.0
+    ]
+  }
+}

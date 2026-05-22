@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from collections import Counter
 import hashlib
+import json
 from pathlib import Path
 
 import pyarrow as pa
@@ -104,7 +106,29 @@ class LogAgeAccumulator:
         self.r1_diag_rows_masked += _nonnull_count(table, "R1_mOhm")
 
 
-def build_interval_table(interim_dir: Path, out_path: Path) -> pa.Table:
+@dataclass
+class MonotonicityAccumulator:
+    violation_count: int = 0
+    timestamp_decrease_count: int = 0
+    efc_decrease_count: int = 0
+    max_timestamp_drop_s: float = 0.0
+    max_efc_drop: float = 0.0
+
+    def update(self, violation_type: str, timestamp_drop: float, efc_drop: float) -> None:
+        self.violation_count += 1
+        if violation_type in ("timestamp_decrease", "both"):
+            self.timestamp_decrease_count += 1
+        if violation_type in ("efc_decrease", "both"):
+            self.efc_decrease_count += 1
+        self.max_timestamp_drop_s = max(self.max_timestamp_drop_s, timestamp_drop)
+        self.max_efc_drop = max(self.max_efc_drop, efc_drop)
+
+
+def build_interval_table(
+    interim_dir: Path,
+    out_path: Path,
+    monotonicity_violations_path: Path | None = None,
+) -> pa.Table:
     """Build and write one row per adjacent EOC check-up interval."""
     condition_path = interim_dir / "cell_condition_table.parquet"
     checkup_path = interim_dir / "checkup_event_table.parquet"
@@ -120,16 +144,25 @@ def build_interval_table(interim_dir: Path, out_path: Path) -> pa.Table:
     checkup_table = pq.read_table(checkup_path)
     interval_rows = _build_interval_spine(checkup_table, condition_by_cell, split_by_cell)
     accumulators = {IntervalKey(row["cell_id"], row["checkup_k"]): LogAgeAccumulator() for row in interval_rows}
+    monotonicity = {
+        IntervalKey(row["cell_id"], row["checkup_k"]): MonotonicityAccumulator()
+        for row in interval_rows
+    }
 
     intervals_by_cell: dict[str, list[dict]] = {}
     for row in interval_rows:
         intervals_by_cell.setdefault(row["cell_id"], []).append(row)
 
     _scan_log_age(log_age_path, intervals_by_cell, accumulators)
+    if monotonicity_violations_path and monotonicity_violations_path.exists():
+        _map_monotonicity_violations(
+            monotonicity_violations_path, intervals_by_cell, monotonicity
+        )
 
     output = {field.name: [] for field in INTERVAL_TABLE_SCHEMA}
     for row in interval_rows:
         acc = accumulators[IntervalKey(row["cell_id"], row["checkup_k"])]
+        mono = monotonicity[IntervalKey(row["cell_id"], row["checkup_k"])]
         quality_flags = []
         if acc.row_count == 0:
             quality_flags.append("LOG_AGE_missing_interval")
@@ -139,6 +172,8 @@ def build_interval_table(interim_dir: Path, out_path: Path) -> pa.Table:
             or acc.r1_diag_rows_masked
         ):
             quality_flags.append("LOG_AGE_inserted_diagnostics_masked")
+        if mono.violation_count:
+            quality_flags.append("LOG_AGE_monotonicity_violation")
 
         values = {
             **row,
@@ -162,6 +197,12 @@ def build_interval_table(interim_dir: Path, out_path: Path) -> pa.Table:
             "log_age_r0_diag_rows_masked": acc.r0_diag_rows_masked,
             "log_age_r1_diag_rows_masked": acc.r1_diag_rows_masked,
             "LOG_AGE_available": acc.row_count > 0,
+            "log_age_monotonicity_violation_count": mono.violation_count,
+            "log_age_timestamp_decrease_count": mono.timestamp_decrease_count,
+            "log_age_efc_decrease_count": mono.efc_decrease_count,
+            "log_age_max_timestamp_drop_s": mono.max_timestamp_drop_s,
+            "log_age_max_efc_drop": mono.max_efc_drop,
+            "LOG_AGE_monotonicity_clean": mono.violation_count == 0,
             "quality_flags": ";".join(quality_flags),
             "schema_version": SCHEMA_VERSION,
         }
@@ -178,6 +219,10 @@ def build_interval_table(interim_dir: Path, out_path: Path) -> pa.Table:
         b"split_registry_path": str(split_path).encode(),
         b"log_age_path": str(log_age_path).encode(),
     }
+    if monotonicity_violations_path and monotonicity_violations_path.exists():
+        metadata[b"log_age_monotonicity_violations_path"] = str(
+            monotonicity_violations_path
+        ).encode()
     table = table.replace_schema_metadata(metadata)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     pq.write_table(table, out_path)
@@ -194,6 +239,9 @@ def _build_interval_spine(
     rows: list[dict] = []
     for cell_id in sorted(by_cell):
         events = sorted(by_cell[cell_id], key=lambda row: (row["checkup_k"], row["timestamp"]))
+        if not events:
+            continue
+        log_age_zero_s = float(events[0]["timestamp"])
         for left, right in zip(events, events[1:]):
             if right["checkup_k"] <= left["checkup_k"]:
                 continue
@@ -216,6 +264,8 @@ def _build_interval_spine(
                     "checkup_k_next": int(right["checkup_k"]),
                     "t_result_k_s": float(left["timestamp"]),
                     "t_result_k1_s": float(right["timestamp"]),
+                    "_log_age_window_start_s": float(left["timestamp"]) - log_age_zero_s,
+                    "_log_age_window_end_s": float(right["timestamp"]) - log_age_zero_s,
                     "duration_s": duration_s,
                     "duration_h": duration_s / 3600.0,
                     "calendar_days": duration_s / 86400.0,
@@ -255,11 +305,14 @@ def _scan_log_age(
                 if not (candidate_cells & intervals_by_cell.keys()):
                     continue
 
+        min_t = None
+        max_t = None
         if time_stats and time_stats.min is not None and time_stats.max is not None:
             min_t = float(time_stats.min)
             max_t = float(time_stats.max)
             if not any(
-                interval["t_result_k_s"] < max_t and interval["t_result_k1_s"] >= min_t
+                interval["_log_age_window_start_s"] < max_t
+                and interval["_log_age_window_end_s"] >= min_t
                 for cell in (candidate_cells or intervals_by_cell.keys())
                 for interval in intervals_by_cell.get(cell, [])
             ):
@@ -272,16 +325,42 @@ def _scan_log_age(
         timestamps = table.column("timestamp_s")
         for cell_id in candidate_cells:
             intervals = intervals_by_cell.get(cell_id, [])
+            if min_t is not None and max_t is not None:
+                intervals = [
+                    interval
+                    for interval in intervals
+                    if interval["_log_age_window_start_s"] < max_t
+                    and interval["_log_age_window_end_s"] >= min_t
+                ]
             if not intervals:
                 continue
             cell_mask = pc.equal(table.column("cell_id"), cell_id)
             for interval in intervals:
-                after_start = pc.greater(timestamps, interval["t_result_k_s"])
-                before_end = pc.less_equal(timestamps, interval["t_result_k1_s"])
+                after_start = pc.greater(timestamps, interval["_log_age_window_start_s"])
+                before_end = pc.less_equal(timestamps, interval["_log_age_window_end_s"])
                 mask = pc.and_(cell_mask, pc.and_(after_start, before_end))
                 filtered = table.filter(mask)
                 if filtered.num_rows:
                     accumulators[IntervalKey(cell_id, interval["checkup_k"])].update(filtered)
+
+
+def _map_monotonicity_violations(
+    violations_path: Path,
+    intervals_by_cell: dict[str, list[dict]],
+    accumulators: dict[IntervalKey, MonotonicityAccumulator],
+) -> None:
+    table = pq.read_table(violations_path)
+    for violation in table.to_pylist():
+        cell_id = violation["cell_id"]
+        timestamp = float(violation["current_timestamp_s"])
+        for interval in intervals_by_cell.get(cell_id, []):
+            if interval["_log_age_window_start_s"] < timestamp <= interval["_log_age_window_end_s"]:
+                accumulators[IntervalKey(cell_id, interval["checkup_k"])].update(
+                    str(violation["violation_type"]),
+                    max(0.0, -float(violation["delta_timestamp_s"])),
+                    max(0.0, -float(violation["delta_EFC"])),
+                )
+                break
 
 
 def _table_by_cell(table: pa.Table) -> dict[str, dict]:
@@ -332,3 +411,95 @@ def _sha256(path: Path) -> str:
         for chunk in iter(lambda: f.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def run_interval_qa(
+    interval_table_path: Path,
+    out_path: Path,
+    checkup_table_path: Path | None = None,
+    duration_tolerance_s: float = 1.0,
+) -> dict[str, object]:
+    """Write a JSON QA report for the interval table."""
+    if not interval_table_path.exists():
+        raise FileNotFoundError(f"Interval table not found: {interval_table_path}")
+    if checkup_table_path is None:
+        checkup_table_path = interval_table_path.parent / "checkup_event_table.parquet"
+    if not checkup_table_path.exists():
+        raise FileNotFoundError(f"Check-up event table not found: {checkup_table_path}")
+
+    interval_table = pq.read_table(interval_table_path)
+    checkup_table = pq.read_table(checkup_table_path)
+    rows = interval_table.to_pylist()
+    checkups = checkup_table.to_pylist()
+    cells_with_checkups = {row["cell_id"] for row in checkups}
+    expected_intervals = len(checkups) - len(cells_with_checkups)
+
+    failures: list[str] = []
+    quality_counts: Counter[str] = Counter()
+    log_age_available = 0
+    zero_log_age_rows = 0
+    affected_monotonicity = 0
+    non_cohort_cells = []
+
+    for row in rows:
+        cell_id = str(row["cell_id"])
+        if not _is_cohort_cell_id(cell_id):
+            non_cohort_cells.append(cell_id)
+        if row["duration_s"] <= 0:
+            failures.append(f"{cell_id} checkup {row['checkup_k']}: duration_s <= 0")
+        if not (0 < row["calendar_days"] < 5000):
+            failures.append(f"{cell_id} checkup {row['checkup_k']}: calendar_days unreasonable")
+        if row["LOG_AGE_available"]:
+            log_age_available += 1
+        if row["log_age_row_count"] == 0:
+            zero_log_age_rows += 1
+        elapsed = row.get("log_age_elapsed_s")
+        if elapsed is not None and elapsed > row["duration_s"] + duration_tolerance_s:
+            failures.append(f"{cell_id} checkup {row['checkup_k']}: LOG_AGE elapsed exceeds interval")
+        if row.get("log_age_efc_delta") is not None and row["log_age_efc_delta"] < 0:
+            failures.append(f"{cell_id} checkup {row['checkup_k']}: negative LOG_AGE EFC delta")
+        if row.get("log_age_monotonicity_violation_count", 0) > 0:
+            affected_monotonicity += 1
+        flags = str(row.get("quality_flags") or "")
+        for flag in [f for f in flags.split(";") if f]:
+            quality_counts[flag] += 1
+
+    if len(rows) != expected_intervals:
+        failures.append(
+            f"Expected {expected_intervals} intervals from {len(checkups)} check-ups and "
+            f"{len(cells_with_checkups)} cells, found {len(rows)}"
+        )
+    if non_cohort_cells:
+        failures.append(f"Non-cohort cells present: {sorted(set(non_cohort_cells))[:10]}")
+
+    report = {
+        "status": "failed" if failures else "passed",
+        "interval_table": str(interval_table_path),
+        "checkup_event_table": str(checkup_table_path),
+        "row_count": len(rows),
+        "expected_interval_count": expected_intervals,
+        "checkup_event_rows": len(checkups),
+        "cells_with_checkups": len(cells_with_checkups),
+        "non_cohort_cell_count": len(set(non_cohort_cells)),
+        "duration_positive": not any(row["duration_s"] <= 0 for row in rows),
+        "LOG_AGE_available_fraction": log_age_available / len(rows) if rows else 0.0,
+        "intervals_with_log_age_row_count_zero": zero_log_age_rows,
+        "intervals_with_monotonicity_violations": affected_monotonicity,
+        "masked_diagnostic_rows": {
+            "cap_aged_est_Ah": sum(row["log_age_capacity_diag_rows_masked"] for row in rows),
+            "R0_mOhm": sum(row["log_age_r0_diag_rows_masked"] for row in rows),
+            "R1_mOhm": sum(row["log_age_r1_diag_rows_masked"] for row in rows),
+        },
+        "quality_flags_distribution": dict(sorted(quality_counts.items())),
+        "failures": failures[:100],
+    }
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return report
+
+
+def _is_cohort_cell_id(cell_id: str) -> bool:
+    import re
+
+    match = re.match(r"^P(\d{3})_([1-3])$", cell_id)
+    return bool(match and 1 <= int(match.group(1)) <= 76)
