@@ -35,8 +35,8 @@ Current state:
   runner and is gated by `interval_subset_registry_v1.parquet`.
 - The dependency-free real-data L0 persistence smoke run completed and emitted
   trackable report artifacts under `reports/baselines/capacity_l0_smoke/`.
-- The full real-data L0-L3 ladder has not completed yet; initial attempts were
-  stopped after running too long for an interactive session.
+- The bounded full real-data L0-L3 ladder completed with `--hgb-max-iter 5` and
+  emitted trackable report artifacts under `reports/baselines/capacity_l0_l3/`.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -266,19 +266,30 @@ Completed Milestone 0.5 experiment artifacts:
 - `reports/baselines/capacity_l0_smoke/baseline_summary.md`
 - `reports/baselines/capacity_l0_smoke/evaluation_cards/*.json`
 - `reports/baselines/capacity_l0_smoke/plots/*.csv`
+- `reports/baselines/capacity_l0_l3_report.json`
+- `reports/baselines/capacity_l0_l3/leaderboard.csv`
+- `reports/baselines/capacity_l0_l3/baseline_summary.md`
+- `reports/baselines/capacity_l0_l3/evaluation_cards/*.json`
+- `reports/baselines/capacity_l0_l3/plots/*.csv`
 
 The L0 smoke report produced `48` metric rows on the real interval table. It
 confirmed `3,827` tolerant-clean rows, `2,773` strict-clean rows, and `1,054`
 monotonicity-flagged sensitivity intervals.
 
-Pending Milestone 0.5 artifact:
+The bounded L0-L3 report produced `768` metric rows, `320` leaderboard rows,
+and `160` evaluation cards. It used `hgb_max_iter=5`, so it is a valid first
+full-ladder artifact but not a final tuned gradient-boosting run.
 
-- `reports/baselines/capacity_l0_l3_report.json`
+Primary-run baseline highlights:
 
-The first full L0-L3 attempts were stopped before completion. The next full
-run should be bounded explicitly, either by running one split/model family at a
-time or by adding a quick/full execution mode before attempting another
-unattended full ladder.
+- Best `capacity_Ah_k1` condition-mean MAE: `0.078735`, from `L1_ridge` with
+  `F2_state_exposure` on `profile_holdout_fold`.
+- Best `delta_capacity_Ah` condition-mean MAE: `0.069939`, from
+  `L2_hist_gradient_boosting` with `F1_state_time` on `profile_holdout_fold`.
+- Hardest split by best available condition-mean MAE:
+  `c_rate_holdout_fold` at `0.175406`.
+- Strict-vs-tolerant sensitivity was small on average: mean
+  primary-minus-sensitivity condition-mean MAE was approximately `-0.000087`.
 
 ## Important Implementation Notes
 
@@ -340,20 +351,17 @@ correctness failure.
 
 ## Recommended Next Step
 
-The optional baseline extra is installed in the current local `.venv`. The next
-step is to make the full real-data L0-L3 run operationally bounded, then rerun
-the capacity ladder:
+Review the full L0-L3 report before adding any new modeling scope. The next
+work should harden the baseline reporting layer and inspect:
 
-```text
-UV_CACHE_DIR=/tmp/uv-cache .venv/bin/python -m uv sync --extra dev --extra baseline
-UV_CACHE_DIR=/tmp/uv-cache .venv/bin/mbp baseline run-capacity \
-  --interval-table data/interim/interval_table.parquet \
-  --interval-subsets data/splits/interval_subset_registry_v1.parquet \
-  --out reports/baselines/capacity_l0_l3_report.json \
-  --predictions-out data/processed/capacity_l0_l3_predictions.parquet \
-  --hgb-max-iter 5
-```
+- why the C-rate holdout is the hardest split;
+- whether state/exposure/nominal feature improvements are stable across both
+  targets;
+- whether the strict-vs-tolerant monotonicity sensitivity deltas are small
+  enough to keep `baseline_clean_tolerant` as the primary subset;
+- whether a follow-up HGB rerun with higher `--hgb-max-iter` changes the
+  conclusions.
 
-Keep the first report limited to capacity targets and scalar interval features.
-Do not leave long-running baseline terminals active; document any run outcome
-under `docs/experiments/`.
+Continue to keep EIS/PULSE modeling, sequence models, neural models, policy
+ranking, and CBAT architecture out of scope until the capacity baseline report
+has been reviewed.

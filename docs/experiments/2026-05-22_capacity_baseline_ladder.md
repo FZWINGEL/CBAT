@@ -123,14 +123,16 @@ Decision:
 Command:
 
 ```bash
-UV_CACHE_DIR=/tmp/uv-cache .venv/bin/mbp baseline run-capacity \
+OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4 MKL_NUM_THREADS=4 NUMEXPR_NUM_THREADS=4 \
+UV_CACHE_DIR=/tmp/uv-cache timeout 7200s .venv/bin/mbp baseline run-capacity \
   --interval-table data/interim/interval_table.parquet \
   --interval-subsets data/splits/interval_subset_registry_v1.parquet \
   --out reports/baselines/capacity_l0_l3_report.json \
-  --predictions-out data/processed/capacity_l0_l3_predictions.parquet
+  --predictions-out data/processed/capacity_l0_l3_predictions.parquet \
+  --hgb-max-iter 5
 ```
 
-Status: not completed in this session.
+Status: passed.
 
 Observed behavior:
 
@@ -142,20 +144,55 @@ Observed behavior:
 - After the stop, no real `mbp baseline run-capacity` Python process was visible
   from the sandbox process checks; the remaining `pgrep` match was the search
   command itself.
-- `reports/baselines/capacity_l0_l3_report.json` and
-  `data/processed/capacity_l0_l3_predictions.parquet` were not produced.
+- A later full run with `--hgb-max-iter 5`, a 7,200 second timeout, and four
+  thread caps completed successfully.
 
-Interim decision:
+Results:
 
-- `HistGradientBoostingRegressor` now defaults to `--hgb-max-iter 10` for the
-  first full real-data baseline pass, with the value recorded in the report.
+- Report status: `passed`.
+- Metric rows: `768`.
+- Leaderboard rows: `320`.
+- Evaluation cards: `160`.
+- Full interval rows: `3,827`.
+- Primary tolerant rows: `3,827`.
+- Strict clean rows: `2,773`.
+- Sensitivity rows after excluding monotonicity-flagged intervals: `2,773`.
+- Monotonicity-flagged sensitivity rows: `1,054`.
+- `hgb_max_iter`: `5`.
+
+Generated artifacts:
+
+- `reports/baselines/capacity_l0_l3_report.json` (`~496K`)
+- `reports/baselines/capacity_l0_l3/leaderboard.csv`
+- `reports/baselines/capacity_l0_l3/baseline_summary.md`
+- `reports/baselines/capacity_l0_l3/evaluation_cards/*.json`
+- `reports/baselines/capacity_l0_l3/plots/*.csv`
+- `data/processed/capacity_l0_l3_predictions.parquet` (`~4.5M`, ignored)
+
+Primary-run findings:
+
+- Best `capacity_Ah_k1` primary row by condition-mean MAE:
+  `L1_ridge` with `F2_state_exposure` on `profile_holdout_fold`
+  (`0.078735` condition-mean MAE, `0.213675` worst-condition MAE).
+- Best `delta_capacity_Ah` primary row by condition-mean MAE:
+  `L2_hist_gradient_boosting` with `F1_state_time` on
+  `profile_holdout_fold` (`0.069939` condition-mean MAE, `0.231796`
+  worst-condition MAE).
+- Hardest split by best available condition-mean MAE was
+  `c_rate_holdout_fold` (`0.175406` condition-mean MAE), where
+  `L1_ridge` with `F3_state_nominal` was best for `delta_capacity_Ah`.
+- Strict-vs-tolerant sensitivity deltas were small on average:
+  mean primary-minus-sensitivity condition-mean MAE was approximately
+  `-0.000087`, with median approximately `0.000346`.
+
+Decision:
+
 - The CLI exposes `--hgb-max-iter` so later runs can increase iterations without
   code changes.
-- The first full artifact run should use an explicit smaller HGB budget if
-  needed; that value is recorded in `capacity_l0_l3_report.json`.
-- Do not start another long full-ladder run until the runtime is bounded more
-  carefully, for example by running one split/model family at a time or adding a
-  more explicit quick/full execution mode.
+- Treat the first full L0-L3 report as a bounded baseline artifact because HGB
+  used `max_iter=5`.
+- Use the report to guide hardening and follow-up reruns before expanding to
+  EIS/PULSE, sequence models, neural models, policy ranking, or CBAT.
 
 ## Current Findings And Decisions
 
@@ -170,8 +207,8 @@ Interim decision:
 - Baseline artifacts are split by tracking policy:
   - small reports under `reports/baselines/` are trackable
   - generated predictions under `data/processed/` are ignored
-- The real-data L0 smoke baseline completed; the real-data L0-L3 ladder did not
-  complete in this session and should be treated as pending.
+- The real-data L0 smoke baseline and bounded real-data L0-L3 ladder both
+  completed.
 - All future experiments and scientific implementation trials should be
   documented under `docs/experiments/`.
 

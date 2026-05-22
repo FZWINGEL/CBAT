@@ -1,0 +1,73 @@
+{
+  "feature_group": "F1_state_time",
+  "fold_metrics": [
+    {
+      "condition_mean_mae": 0.23703269818012995,
+      "condition_median_mae": 0.23601290896375998,
+      "feature_group": "F1_state_time",
+      "heldout_fold": 1,
+      "mae": 0.20747422726231113,
+      "model_level": "L3_quantile_hist_gradient_boosting",
+      "rmse": 0.3085238158101844,
+      "run_scope": "primary",
+      "split_name": "profile_holdout_fold",
+      "subset_name": "baseline_clean_tolerant",
+      "target": "capacity_Ah_k1",
+      "test_cells": 36,
+      "test_parameter_sets": 12,
+      "test_rows": 752,
+      "train_parameter_sets": 64,
+      "train_rows": 3075,
+      "worst_condition_mae": 0.5067941564226665
+    },
+    {
+      "condition_mean_mae": 0.24367123780246433,
+      "condition_median_mae": 0.22594788869104593,
+      "feature_group": "F1_state_time",
+      "heldout_fold": 1,
+      "mae": 0.19731136128523594,
+      "model_level": "L3_quantile_hist_gradient_boosting",
+      "rmse": 0.2965455946713422,
+      "run_scope": "sensitivity_excluding_monotonicity",
+      "split_name": "profile_holdout_fold",
+      "subset_name": "baseline_clean_tolerant",
+      "target": "capacity_Ah_k1",
+      "test_cells": 36,
+      "test_parameter_sets": 12,
+      "test_rows": 524,
+      "train_parameter_sets": 64,
+      "train_rows": 2249,
+      "worst_condition_mae": 0.6460995662433332
+    }
+  ],
+  "model_level": "L3_quantile_hist_gradient_boosting",
+  "primary_summary": {
+    "condition_mean_mae": 0.23703269818012995,
+    "condition_median_mae": 0.23601290896375998,
+    "fold_count": 1,
+    "mean_mae": 0.20747422726231113,
+    "mean_rmse": 0.3085238158101844,
+    "worst_condition_mae": 0.5067941564226665
+  },
+  "row_counts": {
+    "baseline_clean_strict_rows": 2773,
+    "baseline_clean_tolerant_rows": 3827,
+    "full_interval_rows": 3827,
+    "selected_cells": 228,
+    "selected_parameter_sets": 76,
+    "selected_subset_rows": 3827,
+    "sensitivity_excluding_monotonicity_rows": 2773,
+    "sensitivity_flagged_monotonicity_rows": 1054
+  },
+  "schema_version": "gate5.capacity_baseline.v1",
+  "sensitivity_excluding_monotonicity_summary": {
+    "condition_mean_mae": 0.24367123780246433,
+    "condition_median_mae": 0.22594788869104593,
+    "fold_count": 1,
+    "mean_mae": 0.19731136128523594,
+    "mean_rmse": 0.2965455946713422,
+    "worst_condition_mae": 0.6460995662433332
+  },
+  "split_name": "profile_holdout_fold",
+  "target": "capacity_Ah_k1"
+}
