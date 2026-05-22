@@ -51,6 +51,15 @@ Large data products and local tool artifacts remain ignored and are not tracked:
 - `.antigravitycli/`
 - local CodeGraph databases, Python caches, Ruff/Pytest caches, and `.venv/`
 
+Latest cleanup note:
+
+- `docs/experiments/2026-05-22_repo_cleanup.md`
+- Removed disposable Python, Pytest, Ruff, and empty `.antigravitycli/` local
+  artifacts.
+- Preserved `.venv/`, `.codegraph/`, raw/interim/processed data products, split
+  Parquets, and generated audit Parquets because they are ignored local
+  reproducibility or development artifacts.
+
 Small audit sidecars that are referenced by documentation are tracked:
 
 - `reports/audit/interval_qa_report.json`
@@ -318,10 +327,10 @@ EIS and PULSE scientific claims remain blocked by their known audit issues.
 Latest validation run:
 
 ```text
-UV_CACHE_DIR=/tmp/uv-cache .venv/bin/ruff check .
+PYTHONDONTWRITEBYTECODE=1 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/ruff check . --no-cache
 All checks passed.
 
-UV_CACHE_DIR=/tmp/uv-cache .venv/bin/pytest
+PYTHONDONTWRITEBYTECODE=1 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/pytest -p no:cacheprovider
 69 passed, 1 warning.
 ```
 
