@@ -11,12 +11,13 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 0.6.2: Capacity Target Consistency and C-rate Failure Audit**.
+The repository is in **Milestone 0.6.3: C-rate Delta Failure and Bias-Controlled Target Pass**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
-complete. Milestone 0.6.1 stress-feature hardening is complete. Milestone
-0.6.2 remains capacity-only and scalar-interval only.
+complete. Milestone 0.6.1 stress-feature hardening and Milestone 0.6.2 target
+consistency diagnostics are complete. Milestone 0.6.3 remains capacity-only and
+scalar-interval only.
 
 No EIS/PULSE supervised claims, sequence models, neural architecture, policy
 ranking, CBAT architecture, or EIS embedding work has been started.
@@ -59,6 +60,9 @@ Current state:
 - Milestone 0.6.2 target-consistency diagnostics are implemented and run on the
   v1.1 report. Direct delta remains the stronger C-rate delta target path;
   deriving delta from capacity does not solve the failure.
+- Milestone 0.6.3 normalized-rate target checks, train-fold bias-correction
+  diagnostics, and narrow F11-F13 cold/current feature groups are implemented
+  and run. None beats the F4 C-rate `delta_capacity_Ah` threshold.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -597,6 +601,56 @@ Decision:
   direct capacity on C-rate.
 - Keep PULSE/EIS/CBAT blocked until the C-rate delta failure mode is understood.
 
+### Milestone 0.6.3
+
+Milestone 0.6.3 tests one final narrow LOG_AGE-only C-rate delta pass before
+changing evidence streams. It adds normalized delta-rate target modes,
+train-fold residual/bias correction diagnostics, and compact cold/current
+feature groups F11-F13.
+
+Implemented changes:
+
+- Target modes:
+  - `delta_capacity_per_day_target`
+  - `delta_capacity_per_efc_target`
+- Train-fold-only residual correction via `mbp baseline run-capacity
+  --bias-correction`.
+- Narrow feature groups:
+  - `F11_minimal_cold_current`
+  - `F12_voltage_cold_current_interactions`
+  - `F13_sparse_c_rate_context`
+
+Real-data outputs:
+
+- `reports/baselines/capacity_delta_rate_targets_hgb50_report.json`
+- `reports/baselines/capacity_delta_rate_targets_hgb50/plots/rate_target_vs_direct_delta.csv`
+- `reports/baselines/capacity_c_rate_delta_v1_2_hgb50_report.json`
+- `reports/baselines/capacity_c_rate_delta_v1_2_hgb50/stress_feature_diagnostics.md`
+- `reports/baselines/capacity_c_rate_bias_corrected_report.json`
+- `reports/baselines/capacity_c_rate_bias_corrected/plots/bias_correction_by_split.csv`
+- `docs/experiments/2026-05-23_c_rate_delta_failure_decision.md`
+
+C-rate `delta_capacity_Ah` result:
+
+| Approach | Best C-rate condition-mean MAE | Beats `0.101133` F4 threshold |
+|---|---:|---|
+| Direct F4 baseline | `0.101133` | reference |
+| Normalized rate targets | `0.121271` best rate target | no |
+| Narrow F11-F13 groups | `0.147452` best narrow group | no |
+| Train-fold bias correction | effectively unchanged from direct F4 | no |
+
+Decision:
+
+- Keep direct `delta_capacity_Ah` as the primary delta target.
+- Do not use normalized rate targets as the next primary target path.
+- Do not promote F11-F13 narrow cold/current groups as evidence.
+- Treat train-fold residual correction as neutral diagnostics, not a headline
+  model.
+- Stop broad LOG_AGE scalar stress-feature expansion unless a future review
+  identifies a concrete bug. The next recommended evidence stream is PULSE
+  QA/baseline work, while EIS/PULSE supervised claims remain blocked until that
+  milestone is explicitly opened.
+
 ## Important Implementation Notes
 
 The interval builder preserves result-table timestamps in the public schema, but
@@ -638,8 +692,10 @@ exist. First baseline work must use:
   architecture
 
 EIS and PULSE scientific claims remain blocked by their known audit issues.
-The next authorized engineering direction remains capacity-only C-rate failure
-analysis, target-formulation review, or a narrow C-rate delta feature pass.
+The next authorized engineering direction should be a scoped PULSE QA/baseline
+planning milestone, unless the project owner explicitly requests another
+capacity-only diagnostic. EIS/PULSE supervised claims remain blocked until that
+milestone defines its QA and validation gates.
 
 ## Validation
 
@@ -650,7 +706,7 @@ PYTHONDONTWRITEBYTECODE=1 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/ruff check . --no
 All checks passed.
 
 PYTHONDONTWRITEBYTECODE=1 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/pytest -p no:cacheprovider
-85 passed, 1 warning.
+91 passed, 1 warning.
 ```
 
 The one warning is the existing `datetime.utcnow()` deprecation warning in
@@ -659,8 +715,8 @@ correctness failure.
 
 ## Recommended Next Step
 
-Review the **Milestone 0.6.2 Capacity Target Consistency and C-rate Failure
-Audit** before adding new modalities. The next bounded decision should choose
-between a narrow C-rate delta feature pass, residual/bias correction for
-cold/cool high-C-rate conditions, or stopping stress-feature expansion and
-considering PULSE as an independent evidence stream.
+Review the **Milestone 0.6.3 C-rate Delta Failure and Bias-Controlled Target
+Pass** before adding new modalities. The 0.6.3 result did not beat the F4
+C-rate delta threshold, so the recommended next step is to stop broad LOG_AGE
+stress-feature expansion and prepare a PULSE QA/baseline milestone as an
+independent evidence stream.

@@ -15,6 +15,7 @@ from mbp.baselines.capacity import DIAGNOSTIC_LEAKAGE_FIELDS
 from mbp.baselines.capacity import FEATURE_GROUPS
 from mbp.baselines.capacity import FeatureEncoder
 from mbp.baselines.capacity import NUMERIC_FEATURES
+from mbp.baselines.capacity import RATE_TARGETS
 from mbp.baselines.capacity import assert_no_parameter_set_leakage
 from mbp.baselines.capacity import compute_metrics
 from mbp.baselines.capacity import diagnose_capacity_report
@@ -290,6 +291,47 @@ def test_persistence_predictions_use_prior_capacity_and_zero_delta() -> None:
     assert delta[0]["y_pred"] == 0.0
 
 
+def test_normalized_delta_targets_return_delta_predictions() -> None:
+    train_rows = [
+        {"parameter_set": 2, "capacity_Ah_k": 3.0, "delta_capacity_Ah": -0.10, "calendar_days": 2.0, "log_age_efc_delta": 4.0},
+        {"parameter_set": 3, "capacity_Ah_k": 2.9, "delta_capacity_Ah": -0.20, "calendar_days": 4.0, "log_age_efc_delta": 8.0},
+    ]
+    test_rows = [
+        {
+            "parameter_set": 1,
+            "cell_id": "P001_1",
+            "capacity_Ah_k": 2.8,
+            "delta_capacity_Ah": -0.15,
+            "calendar_days": 3.0,
+            "log_age_efc_delta": 6.0,
+        },
+    ]
+
+    day_prediction = predict_capacity_target(
+        model_level="L0_persistence",
+        feature_group="persistence",
+        train_rows=train_rows,
+        test_rows=test_rows,
+        target="delta_capacity_per_day_target",
+        seed=42,
+    )
+
+    assert day_prediction[0]["y_pred"] == 0.0
+    metrics = compute_metrics(
+        test_rows,
+        [{"y_pred": -0.15}],
+        target="delta_capacity_per_day_target",
+        subset_name="baseline_clean_tolerant",
+        run_scope="primary",
+        split_name="condition_fold",
+        heldout_fold=0,
+        model_level="L0_persistence",
+        feature_group="persistence",
+        train_rows=train_rows,
+    )
+    assert metrics["mae"] == pytest.approx(0.0)
+
+
 def test_capacity_baseline_requires_existing_subset_registry(tmp_path: Path) -> None:
     interval_path, _ = _write_capacity_fixture(tmp_path)
 
@@ -319,6 +361,16 @@ def test_feature_groups_exclude_inserted_diagnostics(tmp_path: Path) -> None:
     for feature_group in FEATURE_GROUPS:
         encoder = FeatureEncoder.fit(rows, feature_group)
         assert not (set(encoder.output_columns) & DIAGNOSTIC_LEAKAGE_FIELDS)
+
+
+def test_rate_targets_are_not_input_features() -> None:
+    forbidden = set(RATE_TARGETS) | {
+        "delta_capacity_per_day",
+        "delta_capacity_per_efc",
+        "delta_capacity_per_Ah_throughput",
+    }
+    for feature_group in ("F11_minimal_cold_current", "F12_voltage_cold_current_interactions", "F13_sparse_c_rate_context"):
+        assert not (set(NUMERIC_FEATURES[feature_group]) & forbidden)
 
 
 def test_ridge_standardization_uses_train_fold_statistics_only() -> None:
@@ -627,6 +679,29 @@ def test_capacity_runner_allows_focused_target_and_split_selection(tmp_path: Pat
     assert report["split_views"] == ["c_rate_holdout_fold"]
     assert {metric["target"] for metric in report["metrics"]} == {"delta_capacity_Ah"}
     assert {metric["split_name"] for metric in report["metrics"]} == {"c_rate_holdout_fold"}
+
+
+def test_bias_correction_uses_train_fold_and_writes_diagnostics(tmp_path: Path) -> None:
+    interval_path, subset_path = _write_capacity_fixture(tmp_path)
+    report = run_capacity_baselines(
+        interval_path,
+        subset_path,
+        tmp_path / "bias_report.json",
+        tmp_path / "bias_predictions.parquet",
+        model_levels=["L1_ridge"],
+        feature_groups=["F4_state_log_age_scalar"],
+        targets=["delta_capacity_Ah"],
+        split_views=["c_rate_holdout_fold"],
+        bias_correction=True,
+    )
+
+    assert report["bias_correction"] == "train_fold_group_mean_residual"
+    assert any(str(metric["run_scope"]).endswith("_bias_corrected") for metric in report["metrics"])
+    report_dir = tmp_path / "bias"
+    assert (report_dir / "plots" / "bias_correction_by_split.csv").exists()
+    assert "condition_mean_mae_gain" in (
+        report_dir / "plots" / "bias_correction_by_split.csv"
+    ).read_text()
 
 
 def test_parameter_set_leakage_guard_rejects_overlap() -> None:

@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 0.6.2: Capacity target consistency and C-rate failure audit.
+Milestone 0.6.3: C-rate delta failure and bias-controlled target pass.
 
 Current state:
 - Gate 2b implementation and reports are committed.
@@ -27,9 +27,10 @@ Current state:
 - Milestone 0.5b diagnostics, Ridge scaling, HGB-50 robustness, and quantile
   metrics are implemented.
 - Milestone 0.5c synthesis and claim-readiness artifacts are committed.
-- Milestone 0.6.2 is limited to capacity target consistency diagnostics,
-  C-rate failure-mode analysis, scalar stress-feature diagnostics, and focused
-  report-level reruns only if needed.
+- Milestone 0.6.3 is limited to capacity-only C-rate delta diagnostics,
+  normalized delta-rate target checks, train-fold residual/bias correction
+  diagnostics, narrow scalar cold/current feature groups, and focused HGB/Ridge
+  reruns only.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 - LOG_AGE monotonicity has been triaged and propagated into interval quality
@@ -51,6 +52,9 @@ Allowed work:
 - capacity target consistency diagnostics
 - C-rate failure-mode analysis
 - scalar stress-feature ablation diagnostics
+- target normalization experiments
+- train-fold residual/bias correction diagnostics
+- narrow cold/current scalar feature groups
 - HGB/Ridge capacity reruns
 - reference L0 comparison hardening
 - C-rate holdout grouped diagnostics

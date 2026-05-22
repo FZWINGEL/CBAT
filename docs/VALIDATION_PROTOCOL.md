@@ -1,13 +1,15 @@
 # Validation Protocol
 
-Milestone 0.5/0.5b/0.5c/0.6/0.6.1/0.6.2 authorizes only scalar capacity baseline work on
+Milestone 0.5/0.5b/0.5c/0.6/0.6.1/0.6.2/0.6.3 authorizes only scalar capacity baseline work on
 interval features. Milestone 0.5b is review and robustness hardening. Milestone
 0.5c is synthesis and stress-feature decision work. Milestone 0.6 adds
 capacity-only LOG_AGE-derived scalar stress features. Milestone 0.6.1 hardens
 those features with current-sign audit evidence, timestamp-weighted dwell, and
 event-segmented scalar summaries. Milestone 0.6.2 audits target consistency and
-C-rate failure modes without adding new modalities or model classes. These
-milestones are not modality or architecture expansions.
+C-rate failure modes without adding new modalities or model classes. Milestone
+0.6.3 permits normalized delta-rate target diagnostics, train-fold residual
+bias-correction diagnostics, and narrow cold/current stress feature groups.
+These milestones are not modality or architecture expansions.
 
 Required split discipline:
 
@@ -46,6 +48,12 @@ Allowed Milestone 0.6.1 stress-feature groups:
 - `F8_timestamp_weighted_stress`
 - `F9_event_segmented_stress`
 - `F10_c_rate_v1_1`
+
+Allowed Milestone 0.6.3 narrow C-rate feature groups:
+
+- `F11_minimal_cold_current`
+- `F12_voltage_cold_current_interactions`
+- `F13_sparse_c_rate_context`
 
 `F0_time_only` is intentionally weak. Non-persistence learned baselines must
 include prior check-up state through `capacity_Ah_k` in at least one state-aware
@@ -162,6 +170,24 @@ Required Milestone 0.6.2 diagnostic artifacts:
 Milestone 0.6.2 must not retrain by default. It should use existing row-level
 prediction Parquet files and JSON reports to decide whether direct delta,
 derived delta from capacity, or both target paths should be reported.
+
+Required Milestone 0.6.3 diagnostic artifacts:
+
+- `reports/baselines/capacity_delta_rate_targets_hgb50_report.json`
+- `reports/baselines/capacity_delta_rate_targets_hgb50/plots/rate_target_vs_direct_delta.csv`
+- `reports/baselines/capacity_c_rate_delta_v1_2_hgb50_report.json`
+- `reports/baselines/capacity_c_rate_delta_v1_2_hgb50/stress_feature_diagnostics.md`
+- `reports/baselines/capacity_c_rate_bias_corrected_report.json`
+- `reports/baselines/capacity_c_rate_bias_corrected/plots/bias_correction_by_split.csv`
+- `reports/baselines/capacity_c_rate_bias_corrected/plots/c_rate_bias_before_after.csv`
+- `docs/experiments/2026-05-23_c_rate_delta_failure_decision.md`
+
+Milestone 0.6.3 may train on normalized target modes
+`delta_capacity_per_day_target` and `delta_capacity_per_efc_target`, but the
+report metrics must evaluate predictions back in `delta_capacity_Ah` units. The
+true target-derived rates must never enter predictive input feature groups.
+Residual correction must be fit inside each train fold only; test-fold
+residuals must not be used for correction.
 
 Blocked until later milestones:
 

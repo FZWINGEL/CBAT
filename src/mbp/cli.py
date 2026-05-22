@@ -841,6 +841,11 @@ def baseline_run_capacity(
         "--split-views",
         help="Comma-separated split columns to evaluate.",
     ),
+    bias_correction: bool = typer.Option(
+        False,
+        "--bias-correction/--no-bias-correction",
+        help="Add train-fold group-mean residual correction diagnostics.",
+    ),
 ) -> None:
     """Run the first L0-L3 scalar capacity baseline ladder."""
     from mbp.baselines.capacity import run_capacity_baselines
@@ -860,6 +865,7 @@ def baseline_run_capacity(
             feature_groups=_comma_values(feature_groups),
             targets=_comma_values(targets),
             split_views=_comma_values(split_views),
+            bias_correction=bias_correction,
         )
     except RuntimeError as exc:
         typer.echo(str(exc))

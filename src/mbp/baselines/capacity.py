@@ -17,7 +17,14 @@ import pyarrow.parquet as pq
 SCHEMA_VERSION = "gate5.capacity_baseline.v1"
 DEFAULT_HGB_MAX_ITER = 10
 
-TARGETS = ("capacity_Ah_k1", "delta_capacity_Ah")
+TARGETS = (
+    "capacity_Ah_k1",
+    "delta_capacity_Ah",
+    "delta_capacity_per_day_target",
+    "delta_capacity_per_efc_target",
+)
+DIRECT_TARGETS = ("capacity_Ah_k1", "delta_capacity_Ah")
+RATE_TARGETS = ("delta_capacity_per_day_target", "delta_capacity_per_efc_target")
 SPLIT_COLUMNS = (
     "condition_fold",
     "temperature_holdout_fold",
@@ -44,6 +51,9 @@ FEATURE_GROUPS = (
     "F8_timestamp_weighted_stress",
     "F9_event_segmented_stress",
     "F10_c_rate_v1_1",
+    "F11_minimal_cold_current",
+    "F12_voltage_cold_current_interactions",
+    "F13_sparse_c_rate_context",
 )
 DEFAULT_FEATURE_GROUPS = FEATURE_GROUPS[:5]
 
@@ -55,6 +65,9 @@ STRESS_FEATURE_GROUPS = {
     "F8_timestamp_weighted_stress",
     "F9_event_segmented_stress",
     "F10_c_rate_v1_1",
+    "F11_minimal_cold_current",
+    "F12_voltage_cold_current_interactions",
+    "F13_sparse_c_rate_context",
 }
 
 LOG_AGE_HISTOGRAM_FEATURES = (
@@ -165,6 +178,42 @@ C_RATE_V1_1_FEATURES = (
     "max_high_voltage_high_abs_current_event_h",
     "max_high_soc_high_abs_current_event_h",
     "log_age_efc_per_day",
+)
+
+MINIMAL_COLD_CURRENT_FEATURES = (
+    "capacity_Ah_k",
+    "duration_h",
+    "calendar_days",
+    "checkup_k",
+    "log_age_efc_delta",
+    "nominal_temperature_C",
+    "nominal_charge_C_rate",
+    "cold_time_h",
+    "abs_current_ge_1p5C_time_h",
+    "abs_current_ge_5over3C_time_h",
+    "cold_high_abs_current_time_h",
+    "max_cold_high_abs_current_event_h",
+    "stress_coverage_fraction",
+    "max_log_age_gap_s",
+)
+
+VOLTAGE_COLD_CURRENT_FEATURES = (
+    *MINIMAL_COLD_CURRENT_FEATURES,
+    "high_voltage_time_h",
+    "high_voltage_high_abs_current_time_h",
+    "max_high_voltage_high_abs_current_event_h",
+    "time_voltage_ge_4p1_h",
+    "time_temp_lt_5C_h",
+    "time_temp_5_15C_h",
+)
+
+SPARSE_C_RATE_CONTEXT_FEATURES = (
+    *VOLTAGE_COLD_CURRENT_FEATURES,
+    "n_charge_events",
+    "n_discharge_events",
+    "max_charge_event_h",
+    "max_discharge_event_h",
+    "parameter_set_interval_count",
 )
 
 NUMERIC_FEATURES: dict[str, tuple[str, ...]] = {
@@ -330,6 +379,9 @@ NUMERIC_FEATURES: dict[str, tuple[str, ...]] = {
         "nominal_discharge_C_rate",
         *C_RATE_V1_1_FEATURES,
     ),
+    "F11_minimal_cold_current": MINIMAL_COLD_CURRENT_FEATURES,
+    "F12_voltage_cold_current_interactions": VOLTAGE_COLD_CURRENT_FEATURES,
+    "F13_sparse_c_rate_context": SPARSE_C_RATE_CONTEXT_FEATURES,
 }
 
 CATEGORICAL_FEATURES: dict[str, tuple[str, ...]] = {
@@ -344,6 +396,12 @@ CATEGORICAL_FEATURES: dict[str, tuple[str, ...]] = {
     "F8_timestamp_weighted_stress": ("aging_mode", "voltage_window_family"),
     "F9_event_segmented_stress": ("aging_mode", "voltage_window_family"),
     "F10_c_rate_v1_1": ("aging_mode", "voltage_window_family"),
+    "F11_minimal_cold_current": ("voltage_window_family",),
+    "F12_voltage_cold_current_interactions": ("voltage_window_family",),
+    "F13_sparse_c_rate_context": (
+        "voltage_window_family",
+        "parameter_set_interval_count_bucket",
+    ),
 }
 
 BASELINE_PREDICTION_SCHEMA = pa.schema(
@@ -467,6 +525,7 @@ def run_capacity_baselines(
     feature_groups: list[str] | None = None,
     targets: list[str] | None = None,
     split_views: list[str] | None = None,
+    bias_correction: bool = False,
 ) -> dict[str, Any]:
     """Run the L0-L3 capacity baseline ladder and write report/predictions."""
     if hgb_max_iter <= 0:
@@ -478,11 +537,11 @@ def run_capacity_baselines(
         "feature group",
         default=DEFAULT_FEATURE_GROUPS,
     )
-    selected_targets = _normalize_selection(targets, TARGETS, "target")
+    selected_targets = _normalize_selection(targets, TARGETS, "target", default=DIRECT_TARGETS)
     selected_split_views = _normalize_selection(split_views, SPLIT_COLUMNS, "split view")
     if STRESS_FEATURE_GROUPS & set(selected_feature_groups) and stress_features_path is None:
         raise ValueError(
-            "Stress feature groups F5-F10 require --stress-features pointing to "
+            "Stress feature groups F5-F13 require --stress-features pointing to "
             "an interval stress-feature sidecar parquet."
         )
     _preflight_model_dependencies(selected_models)
@@ -525,20 +584,19 @@ def run_capacity_baselines(
                                 seed=seed,
                                 hgb_max_iter=hgb_max_iter,
                             )
-                            metrics.append(
-                                compute_metrics(
-                                    test_rows,
-                                    fold_predictions,
-                                    target=target,
-                                    subset_name=subset,
-                                    run_scope=run_scope,
-                                    split_name=split_name,
-                                    heldout_fold=heldout_fold,
-                                    model_level=model_level,
-                                    feature_group=feature_group,
-                                    train_rows=train_rows,
-                                )
+                            metric = compute_metrics(
+                                test_rows,
+                                fold_predictions,
+                                target=target,
+                                subset_name=subset,
+                                run_scope=run_scope,
+                                split_name=split_name,
+                                heldout_fold=heldout_fold,
+                                model_level=model_level,
+                                feature_group=feature_group,
+                                train_rows=train_rows,
                             )
+                            metrics.append(metric)
                             predictions.extend(
                                 _prediction_rows(
                                     test_rows,
@@ -552,6 +610,45 @@ def run_capacity_baselines(
                                     target=target,
                                 )
                             )
+                            if bias_correction and model_level != "L0_persistence":
+                                corrected = _bias_corrected_predictions(
+                                    model_level=model_level,
+                                    feature_group=feature_group,
+                                    train_rows=train_rows,
+                                    test_rows=test_rows,
+                                    target=target,
+                                    seed=seed,
+                                    hgb_max_iter=hgb_max_iter,
+                                    test_predictions=fold_predictions,
+                                )
+                                corrected_scope = f"{run_scope}_bias_corrected"
+                                metrics.append(
+                                    compute_metrics(
+                                        test_rows,
+                                        corrected,
+                                        target=target,
+                                        subset_name=subset,
+                                        run_scope=corrected_scope,
+                                        split_name=split_name,
+                                        heldout_fold=heldout_fold,
+                                        model_level=model_level,
+                                        feature_group=feature_group,
+                                        train_rows=train_rows,
+                                    )
+                                )
+                                predictions.extend(
+                                    _prediction_rows(
+                                        test_rows,
+                                        corrected,
+                                        subset_name=subset,
+                                        run_scope=corrected_scope,
+                                        split_name=split_name,
+                                        heldout_fold=heldout_fold,
+                                        model_level=model_level,
+                                        feature_group=feature_group,
+                                        target=target,
+                                    )
+                                )
 
     if not metrics:
         raise ValueError("No baseline metrics were generated.")
@@ -588,6 +685,9 @@ def run_capacity_baselines(
         "hgb_max_iter": hgb_max_iter,
         "numeric_standardization": "train_fold_mean_std",
         "numeric_standardization_applies_to": ["L1_ridge"],
+        "bias_correction": (
+            "train_fold_group_mean_residual" if bias_correction else "none"
+        ),
         "subset": subset,
         "targets": selected_targets,
         "model_levels": selected_models,
@@ -616,6 +716,9 @@ def render_capacity_report_artifacts(report: dict[str, Any], report_dir: Path) -
     _write_csv(plots_dir / "mae_by_model_and_feature.csv", leaderboard_rows)
     _write_csv(plots_dir / "worst_condition_errors.csv", _worst_condition_rows(metrics))
     _write_csv(plots_dir / "strict_vs_tolerant_delta.csv", _sensitivity_delta_rows(metrics))
+    _write_csv(plots_dir / "rate_target_vs_direct_delta.csv", _rate_target_comparison_rows(leaderboard_rows))
+    _write_csv(plots_dir / "bias_correction_by_split.csv", _bias_correction_rows(leaderboard_rows))
+    _write_csv(plots_dir / "c_rate_bias_before_after.csv", _c_rate_bias_rows(metrics))
     _write_evaluation_cards(metrics, cards_dir, report)
     _write_baseline_summary(report, leaderboard_rows, report_dir / "baseline_summary.md")
     render_capacity_diagnostics(report, report_dir)
@@ -889,6 +992,12 @@ def load_baseline_rows(
                 merged[column] = value
         merged_rows.append(merged)
 
+    parameter_set_counts = Counter(int(row["parameter_set"]) for row in merged_rows)
+    for row in merged_rows:
+        count = parameter_set_counts[int(row["parameter_set"])]
+        row["parameter_set_interval_count"] = count
+        row["parameter_set_interval_count_bucket"] = _interval_count_bucket(count)
+
     selected_rows = [row for row in merged_rows if bool(row[subset])]
     if not selected_rows:
         raise ValueError(f"Requested subset '{subset}' has zero rows.")
@@ -958,7 +1067,9 @@ def predict_capacity_target(
     encoder = FeatureEncoder.fit(train_rows, feature_group)
     x_train = np.asarray(encoder.transform(train_rows), dtype=float)
     x_test = np.asarray(encoder.transform(test_rows), dtype=float)
-    y_train = np.asarray([_as_float(row[target]) for row in train_rows], dtype=float)
+    y_train = np.asarray([_training_target_value(row, target) for row in train_rows], dtype=float)
+    if not all(math.isfinite(float(value)) for value in y_train):
+        raise ValueError(f"Target {target} has non-finite train values.")
 
     if model_level == "L1_ridge":
         x_train = np.asarray(
@@ -972,13 +1083,19 @@ def predict_capacity_target(
         model = Ridge(alpha=1.0)
         model.fit(x_train, y_train)
         values = model.predict(x_test)
-        return [_point_prediction(float(value)) for value in values]
+        return [
+            _point_prediction(_prediction_to_evaluation_space(row, target, float(value)))
+            for row, value in zip(test_rows, values)
+        ]
 
     if model_level == "L2_hist_gradient_boosting":
         model = HistGradientBoostingRegressor(random_state=seed, max_iter=hgb_max_iter)
         model.fit(x_train, y_train)
         values = model.predict(x_test)
-        return [_point_prediction(float(value)) for value in values]
+        return [
+            _point_prediction(_prediction_to_evaluation_space(row, target, float(value)))
+            for row, value in zip(test_rows, values)
+        ]
 
     if model_level == "L3_quantile_hist_gradient_boosting":
         quantile_predictions: dict[float, Any] = {}
@@ -993,15 +1110,75 @@ def predict_capacity_target(
             quantile_predictions[quantile] = model.predict(x_test)
         return [
             {
-                "y_pred": float(quantile_predictions[0.5][idx]),
-                "y_pred_q10": float(quantile_predictions[0.1][idx]),
-                "y_pred_q50": float(quantile_predictions[0.5][idx]),
-                "y_pred_q90": float(quantile_predictions[0.9][idx]),
+                "y_pred": _prediction_to_evaluation_space(
+                    test_rows[idx], target, float(quantile_predictions[0.5][idx])
+                ),
+                "y_pred_q10": _prediction_to_evaluation_space(
+                    test_rows[idx], target, float(quantile_predictions[0.1][idx])
+                ),
+                "y_pred_q50": _prediction_to_evaluation_space(
+                    test_rows[idx], target, float(quantile_predictions[0.5][idx])
+                ),
+                "y_pred_q90": _prediction_to_evaluation_space(
+                    test_rows[idx], target, float(quantile_predictions[0.9][idx])
+                ),
             }
             for idx in range(len(test_rows))
         ]
 
     raise ValueError(f"Unknown model level: {model_level}")
+
+
+def _bias_corrected_predictions(
+    *,
+    model_level: str,
+    feature_group: str,
+    train_rows: list[dict[str, Any]],
+    test_rows: list[dict[str, Any]],
+    target: str,
+    seed: int,
+    hgb_max_iter: int,
+    test_predictions: list[dict[str, float | None]],
+) -> list[dict[str, float | None]]:
+    """Apply train-fold-only group residual means to test predictions."""
+    train_predictions = predict_capacity_target(
+        model_level=model_level,
+        feature_group=feature_group,
+        train_rows=train_rows,
+        test_rows=train_rows,
+        target=target,
+        seed=seed,
+        hgb_max_iter=hgb_max_iter,
+    )
+    residuals_by_key: dict[tuple[str, str, str], list[float]] = defaultdict(list)
+    global_residuals: list[float] = []
+    for row, prediction in zip(train_rows, train_predictions):
+        residual = _evaluation_target_value(row, target) - _as_float(prediction["y_pred"])
+        if not math.isfinite(residual):
+            continue
+        residuals_by_key[_bias_correction_key(row)].append(residual)
+        global_residuals.append(residual)
+    global_correction = _mean(global_residuals) if global_residuals else 0.0
+
+    corrected: list[dict[str, float | None]] = []
+    for row, prediction in zip(test_rows, test_predictions):
+        key_residuals = residuals_by_key.get(_bias_correction_key(row))
+        correction = _mean(key_residuals) if key_residuals else global_correction
+        adjusted = dict(prediction)
+        adjusted["y_pred"] = _as_float(prediction["y_pred"]) + correction
+        for quantile_key in ("y_pred_q10", "y_pred_q50", "y_pred_q90"):
+            value = _nullable_float(prediction.get(quantile_key))
+            adjusted[quantile_key] = value + correction if value is not None else None
+        corrected.append(adjusted)
+    return corrected
+
+
+def _bias_correction_key(row: dict[str, Any]) -> tuple[str, str, str]:
+    return (
+        _group_value(row.get("nominal_temperature_C")),
+        _group_value(row.get("voltage_window_family")),
+        _c_rate_bucket(row.get("nominal_charge_C_rate")),
+    )
 
 
 def compute_metrics(
@@ -1021,7 +1198,7 @@ def compute_metrics(
     if len(test_rows) != len(predictions):
         raise ValueError("Prediction count does not match test row count.")
     errors = [
-        _as_float(prediction["y_pred"]) - _as_float(row[target])
+        _as_float(prediction["y_pred"]) - _evaluation_target_value(row, target)
         for row, prediction in zip(test_rows, predictions)
     ]
     abs_errors = [abs(error) for error in errors]
@@ -1164,6 +1341,98 @@ def _sensitivity_delta_rows(metrics: list[dict[str, Any]]) -> list[dict[str, Any
             }
         )
     return rows
+
+
+def _rate_target_comparison_rows(leaderboard_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    by_key = {
+        (
+            row["run_scope"],
+            row["model_level"],
+            row["feature_group"],
+            row["split_name"],
+            row["target"],
+        ): row
+        for row in leaderboard_rows
+    }
+    rows: list[dict[str, Any]] = []
+    bases = sorted(
+        {
+            (row["run_scope"], row["model_level"], row["feature_group"], row["split_name"])
+            for row in leaderboard_rows
+        }
+    )
+    for base in bases:
+        direct = by_key.get((*base, "delta_capacity_Ah"))
+        if not direct:
+            continue
+        for rate_target in RATE_TARGETS:
+            rate = by_key.get((*base, rate_target))
+            if not rate:
+                continue
+            rows.append(
+                {
+                    "run_scope": base[0],
+                    "model_level": base[1],
+                    "feature_group": base[2],
+                    "split_name": base[3],
+                    "direct_delta_condition_mean_mae": direct["condition_mean_mae"],
+                    "rate_target": rate_target,
+                    "rate_target_condition_mean_mae": rate["condition_mean_mae"],
+                    "rate_minus_direct_condition_mean_mae": float(rate["condition_mean_mae"])
+                    - float(direct["condition_mean_mae"]),
+                    "rate_target_better": float(rate["condition_mean_mae"])
+                    < float(direct["condition_mean_mae"]),
+                }
+            )
+    return rows
+
+
+def _bias_correction_rows(leaderboard_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    by_key = {
+        (
+            row["model_level"],
+            row["feature_group"],
+            row["target"],
+            row["split_name"],
+            row["run_scope"],
+        ): row
+        for row in leaderboard_rows
+    }
+    rows: list[dict[str, Any]] = []
+    for key, corrected in sorted(by_key.items()):
+        model_level, feature_group, target, split_name, run_scope = key
+        if not str(run_scope).endswith("_bias_corrected"):
+            continue
+        base_scope = str(run_scope).removesuffix("_bias_corrected")
+        base = by_key.get((model_level, feature_group, target, split_name, base_scope))
+        if not base:
+            continue
+        rows.append(
+            {
+                "model_level": model_level,
+                "feature_group": feature_group,
+                "target": target,
+                "split_name": split_name,
+                "base_run_scope": base_scope,
+                "corrected_run_scope": run_scope,
+                "base_condition_mean_mae": base["condition_mean_mae"],
+                "corrected_condition_mean_mae": corrected["condition_mean_mae"],
+                "condition_mean_mae_gain": float(base["condition_mean_mae"])
+                - float(corrected["condition_mean_mae"]),
+                "base_worst_condition_mae": base["worst_condition_mae"],
+                "corrected_worst_condition_mae": corrected["worst_condition_mae"],
+            }
+        )
+    return rows
+
+
+def _c_rate_bias_rows(metrics: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    leaderboard_rows = _leaderboard_rows(metrics)
+    return [
+        row
+        for row in _bias_correction_rows(leaderboard_rows)
+        if row["split_name"] == "c_rate_holdout_fold"
+    ]
 
 
 def _feature_gain_rows(leaderboard_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -1690,6 +1959,9 @@ def _stress_ablation_gain_rows(
         "F8_timestamp_weighted_stress",
         "F9_event_segmented_stress",
         "F10_c_rate_v1_1",
+        "F11_minimal_cold_current",
+        "F12_voltage_cold_current_interactions",
+        "F13_sparse_c_rate_context",
     )
     by_key = {
         (
@@ -2639,7 +2911,7 @@ def _prediction_rows(
                 "sensitivity_flagged_monotonicity": bool(
                     row["sensitivity_flagged_monotonicity"]
                 ),
-                "y_true": _as_float(row[target]),
+                "y_true": _evaluation_target_value(row, target),
                 "y_pred": _as_float(prediction["y_pred"]),
                 "y_pred_q10": _nullable_float(prediction.get("y_pred_q10")),
                 "y_pred_q50": _nullable_float(prediction.get("y_pred_q50")),
@@ -2775,7 +3047,7 @@ def _quantile_metrics(
 ) -> dict[str, float | None]:
     quantile_rows: list[tuple[float, float, float, float]] = []
     for row, prediction in zip(test_rows, predictions):
-        y_true = _as_float(row[target])
+        y_true = _evaluation_target_value(row, target)
         q10 = _nullable_float(prediction.get("y_pred_q10"))
         q50 = _nullable_float(prediction.get("y_pred_q50"))
         q90 = _nullable_float(prediction.get("y_pred_q90"))
@@ -2865,9 +3137,44 @@ def _import_sklearn_stack() -> tuple[Any, Any, Any]:
 def _persistence_prediction(row: dict[str, Any], target: str) -> dict[str, float | None]:
     if target == "capacity_Ah_k1":
         return _point_prediction(_as_float(row["capacity_Ah_k"]))
-    if target == "delta_capacity_Ah":
+    if target in {"delta_capacity_Ah", *RATE_TARGETS}:
         return _point_prediction(0.0)
     raise ValueError(f"Unknown target: {target}")
+
+
+def _evaluation_target_value(row: dict[str, Any], target: str) -> float:
+    if target == "capacity_Ah_k1":
+        return _as_float(row.get("capacity_Ah_k1"))
+    if target in {"delta_capacity_Ah", *RATE_TARGETS}:
+        return _as_float(row.get("delta_capacity_Ah"))
+    raise ValueError(f"Unknown target: {target}")
+
+
+def _training_target_value(row: dict[str, Any], target: str) -> float:
+    if target in DIRECT_TARGETS:
+        return _as_float(row.get(target))
+    delta = _as_float(row.get("delta_capacity_Ah"))
+    if target == "delta_capacity_per_day_target":
+        return _safe_ratio(delta, _as_float(row.get("calendar_days")))
+    if target == "delta_capacity_per_efc_target":
+        return _safe_ratio(delta, _as_float(row.get("log_age_efc_delta")))
+    raise ValueError(f"Unknown target: {target}")
+
+
+def _prediction_to_evaluation_space(row: dict[str, Any], target: str, prediction: float) -> float:
+    if target in DIRECT_TARGETS:
+        return prediction
+    if target == "delta_capacity_per_day_target":
+        return prediction * _as_float(row.get("calendar_days"))
+    if target == "delta_capacity_per_efc_target":
+        return prediction * _as_float(row.get("log_age_efc_delta"))
+    raise ValueError(f"Unknown target: {target}")
+
+
+def _safe_ratio(numerator: float, denominator: float) -> float:
+    if not math.isfinite(numerator) or not math.isfinite(denominator) or abs(denominator) <= 1e-12:
+        return math.nan
+    return numerator / denominator
 
 
 def _point_prediction(value: float) -> dict[str, float | None]:
@@ -2973,6 +3280,19 @@ def _interval_count_bucket(value: Any) -> str:
     if count <= 20:
         return "11-20"
     return ">20"
+
+
+def _c_rate_bucket(value: Any) -> str:
+    numeric = _nullable_float(value)
+    if numeric is None:
+        return "unknown"
+    if numeric < 1.0:
+        return "<1C"
+    if numeric < 1.5:
+        return "1C-1.5C"
+    if numeric < 5.0 / 3.0:
+        return "1.5C-5over3C"
+    return ">=5over3C"
 
 
 def _value_range_bucket(

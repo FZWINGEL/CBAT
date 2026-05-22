@@ -1,0 +1,83 @@
+{
+  "feature_group": "F11_minimal_cold_current",
+  "fold_metrics": [
+    {
+      "condition_mean_mae": 0.24116564437648536,
+      "condition_median_mae": 0.19956618368131446,
+      "feature_group": "F11_minimal_cold_current",
+      "heldout_fold": 1,
+      "mae": 0.22853597380751176,
+      "model_level": "L2_hist_gradient_boosting",
+      "pinball_loss_q10": null,
+      "pinball_loss_q50": null,
+      "pinball_loss_q90": null,
+      "q10_q90_interval_coverage": null,
+      "q10_q90_interval_width_mean": null,
+      "rmse": 0.6022574582023794,
+      "run_scope": "primary",
+      "split_name": "c_rate_holdout_fold",
+      "subset_name": "baseline_clean_tolerant",
+      "target": "delta_capacity_per_efc_target",
+      "test_cells": 36,
+      "test_parameter_sets": 12,
+      "test_rows": 157,
+      "train_parameter_sets": 64,
+      "train_rows": 3670,
+      "worst_condition_mae": 0.6147276501077258
+    },
+    {
+      "condition_mean_mae": 0.33772336603558717,
+      "condition_median_mae": 0.2761607218698059,
+      "feature_group": "F11_minimal_cold_current",
+      "heldout_fold": 1,
+      "mae": 0.39683474873216323,
+      "model_level": "L2_hist_gradient_boosting",
+      "pinball_loss_q10": null,
+      "pinball_loss_q50": null,
+      "pinball_loss_q90": null,
+      "q10_q90_interval_coverage": null,
+      "q10_q90_interval_width_mean": null,
+      "rmse": 1.2421519283754983,
+      "run_scope": "sensitivity_excluding_monotonicity",
+      "split_name": "c_rate_holdout_fold",
+      "subset_name": "baseline_clean_tolerant",
+      "target": "delta_capacity_per_efc_target",
+      "test_cells": 36,
+      "test_parameter_sets": 12,
+      "test_rows": 109,
+      "train_parameter_sets": 64,
+      "train_rows": 2664,
+      "worst_condition_mae": 0.7399920588785931
+    }
+  ],
+  "model_level": "L2_hist_gradient_boosting",
+  "primary_summary": {
+    "condition_mean_mae": 0.24116564437648536,
+    "condition_median_mae": 0.19956618368131446,
+    "fold_count": 1,
+    "mean_mae": 0.22853597380751176,
+    "mean_rmse": 0.6022574582023794,
+    "worst_condition_mae": 0.6147276501077258
+  },
+  "row_counts": {
+    "baseline_clean_strict_rows": 2773,
+    "baseline_clean_tolerant_rows": 3827,
+    "full_interval_rows": 3827,
+    "selected_cells": 228,
+    "selected_parameter_sets": 76,
+    "selected_subset_rows": 3827,
+    "sensitivity_excluding_monotonicity_rows": 2773,
+    "sensitivity_flagged_monotonicity_rows": 1054
+  },
+  "schema_version": "gate5.capacity_baseline.v1",
+  "sensitivity_excluding_monotonicity_summary": {
+    "condition_mean_mae": 0.33772336603558717,
+    "condition_median_mae": 0.2761607218698059,
+    "fold_count": 1,
+    "mean_mae": 0.39683474873216323,
+    "mean_rmse": 1.2421519283754983,
+    "worst_condition_mae": 0.7399920588785931
+  },
+  "split_name": "c_rate_holdout_fold",
+  "target": "delta_capacity_per_efc_target"
+}
