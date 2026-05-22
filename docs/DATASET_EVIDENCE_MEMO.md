@@ -25,13 +25,13 @@ Gate: Gate 1 — Dataset Audit & Provenance Verification
 | Field | Value |
 |---|---|
 | Schema version | `gate1.audit.v1` |
-| Generated at UTC | `2026-05-22T12:19:35+00:00` |
+| Generated at UTC | `2026-05-22T13:02:58+00:00` |
 | Input data root | `data/raw/Result_Raw_Data_Version_2` |
 | Data root exists | `True` |
 | Bagging Date | `2024-09-27` |
 | External Identifier | `CoNQplSNoVeXExyV` |
 | Tool version | `mbp 0.1.0` |
-| Preprocessing commit | `1266ccd1026e23d101f2dce8b960ce020a5560a7` |
+| Preprocessing commit | `d6b5f5d3fa3fdd15c8371f640ff0b645c50cabb1` |
 
 ---
 
@@ -86,10 +86,11 @@ Inserted LOG_AGE diagnostics (`cap_aged_est_Ah`, `R0_mOhm`, `R1_mOhm`) are activ
 |---|---|---|
 | LOG_AGE monotonicity report | `generated` | `7,071` detailed violations; `463` summary CSV lines |
 | Interval QA report | `passed` | `3,827` intervals; `1,054` monotonicity-flagged; LOG_AGE availability `1.0` |
-| Split registry audit | `passed` | `228` cells; hot holdout uses 40 C; high-C-rate holdout includes 5/3 C |
+| Split registry audit | `passed` | `228` cells; hot holdout uses 40 C; high-C-rate holdout includes 5/3 C; voltage-window holdout is non-empty |
+| Interval subset registry | `passed` | `2,773` strict-clean; `3,827` tolerant-clean; threshold `0.00025` EFC |
 | Raw LOG archive inventory | `generated` | `541` archive members inventoried; sampled header available `True` |
 
-Gate 2b classifies the LOG_AGE monotonicity issue as small EFC decreases in the reduced table and propagates affected rows into interval quality flags. Clean-baseline training remains unauthorized until the handling policy explicitly defines whether flagged intervals are excluded, tolerated, or used only for sensitivity analysis.
+Gate 2b classifies the LOG_AGE monotonicity issue as small EFC decreases in the reduced table and propagates affected rows into interval quality flags. Milestone 0.4 defines strict and tolerant clean subsets; baseline training remains a separate milestone and must consume the interval subset registry.
 
 ---
 
@@ -117,5 +118,6 @@ Gate 2b classifies the LOG_AGE monotonicity issue as small EFC decreases in the 
 | Gate 2 QA status | `failed` | modality_table_log_age: 7107 timestamp/EFC monotonicity violations detected! |
 | Gate 2b interval QA | `passed` | 1,054 intervals carry LOG_AGE monotonicity flags. |
 | Gate 2b split audit | `passed` | Headline OOD folds are non-empty and parameter-set triplets remain grouped. |
+| Baseline subset registry | `passed` | 3,827 tolerant-clean intervals defined by policy. |
 | Known issues register initialized | Complete | Checks remain pending or blocked until data evidence exists. |
-| Modeling authorized | No | Gate 2 data products are authorized; model training waits for QA resolution, leakage checks, split provenance, and baseline gates. |
+| Modeling authorized | No | Gate 2 data products are authorized; model training waits for an explicit baseline milestone and must consume the interval subset registry. |

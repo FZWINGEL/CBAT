@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Gate 2b: LOG_AGE integrity triage and interval-table hardening.
+Milestone 0.4: Baseline Readiness Gate.
 
 Current state:
 - Gate 2b implementation and reports are committed.
@@ -24,8 +24,9 @@ Current state:
   validation results, and remaining blockers.
 - LOG_AGE monotonicity has been triaged and propagated into interval quality
   flags.
-- Baselines remain blocked until the LOG_AGE monotonicity handling policy
-  defines the clean interval subset.
+- Baselines remain blocked until the LOG_AGE monotonicity handling policy,
+  interval subset registry, voltage-window split audit, and dependency contract
+  are current and validated.
 
 Allowed work:
 - LOG_AGE monotonicity investigation
@@ -37,6 +38,9 @@ Allowed work:
 - small tests with synthetic fixtures
 - LOG_AGE monotonicity handling policy documentation
 - clean interval subset definition after policy approval
+- interval subset registry QA
+- voltage-window split semantics fixes
+- dependency metadata cleanup
 
 Forbidden work:
 - model training

@@ -78,6 +78,7 @@ def render_evidence_memo(
     gate2_data_products_ready = all_complete
     interval_report = _dict_report(gate2_reports, "interval_qa")
     split_report = _dict_report(gate2_reports, "split_registry")
+    interval_subset_report = _dict_report(gate2_reports, "interval_subset")
     monotonicity_report = _dict_report(gate2_reports, "log_age_monotonicity")
     raw_log_report = _dict_report(gate2_reports, "raw_log_inventory")
     interval_passed = interval_report.get("status") == "passed"
@@ -264,7 +265,14 @@ def render_evidence_memo(
                     "| Split registry audit | "
                     f"`{split_report.get('status', 'not_run')}` | "
                     f"`{_format_int(split_report.get('row_count'))}` cells; hot holdout uses 40 C; "
-                    "high-C-rate holdout includes 5/3 C |"
+                    "high-C-rate holdout includes 5/3 C; voltage-window holdout is non-empty |"
+                ),
+                (
+                    "| Interval subset registry | "
+                    f"`{interval_subset_report.get('status', 'not_run')}` | "
+                    f"`{_format_int(interval_subset_report.get('baseline_clean_strict_count'))}` strict-clean; "
+                    f"`{_format_int(interval_subset_report.get('baseline_clean_tolerant_count'))}` tolerant-clean; "
+                    f"threshold `{interval_subset_report.get('efc_jitter_threshold', 'N/A')}` EFC |"
                 ),
                 (
                     "| Raw LOG archive inventory | "
@@ -272,7 +280,7 @@ def render_evidence_memo(
                     f"sampled header available `{raw_log_report.get('sampled_header_available', 'N/A')}` |"
                 ),
                 "",
-                "Gate 2b classifies the LOG_AGE monotonicity issue as small EFC decreases in the reduced table and propagates affected rows into interval quality flags. Clean-baseline training remains unauthorized until the handling policy explicitly defines whether flagged intervals are excluded, tolerated, or used only for sensitivity analysis.",
+                "Gate 2b classifies the LOG_AGE monotonicity issue as small EFC decreases in the reduced table and propagates affected rows into interval quality flags. Milestone 0.4 defines strict and tolerant clean subsets; baseline training remains a separate milestone and must consume the interval subset registry.",
             ]
         )
 
@@ -316,7 +324,7 @@ def render_evidence_memo(
     modeling_notes = (
         "All Gate 1 and Gate 2 QA checks passed successfully."
         if modeling_authorized
-        else "Gate 2 data products are authorized; model training waits for QA resolution, leakage checks, split provenance, and baseline gates."
+        else "Gate 2 data products are authorized; model training waits for an explicit baseline milestone and must consume the interval subset registry."
     )
 
     lines.extend(
@@ -335,6 +343,7 @@ def render_evidence_memo(
             f"| Gate 2 QA status | `{qa_status}` | { _qa_failure_summary(qa_report) } |",
             f"| Gate 2b interval QA | `{interval_report.get('status', 'not_run')}` | {_format_int(interval_report.get('intervals_with_monotonicity_violations'))} intervals carry LOG_AGE monotonicity flags. |",
             f"| Gate 2b split audit | `{split_report.get('status', 'not_run')}` | Headline OOD folds are non-empty and parameter-set triplets remain grouped. |",
+            f"| Baseline subset registry | `{interval_subset_report.get('status', 'not_run')}` | {_format_int(interval_subset_report.get('baseline_clean_tolerant_count'))} tolerant-clean intervals defined by policy. |",
             "| Known issues register initialized | Complete | Checks remain pending or blocked until data evidence exists. |",
             f"| Modeling authorized | {modeling_auth} | {modeling_notes} |",
         ]

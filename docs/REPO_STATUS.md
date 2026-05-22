@@ -2,61 +2,65 @@
 
 Last updated: 2026-05-22
 
-Current HEAD: `8ee7642 Complete Gate 2b LOG_AGE triage`
+Current branch: `main`
+
+Current commit: see `git log -1 --oneline`. This file is updated whenever
+significant repository state changes happen, but it intentionally avoids a
+self-referential commit hash that would become stale when the status file itself
+is committed.
 
 ## Executive Summary
 
-The repository is in **Gate 2b: LOG_AGE integrity triage and interval-table
-hardening**. Gate 2b implementation is complete enough to support a clean
-policy decision, but baseline modeling remains blocked until that policy is
-chosen and documented.
-
-The repo now has reproducible commands and committed audit evidence for:
-
-- LOG_AGE monotonicity violation classification.
-- Interval table contamination mapping and interval QA.
-- Split-registry OOD fold audit.
-- Raw LOG archive inventory scaffolding.
-- Updated evidence memo, known issues, schema registry, decision log, and
-  agent instructions.
+The repository is in **Milestone 0.4: Baseline Readiness Gate**. The Gate 2b
+LOG_AGE integrity triage is complete, and Milestone 0.4 now adds the policy and
+subset artifacts needed to authorize the first baseline ladder in a later work
+block.
 
 No model training, baseline leaderboard, neural architecture, policy ranking, or
 EIS embedding work has been started.
 
+Current state:
+
+- LOG_AGE monotonicity policy is documented in
+  `docs/LOG_AGE_MONOTONICITY_POLICY.md`.
+- Interval subset registry generation is implemented with
+  `mbp split interval-subsets`.
+- `reports/audit/interval_subset_report.json` records strict/tolerant clean
+  interval counts under policy version `log_age_monotonicity.v1`.
+- Split registry semantics now include corrected voltage-window holdout folds
+  derived from `voltage_window_family`, not scalar `age_soc`.
+- `pyarrow` and `py7zr` are core dependencies; baseline and GBM packages are
+  optional extras only.
+
 ## Git And Artifact Hygiene
-
-The Git worktree was clean before this status file was added. The latest Gate 2b
-implementation was committed and pushed as:
-
-```text
-8ee7642 Complete Gate 2b LOG_AGE triage
-```
 
 Large data products and local tool artifacts remain ignored and are not tracked:
 
 - `data/raw/**`
 - `data/interim/**`
 - `data/processed/**`
-- `data/splits/*.parquet`
-- `reports/audit/*.parquet`
+- generated Parquet outputs under `data/splits/`
+- generated Parquet outputs under `reports/audit/`
 - `.antigravitycli/`
 - local CodeGraph databases, Python caches, Ruff/Pytest caches, and `.venv/`
 
 Small audit sidecars that are referenced by documentation are tracked:
 
 - `reports/audit/interval_qa_report.json`
+- `reports/audit/interval_subset_report.json`
 - `reports/audit/log_age_monotonicity_summary.csv`
 - `reports/audit/split_registry_report.json`
 
 The large Parquet outputs remain local generated artifacts:
 
-| Artifact | Rows | Size | Tracking |
-|---|---:|---:|---|
-| `data/interim/modality_table_log_age.parquet` | 904,977,105 | 28,360,384,828 bytes | ignored |
-| `reports/audit/log_age_monotonicity_violations.parquet` | 7,071 | 887,570 bytes | ignored |
-| `data/interim/interval_table.parquet` | 3,827 | 632,246 bytes | ignored |
-| `data/splits/split_registry_v1.parquet` | 228 | 5,175 bytes | ignored |
-| `reports/audit/raw_log_archive_inventory.parquet` | 541 | 13,261 bytes | ignored |
+| Artifact | Rows | Tracking |
+|---|---:|---|
+| `data/interim/modality_table_log_age.parquet` | 904,977,105 | ignored |
+| `reports/audit/log_age_monotonicity_violations.parquet` | 7,071 | ignored |
+| `data/interim/interval_table.parquet` | 3,827 | ignored |
+| `data/splits/split_registry_v1.parquet` | 228 | ignored |
+| `data/splits/interval_subset_registry_v1.parquet` | 3,827 | ignored |
+| `reports/audit/raw_log_archive_inventory.parquet` | 541 | ignored |
 
 ## Gate Status
 
@@ -95,12 +99,12 @@ LOG_AGE ingestion evidence:
 - Final Parquet row groups: `257,311`
 
 Strict LOG_AGE QA still reports `7,107` timestamp/EFC monotonicity decreases.
-That QA failure is intentional and should not be suppressed until the handling
-policy is set.
+That strict QA failure is preserved as an evidence signal. Milestone 0.4 defines
+how those decreases are handled for baseline subset construction.
 
 ### Gate 2b
 
-Gate 2b is implemented and the current reports pass where expected:
+Gate 2b is complete:
 
 - `reports/audit/log_age_monotonicity_violations.parquet` contains `7,071`
   detailed default-tolerance violations.
@@ -128,12 +132,34 @@ Interval QA key facts:
   - `R0_mOhm`: `4,577`
   - `R1_mOhm`: `4,577`
 
-Quality flag distribution:
+### Milestone 0.4
 
-- `LOG_AGE_inserted_diagnostics_masked`: `3,826`
-- `LOG_AGE_monotonicity_violation`: `1,054`
+Milestone 0.4 data products are implemented:
 
-Split-registry audit key facts:
+- Policy: `docs/LOG_AGE_MONOTONICITY_POLICY.md`
+- CLI: `mbp split interval-subsets`
+- Registry: `data/splits/interval_subset_registry_v1.parquet`
+- Report: `reports/audit/interval_subset_report.json`
+
+Interval subset policy counts:
+
+| Subset or exclusion | Count |
+|---|---:|
+| Full interval table | 3,827 |
+| `baseline_clean_strict` | 2,773 |
+| `baseline_clean_tolerant` | 3,827 |
+| `sensitivity_flagged_monotonicity` | 1,054 |
+| `small_efc_jitter` | 1,054 |
+| Excluded due to timestamp drop | 0 |
+| Excluded due to large EFC drop | 0 |
+| Excluded due to missing LOG_AGE | 0 |
+| Excluded due to duration error | 0 |
+
+The tolerant subset keeps tiny EFC-only LOG_AGE jitter at or below `0.00025`
+EFC. The strict subset excludes all monotonicity-flagged intervals and should be
+used as the mandatory sensitivity subset for first baselines.
+
+Split-registry audit key facts after the voltage-window fix:
 
 - Rows: `228`
 - Parameter-set triplets remain grouped.
@@ -141,7 +167,14 @@ Split-registry audit key facts:
 - Hot temperature holdout uses `40 C`.
 - High C-rate holdout includes `5/3 C`.
 - Profile holdout contains profile conditions.
-- Headline OOD folds are non-empty.
+- Voltage-window holdout is non-empty:
+  - fold `1`: `84` full-window `approx_0_100` cells
+  - fold `2`: `96` reduced-window `approx_10_100` / `approx_10_90` cells
+  - fold `3`: `48` calendar idle-SOC cells
+
+The legacy `soc_window_holdout_fold` remains present for compatibility but is
+now populated from corrected voltage-window semantics. New work should prefer
+`voltage_window_holdout_fold`.
 
 ## Important Implementation Notes
 
@@ -152,9 +185,8 @@ This matters because:
 - `checkup_event_table.timestamp` is epoch-like result time.
 - `modality_table_log_age.timestamp_s` is relative operating time.
 
-The mismatch was fixed before the current interval table was regenerated. The
-regression test `test_aligns_epoch_checkups_to_relative_log_age_time` now covers
-this behavior.
+The mismatch is covered by
+`test_aligns_epoch_checkups_to_relative_log_age_time`.
 
 The LOG_AGE monotonicity audit writes atomically:
 
@@ -163,24 +195,31 @@ The LOG_AGE monotonicity audit writes atomically:
 
 This prevents a crash or timeout from leaving a corrupt final Parquet report.
 
-## Current Blocker Before Baselines
+The interval subset registry writes Parquet metadata for:
 
-Do **not** start baseline modeling yet.
+- schema version
+- monotonicity policy version
+- EFC jitter threshold
+- source interval table path
 
-The remaining blocker is the monotonicity handling policy for the `1,054`
-affected interval rows. The next decision should explicitly choose one of:
+## Baseline Authorization
 
-- Treat default-tolerance EFC decreases as tiny floating-point jitter and keep
-  affected intervals in clean baselines.
-- Exclude `LOG_AGE_monotonicity_violation` intervals from clean-baseline
-  training and reserve them for sensitivity analysis.
-- Add a nonzero EFC tolerance to strict QA, regenerate reports, and document the
-  tolerance as a scientific policy.
-- Segment or otherwise specially handle affected cell histories if later raw LOG
-  evidence shows real discontinuities.
+Baseline data-product prerequisites now exist, but baseline modeling has not
+started in this milestone. The next milestone can begin the first L0-L3 capacity
+baseline ladder if explicitly requested.
 
-Until this is decided, the repo is ready for policy selection but not clean
-baseline training.
+First baseline work must use:
+
+- primary subset: `baseline_clean_tolerant`
+- mandatory sensitivity subset: exclude
+  `sensitivity_flagged_monotonicity == true`
+- targets: `capacity_Ah_k1` and `delta_capacity_Ah`
+- split views: condition, temperature, C-rate, profile, and corrected
+  voltage-window holdouts
+- no EIS, PULSE, sequence models, neural models, policy ranking, or CBAT
+  architecture
+
+EIS and PULSE scientific claims remain blocked by their known audit issues.
 
 ## Validation
 
@@ -195,12 +234,12 @@ UV_CACHE_DIR=/tmp/uv-cache .venv/bin/pytest
 ```
 
 The one warning is the existing `datetime.utcnow()` deprecation warning in
-`src/mbp/data/luh_blank/qa_result_data.py`; it is not a Gate 2b correctness
-failure.
+`src/mbp/data/luh_blank/qa_result_data.py`; it is not a Milestone 0.4
+correctness failure.
 
 ## Recommended Next Step
 
-Make the LOG_AGE monotonicity handling policy explicit in docs and code. Once
-that policy is recorded, the first baseline ladder can begin on the defined
-clean interval subset, with a separate sensitivity run including flagged
-intervals.
+Start **Milestone 0.5: L0-L3 Baseline Ladder** only after confirming that the
+baseline code will consume `interval_subset_registry_v1.parquet` and report
+strict-vs-tolerant sensitivity results. Keep the first baseline deliberately
+limited to capacity targets and scalar interval features.
