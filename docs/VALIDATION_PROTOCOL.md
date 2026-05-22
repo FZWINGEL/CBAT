@@ -1,8 +1,8 @@
 # Validation Protocol
 
-Milestone 0.5/0.5b authorizes only scalar capacity baseline work on interval
-features. Milestone 0.5b is review and robustness hardening, not scope
-expansion.
+Milestone 0.5/0.5b/0.5c authorizes only scalar capacity baseline work on
+interval features. Milestone 0.5b is review and robustness hardening. Milestone
+0.5c is synthesis and stress-feature decision work, not scope expansion.
 
 Required split discipline:
 
@@ -55,10 +55,12 @@ Required Milestone 0.5b diagnostic artifacts:
 
 - `baseline_diagnostics.md`
 - `c_rate_holdout_error_analysis.md`
+- `claim_readiness.md`
 - `plots/feature_gain_by_split.csv`
 - `plots/best_by_target_split.csv`
 - `plots/c_rate_holdout_errors.csv`
 - `plots/c_rate_holdout_by_condition.csv`
+- `plots/c_rate_grouped_summaries.csv`
 
 Milestone 0.5b linear baselines use train-fold numeric standardization for
 `L1_ridge`. The standardization statistics must be fit on train rows only.
@@ -71,6 +73,15 @@ include:
 - `pinball_loss_q10`
 - `pinball_loss_q50`
 - `pinball_loss_q90`
+
+Milestone 0.5c diagnostics for focused reports should compare against an L0
+reference report when the focused report does not include persistence rows.
+Missing references must be rendered explicitly as `reference_missing`; silent
+`NA` values are not acceptable for L0 comparison fields.
+
+Milestone 0.5c claim-readiness summaries are allowed to recommend the next
+feature-engineering direction, but they do not authorize new modalities or
+advanced models.
 
 Blocked until later milestones:
 

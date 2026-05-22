@@ -20,7 +20,7 @@ Schema version prefix: `gate1.audit.v1`
 | `interval_subset_registry_v1` | Implemented | `mbp.data.products.interval_subsets` | interval table path, LOG_AGE monotonicity policy version, EFC jitter threshold, schema version |
 | `capacity_baseline_predictions` | Implemented | `mbp.baselines.capacity` | interval table path, interval subset registry path, split view, subset, model level, feature group, schema version |
 | `capacity_baseline_report` | Implemented | `mbp.baselines.capacity` | interval table path, interval subset registry path, subset, model level, feature group, split view, strict/tolerant sensitivity scope |
-| `capacity_baseline_diagnostics` | Implemented | `mbp.baselines.capacity` | baseline report path, feature-gain diagnostics, best-by-target/split rows, C-rate holdout condition errors, quantile metrics |
+| `capacity_baseline_diagnostics` | Implemented | `mbp.baselines.capacity` | baseline report path, optional L0 reference report path, feature-gain diagnostics, best-by-target/split rows, C-rate holdout condition/grouped errors, claim-readiness memo, quantile metrics |
 
 ## Gate 2/3 Schema Contracts
 

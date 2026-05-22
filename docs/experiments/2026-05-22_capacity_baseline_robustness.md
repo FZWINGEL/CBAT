@@ -172,6 +172,34 @@ Decision:
 - Do not expand to EIS/PULSE, knee prediction, sequence models, neural models,
   policy ranking, or CBAT until the capacity diagnostics are reviewed.
 
+## Follow-Up: Milestone 0.5c Synthesis
+
+Milestone 0.5c added reference-baseline comparisons and decision synthesis on
+top of these robustness outputs.
+
+Command:
+
+```bash
+UV_CACHE_DIR=/tmp/uv-cache .venv/bin/mbp baseline diagnose-capacity \
+  --report reports/baselines/capacity_hgb50_focused_report.json \
+  --reference-report reports/baselines/capacity_l0_l3_report.json \
+  --out-dir reports/baselines/capacity_hgb50_focused
+```
+
+Additional artifacts:
+
+- `reports/baselines/capacity_hgb50_focused/claim_readiness.md`
+- `reports/baselines/capacity_hgb50_focused/plots/c_rate_grouped_summaries.csv`
+- `docs/experiments/2026-05-22_capacity_baseline_synthesis.md`
+
+Decision:
+
+- Focused HGB-50 rows now have explicit L0 persistence improvements.
+- C-rate grouped diagnostics point to cold/cool high-C-rate transfer and
+  voltage-window interactions as the next capacity bottleneck.
+- The next recommended engineering milestone is LOG_AGE-derived scalar stress
+  features, not PULSE/EIS/CBAT expansion.
+
 ## Validation
 
 Commands:

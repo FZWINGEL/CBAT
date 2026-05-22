@@ -211,6 +211,9 @@ Decision:
   completed.
 - Follow-up Milestone 0.5b diagnostics and robustness reruns are documented in
   `docs/experiments/2026-05-22_capacity_baseline_robustness.md`.
+- Follow-up Milestone 0.5c synthesis and claim-readiness decisions are
+  documented in
+  `docs/experiments/2026-05-22_capacity_baseline_synthesis.md`.
 - All future experiments and scientific implementation trials should be
   documented under `docs/experiments/`.
 

@@ -355,14 +355,27 @@ def render_capacity_report_artifacts(report: dict[str, Any], report_dir: Path) -
     render_capacity_diagnostics(report, report_dir)
 
 
-def diagnose_capacity_report(report_path: Path, out_dir: Path) -> dict[str, Any]:
+def diagnose_capacity_report(
+    report_path: Path,
+    out_dir: Path,
+    reference_report_path: Path | None = None,
+) -> dict[str, Any]:
     """Render Milestone 0.5b diagnostics from an existing baseline report."""
     report = json.loads(report_path.read_text(encoding="utf-8"))
-    render_capacity_diagnostics(report, out_dir)
+    reference_report = (
+        json.loads(reference_report_path.read_text(encoding="utf-8"))
+        if reference_report_path is not None
+        else None
+    )
+    render_capacity_diagnostics(report, out_dir, reference_report=reference_report)
     return report
 
 
-def render_capacity_diagnostics(report: dict[str, Any], report_dir: Path) -> None:
+def render_capacity_diagnostics(
+    report: dict[str, Any],
+    report_dir: Path,
+    reference_report: dict[str, Any] | None = None,
+) -> None:
     """Render diagnostic tables and a narrative memo for a capacity report."""
     report_dir.mkdir(parents=True, exist_ok=True)
     plots_dir = report_dir / "plots"
@@ -370,24 +383,59 @@ def render_capacity_diagnostics(report: dict[str, Any], report_dir: Path) -> Non
 
     leaderboard_rows = _leaderboard_rows(list(report["metrics"]))
     prediction_rows = _load_prediction_rows(report)
+    reference_leaderboard_rows = (
+        _leaderboard_rows(list(reference_report["metrics"]))
+        if reference_report is not None
+        else []
+    )
+    reference_prediction_rows = (
+        _load_prediction_rows(reference_report) if reference_report is not None else []
+    )
     metadata = _condition_metadata_by_parameter_set(report)
-    best_rows = _best_by_target_split_rows(leaderboard_rows, prediction_rows)
+    best_rows = _best_by_target_split_rows(
+        leaderboard_rows,
+        prediction_rows,
+        reference_leaderboard_rows=reference_leaderboard_rows,
+    )
     feature_gain_rows = _feature_gain_rows(leaderboard_rows)
-    c_rate_rows = _c_rate_holdout_error_rows(leaderboard_rows, prediction_rows, metadata)
+    c_rate_rows = _c_rate_holdout_error_rows(
+        leaderboard_rows,
+        prediction_rows,
+        metadata,
+        reference_leaderboard_rows=reference_leaderboard_rows,
+        reference_prediction_rows=reference_prediction_rows,
+    )
+    c_rate_grouped_rows = _c_rate_grouped_summary_rows(c_rate_rows)
 
     _write_csv(plots_dir / "best_by_target_split.csv", best_rows)
     _write_csv(plots_dir / "feature_gain_by_split.csv", feature_gain_rows)
     _write_csv(plots_dir / "c_rate_holdout_errors.csv", c_rate_rows)
     _write_csv(plots_dir / "c_rate_holdout_by_condition.csv", c_rate_rows)
+    _write_csv(plots_dir / "c_rate_grouped_summaries.csv", c_rate_grouped_rows)
     _write_baseline_diagnostics_md(
+        report,
+        reference_report,
+        best_rows,
+        feature_gain_rows,
+        _sensitivity_delta_rows(list(report["metrics"])),
+        c_rate_rows,
+        c_rate_grouped_rows,
+        report_dir / "baseline_diagnostics.md",
+    )
+    _write_c_rate_error_analysis_md(
+        c_rate_rows,
+        c_rate_grouped_rows,
+        report_dir / "c_rate_holdout_error_analysis.md",
+    )
+    _write_claim_readiness_md(
         report,
         best_rows,
         feature_gain_rows,
         _sensitivity_delta_rows(list(report["metrics"])),
         c_rate_rows,
-        report_dir / "baseline_diagnostics.md",
+        leaderboard_rows,
+        report_dir / "claim_readiness.md",
     )
-    _write_c_rate_error_analysis_md(c_rate_rows, report_dir / "c_rate_holdout_error_analysis.md")
 
 
 def load_baseline_rows(
@@ -768,8 +816,10 @@ def _feature_gain_rows(leaderboard_rows: list[dict[str, Any]]) -> list[dict[str,
 def _best_by_target_split_rows(
     leaderboard_rows: list[dict[str, Any]],
     prediction_rows: list[dict[str, Any]],
+    reference_leaderboard_rows: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     primary_rows = [row for row in leaderboard_rows if row["run_scope"] == "primary"]
+    l0_reference_rows = _l0_reference_rows(reference_leaderboard_rows or [])
     rows: list[dict[str, Any]] = []
     for target in sorted({str(row["target"]) for row in primary_rows}):
         for split_name in sorted({str(row["split_name"]) for row in primary_rows}):
@@ -796,6 +846,11 @@ def _best_by_target_split_rows(
                 ),
                 None,
             )
+            l0_reference_status = "current_report" if l0 is not None else "reference_missing"
+            if l0 is None:
+                l0 = l0_reference_rows.get((target, split_name))
+                if l0 is not None:
+                    l0_reference_status = "reference_report"
             worst_parameter_set, worst_mae = _worst_condition_for_selection(
                 prediction_rows,
                 run_scope="primary",
@@ -808,6 +863,11 @@ def _best_by_target_split_rows(
                 l0["condition_mean_mae"] if l0 is not None else None
             )
             best_condition_mean = float(best["condition_mean_mae"])
+            improvement = (
+                l0_condition_mean - best_condition_mean
+                if l0_condition_mean is not None
+                else "reference_missing"
+            )
             rows.append(
                 {
                     "target": target,
@@ -818,12 +878,13 @@ def _best_by_target_split_rows(
                     "best_worst_condition_mae": best["worst_condition_mae"],
                     "worst_parameter_set": worst_parameter_set,
                     "worst_parameter_set_mae": worst_mae,
-                    "l0_condition_mean_mae": l0_condition_mean,
-                    "condition_mean_mae_improvement_vs_l0": (
-                        l0_condition_mean - best_condition_mean
+                    "l0_condition_mean_mae": (
+                        l0_condition_mean
                         if l0_condition_mean is not None
-                        else None
+                        else "reference_missing"
                     ),
+                    "l0_reference_status": l0_reference_status,
+                    "condition_mean_mae_improvement_vs_l0": improvement,
                 }
             )
     return rows
@@ -833,10 +894,16 @@ def _c_rate_holdout_error_rows(
     leaderboard_rows: list[dict[str, Any]],
     prediction_rows: list[dict[str, Any]],
     metadata: dict[int, dict[str, Any]],
+    reference_leaderboard_rows: list[dict[str, Any]] | None = None,
+    reference_prediction_rows: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     best_rows = [
         row
-        for row in _best_by_target_split_rows(leaderboard_rows, prediction_rows)
+        for row in _best_by_target_split_rows(
+            leaderboard_rows,
+            prediction_rows,
+            reference_leaderboard_rows=reference_leaderboard_rows,
+        )
         if row["split_name"] == "c_rate_holdout_fold"
     ]
     output_rows: list[dict[str, Any]] = []
@@ -858,9 +925,29 @@ def _c_rate_holdout_error_rows(
             target=target,
             split_name="c_rate_holdout_fold",
         )
+        persistence_reference_status = "current_report"
+        if not l0_errors and reference_prediction_rows:
+            l0_errors = _condition_mae_for_selection(
+                reference_prediction_rows,
+                run_scope="primary",
+                model_level="L0_persistence",
+                feature_group="persistence",
+                target=target,
+                split_name="c_rate_holdout_fold",
+            )
+            persistence_reference_status = (
+                "reference_report" if l0_errors else "reference_missing"
+            )
+        elif not l0_errors:
+            persistence_reference_status = "reference_missing"
         for parameter_set, best_error in sorted(best_errors.items()):
             meta = metadata.get(parameter_set, {})
             persistence_error = l0_errors.get(parameter_set)
+            improvement = (
+                persistence_error - best_error
+                if persistence_error is not None
+                else "reference_missing"
+            )
             output_rows.append(
                 {
                     "target": target,
@@ -879,12 +966,80 @@ def _c_rate_holdout_error_rows(
                     "best_model_level": best["best_model_level"],
                     "best_feature_group": best["best_feature_group"],
                     "best_model_error": best_error,
-                    "persistence_error": persistence_error,
-                    "error_improvement_vs_persistence": (
-                        persistence_error - best_error
+                    "persistence_error": (
+                        persistence_error
                         if persistence_error is not None
-                        else None
+                        else "reference_missing"
                     ),
+                    "persistence_reference_status": persistence_reference_status,
+                    "error_improvement_vs_persistence": improvement,
+                }
+            )
+    return output_rows
+
+
+def _l0_reference_rows(
+    leaderboard_rows: list[dict[str, Any]],
+) -> dict[tuple[str, str], dict[str, Any]]:
+    rows: dict[tuple[str, str], dict[str, Any]] = {}
+    for row in leaderboard_rows:
+        if (
+            str(row.get("run_scope")) != "primary"
+            or str(row.get("model_level")) != "L0_persistence"
+            or str(row.get("feature_group")) != "persistence"
+        ):
+            continue
+        rows[(str(row["target"]), str(row["split_name"]))] = row
+    return rows
+
+
+def _c_rate_grouped_summary_rows(c_rate_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    grouping_specs = (
+        ("temperature", lambda row: _group_value(row.get("nominal_temperature_C"))),
+        ("voltage_window_family", lambda row: _group_value(row.get("voltage_window_family"))),
+        ("target", lambda row: _group_value(row.get("target"))),
+        ("parameter_set", lambda row: _group_value(row.get("parameter_set"))),
+        ("interval_count_bucket", lambda row: _interval_count_bucket(row.get("n_intervals"))),
+        ("capacity_Ah_k_range", lambda row: _value_range_bucket(
+            row.get("capacity_Ah_k_min"),
+            row.get("capacity_Ah_k_max"),
+            thresholds=(2.4, 2.6, 2.8),
+            labels=("<2.4", "2.4-2.6", "2.6-2.8", ">=2.8"),
+        )),
+        ("delta_capacity_Ah_range", lambda row: _value_range_bucket(
+            row.get("delta_capacity_Ah_min"),
+            row.get("delta_capacity_Ah_max"),
+            thresholds=(-0.6, -0.4, -0.2),
+            labels=("<-0.6", "-0.6--0.4", "-0.4--0.2", ">=-0.2"),
+        )),
+    )
+    output_rows: list[dict[str, Any]] = []
+    for group_name, key_fn in grouping_specs:
+        grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        for row in c_rate_rows:
+            grouped[key_fn(row)].append(row)
+        for group_value, rows in sorted(grouped.items()):
+            best_errors = [_nullable_float(row.get("best_model_error")) for row in rows]
+            persistence_errors = [
+                _nullable_float(row.get("persistence_error")) for row in rows
+            ]
+            improvements = [
+                _nullable_float(row.get("error_improvement_vs_persistence"))
+                for row in rows
+            ]
+            output_rows.append(
+                {
+                    "grouping": group_name,
+                    "group_value": group_value,
+                    "row_count": len(rows),
+                    "parameter_set_count": len({int(row["parameter_set"]) for row in rows}),
+                    "total_intervals": sum(
+                        int(row["n_intervals"]) for row in rows if row.get("n_intervals") is not None
+                    ),
+                    "mean_best_model_error": _mean_optional(best_errors),
+                    "mean_persistence_error": _mean_optional(persistence_errors),
+                    "mean_error_improvement_vs_persistence": _mean_optional(improvements),
+                    "max_best_model_error": _max_optional(best_errors),
                 }
             )
     return output_rows
@@ -892,10 +1047,12 @@ def _c_rate_holdout_error_rows(
 
 def _write_baseline_diagnostics_md(
     report: dict[str, Any],
+    reference_report: dict[str, Any] | None,
     best_rows: list[dict[str, Any]],
     feature_gain_rows: list[dict[str, Any]],
     sensitivity_rows: list[dict[str, Any]],
     c_rate_rows: list[dict[str, Any]],
+    c_rate_grouped_rows: list[dict[str, Any]],
     path: Path,
 ) -> None:
     primary_best = sorted(
@@ -923,11 +1080,12 @@ def _write_baseline_diagnostics_md(
         f"Schema version: `{report['schema_version']}`",
         f"HGB max iterations: `{report.get('hgb_max_iter')}`",
         f"Numeric standardization: `{report.get('numeric_standardization', 'none')}`",
+        f"L0 reference report: `{_reference_report_label(reference_report)}`",
         "",
         "## Best Rows By Target And Split",
         "",
-        "| Target | Split | Model | Feature group | Condition mean MAE | Improvement vs L0 | Worst parameter set |",
-        "|---|---|---|---|---:|---:|---:|",
+        "| Target | Split | Model | Feature group | Condition mean MAE | L0 source | Improvement vs L0 | Worst parameter set |",
+        "|---|---|---|---|---:|---|---:|---:|",
     ]
     for row in primary_best:
         improvement = row["condition_mean_mae_improvement_vs_l0"]
@@ -935,7 +1093,8 @@ def _write_baseline_diagnostics_md(
             "| "
             f"`{row['target']}` | `{row['split_name']}` | `{row['best_model_level']}` | "
             f"`{row['best_feature_group']}` | {float(row['best_condition_mean_mae']):.6g} | "
-            f"{_format_optional_float(improvement)} | {row['worst_parameter_set']} |"
+            f"`{row['l0_reference_status']}` | "
+            f"{_format_diagnostic_value(improvement)} | {row['worst_parameter_set']} |"
         )
 
     lines.extend(
@@ -943,10 +1102,10 @@ def _write_baseline_diagnostics_md(
             "",
             "## C-Rate Holdout",
             "",
-            "The C-rate holdout remains the hardest split in the bounded full run.",
+            "The C-rate holdout remains the hardest split in the bounded capacity runs.",
             "",
-            "| Target | Best model | Feature group | Condition mean MAE | Improvement vs L0 |",
-            "|---|---|---|---:|---:|",
+            "| Target | Best model | Feature group | Condition mean MAE | L0 source | Improvement vs L0 |",
+            "|---|---|---|---:|---|---:|",
         ]
     )
     for row in c_rate_best:
@@ -954,7 +1113,8 @@ def _write_baseline_diagnostics_md(
             "| "
             f"`{row['target']}` | `{row['best_model_level']}` | `{row['best_feature_group']}` | "
             f"{float(row['best_condition_mean_mae']):.6g} | "
-            f"{_format_optional_float(row['condition_mean_mae_improvement_vs_l0'])} |"
+            f"`{row['l0_reference_status']}` | "
+            f"{_format_diagnostic_value(row['condition_mean_mae_improvement_vs_l0'])} |"
         )
 
     lines.extend(
@@ -979,11 +1139,14 @@ def _write_baseline_diagnostics_md(
             "- `plots/feature_gain_by_split.csv`",
             "- `plots/c_rate_holdout_errors.csv`",
             "- `plots/c_rate_holdout_by_condition.csv`",
+            "- `plots/c_rate_grouped_summaries.csv`",
             "- `plots/strict_vs_tolerant_delta.csv`",
             "- `plots/worst_condition_errors.csv`",
             "- `c_rate_holdout_error_analysis.md`",
+            "- `claim_readiness.md`",
             "",
             f"C-rate diagnostic rows: `{len(c_rate_rows)}`",
+            f"C-rate grouped summary rows: `{len(c_rate_grouped_rows)}`",
             "",
         ]
     )
@@ -992,6 +1155,7 @@ def _write_baseline_diagnostics_md(
 
 def _write_c_rate_error_analysis_md(
     c_rate_rows: list[dict[str, Any]],
+    c_rate_grouped_rows: list[dict[str, Any]],
     path: Path,
 ) -> None:
     worst_rows = sorted(
@@ -1022,10 +1186,43 @@ def _write_c_rate_error_analysis_md(
             f"{_format_optional_float(row['nominal_charge_C_rate'])} | "
             f"{row['n_intervals']} | "
             f"`{row['best_model_level']}:{row['best_feature_group']}` | "
-            f"{_format_optional_float(row['best_model_error'])} | "
-            f"{_format_optional_float(row['persistence_error'])} | "
-            f"{_format_optional_float(row['error_improvement_vs_persistence'])} |"
+            f"{_format_diagnostic_value(row['best_model_error'])} | "
+            f"{_format_diagnostic_value(row['persistence_error'])} | "
+            f"{_format_diagnostic_value(row['error_improvement_vs_persistence'])} |"
         )
+
+    lines.extend(["", "## Grouped Summaries", ""])
+    for grouping in (
+        "temperature",
+        "voltage_window_family",
+        "target",
+        "parameter_set",
+        "interval_count_bucket",
+        "capacity_Ah_k_range",
+        "delta_capacity_Ah_range",
+    ):
+        rows = [row for row in c_rate_grouped_rows if row["grouping"] == grouping]
+        if not rows:
+            continue
+        lines.extend(
+            [
+                f"### {grouping}",
+                "",
+                "| Group | Rows | Parameter sets | Intervals | Mean error | Mean persistence | Mean improvement | Max error |",
+                "|---|---:|---:|---:|---:|---:|---:|---:|",
+            ]
+        )
+        for row in rows:
+            lines.append(
+                "| "
+                f"`{row['group_value']}` | {row['row_count']} | "
+                f"{row['parameter_set_count']} | {row['total_intervals']} | "
+                f"{_format_diagnostic_value(row['mean_best_model_error'])} | "
+                f"{_format_diagnostic_value(row['mean_persistence_error'])} | "
+                f"{_format_diagnostic_value(row['mean_error_improvement_vs_persistence'])} | "
+                f"{_format_diagnostic_value(row['max_best_model_error'])} |"
+            )
+        lines.append("")
 
     lines.extend(
         [
@@ -1033,9 +1230,96 @@ def _write_c_rate_error_analysis_md(
             "## Table",
             "",
             "Condition-level details are in `plots/c_rate_holdout_by_condition.csv`.",
+            "Grouped summaries are in `plots/c_rate_grouped_summaries.csv`.",
             "",
         ]
     )
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def _write_claim_readiness_md(
+    report: dict[str, Any],
+    best_rows: list[dict[str, Any]],
+    feature_gain_rows: list[dict[str, Any]],
+    sensitivity_rows: list[dict[str, Any]],
+    c_rate_rows: list[dict[str, Any]],
+    leaderboard_rows: list[dict[str, Any]],
+    path: Path,
+) -> None:
+    f2_to_f3 = [
+        float(row["condition_mean_mae_gain"])
+        for row in feature_gain_rows
+        if row["run_scope"] == "primary"
+        and row["from_feature_group"] == "F2_state_exposure"
+        and row["to_feature_group"] == "F3_state_nominal"
+    ]
+    f3_to_f4 = [
+        float(row["condition_mean_mae_gain"])
+        for row in feature_gain_rows
+        if row["run_scope"] == "primary"
+        and row["from_feature_group"] == "F3_state_nominal"
+        and row["to_feature_group"] == "F4_state_log_age_scalar"
+    ]
+    sensitivity_deltas = [
+        abs(float(row["primary_minus_sensitivity_condition_mean_mae"]))
+        for row in sensitivity_rows
+    ]
+    quantile_coverages = [
+        _nullable_float(metric.get("q10_q90_interval_coverage"))
+        for metric in report["metrics"]
+        if str(metric.get("run_scope")) == "primary"
+        and str(metric.get("model_level")) == "L3_quantile_hist_gradient_boosting"
+    ]
+    c_rate_best_errors = [
+        _nullable_float(row.get("best_condition_mean_mae"))
+        for row in best_rows
+        if row["split_name"] == "c_rate_holdout_fold"
+    ]
+    other_best_errors = [
+        _nullable_float(row.get("best_condition_mean_mae"))
+        for row in best_rows
+        if row["split_name"] != "c_rate_holdout_fold"
+    ]
+    lines = [
+        "# Capacity Baseline Claim Readiness",
+        "",
+        "This table is a Milestone 0.5c synthesis aid. It does not authorize",
+        "EIS/PULSE modeling, knee prediction, sequence models, neural models,",
+        "policy ranking, or CBAT.",
+        "",
+        "| Claim | Status | Evidence | Decision |",
+        "|---|---|---|---|",
+        "| State-aware baselines beat weak time-only baselines | Supported | "
+        "`F1_state_time` and later groups include prior capacity state and dominate "
+        "the weak `F0_time_only` sanity baseline in the capacity ladder. | Keep "
+        "state-aware groups as the first forecast baseline. |",
+        "| Nominal protocol features help | Supported | "
+        f"`F2_state_exposure -> F3_state_nominal` mean gain "
+        f"{_format_diagnostic_value(_mean(f2_to_f3) if f2_to_f3 else None)} "
+        f"across {len(f2_to_f3)} primary rows. | Keep nominal protocol features. |",
+        "| LOG_AGE scalar features help | Partially supported | "
+        f"`F3_state_nominal -> F4_state_log_age_scalar` mean gain "
+        f"{_format_diagnostic_value(_mean(f3_to_f4) if f3_to_f4 else None)}; "
+        "the benefit is model-dependent and strongest in focused HGB. | Build "
+        "stronger log-derived stress features before adding modalities. |",
+        "| C-rate holdout is hardest | Supported | "
+        f"Best C-rate condition-mean MAE max "
+        f"{_format_diagnostic_value(_max_optional(c_rate_best_errors))}, "
+        f"other split best max {_format_diagnostic_value(_max_optional(other_best_errors))}. | "
+        "Focus next engineering on C-rate/stress exposure. |",
+        "| Monotonicity policy changes conclusions | Not supported | "
+        f"Mean absolute strict-vs-tolerant delta "
+        f"{_format_diagnostic_value(_mean(sensitivity_deltas) if sensitivity_deltas else None)}. | "
+        "Keep tolerant subset as primary with strict sensitivity. |",
+        "| Quantile HGB is calibrated | Not supported | "
+        f"Mean q10-q90 coverage "
+        f"{_format_diagnostic_value(_mean_optional(quantile_coverages))}; nominal "
+        "central coverage is 0.8. | Treat quantile metrics as diagnostics only. |",
+        "",
+        "C-rate condition rows used for stress analysis: "
+        f"`{len(c_rate_rows)}`.",
+        "",
+    ]
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
@@ -1480,10 +1764,73 @@ def _format_optional_float(value: Any) -> str:
     return "NA" if numeric is None else f"{numeric:.6g}"
 
 
+def _format_diagnostic_value(value: Any) -> str:
+    if isinstance(value, str):
+        return value
+    return _format_optional_float(value)
+
+
 def _mean_optional(values: list[Any]) -> float | None:
     numeric_values = [_nullable_float(value) for value in values]
     finite_values = [value for value in numeric_values if value is not None]
     return _mean(finite_values) if finite_values else None
+
+
+def _max_optional(values: list[Any]) -> float | None:
+    numeric_values = [_nullable_float(value) for value in values]
+    finite_values = [value for value in numeric_values if value is not None]
+    return max(finite_values) if finite_values else None
+
+
+def _reference_report_label(reference_report: dict[str, Any] | None) -> str:
+    if reference_report is None:
+        return "none"
+    return str(reference_report.get("outputs", {}).get("report", "provided"))
+
+
+def _group_value(value: Any) -> str:
+    if value is None:
+        return "unknown"
+    numeric = _nullable_float(value)
+    if numeric is not None:
+        return f"{numeric:g}"
+    text = str(value).strip()
+    return text if text else "unknown"
+
+
+def _interval_count_bucket(value: Any) -> str:
+    numeric = _nullable_float(value)
+    if numeric is None:
+        return "unknown"
+    count = int(numeric)
+    if count <= 5:
+        return "<=5"
+    if count <= 10:
+        return "6-10"
+    if count <= 20:
+        return "11-20"
+    return ">20"
+
+
+def _value_range_bucket(
+    minimum: Any,
+    maximum: Any,
+    *,
+    thresholds: tuple[float, float, float],
+    labels: tuple[str, str, str, str],
+) -> str:
+    values = [_nullable_float(minimum), _nullable_float(maximum)]
+    finite_values = [value for value in values if value is not None]
+    if not finite_values:
+        return "unknown"
+    midpoint = sum(finite_values) / len(finite_values)
+    if midpoint < thresholds[0]:
+        return labels[0]
+    if midpoint < thresholds[1]:
+        return labels[1]
+    if midpoint < thresholds[2]:
+        return labels[2]
+    return labels[3]
 
 
 def _first_non_empty(values: Any) -> str | None:

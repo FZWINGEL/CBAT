@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pyarrow as pa
@@ -134,6 +135,38 @@ def _write_capacity_fixture(tmp_path: Path) -> tuple[Path, Path]:
         subset_path,
     )
     return interval_path, subset_path
+
+
+def _write_focused_copy_without_l0(
+    reference_report_path: Path,
+    tmp_path: Path,
+) -> Path:
+    report = json.loads(reference_report_path.read_text(encoding="utf-8"))
+    focused_predictions_path = tmp_path / "focused_predictions.parquet"
+    prediction_rows = pq.read_table(report["outputs"]["predictions"]).to_pylist()
+    for row in prediction_rows:
+        row["model_level"] = "L2_hist_gradient_boosting"
+        row["feature_group"] = "F4_state_log_age_scalar"
+    pq.write_table(
+        pa.Table.from_pylist(prediction_rows, schema=BASELINE_PREDICTION_SCHEMA),
+        focused_predictions_path,
+    )
+
+    focused_metrics = []
+    for metric in report["metrics"]:
+        copied = dict(metric)
+        copied["model_level"] = "L2_hist_gradient_boosting"
+        copied["feature_group"] = "F4_state_log_age_scalar"
+        focused_metrics.append(copied)
+
+    focused_report_path = tmp_path / "focused_report.json"
+    report["metrics"] = focused_metrics
+    report["outputs"]["report"] = str(focused_report_path)
+    report["outputs"]["predictions"] = str(focused_predictions_path)
+    report["model_levels"] = ["L2_hist_gradient_boosting"]
+    report["feature_groups"] = ["F4_state_log_age_scalar"]
+    focused_report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
+    return focused_report_path
 
 
 def test_capacity_baseline_l0_writes_report_and_predictions(tmp_path: Path) -> None:
@@ -363,9 +396,98 @@ def test_diagnostics_tables_are_generated_from_capacity_report(tmp_path: Path) -
     c_rate_table = (out_dir / "plots" / "c_rate_holdout_errors.csv").read_text()
 
     assert (out_dir / "baseline_diagnostics.md").exists()
+    assert (out_dir / "claim_readiness.md").exists()
     assert "best_model_level" in best_table
     assert "nominal_charge_C_rate" in c_rate_table
     assert "capacity_Ah_k_min" in c_rate_table
+    assert (out_dir / "plots" / "c_rate_grouped_summaries.csv").exists()
+
+
+def test_diagnostics_reference_report_populates_l0_comparisons(tmp_path: Path) -> None:
+    interval_path, subset_path = _write_capacity_fixture(tmp_path)
+    reference_report_path = tmp_path / "reference_report.json"
+    reference_predictions_path = tmp_path / "reference_predictions.parquet"
+    run_capacity_baselines(
+        interval_path,
+        subset_path,
+        reference_report_path,
+        reference_predictions_path,
+        model_levels=["L0_persistence"],
+        feature_groups=["F0_time_only"],
+        targets=["delta_capacity_Ah"],
+        split_views=["c_rate_holdout_fold"],
+    )
+    focused_report_path = _write_focused_copy_without_l0(reference_report_path, tmp_path)
+
+    out_dir = tmp_path / "diagnostics_with_reference"
+    diagnose_capacity_report(
+        focused_report_path,
+        out_dir,
+        reference_report_path=reference_report_path,
+    )
+
+    best_table = (out_dir / "plots" / "best_by_target_split.csv").read_text()
+    c_rate_table = (out_dir / "plots" / "c_rate_holdout_by_condition.csv").read_text()
+    diagnostics = (out_dir / "baseline_diagnostics.md").read_text()
+
+    assert "reference_report" in best_table
+    assert "reference_report" in c_rate_table
+    assert "reference_missing" not in diagnostics
+
+
+def test_diagnostics_missing_reference_rows_are_explicit(tmp_path: Path) -> None:
+    interval_path, subset_path = _write_capacity_fixture(tmp_path)
+    reference_report_path = tmp_path / "reference_report.json"
+    reference_predictions_path = tmp_path / "reference_predictions.parquet"
+    run_capacity_baselines(
+        interval_path,
+        subset_path,
+        reference_report_path,
+        reference_predictions_path,
+        model_levels=["L0_persistence"],
+        feature_groups=["F0_time_only"],
+        targets=["delta_capacity_Ah"],
+        split_views=["c_rate_holdout_fold"],
+    )
+    focused_report_path = _write_focused_copy_without_l0(reference_report_path, tmp_path)
+
+    out_dir = tmp_path / "diagnostics_without_reference"
+    diagnose_capacity_report(focused_report_path, out_dir)
+
+    best_table = (out_dir / "plots" / "best_by_target_split.csv").read_text()
+    c_rate_table = (out_dir / "plots" / "c_rate_holdout_by_condition.csv").read_text()
+
+    assert "reference_missing" in best_table
+    assert "reference_missing" in c_rate_table
+
+
+def test_c_rate_grouped_summaries_and_claim_readiness_render(tmp_path: Path) -> None:
+    interval_path, subset_path = _write_capacity_fixture(tmp_path)
+    report_path = tmp_path / "capacity_baseline_report.json"
+    predictions_path = tmp_path / "capacity_baseline_predictions.parquet"
+    run_capacity_baselines(
+        interval_path,
+        subset_path,
+        report_path,
+        predictions_path,
+        model_levels=["L0_persistence"],
+        feature_groups=["F0_time_only"],
+        targets=["delta_capacity_Ah"],
+        split_views=["c_rate_holdout_fold"],
+    )
+
+    out_dir = tmp_path / "diagnostics"
+    diagnose_capacity_report(report_path, out_dir)
+
+    grouped = (out_dir / "plots" / "c_rate_grouped_summaries.csv").read_text()
+    claim_readiness = (out_dir / "claim_readiness.md").read_text()
+    c_rate_memo = (out_dir / "c_rate_holdout_error_analysis.md").read_text()
+
+    assert "temperature" in grouped
+    assert "voltage_window_family" in grouped
+    assert "interval_count_bucket" in grouped
+    assert "State-aware baselines" in claim_readiness
+    assert "Grouped Summaries" in c_rate_memo
 
 
 def test_feature_gain_table_is_generated_from_synthetic_leaderboard() -> None:

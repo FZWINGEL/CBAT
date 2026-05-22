@@ -764,6 +764,11 @@ def baseline_diagnose_capacity(
         "--report",
         help="Path to an existing capacity baseline JSON report.",
     ),
+    reference_report: Path | None = typer.Option(
+        None,
+        "--reference-report",
+        help="Optional capacity baseline report containing L0_persistence reference rows.",
+    ),
     out_dir: Path = typer.Option(
         ...,
         "--out-dir",
@@ -773,7 +778,7 @@ def baseline_diagnose_capacity(
     """Generate Milestone 0.5b diagnostics from a capacity baseline report."""
     from mbp.baselines.capacity import diagnose_capacity_report
 
-    diagnose_capacity_report(report, out_dir)
+    diagnose_capacity_report(report, out_dir, reference_report_path=reference_report)
     typer.echo(f"Capacity baseline diagnostics written to {out_dir}")
 
 

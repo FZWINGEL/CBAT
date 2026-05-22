@@ -11,11 +11,12 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 0.5b: Capacity Baseline Review, Diagnostics,
-and Robustness**. Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline
-readiness, and the first bounded Milestone 0.5 capacity baseline ladder are
-complete. Milestone 0.5b keeps the project scoped to scalar interval capacity
-features while hardening the interpretation of the baseline reports.
+The repository is in **Milestone 0.5c: Capacity Baseline Synthesis and
+Stress-Feature Decision**. Gate 2b LOG_AGE integrity triage, Milestone 0.4
+baseline readiness, the first bounded Milestone 0.5 capacity baseline ladder,
+and Milestone 0.5b robustness diagnostics are complete. Milestone 0.5c keeps
+the project scoped to scalar interval capacity features while turning those
+diagnostics into a decision-ready synthesis.
 
 No EIS/PULSE supervised claims, sequence models, neural architecture, policy
 ranking, CBAT architecture, or EIS embedding work has been started.
@@ -39,7 +40,11 @@ Current state:
 - The bounded full real-data L0-L3 ladder completed with `--hgb-max-iter 5` and
   emitted trackable report artifacts under `reports/baselines/capacity_l0_l3/`.
 - Baseline diagnostics now exist for the full report, scaled Ridge rerun, and
-  focused HGB-50 robustness rerun.
+  focused HGB-50 robustness rerun. Focused diagnostics can now compare against
+  an L0 reference report.
+- A Milestone 0.5c claim-readiness memo and synthesis note document that the
+  next engineering direction should be stronger LOG_AGE-derived scalar stress
+  features, not PULSE/EIS/CBAT expansion.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -311,13 +316,16 @@ Primary-run baseline highlights:
 Milestone 0.5b diagnostics and robustness artifacts are implemented:
 
 - CLI: `mbp baseline diagnose-capacity`
+- Optional reference comparison: `--reference-report`
 - Diagnostics memo: `baseline_diagnostics.md`
 - C-rate analysis memo: `c_rate_holdout_error_analysis.md`
+- Claim-readiness memo: `claim_readiness.md`
 - Diagnostic CSVs:
   - `plots/feature_gain_by_split.csv`
   - `plots/best_by_target_split.csv`
   - `plots/c_rate_holdout_errors.csv`
   - `plots/c_rate_holdout_by_condition.csv`
+  - `plots/c_rate_grouped_summaries.csv`
 
 `L1_ridge` now uses train-fold numeric standardization. Reports record
 `numeric_standardization = train_fold_mean_std` and
@@ -363,6 +371,40 @@ Milestone 0.5b interpretation:
   final HGB conclusion.
 - Nominal protocol features remain consistently useful.
 
+### Milestone 0.5c
+
+Milestone 0.5c synthesis artifacts are implemented:
+
+- `docs/experiments/2026-05-22_capacity_baseline_synthesis.md`
+- `reports/baselines/capacity_hgb50_focused/claim_readiness.md`
+- `reports/baselines/capacity_hgb50_focused/plots/c_rate_grouped_summaries.csv`
+
+Focused HGB-50 diagnostics were regenerated with
+`--reference-report reports/baselines/capacity_l0_l3_report.json`, so the best
+row table and C-rate condition table now report L0 persistence comparisons
+instead of `NA`.
+
+Milestone 0.5c key findings:
+
+- HGB-50 improves over L0 persistence across all target/split best rows in the
+  focused report.
+- Best C-rate condition-mean MAE remains higher than other splits:
+  `0.125186` for `capacity_Ah_k1` and `0.101133` for `delta_capacity_Ah`.
+- C-rate difficulty is strongest around cold/cool high-C-rate conditions:
+  grouped mean best error is `0.154004` at `10 C` and `0.132982` at `0 C`,
+  versus `0.068380` at `25 C`.
+- Voltage-window grouping suggests `approx_0_100` and `approx_10_100` remain
+  harder than `approx_10_90` in the current C-rate diagnostic.
+- Primary HGB-50 quantile q10-q90 coverage is approximately `0.678207`, below
+  nominal 0.8, so no uncertainty-calibration claim is authorized.
+
+Milestone 0.5c decision:
+
+- Do not expand to PULSE, EIS, sequence modeling, neural modeling, policy
+  ranking, or CBAT yet.
+- The recommended next milestone is LOG_AGE-derived scalar stress-feature
+  engineering focused on C-rate generalization.
+
 ## Important Implementation Notes
 
 The interval builder preserves result-table timestamps in the public schema, but
@@ -404,6 +446,8 @@ exist. First baseline work must use:
   architecture
 
 EIS and PULSE scientific claims remain blocked by their known audit issues.
+The next authorized engineering direction is capacity-only stress-feature
+engineering from LOG_AGE interval summaries.
 
 ## Validation
 
@@ -414,7 +458,7 @@ PYTHONDONTWRITEBYTECODE=1 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/ruff check . --no
 All checks passed.
 
 PYTHONDONTWRITEBYTECODE=1 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/pytest -p no:cacheprovider
-74 passed, 1 warning.
+77 passed, 1 warning.
 ```
 
 The one warning is the existing `datetime.utcnow()` deprecation warning in
@@ -423,21 +467,9 @@ correctness failure.
 
 ## Recommended Next Step
 
-Review the Milestone 0.5b diagnostics before adding any new modeling scope. The
-next work should turn the diagnostics into a short baseline review memo and
-decide whether the next scientific path is stronger scalar capacity feature
-engineering, a PULSE resistance baseline, or EIS QA/feature extraction.
+Start **Milestone 0.6: LOG_AGE Stress-Feature Engineering v1**.
 
-Key open questions:
-
-- why the C-rate holdout is the hardest split;
-- whether state/exposure/nominal feature improvements are stable across both
-  targets;
-- whether the strict-vs-tolerant monotonicity sensitivity deltas are small
-  enough to keep `baseline_clean_tolerant` as the primary subset;
-- whether HGB-50 LOG_AGE scalar gains hold under a more carefully reviewed
-  feature-engineering pass.
-
-Continue to keep EIS/PULSE modeling, sequence models, neural models, policy
-ranking, and CBAT architecture out of scope until the capacity baseline report
-has been reviewed.
+The first Milestone 0.6 success criterion should be improved C-rate holdout
+condition-mean MAE over the current HGB-50 `F4_state_log_age_scalar` baseline
+without degrading condition-fold and temperature-fold performance. Keep the
+scope capacity-only and scalar-interval only.
