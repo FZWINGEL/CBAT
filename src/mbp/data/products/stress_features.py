@@ -9,19 +9,22 @@ import math
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 from mbp.data.schema_contracts import INTERVAL_STRESS_FEATURES_SCHEMA, validate_table
 
-SCHEMA_VERSION = "gate6.interval_stress_features.v1"
-FEATURE_POLICY_VERSION = "log_age_stress_features.v1"
+SCHEMA_VERSION = "gate6.interval_stress_features.v1_1"
+FEATURE_POLICY_VERSION = "log_age_stress_features.v1_1_timestamp_event"
 CURRENT_SIGN_POLICY = "positive_current_charge_provisional_abs_current_primary"
 CURRENT_SIGN_CONVENTION_CONFIRMED = False
 SIGN_DEPENDENT_FEATURES_PROVISIONAL = True
 NOMINAL_CAPACITY_AH = 3.0
 REST_CURRENT_A = 0.05
+MAX_DWELL_GAP_S = 300.0
+MAX_DT_SAMPLES_PER_INTERVAL = 4096
 
 LOG_AGE_STRESS_COLUMNS = [
     "cell_id",
@@ -65,6 +68,21 @@ NONNEGATIVE_QA_FEATURE_COLUMNS = tuple(
             "mean_charge_current_A",
             "mean_discharge_current_A",
             "log_age_efc_per_day",
+            "stress_observed_duration_h",
+            "stress_coverage_fraction",
+            "max_log_age_gap_s",
+            "n_charge_events",
+            "n_discharge_events",
+            "n_rest_events",
+            "max_charge_event_h",
+            "max_discharge_event_h",
+            "max_rest_event_h",
+            "max_abs_current_ge_1C_event_h",
+            "max_abs_current_ge_1p5C_event_h",
+            "max_abs_current_ge_5over3C_event_h",
+            "max_cold_high_abs_current_event_h",
+            "max_high_voltage_high_abs_current_event_h",
+            "max_high_soc_high_abs_current_event_h",
         }
     )
 )
@@ -80,161 +98,235 @@ class StressIntervalKey:
 @dataclass
 class StressAccumulator:
     duration_h: float
+    window_start_s: float
+    window_end_s: float
     delta_capacity_Ah: float
     calendar_days: float
     log_age_efc_delta: float | None
     log_age_delta_q_Ah: float | None
     row_count: int = 0
-    voltage_lt_3p3_count: int = 0
-    voltage_3p3_3p6_count: int = 0
-    voltage_3p6_3p9_count: int = 0
-    voltage_3p9_4p1_count: int = 0
-    voltage_ge_4p1_count: int = 0
-    temp_lt_5_count: int = 0
-    temp_5_15_count: int = 0
-    temp_15_30_count: int = 0
-    temp_30_40_count: int = 0
-    temp_ge_40_count: int = 0
-    charge_count: int = 0
-    discharge_count: int = 0
-    rest_count: int = 0
-    abs_current_ge_1c_count: int = 0
-    abs_current_ge_1p5c_count: int = 0
-    abs_current_ge_5over3c_count: int = 0
-    charge_current_ge_1c_count: int = 0
-    charge_current_ge_1p5c_count: int = 0
-    charge_current_ge_5over3c_count: int = 0
+    voltage_lt_3p3_h: float = 0.0
+    voltage_3p3_3p6_h: float = 0.0
+    voltage_3p6_3p9_h: float = 0.0
+    voltage_3p9_4p1_h: float = 0.0
+    voltage_ge_4p1_h: float = 0.0
+    temp_lt_5_h: float = 0.0
+    temp_5_15_h: float = 0.0
+    temp_15_30_h: float = 0.0
+    temp_30_40_h: float = 0.0
+    temp_ge_40_h: float = 0.0
+    charge_h: float = 0.0
+    discharge_h: float = 0.0
+    rest_h: float = 0.0
+    abs_current_ge_1c_h: float = 0.0
+    abs_current_ge_1p5c_h: float = 0.0
+    abs_current_ge_5over3c_h: float = 0.0
+    charge_current_ge_1c_h: float = 0.0
+    charge_current_ge_1p5c_h: float = 0.0
+    charge_current_ge_5over3c_h: float = 0.0
     charge_current_sum: float = 0.0
+    charge_current_weight_h: float = 0.0
     discharge_current_abs_sum: float = 0.0
-    soc_lt_20_count: int = 0
-    soc_20_50_count: int = 0
-    soc_50_80_count: int = 0
-    soc_ge_80_count: int = 0
-    cold_high_charge_count: int = 0
-    cold_high_abs_current_count: int = 0
-    high_voltage_hot_count: int = 0
-    high_soc_hot_count: int = 0
-    high_voltage_high_abs_current_count: int = 0
-    high_soc_high_abs_current_count: int = 0
+    discharge_current_weight_h: float = 0.0
+    soc_lt_20_h: float = 0.0
+    soc_20_50_h: float = 0.0
+    soc_50_80_h: float = 0.0
+    soc_ge_80_h: float = 0.0
+    cold_high_charge_h: float = 0.0
+    cold_high_abs_current_h: float = 0.0
+    high_voltage_hot_h: float = 0.0
+    high_soc_hot_h: float = 0.0
+    high_voltage_high_abs_current_h: float = 0.0
+    high_soc_high_abs_current_h: float = 0.0
+    observed_duration_h: float = 0.0
+    max_log_age_gap_s: float = 0.0
+    log_age_gap_count_gt_60s: int = 0
+    log_age_gap_count_gt_300s: int = 0
+    dt_samples_s: list[float] | None = None
+    previous_timestamp_s: float | None = None
+    n_charge_events: int = 0
+    n_discharge_events: int = 0
+    n_rest_events: int = 0
+    max_charge_event_h: float = 0.0
+    max_discharge_event_h: float = 0.0
+    max_rest_event_h: float = 0.0
+    max_abs_current_ge_1c_event_h: float = 0.0
+    max_abs_current_ge_1p5c_event_h: float = 0.0
+    max_abs_current_ge_5over3c_event_h: float = 0.0
+    max_cold_high_abs_current_event_h: float = 0.0
+    max_high_voltage_high_abs_current_event_h: float = 0.0
+    max_high_soc_high_abs_current_event_h: float = 0.0
+    _active_events: dict[str, bool] | None = None
+    _active_event_h: dict[str, float] | None = None
 
     def update(self, table: pa.Table) -> None:
-        self.row_count += table.num_rows
-        voltage = table.column("v_raw_V")
-        temperature = table.column("t_cell_degC")
-        current = table.column("i_raw_A")
-        soc = table.column("soc_est")
-        abs_current = pc.abs(current)
+        if table.num_rows == 0:
+            return
+        timestamps = _column_numpy(table, "timestamp_s")
+        order = np.argsort(timestamps, kind="stable")
+        timestamps = timestamps[order]
+        voltage = _column_numpy(table, "v_raw_V")[order]
+        temperature = _column_numpy(table, "t_cell_degC")[order]
+        current = _column_numpy(table, "i_raw_A")[order]
+        soc = _column_numpy(table, "soc_est")[order]
 
-        voltage_lt_3p3 = pc.less(voltage, 3.3)
-        voltage_3p3_3p6 = _between(voltage, 3.3, 3.6)
-        voltage_3p6_3p9 = _between(voltage, 3.6, 3.9)
-        voltage_3p9_4p1 = _between(voltage, 3.9, 4.1)
-        voltage_ge_4p1 = pc.greater_equal(voltage, 4.1)
-        self.voltage_lt_3p3_count += _mask_count(voltage_lt_3p3)
-        self.voltage_3p3_3p6_count += _mask_count(voltage_3p3_3p6)
-        self.voltage_3p6_3p9_count += _mask_count(voltage_3p6_3p9)
-        self.voltage_3p9_4p1_count += _mask_count(voltage_3p9_4p1)
-        self.voltage_ge_4p1_count += _mask_count(voltage_ge_4p1)
+        previous_s = self.previous_timestamp_s
+        if previous_s is None:
+            previous_s = self.window_start_s
+        previous = np.empty_like(timestamps)
+        previous[0] = previous_s
+        if len(timestamps) > 1:
+            previous[1:] = timestamps[:-1]
+        raw_dt_s = timestamps - previous
+        valid = (timestamps > self.window_start_s) & (timestamps <= self.window_end_s) & (raw_dt_s > 0.0)
+        if not bool(np.any(valid)):
+            self.previous_timestamp_s = float(timestamps[-1])
+            return
 
-        temp_lt_5 = pc.less(temperature, 5.0)
-        temp_5_15 = _between(temperature, 5.0, 15.0)
-        temp_15_30 = _between(temperature, 15.0, 30.0)
-        temp_30_40 = _between(temperature, 30.0, 40.0)
-        temp_ge_40 = pc.greater_equal(temperature, 40.0)
-        cold = pc.less(temperature, 15.0)
+        timestamps = timestamps[valid]
+        voltage = voltage[valid]
+        temperature = temperature[valid]
+        current = current[valid]
+        soc = soc[valid]
+        raw_dt_s = raw_dt_s[valid]
+        dt_s = np.minimum(raw_dt_s, MAX_DWELL_GAP_S)
+        dt_h = dt_s / 3600.0
+
+        self.row_count += int(len(dt_h))
+        self.previous_timestamp_s = float(timestamps[-1])
+        self.max_log_age_gap_s = max(self.max_log_age_gap_s, float(np.max(raw_dt_s)))
+        self.log_age_gap_count_gt_60s += int(np.sum(raw_dt_s > 60.0))
+        self.log_age_gap_count_gt_300s += int(np.sum(raw_dt_s > 300.0))
+        if self.dt_samples_s is None:
+            self.dt_samples_s = []
+        remaining_samples = MAX_DT_SAMPLES_PER_INTERVAL - len(self.dt_samples_s)
+        if remaining_samples > 0:
+            self.dt_samples_s.extend(float(value) for value in dt_s[:remaining_samples])
+        self.observed_duration_h += float(np.sum(dt_h))
+
+        abs_current = np.abs(current)
+        voltage_lt_3p3 = voltage < 3.3
+        voltage_3p3_3p6 = (voltage >= 3.3) & (voltage < 3.6)
+        voltage_3p6_3p9 = (voltage >= 3.6) & (voltage < 3.9)
+        voltage_3p9_4p1 = (voltage >= 3.9) & (voltage < 4.1)
+        voltage_ge_4p1 = voltage >= 4.1
+        self.voltage_lt_3p3_h += _sum_dt(dt_h, voltage_lt_3p3)
+        self.voltage_3p3_3p6_h += _sum_dt(dt_h, voltage_3p3_3p6)
+        self.voltage_3p6_3p9_h += _sum_dt(dt_h, voltage_3p6_3p9)
+        self.voltage_3p9_4p1_h += _sum_dt(dt_h, voltage_3p9_4p1)
+        self.voltage_ge_4p1_h += _sum_dt(dt_h, voltage_ge_4p1)
+
+        temp_lt_5 = temperature < 5.0
+        temp_5_15 = (temperature >= 5.0) & (temperature < 15.0)
+        temp_15_30 = (temperature >= 15.0) & (temperature < 30.0)
+        temp_30_40 = (temperature >= 30.0) & (temperature < 40.0)
+        temp_ge_40 = temperature >= 40.0
+        cold = temperature < 15.0
         hot = temp_ge_40
-        self.temp_lt_5_count += _mask_count(temp_lt_5)
-        self.temp_5_15_count += _mask_count(temp_5_15)
-        self.temp_15_30_count += _mask_count(temp_15_30)
-        self.temp_30_40_count += _mask_count(temp_30_40)
-        self.temp_ge_40_count += _mask_count(temp_ge_40)
+        self.temp_lt_5_h += _sum_dt(dt_h, temp_lt_5)
+        self.temp_5_15_h += _sum_dt(dt_h, temp_5_15)
+        self.temp_15_30_h += _sum_dt(dt_h, temp_15_30)
+        self.temp_30_40_h += _sum_dt(dt_h, temp_30_40)
+        self.temp_ge_40_h += _sum_dt(dt_h, temp_ge_40)
 
-        charge = pc.greater(current, REST_CURRENT_A)
-        discharge = pc.less(current, -REST_CURRENT_A)
-        rest = pc.less_equal(abs_current, REST_CURRENT_A)
-        abs_ge_1c = pc.greater_equal(abs_current, NOMINAL_CAPACITY_AH)
-        abs_ge_1p5c = pc.greater_equal(abs_current, 1.5 * NOMINAL_CAPACITY_AH)
-        abs_ge_5over3c = pc.greater_equal(abs_current, (5.0 / 3.0) * NOMINAL_CAPACITY_AH)
-        charge_ge_1c = pc.greater_equal(current, NOMINAL_CAPACITY_AH)
-        charge_ge_1p5c = pc.greater_equal(current, 1.5 * NOMINAL_CAPACITY_AH)
-        charge_ge_5over3c = pc.greater_equal(current, (5.0 / 3.0) * NOMINAL_CAPACITY_AH)
-        self.charge_count += _mask_count(charge)
-        self.discharge_count += _mask_count(discharge)
-        self.rest_count += _mask_count(rest)
-        self.abs_current_ge_1c_count += _mask_count(abs_ge_1c)
-        self.abs_current_ge_1p5c_count += _mask_count(abs_ge_1p5c)
-        self.abs_current_ge_5over3c_count += _mask_count(abs_ge_5over3c)
-        self.charge_current_ge_1c_count += _mask_count(charge_ge_1c)
-        self.charge_current_ge_1p5c_count += _mask_count(charge_ge_1p5c)
-        self.charge_current_ge_5over3c_count += _mask_count(charge_ge_5over3c)
-        self.charge_current_sum += _sum_where(current, charge)
-        self.discharge_current_abs_sum += _sum_where(abs_current, discharge)
+        charge = current > REST_CURRENT_A
+        discharge = current < -REST_CURRENT_A
+        rest = abs_current <= REST_CURRENT_A
+        abs_ge_1c = abs_current >= NOMINAL_CAPACITY_AH
+        abs_ge_1p5c = abs_current >= 1.5 * NOMINAL_CAPACITY_AH
+        abs_ge_5over3c = abs_current >= (5.0 / 3.0) * NOMINAL_CAPACITY_AH
+        charge_ge_1c = current >= NOMINAL_CAPACITY_AH
+        charge_ge_1p5c = current >= 1.5 * NOMINAL_CAPACITY_AH
+        charge_ge_5over3c = current >= (5.0 / 3.0) * NOMINAL_CAPACITY_AH
+        self.charge_h += _sum_dt(dt_h, charge)
+        self.discharge_h += _sum_dt(dt_h, discharge)
+        self.rest_h += _sum_dt(dt_h, rest)
+        self.abs_current_ge_1c_h += _sum_dt(dt_h, abs_ge_1c)
+        self.abs_current_ge_1p5c_h += _sum_dt(dt_h, abs_ge_1p5c)
+        self.abs_current_ge_5over3c_h += _sum_dt(dt_h, abs_ge_5over3c)
+        self.charge_current_ge_1c_h += _sum_dt(dt_h, charge_ge_1c)
+        self.charge_current_ge_1p5c_h += _sum_dt(dt_h, charge_ge_1p5c)
+        self.charge_current_ge_5over3c_h += _sum_dt(dt_h, charge_ge_5over3c)
+        self.charge_current_sum += _sum_dt(current * dt_h, charge)
+        self.charge_current_weight_h += _sum_dt(dt_h, charge)
+        self.discharge_current_abs_sum += _sum_dt(abs_current * dt_h, discharge)
+        self.discharge_current_weight_h += _sum_dt(dt_h, discharge)
 
-        soc_lt_20 = pc.less(soc, 20.0)
-        soc_20_50 = _between(soc, 20.0, 50.0)
-        soc_50_80 = _between(soc, 50.0, 80.0)
-        soc_ge_80 = pc.greater_equal(soc, 80.0)
-        self.soc_lt_20_count += _mask_count(soc_lt_20)
-        self.soc_20_50_count += _mask_count(soc_20_50)
-        self.soc_50_80_count += _mask_count(soc_50_80)
-        self.soc_ge_80_count += _mask_count(soc_ge_80)
+        soc_lt_20 = soc < 20.0
+        soc_20_50 = (soc >= 20.0) & (soc < 50.0)
+        soc_50_80 = (soc >= 50.0) & (soc < 80.0)
+        soc_ge_80 = soc >= 80.0
+        self.soc_lt_20_h += _sum_dt(dt_h, soc_lt_20)
+        self.soc_20_50_h += _sum_dt(dt_h, soc_20_50)
+        self.soc_50_80_h += _sum_dt(dt_h, soc_50_80)
+        self.soc_ge_80_h += _sum_dt(dt_h, soc_ge_80)
 
-        self.cold_high_charge_count += _mask_count(pc.and_(cold, charge_ge_1p5c))
-        self.cold_high_abs_current_count += _mask_count(pc.and_(cold, abs_ge_1p5c))
-        self.high_voltage_hot_count += _mask_count(pc.and_(voltage_ge_4p1, hot))
-        self.high_soc_hot_count += _mask_count(pc.and_(soc_ge_80, hot))
-        self.high_voltage_high_abs_current_count += _mask_count(
-            pc.and_(voltage_ge_4p1, abs_ge_1p5c)
+        cold_high_charge = cold & charge_ge_1p5c
+        cold_high_abs_current = cold & abs_ge_1p5c
+        high_voltage_hot = voltage_ge_4p1 & hot
+        high_soc_hot = soc_ge_80 & hot
+        high_voltage_high_abs_current = voltage_ge_4p1 & abs_ge_1p5c
+        high_soc_high_abs_current = soc_ge_80 & abs_ge_1p5c
+        self.cold_high_charge_h += _sum_dt(dt_h, cold_high_charge)
+        self.cold_high_abs_current_h += _sum_dt(dt_h, cold_high_abs_current)
+        self.high_voltage_hot_h += _sum_dt(dt_h, high_voltage_hot)
+        self.high_soc_hot_h += _sum_dt(dt_h, high_soc_hot)
+        self.high_voltage_high_abs_current_h += _sum_dt(
+            dt_h, high_voltage_high_abs_current
         )
-        self.high_soc_high_abs_current_count += _mask_count(pc.and_(soc_ge_80, abs_ge_1p5c))
+        self.high_soc_high_abs_current_h += _sum_dt(dt_h, high_soc_high_abs_current)
+
+        self._update_event_array("charge", charge, dt_h)
+        self._update_event_array("discharge", discharge, dt_h)
+        self._update_event_array("rest", rest, dt_h)
+        self._update_event_array("abs_current_ge_1c", abs_ge_1c, dt_h)
+        self._update_event_array("abs_current_ge_1p5c", abs_ge_1p5c, dt_h)
+        self._update_event_array("abs_current_ge_5over3c", abs_ge_5over3c, dt_h)
+        self._update_event_array("cold_high_abs_current", cold_high_abs_current, dt_h)
+        self._update_event_array(
+            "high_voltage_high_abs_current", high_voltage_high_abs_current, dt_h
+        )
+        self._update_event_array("high_soc_high_abs_current", high_soc_high_abs_current, dt_h)
 
     def to_features(self) -> dict[str, Any]:
         values = {
             "stress_log_age_row_count": self.row_count,
             "stress_duration_h": self.duration_h,
-            "time_voltage_lt_3p3_h": self._hours(self.voltage_lt_3p3_count),
-            "time_voltage_3p3_3p6_h": self._hours(self.voltage_3p3_3p6_count),
-            "time_voltage_3p6_3p9_h": self._hours(self.voltage_3p6_3p9_count),
-            "time_voltage_3p9_4p1_h": self._hours(self.voltage_3p9_4p1_count),
-            "time_voltage_ge_4p1_h": self._hours(self.voltage_ge_4p1_count),
-            "time_temp_lt_5C_h": self._hours(self.temp_lt_5_count),
-            "time_temp_5_15C_h": self._hours(self.temp_5_15_count),
-            "time_temp_15_30C_h": self._hours(self.temp_15_30_count),
-            "time_temp_30_40C_h": self._hours(self.temp_30_40_count),
-            "time_temp_ge_40C_h": self._hours(self.temp_ge_40_count),
-            "mean_charge_current_A": _safe_ratio(self.charge_current_sum, self.charge_count),
+            "time_voltage_lt_3p3_h": self.voltage_lt_3p3_h,
+            "time_voltage_3p3_3p6_h": self.voltage_3p3_3p6_h,
+            "time_voltage_3p6_3p9_h": self.voltage_3p6_3p9_h,
+            "time_voltage_3p9_4p1_h": self.voltage_3p9_4p1_h,
+            "time_voltage_ge_4p1_h": self.voltage_ge_4p1_h,
+            "time_temp_lt_5C_h": self.temp_lt_5_h,
+            "time_temp_5_15C_h": self.temp_5_15_h,
+            "time_temp_15_30C_h": self.temp_15_30_h,
+            "time_temp_30_40C_h": self.temp_30_40_h,
+            "time_temp_ge_40C_h": self.temp_ge_40_h,
+            "mean_charge_current_A": _safe_ratio(
+                self.charge_current_sum, self.charge_current_weight_h
+            ),
             "mean_discharge_current_A": _safe_ratio(
-                self.discharge_current_abs_sum, self.discharge_count
+                self.discharge_current_abs_sum, self.discharge_current_weight_h
             ),
-            "charge_time_h": self._hours(self.charge_count),
-            "discharge_time_h": self._hours(self.discharge_count),
-            "rest_time_h": self._hours(self.rest_count),
-            "abs_current_ge_1C_time_h": self._hours(self.abs_current_ge_1c_count),
-            "abs_current_ge_1p5C_time_h": self._hours(self.abs_current_ge_1p5c_count),
-            "abs_current_ge_5over3C_time_h": self._hours(
-                self.abs_current_ge_5over3c_count
-            ),
-            "charge_current_ge_1C_time_h": self._hours(self.charge_current_ge_1c_count),
-            "charge_current_ge_1p5C_time_h": self._hours(
-                self.charge_current_ge_1p5c_count
-            ),
-            "charge_current_ge_5over3C_time_h": self._hours(
-                self.charge_current_ge_5over3c_count
-            ),
-            "time_soc_lt_20_h": self._hours(self.soc_lt_20_count),
-            "time_soc_20_50_h": self._hours(self.soc_20_50_count),
-            "time_soc_50_80_h": self._hours(self.soc_50_80_count),
-            "time_soc_ge_80_h": self._hours(self.soc_ge_80_count),
-            "cold_high_charge_time_h": self._hours(self.cold_high_charge_count),
-            "cold_high_abs_current_time_h": self._hours(self.cold_high_abs_current_count),
-            "high_voltage_hot_time_h": self._hours(self.high_voltage_hot_count),
-            "high_soc_hot_time_h": self._hours(self.high_soc_hot_count),
-            "high_voltage_high_abs_current_time_h": self._hours(
-                self.high_voltage_high_abs_current_count
-            ),
-            "high_soc_high_abs_current_time_h": self._hours(
-                self.high_soc_high_abs_current_count
-            ),
+            "charge_time_h": self.charge_h,
+            "discharge_time_h": self.discharge_h,
+            "rest_time_h": self.rest_h,
+            "abs_current_ge_1C_time_h": self.abs_current_ge_1c_h,
+            "abs_current_ge_1p5C_time_h": self.abs_current_ge_1p5c_h,
+            "abs_current_ge_5over3C_time_h": self.abs_current_ge_5over3c_h,
+            "charge_current_ge_1C_time_h": self.charge_current_ge_1c_h,
+            "charge_current_ge_1p5C_time_h": self.charge_current_ge_1p5c_h,
+            "charge_current_ge_5over3C_time_h": self.charge_current_ge_5over3c_h,
+            "time_soc_lt_20_h": self.soc_lt_20_h,
+            "time_soc_20_50_h": self.soc_20_50_h,
+            "time_soc_50_80_h": self.soc_50_80_h,
+            "time_soc_ge_80_h": self.soc_ge_80_h,
+            "cold_high_charge_time_h": self.cold_high_charge_h,
+            "cold_high_abs_current_time_h": self.cold_high_abs_current_h,
+            "high_voltage_hot_time_h": self.high_voltage_hot_h,
+            "high_soc_hot_time_h": self.high_soc_hot_h,
+            "high_voltage_high_abs_current_time_h": self.high_voltage_high_abs_current_h,
+            "high_soc_high_abs_current_time_h": self.high_soc_high_abs_current_h,
             "delta_capacity_per_day": _safe_ratio(self.delta_capacity_Ah, self.calendar_days),
             "delta_capacity_per_efc": _safe_ratio(
                 self.delta_capacity_Ah, self.log_age_efc_delta
@@ -243,6 +335,30 @@ class StressAccumulator:
                 self.delta_capacity_Ah, self.log_age_delta_q_Ah
             ),
             "log_age_efc_per_day": _safe_ratio(self.log_age_efc_delta, self.calendar_days),
+            "stress_observed_duration_h": self.observed_duration_h,
+            "stress_coverage_fraction": min(
+                1.0, _safe_ratio(self.observed_duration_h, self.duration_h) or 0.0
+            ),
+            "median_log_age_dt_s": _median(self.dt_samples_s or []),
+            "max_log_age_gap_s": self.max_log_age_gap_s,
+            "log_age_gap_count_gt_60s": self.log_age_gap_count_gt_60s,
+            "log_age_gap_count_gt_300s": self.log_age_gap_count_gt_300s,
+            "n_charge_events": self.n_charge_events,
+            "n_discharge_events": self.n_discharge_events,
+            "n_rest_events": self.n_rest_events,
+            "max_charge_event_h": self.max_charge_event_h,
+            "max_discharge_event_h": self.max_discharge_event_h,
+            "max_rest_event_h": self.max_rest_event_h,
+            "max_abs_current_ge_1C_event_h": self.max_abs_current_ge_1c_event_h,
+            "max_abs_current_ge_1p5C_event_h": self.max_abs_current_ge_1p5c_event_h,
+            "max_abs_current_ge_5over3C_event_h": self.max_abs_current_ge_5over3c_event_h,
+            "max_cold_high_abs_current_event_h": self.max_cold_high_abs_current_event_h,
+            "max_high_voltage_high_abs_current_event_h": (
+                self.max_high_voltage_high_abs_current_event_h
+            ),
+            "max_high_soc_high_abs_current_event_h": (
+                self.max_high_soc_high_abs_current_event_h
+            ),
         }
         values["high_voltage_time_h"] = values["time_voltage_ge_4p1_h"]
         values["voltage_dwell_weighted_h"] = (
@@ -256,16 +372,107 @@ class StressAccumulator:
         values["high_soc_time_h"] = values["time_soc_ge_80_h"]
         return values
 
-    def _hours(self, count: int) -> float:
-        if self.row_count <= 0:
-            return 0.0
-        return self.duration_h * count / self.row_count
+    def _update_events(self, active: dict[str, bool], dt_h: float) -> None:
+        if self._active_events is None:
+            self._active_events = {}
+        if self._active_event_h is None:
+            self._active_event_h = {}
+        for event_name, is_active in active.items():
+            was_active = self._active_events.get(event_name, False)
+            if is_active and not was_active:
+                if event_name == "charge":
+                    self.n_charge_events += 1
+                elif event_name == "discharge":
+                    self.n_discharge_events += 1
+                elif event_name == "rest":
+                    self.n_rest_events += 1
+                self._active_event_h[event_name] = 0.0
+            if is_active:
+                total = self._active_event_h.get(event_name, 0.0) + dt_h
+                self._active_event_h[event_name] = total
+                self._record_event_max(event_name, total)
+            else:
+                self._active_event_h[event_name] = 0.0
+            self._active_events[event_name] = is_active
+
+    def _update_event_array(
+        self,
+        event_name: str,
+        active: np.ndarray,
+        dt_h: np.ndarray,
+    ) -> None:
+        if self._active_events is None:
+            self._active_events = {}
+        if self._active_event_h is None:
+            self._active_event_h = {}
+        active = active.astype(bool, copy=False)
+        if active.size == 0:
+            return
+        previous_active = self._active_events.get(event_name, False)
+        current_duration = self._active_event_h.get(event_name, 0.0)
+        starts = np.flatnonzero(active & np.concatenate(([not previous_active], ~active[:-1])))
+        for start_idx in starts:
+            if event_name == "charge":
+                self.n_charge_events += 1
+            elif event_name == "discharge":
+                self.n_discharge_events += 1
+            elif event_name == "rest":
+                self.n_rest_events += 1
+            if start_idx > 0 or not previous_active:
+                current_duration = 0.0
+        boundaries = np.flatnonzero(active[1:] != active[:-1]) + 1
+        segment_starts = np.concatenate(([0], boundaries))
+        segment_ends = np.concatenate((boundaries, [active.size]))
+        for start_idx, end_idx in zip(segment_starts, segment_ends, strict=True):
+            if not active[start_idx]:
+                if end_idx == active.size:
+                    current_duration = 0.0
+                continue
+            if start_idx > 0 or not previous_active:
+                current_duration = 0.0
+            current_duration += float(np.sum(dt_h[start_idx:end_idx]))
+            self._record_event_max(event_name, current_duration)
+        self._active_events[event_name] = bool(active[-1])
+        self._active_event_h[event_name] = current_duration if active[-1] else 0.0
+
+    def _record_event_max(self, event_name: str, value_h: float) -> None:
+        if event_name == "charge":
+            self.max_charge_event_h = max(self.max_charge_event_h, value_h)
+        elif event_name == "discharge":
+            self.max_discharge_event_h = max(self.max_discharge_event_h, value_h)
+        elif event_name == "rest":
+            self.max_rest_event_h = max(self.max_rest_event_h, value_h)
+        elif event_name == "abs_current_ge_1c":
+            self.max_abs_current_ge_1c_event_h = max(
+                self.max_abs_current_ge_1c_event_h, value_h
+            )
+        elif event_name == "abs_current_ge_1p5c":
+            self.max_abs_current_ge_1p5c_event_h = max(
+                self.max_abs_current_ge_1p5c_event_h, value_h
+            )
+        elif event_name == "abs_current_ge_5over3c":
+            self.max_abs_current_ge_5over3c_event_h = max(
+                self.max_abs_current_ge_5over3c_event_h, value_h
+            )
+        elif event_name == "cold_high_abs_current":
+            self.max_cold_high_abs_current_event_h = max(
+                self.max_cold_high_abs_current_event_h, value_h
+            )
+        elif event_name == "high_voltage_high_abs_current":
+            self.max_high_voltage_high_abs_current_event_h = max(
+                self.max_high_voltage_high_abs_current_event_h, value_h
+            )
+        elif event_name == "high_soc_high_abs_current":
+            self.max_high_soc_high_abs_current_event_h = max(
+                self.max_high_soc_high_abs_current_event_h, value_h
+            )
 
 
 def build_interval_stress_features(
     interim_dir: Path,
     interval_table_path: Path,
     out_path: Path,
+    current_sign_report_path: Path | None = None,
 ) -> pa.Table:
     """Build the interval stress-feature sidecar from LOG_AGE row groups."""
     log_age_path = interim_dir / "modality_table_log_age.parquet"
@@ -275,6 +482,7 @@ def build_interval_stress_features(
         raise FileNotFoundError(f"LOG_AGE table not found: {log_age_path}")
 
     interval_rows = pq.read_table(interval_table_path).to_pylist()
+    sign_policy = _resolve_current_sign_policy(current_sign_report_path)
     intervals_by_cell, accumulators = _prepare_intervals(interval_rows)
     _scan_log_age_for_stress(log_age_path, intervals_by_cell, accumulators)
 
@@ -292,9 +500,13 @@ def build_interval_stress_features(
             "checkup_k_next": int(row["checkup_k_next"]),
             "schema_version": SCHEMA_VERSION,
             "feature_policy_version": FEATURE_POLICY_VERSION,
-            "current_sign_policy": CURRENT_SIGN_POLICY,
-            "current_sign_convention_confirmed": CURRENT_SIGN_CONVENTION_CONFIRMED,
-            "sign_dependent_features_provisional": SIGN_DEPENDENT_FEATURES_PROVISIONAL,
+            "current_sign_policy": sign_policy["current_sign_policy"],
+            "current_sign_convention_confirmed": sign_policy[
+                "current_sign_convention_confirmed"
+            ],
+            "sign_dependent_features_provisional": sign_policy[
+                "sign_dependent_features_provisional"
+            ],
             **acc.to_features(),
         }
         for field in INTERVAL_STRESS_FEATURES_SCHEMA:
@@ -313,7 +525,7 @@ def build_interval_stress_features(
             b"feature_policy_version": FEATURE_POLICY_VERSION.encode(),
             b"interval_table_path": str(interval_table_path).encode(),
             b"log_age_path": str(log_age_path).encode(),
-            b"current_sign_policy": CURRENT_SIGN_POLICY.encode(),
+            b"current_sign_policy": str(sign_policy["current_sign_policy"]).encode(),
         }
     )
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -364,6 +576,8 @@ def run_stress_feature_qa(
     current_sum_failures = 0
     for row in rows:
         duration_h = _as_float(row.get("stress_duration_h"))
+        observed_duration_h = _as_float(row.get("stress_observed_duration_h"))
+        dwell_reference_h = observed_duration_h if math.isfinite(observed_duration_h) else duration_h
         for column in NONNEGATIVE_QA_FEATURE_COLUMNS:
             value = _as_float(row.get(column))
             if math.isfinite(value) and value < -duration_tolerance_h:
@@ -373,7 +587,7 @@ def run_stress_feature_qa(
             if (
                 math.isfinite(value)
                 and math.isfinite(duration_h)
-                and value > duration_h + duration_tolerance_h
+                and value > dwell_reference_h + duration_tolerance_h
             ):
                 exceeding_duration_counts[column] = (
                     exceeding_duration_counts.get(column, 0) + 1
@@ -411,13 +625,13 @@ def run_stress_feature_qa(
             _as_float(row[column])
             for column in ("charge_time_h", "discharge_time_h", "rest_time_h")
         )
-        if abs(voltage_sum - duration_h) > duration_tolerance_h:
+        if abs(voltage_sum - dwell_reference_h) > duration_tolerance_h:
             voltage_sum_failures += 1
-        if abs(temperature_sum - duration_h) > duration_tolerance_h:
+        if abs(temperature_sum - dwell_reference_h) > duration_tolerance_h:
             temperature_sum_failures += 1
-        if abs(soc_sum - duration_h) > duration_tolerance_h:
+        if abs(soc_sum - dwell_reference_h) > duration_tolerance_h:
             soc_sum_failures += 1
-        if abs(current_sum - duration_h) > duration_tolerance_h:
+        if abs(current_sum - dwell_reference_h) > duration_tolerance_h:
             current_sum_failures += 1
 
     if negative_feature_counts:
@@ -449,14 +663,29 @@ def run_stress_feature_qa(
             "soc_sum_failures": soc_sum_failures,
             "current_sum_failures": current_sum_failures,
             "tolerance_h": duration_tolerance_h,
+            "reference": "stress_observed_duration_h",
         },
         "negative_feature_counts": dict(sorted(negative_feature_counts.items())),
         "features_exceeding_duration_counts": dict(
             sorted(exceeding_duration_counts.items())
         ),
-        "current_sign_policy": CURRENT_SIGN_POLICY,
-        "current_sign_convention_confirmed": CURRENT_SIGN_CONVENTION_CONFIRMED,
-        "sign_dependent_features_provisional": SIGN_DEPENDENT_FEATURES_PROVISIONAL,
+        "current_sign_policy_counts": dict(
+            sorted(Counter(str(row["current_sign_policy"]) for row in rows).items())
+        ),
+        "current_sign_convention_confirmed_counts": dict(
+            sorted(
+                Counter(
+                    str(bool(row["current_sign_convention_confirmed"])) for row in rows
+                ).items()
+            )
+        ),
+        "sign_dependent_features_provisional_counts": dict(
+            sorted(
+                Counter(
+                    str(bool(row["sign_dependent_features_provisional"])) for row in rows
+                ).items()
+            )
+        ),
         "feature_policy_counts": dict(
             sorted(Counter(str(row["feature_policy_version"]) for row in rows).items())
         ),
@@ -490,12 +719,39 @@ def _prepare_intervals(
         key = StressIntervalKey(cell_id, int(row["checkup_k"]), int(row["checkup_k_next"]))
         accumulators[key] = StressAccumulator(
             duration_h=float(row["duration_h"]),
+            window_start_s=float(interval["_log_age_window_start_s"]),
+            window_end_s=float(interval["_log_age_window_end_s"]),
             delta_capacity_Ah=float(row["delta_capacity_Ah"]),
             calendar_days=float(row["calendar_days"]),
             log_age_efc_delta=_nullable_float(row.get("log_age_efc_delta")),
             log_age_delta_q_Ah=_nullable_float(row.get("log_age_delta_q_Ah")),
         )
     return dict(intervals_by_cell), accumulators
+
+
+def _resolve_current_sign_policy(
+    current_sign_report_path: Path | None,
+) -> dict[str, str | bool]:
+    default = {
+        "current_sign_policy": CURRENT_SIGN_POLICY,
+        "current_sign_convention_confirmed": CURRENT_SIGN_CONVENTION_CONFIRMED,
+        "sign_dependent_features_provisional": SIGN_DEPENDENT_FEATURES_PROVISIONAL,
+    }
+    if current_sign_report_path is None or not current_sign_report_path.exists():
+        return default
+    try:
+        report = json.loads(current_sign_report_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return default
+    convention = str(report.get("current_sign_convention", "unknown"))
+    confidence = str(report.get("confidence", "low"))
+    if convention == "positive_current_charge" and confidence == "high":
+        return {
+            "current_sign_policy": "positive_current_charge_confirmed",
+            "current_sign_convention_confirmed": True,
+            "sign_dependent_features_provisional": False,
+        }
+    return default
 
 
 def _scan_log_age_for_stress(
@@ -562,21 +818,6 @@ def _scan_log_age_for_stress(
                     accumulators[key].update(filtered)
 
 
-def _between(array: Any, lower: float, upper: float) -> Any:
-    return pc.and_(pc.greater_equal(array, lower), pc.less(array, upper))
-
-
-def _mask_count(mask: Any) -> int:
-    mask = pc.fill_null(mask, False)
-    return int(pc.sum(pc.cast(mask, pa.int64())).as_py() or 0)
-
-
-def _sum_where(values: Any, mask: Any) -> float:
-    mask = pc.fill_null(mask, False)
-    filtered = pc.filter(values, mask)
-    return float(pc.sum(filtered).as_py() or 0.0)
-
-
 def _safe_ratio(numerator: float | None, denominator: float | None) -> float | None:
     if numerator is None or denominator is None:
         return None
@@ -603,3 +844,23 @@ def _as_float(value: Any) -> float:
 def _nullable_float(value: Any) -> float | None:
     numeric = _as_float(value)
     return numeric if math.isfinite(numeric) else None
+
+
+def _column_numpy(table: pa.Table, column: str) -> np.ndarray:
+    return np.asarray(table.column(column).combine_chunks().to_numpy(zero_copy_only=False))
+
+
+def _sum_dt(values: np.ndarray, mask: np.ndarray) -> float:
+    if values.size == 0:
+        return 0.0
+    return float(np.sum(values[mask]))
+
+
+def _median(values: list[float]) -> float | None:
+    finite_values = sorted(value for value in values if math.isfinite(value))
+    if not finite_values:
+        return None
+    middle = len(finite_values) // 2
+    if len(finite_values) % 2:
+        return finite_values[middle]
+    return (finite_values[middle - 1] + finite_values[middle]) / 2.0

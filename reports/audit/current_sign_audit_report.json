@@ -1,0 +1,22 @@
+{
+  "confidence": "high",
+  "current_sign_convention": "positive_current_charge",
+  "evidence_rows": {
+    "negative_current": 5909947,
+    "positive_current": 5516237
+  },
+  "generated_at_utc": "2026-05-22T21:59:24.601077+00:00",
+  "interval_table_path": "data/interim/interval_table.parquet",
+  "log_age_path": "data/interim/modality_table_log_age.parquet",
+  "mean_dsoc_dt_negative_current": -0.010009313951827983,
+  "mean_dsoc_dt_positive_current": 0.010807575798460747,
+  "mean_dv_dt_negative_current": -0.0010373644641246524,
+  "mean_dv_dt_positive_current": 0.0011593703176968246,
+  "median_dsoc_dt_negative_current": -0.005000000000002558,
+  "median_dsoc_dt_positive_current": 0.00999999999999801,
+  "median_dv_dt_negative_current": -0.0006500000000000394,
+  "median_dv_dt_positive_current": 9.999999999998899e-05,
+  "recommendation": "Positive current aligns with increasing voltage/SOC; sign-dependent charge features may be promoted after documentation review.",
+  "row_groups_scanned": 5000,
+  "schema_version": "gate6.current_sign_audit.v1"
+}

@@ -13,6 +13,7 @@ from mbp.baselines.capacity import FeatureEncoder
 from mbp.baselines.capacity import NUMERIC_FEATURES
 from mbp.baselines.capacity import load_baseline_rows
 from mbp.baselines.capacity import run_capacity_baselines
+from mbp.data.products.current_sign_audit import audit_current_sign
 from mbp.data.products.stress_features import build_interval_stress_features
 from mbp.data.products.stress_features import run_stress_feature_qa
 from mbp.data.schema_contracts import INTERVAL_STRESS_FEATURES_SCHEMA
@@ -98,7 +99,7 @@ def _write_interval_table(tmp_path: Path) -> Path:
 def _write_log_age(tmp_path: Path) -> Path:
     rows = {
         "cell_id": ["P001_1"] * 8,
-        "timestamp_s": [25.0, 50.0, 75.0, 100.0, 130.0, 160.0, 190.0, 220.0],
+        "timestamp_s": [10.0, 20.0, 50.0, 100.0, 130.0, 160.0, 190.0, 220.0],
         "v_raw_V": [3.2, 3.4, 3.75, 4.15, 3.25, 3.55, 3.95, 4.2],
         "ocv_est_V": [3.2, 3.4, 3.75, 4.15, 3.25, 3.55, 3.95, 4.2],
         "i_raw_A": [0.0, 3.2, 4.7, 5.2, -3.2, -4.7, 5.2, 0.0],
@@ -160,7 +161,7 @@ def test_stress_feature_schema_and_dwell_consistency(tmp_path: Path) -> None:
     assert table.num_rows == 2
     rows = table.to_pylist()
     for row in rows:
-        duration = row["stress_duration_h"]
+        duration = row["stress_observed_duration_h"]
         voltage_sum = sum(
             row[column]
             for column in (
@@ -199,6 +200,11 @@ def test_stress_feature_schema_and_dwell_consistency(tmp_path: Path) -> None:
         assert current_sum == pytest.approx(duration)
         assert row["cold_high_abs_current_time_h"] >= 0.0
         assert row["cold_high_abs_current_time_h"] <= duration
+        assert row["stress_coverage_fraction"] <= 1.0
+        assert row["median_log_age_dt_s"] is not None
+        assert row["max_log_age_gap_s"] >= row["median_log_age_dt_s"]
+        assert row["n_charge_events"] >= 0
+        assert row["max_abs_current_ge_1C_event_h"] <= duration
         assert row["sign_dependent_features_provisional"] is True
         assert row["current_sign_convention_confirmed"] is False
 
@@ -218,7 +224,8 @@ def test_stress_feature_qa_passes_synthetic_fixture(tmp_path: Path) -> None:
     assert report["status"] == "passed"
     assert report["row_count"] == 2
     assert report["intervals_missing_stress_features"] == 0
-    assert report["sign_dependent_features_provisional"] is True
+    assert report["sign_dependent_features_provisional_counts"] == {"True": 2}
+    assert report["duration_consistency"]["reference"] == "stress_observed_duration_h"
 
 
 def test_baseline_loader_joins_stress_features_by_interval_key(tmp_path: Path) -> None:
@@ -265,6 +272,71 @@ def test_stress_feature_groups_exclude_inserted_diagnostics() -> None:
         "F5_log_age_histograms",
         "F6_coupled_stress",
         "F7_c_rate_focused",
+        "F8_timestamp_weighted_stress",
+        "F9_event_segmented_stress",
+        "F10_c_rate_v1_1",
     ):
         assert not (set(NUMERIC_FEATURES[feature_group]) & DIAGNOSTIC_LEAKAGE_FIELDS)
         assert not (set(NUMERIC_FEATURES[feature_group]) & target_derived_fields)
+
+
+def test_timestamp_weighted_dwell_differs_from_count_weighted_when_gaps_exist(
+    tmp_path: Path,
+) -> None:
+    interval_path = _write_interval_table(tmp_path)
+    _write_log_age(tmp_path)
+    stress_path = tmp_path / "interval_stress_features_v1_1.parquet"
+
+    table = build_interval_stress_features(tmp_path, interval_path, stress_path)
+    first = table.to_pylist()[0]
+
+    assert first["stress_duration_h"] == pytest.approx(100.0 / 3600.0)
+    assert first["stress_observed_duration_h"] == pytest.approx(100.0 / 3600.0)
+    assert first["stress_coverage_fraction"] == pytest.approx(1.0)
+    count_weighted_ge_4p1 = first["stress_duration_h"] * 1 / 4
+    assert first["time_voltage_ge_4p1_h"] != pytest.approx(count_weighted_ge_4p1)
+
+
+def test_event_segmented_features_on_synthetic_trace(tmp_path: Path) -> None:
+    interval_path = _write_interval_table(tmp_path)
+    _write_log_age(tmp_path)
+    stress_path = tmp_path / "interval_stress_features_v1_1.parquet"
+
+    table = build_interval_stress_features(tmp_path, interval_path, stress_path)
+    first = table.to_pylist()[0]
+
+    assert first["n_charge_events"] == 1
+    assert first["max_charge_event_h"] == pytest.approx(90.0 / 3600.0)
+    assert first["max_abs_current_ge_1p5C_event_h"] == pytest.approx(80.0 / 3600.0)
+
+
+def test_current_sign_audit_synthetic_trace(tmp_path: Path) -> None:
+    interval_path = _write_interval_table(tmp_path)
+    rows = {
+        "cell_id": ["P001_1"] * 8,
+        "timestamp_s": [0.0, 30.0, 60.0, 90.0, 120.0, 150.0, 180.0, 210.0],
+        "v_raw_V": [3.50, 3.55, 3.60, 3.65, 3.60, 3.55, 3.50, 3.45],
+        "ocv_est_V": [3.50, 3.55, 3.60, 3.65, 3.60, 3.55, 3.50, 3.45],
+        "i_raw_A": [0.0, 3.0, 3.0, 3.0, -3.0, -3.0, -3.0, -3.0],
+        "t_cell_degC": [25.0] * 8,
+        "soc_est": [50.0, 52.0, 54.0, 56.0, 54.0, 52.0, 50.0, 48.0],
+        "delta_q_Ah": list(range(8)),
+        "EFC": [0.1 * idx for idx in range(8)],
+        "cap_aged_est_Ah": [None] * 8,
+        "R0_mOhm": [None] * 8,
+        "R1_mOhm": [None] * 8,
+        "source_file": ["log.csv"] * 8,
+        "source_archive": ["log.7z"] * 8,
+        "quality_flags": [""] * 8,
+    }
+    log_age_path = tmp_path / "modality_table_log_age.parquet"
+    pq.write_table(pa.Table.from_pydict(rows, schema=MODALITY_TABLE_LOG_AGE_SCHEMA), log_age_path)
+
+    report = audit_current_sign(
+        log_age_path,
+        interval_path,
+        tmp_path / "current_sign_audit_report.json",
+    )
+
+    assert report["current_sign_convention"] == "positive_current_charge"
+    assert report["confidence"] == "high"

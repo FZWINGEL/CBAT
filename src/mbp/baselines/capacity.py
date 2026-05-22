@@ -41,6 +41,9 @@ FEATURE_GROUPS = (
     "F5_log_age_histograms",
     "F6_coupled_stress",
     "F7_c_rate_focused",
+    "F8_timestamp_weighted_stress",
+    "F9_event_segmented_stress",
+    "F10_c_rate_v1_1",
 )
 DEFAULT_FEATURE_GROUPS = FEATURE_GROUPS[:5]
 
@@ -49,6 +52,9 @@ STRESS_FEATURE_GROUPS = {
     "F5_log_age_histograms",
     "F6_coupled_stress",
     "F7_c_rate_focused",
+    "F8_timestamp_weighted_stress",
+    "F9_event_segmented_stress",
+    "F10_c_rate_v1_1",
 }
 
 LOG_AGE_HISTOGRAM_FEATURES = (
@@ -113,6 +119,51 @@ C_RATE_FOCUSED_FEATURES = (
     "cold_high_abs_current_time_h",
     "high_voltage_high_abs_current_time_h",
     "high_soc_high_abs_current_time_h",
+    "log_age_efc_per_day",
+)
+
+TIMESTAMP_WEIGHTED_STRESS_FEATURES = (
+    "stress_observed_duration_h",
+    "stress_coverage_fraction",
+    "median_log_age_dt_s",
+    "max_log_age_gap_s",
+    "log_age_gap_count_gt_60s",
+    "log_age_gap_count_gt_300s",
+    *LOG_AGE_HISTOGRAM_FEATURES,
+    *COUPLED_STRESS_FEATURES,
+)
+
+EVENT_SEGMENTED_STRESS_FEATURES = (
+    "n_charge_events",
+    "n_discharge_events",
+    "n_rest_events",
+    "max_charge_event_h",
+    "max_discharge_event_h",
+    "max_rest_event_h",
+    "max_abs_current_ge_1C_event_h",
+    "max_abs_current_ge_1p5C_event_h",
+    "max_abs_current_ge_5over3C_event_h",
+    "max_cold_high_abs_current_event_h",
+    "max_high_voltage_high_abs_current_event_h",
+    "max_high_soc_high_abs_current_event_h",
+)
+
+C_RATE_V1_1_FEATURES = (
+    "stress_coverage_fraction",
+    "median_log_age_dt_s",
+    "max_log_age_gap_s",
+    "abs_current_ge_1C_time_h",
+    "abs_current_ge_1p5C_time_h",
+    "abs_current_ge_5over3C_time_h",
+    "cold_high_abs_current_time_h",
+    "high_voltage_high_abs_current_time_h",
+    "high_soc_high_abs_current_time_h",
+    "max_abs_current_ge_1C_event_h",
+    "max_abs_current_ge_1p5C_event_h",
+    "max_abs_current_ge_5over3C_event_h",
+    "max_cold_high_abs_current_event_h",
+    "max_high_voltage_high_abs_current_event_h",
+    "max_high_soc_high_abs_current_event_h",
     "log_age_efc_per_day",
 )
 
@@ -226,6 +277,59 @@ NUMERIC_FEATURES: dict[str, tuple[str, ...]] = {
         "nominal_discharge_C_rate",
         *C_RATE_FOCUSED_FEATURES,
     ),
+    "F8_timestamp_weighted_stress": (
+        *(
+            "capacity_Ah_k",
+            "duration_h",
+            "calendar_days",
+            "checkup_k",
+            "log_age_efc_delta",
+            "log_age_delta_q_Ah",
+            "nominal_temperature_C",
+            "nominal_charge_C_rate",
+            "nominal_discharge_C_rate",
+            "log_age_mean_voltage_V",
+            "log_age_min_voltage_V",
+            "log_age_max_voltage_V",
+            "log_age_mean_temperature_C",
+            "log_age_min_temperature_C",
+            "log_age_max_temperature_C",
+            "log_age_mean_current_A",
+            "log_age_mean_abs_current_A",
+            "log_age_max_abs_current_A",
+            "log_age_mean_soc",
+            "log_age_min_soc",
+            "log_age_max_soc",
+        ),
+        *TIMESTAMP_WEIGHTED_STRESS_FEATURES,
+    ),
+    "F9_event_segmented_stress": (
+        *(
+            "capacity_Ah_k",
+            "duration_h",
+            "calendar_days",
+            "checkup_k",
+            "log_age_efc_delta",
+            "log_age_delta_q_Ah",
+            "nominal_temperature_C",
+            "nominal_charge_C_rate",
+            "nominal_discharge_C_rate",
+        ),
+        *TIMESTAMP_WEIGHTED_STRESS_FEATURES,
+        *EVENT_SEGMENTED_STRESS_FEATURES,
+    ),
+    "F10_c_rate_v1_1": (
+        "capacity_Ah_k",
+        "duration_h",
+        "calendar_days",
+        "checkup_k",
+        "log_age_efc_delta",
+        "log_age_delta_q_Ah",
+        "nominal_temperature_C",
+        "nominal_charge_C_rate",
+        "nominal_discharge_C_rate",
+        *C_RATE_V1_1_FEATURES,
+    ),
 }
 
 CATEGORICAL_FEATURES: dict[str, tuple[str, ...]] = {
@@ -237,6 +341,9 @@ CATEGORICAL_FEATURES: dict[str, tuple[str, ...]] = {
     "F5_log_age_histograms": ("aging_mode", "voltage_window_family"),
     "F6_coupled_stress": ("aging_mode", "voltage_window_family"),
     "F7_c_rate_focused": ("aging_mode", "voltage_window_family"),
+    "F8_timestamp_weighted_stress": ("aging_mode", "voltage_window_family"),
+    "F9_event_segmented_stress": ("aging_mode", "voltage_window_family"),
+    "F10_c_rate_v1_1": ("aging_mode", "voltage_window_family"),
 }
 
 BASELINE_PREDICTION_SCHEMA = pa.schema(
@@ -375,8 +482,8 @@ def run_capacity_baselines(
     selected_split_views = _normalize_selection(split_views, SPLIT_COLUMNS, "split view")
     if STRESS_FEATURE_GROUPS & set(selected_feature_groups) and stress_features_path is None:
         raise ValueError(
-            "Stress feature groups F5-F7 require --stress-features pointing to "
-            "interval_stress_features_v1.parquet."
+            "Stress feature groups F5-F10 require --stress-features pointing to "
+            "an interval stress-feature sidecar parquet."
         )
     _preflight_model_dependencies(selected_models)
 

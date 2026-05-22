@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 0.6: LOG_AGE stress-feature engineering v1.
+Milestone 0.6.1: LOG_AGE stress-feature hardening v1.1.
 
 Current state:
 - Gate 2b implementation and reports are committed.
@@ -27,8 +27,10 @@ Current state:
 - Milestone 0.5b diagnostics, Ridge scaling, HGB-50 robustness, and quantile
   metrics are implemented.
 - Milestone 0.5c synthesis and claim-readiness artifacts are committed.
-- Milestone 0.6 is limited to capacity-only LOG_AGE-derived scalar stress
-  features, stress-feature QA, and focused capacity reruns.
+- Milestone 0.6.1 is limited to capacity-only LOG_AGE-derived scalar stress
+  feature hardening: current-sign audit, timestamp-weighted dwell,
+  event-segmented scalar features, stress-feature QA, and focused capacity
+  reruns.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 - LOG_AGE monotonicity has been triaged and propagated into interval quality
@@ -43,6 +45,9 @@ Allowed work:
 - baseline diagnostics and robustness reruns
 - capacity-only stress-feature engineering
 - scalar LOG_AGE interval features
+- current-sign audit
+- timestamp-weighted dwell features
+- event-segmented scalar stress features
 - stress-feature QA and schema hardening
 - HGB/Ridge capacity reruns
 - reference L0 comparison hardening

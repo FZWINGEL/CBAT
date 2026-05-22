@@ -630,14 +630,24 @@ def features_build_stress(
     out: Path = typer.Option(
         ...,
         "--out",
-        help="Output path for interval_stress_features_v1.parquet.",
+        help="Output path for interval_stress_features_v1_1.parquet.",
+    ),
+    current_sign_report: Path | None = typer.Option(
+        None,
+        "--current-sign-report",
+        help="Optional current_sign_audit_report.json for sign-policy metadata.",
     ),
 ) -> None:
     """Build scalar LOG_AGE stress features for interval capacity baselines."""
     from mbp.data.products.stress_features import build_interval_stress_features
 
     typer.echo(f"Building interval stress features from {interval_table}...")
-    table = build_interval_stress_features(interim_dir, interval_table, out)
+    table = build_interval_stress_features(
+        interim_dir,
+        interval_table,
+        out,
+        current_sign_report_path=current_sign_report,
+    )
     typer.echo(f"Stress-feature table generated: {len(table)} rows written to {out}")
 
 
@@ -646,7 +656,7 @@ def features_stress_qa(
     stress_features: Path = typer.Option(
         ...,
         "--stress-features",
-        help="Path to interval_stress_features_v1.parquet.",
+        help="Path to interval_stress_features_v1_1.parquet.",
     ),
     out: Path = typer.Option(
         ...,
@@ -670,6 +680,44 @@ def features_stress_qa(
     typer.echo(f"Stress-feature QA {report['status']}: wrote {out}")
     if report["status"] == "failed":
         raise typer.Exit(code=1)
+
+
+@features_app.command("current-sign-audit")
+def features_current_sign_audit(
+    log_age: Path = typer.Option(
+        ...,
+        "--log-age",
+        help="Path to modality_table_log_age.parquet.",
+    ),
+    interval_table: Path = typer.Option(
+        ...,
+        "--interval-table",
+        help="Path to interval_table.parquet for cohort cell filtering.",
+    ),
+    out: Path = typer.Option(
+        ...,
+        "--out",
+        help="Output JSON path for current-sign audit evidence.",
+    ),
+    max_row_groups: int | None = typer.Option(
+        None,
+        "--max-row-groups",
+        help="Optional bounded row-group count for smoke tests.",
+    ),
+) -> None:
+    """Audit LOG_AGE current-sign convention using voltage/SOC derivatives."""
+    from mbp.data.products.current_sign_audit import audit_current_sign
+
+    report = audit_current_sign(
+        log_age,
+        interval_table,
+        out,
+        max_row_groups=max_row_groups,
+    )
+    typer.echo(
+        "Current-sign audit "
+        f"{report['current_sign_convention']} ({report['confidence']}): wrote {out}"
+    )
 
 
 @split_app.command("generate")

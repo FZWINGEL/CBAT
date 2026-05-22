@@ -1,0 +1,4 @@
+claim,status,evidence,decision
+Stress features improve C-rate holdout,not_supported,"C-rate gains vs F4: 0.00458108, -0.00138302; condition rows: 24",Do not claim stress-feature improvement
+Stress features do not degrade condition/temperature folds,supported,condition degradation rows: 0; temperature degradation rows: 0,Keep focused stress-feature ladder
+Stress features authorize new modalities,blocked,Milestone 0.6 remains capacity-only and scalar-interval only.,Keep EIS/PULSE/CBAT blocked.

@@ -1,10 +1,12 @@
 # Validation Protocol
 
-Milestone 0.5/0.5b/0.5c/0.6 authorizes only scalar capacity baseline work on
+Milestone 0.5/0.5b/0.5c/0.6/0.6.1 authorizes only scalar capacity baseline work on
 interval features. Milestone 0.5b is review and robustness hardening. Milestone
 0.5c is synthesis and stress-feature decision work. Milestone 0.6 adds
-capacity-only LOG_AGE-derived scalar stress features; it is not a modality or
-architecture expansion.
+capacity-only LOG_AGE-derived scalar stress features. Milestone 0.6.1 hardens
+those features with current-sign audit evidence, timestamp-weighted dwell, and
+event-segmented scalar summaries. These milestones are not modality or
+architecture expansions.
 
 Required split discipline:
 
@@ -37,6 +39,12 @@ Allowed Milestone 0.6 stress-feature groups:
 - `F5_log_age_histograms`
 - `F6_coupled_stress`
 - `F7_c_rate_focused`
+
+Allowed Milestone 0.6.1 stress-feature groups:
+
+- `F8_timestamp_weighted_stress`
+- `F9_event_segmented_stress`
+- `F10_c_rate_v1_1`
 
 `F0_time_only` is intentionally weak. Non-persistence learned baselines must
 include prior check-up state through `capacity_Ah_k` in at least one state-aware
@@ -115,6 +123,23 @@ Milestone 0.6 success criterion:
 - improve C-rate `delta_capacity_Ah` condition-mean MAE below `0.101133`;
 - avoid material degradation in `condition_fold` and
   `temperature_holdout_fold`.
+
+Required Milestone 0.6.1 hardening artifacts:
+
+- `reports/audit/current_sign_audit_report.json`
+- `data/interim/interval_stress_features_v1_1.parquet` (ignored generated data)
+- `reports/audit/stress_feature_v1_1_qa_report.json`
+- `reports/baselines/capacity_stress_features_v1_1_hgb50_report.json`
+- `reports/baselines/capacity_stress_features_v1_1_hgb50/stress_feature_diagnostics.md`
+
+Milestone 0.6.1 success criterion:
+
+- improve C-rate `capacity_Ah_k1` condition-mean MAE below `0.124656`;
+- improve C-rate `delta_capacity_Ah` condition-mean MAE below `0.101133`;
+- avoid material degradation in `condition_fold` and
+  `temperature_holdout_fold`;
+- do not promote sign-dependent charge features unless current-sign evidence is
+  high confidence.
 
 Blocked until later milestones:
 

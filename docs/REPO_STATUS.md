@@ -11,11 +11,11 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 0.6: LOG_AGE Stress-Feature Engineering v1**.
+The repository is in **Milestone 0.6.1: LOG_AGE Stress-Feature Hardening v1.1**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
-diagnostics, and Milestone 0.5c synthesis are complete. Milestone 0.6 remains
-capacity-only and scalar-interval only.
+diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
+complete. Milestone 0.6.1 remains capacity-only and scalar-interval only.
 
 No EIS/PULSE supervised claims, sequence models, neural architecture, policy
 ranking, CBAT architecture, or EIS embedding work has been started.
@@ -30,8 +30,9 @@ Current state:
   interval counts under policy version `log_age_monotonicity.v1`.
 - Split registry semantics now include corrected voltage-window holdout folds
   derived from `voltage_window_family`, not scalar `age_soc`.
-- `pyarrow` and `py7zr` are core dependencies; baseline and GBM packages are
-  optional extras only.
+- `pyarrow`, `py7zr`, and `numpy` are core dependencies; `numpy` is required by
+  vectorized stress-feature aggregation. Pandas/scikit-learn baseline packages
+  and GBM packages remain optional extras.
 - `mbp baseline run-capacity` implements the first L0-L3 capacity baseline
   runner and is gated by `interval_subset_registry_v1.parquet`.
 - The dependency-free real-data L0 persistence smoke run completed and emitted
@@ -50,6 +51,10 @@ Current state:
 - The first non-target-derived stress-feature run produced a mixed result:
   `capacity_Ah_k1` C-rate holdout improved slightly, but `delta_capacity_Ah`
   C-rate holdout degraded versus the HGB-50 F4 baseline.
+- Milestone 0.6.1 hardening has been run on real data. The current-sign audit
+  gives high-confidence positive-current charge evidence, v1.1 QA passes, and
+  the focused HGB-50 stress-feature run remains mixed: C-rate `capacity_Ah_k1`
+  improves, but C-rate `delta_capacity_Ah` still fails to beat F4.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -91,6 +96,7 @@ The large Parquet outputs remain local generated artifacts:
 | `data/splits/split_registry_v1.parquet` | 228 | ignored |
 | `data/splits/interval_subset_registry_v1.parquet` | 3,827 | ignored |
 | `data/interim/interval_stress_features_v1.parquet` | 3,827 | ignored |
+| `data/interim/interval_stress_features_v1_1.parquet` | 3,827 | ignored |
 | `reports/audit/raw_log_archive_inventory.parquet` | 541 | ignored |
 
 Milestone 0.5 generated predictions are also ignored by default:
@@ -475,6 +481,75 @@ Milestone 0.6 decision:
 - Review stress-feature formulation, current-sign convention, and event
   segmentation before expanding scope.
 
+### Milestone 0.6.1
+
+Milestone 0.6.1 stress-feature hardening is implemented, covered by synthetic
+tests, and run on real data. The hardening keeps the scope capacity-only and
+scalar-feature only.
+
+Implemented hardening:
+
+- CLI: `mbp features current-sign-audit`
+- Stress-feature builder now emits schema version
+  `gate6.interval_stress_features.v1_1`.
+- Dwell features are timestamp-weighted from consecutive LOG_AGE timestamps,
+  not count-weighted by row count.
+- Gap and coverage fields are added:
+  - `stress_observed_duration_h`
+  - `stress_coverage_fraction`
+  - `median_log_age_dt_s`
+  - `max_log_age_gap_s`
+  - `log_age_gap_count_gt_60s`
+  - `log_age_gap_count_gt_300s`
+- Event-segmented scalar features are added for charge, discharge, rest,
+  high-current, cold/high-current, high-voltage/high-current, and
+  high-SOC/high-current durations.
+- New feature groups are defined:
+  - `F8_timestamp_weighted_stress`
+  - `F9_event_segmented_stress`
+  - `F10_c_rate_v1_1`
+
+Real-data v1.1 artifacts:
+
+- Current-sign audit: `reports/audit/current_sign_audit_report.json`
+- QA report: `reports/audit/stress_feature_v1_1_qa_report.json`
+- Baseline report:
+  `reports/baselines/capacity_stress_features_v1_1_hgb50_report.json`
+- Diagnostics:
+  `reports/baselines/capacity_stress_features_v1_1_hgb50/stress_feature_diagnostics.md`
+
+Current-sign audit result:
+
+- Row groups sampled evenly across LOG_AGE: `5,000`
+- Positive-current evidence rows: `5,516,237`
+- Negative-current evidence rows: `5,909,947`
+- Convention: `positive_current_charge`
+- Confidence: `high`
+
+Stress-feature v1.1 QA result:
+
+- Rows: `3,827`
+- Unique cells: `228`
+- Unique parameter sets: `76`
+- Missing interval keys: `0`
+- Dwell-bin failures against `stress_observed_duration_h`: `0`
+- Current sign policy in sidecar: `positive_current_charge_confirmed`
+
+Milestone 0.6.1 success-criterion result:
+
+| Target | F4 HGB-50 baseline | v1 best stress row | v1.1 best stress row | v1.1 gain vs F4 | Status |
+|---|---:|---:|---:|---:|---|
+| `capacity_Ah_k1` C-rate | `0.125186` | `0.124656` | `0.120605` (`F5_log_age_histograms`) | `0.004581` | improved but marginal |
+| `delta_capacity_Ah` C-rate | `0.101133` | `0.110260` | `0.102516` (`F8_timestamp_weighted_stress`) | `-0.001383` | fail |
+
+Decision:
+
+- Do not claim broad stress-feature C-rate improvement from v1.1.
+- Keep PULSE/EIS/CBAT blocked.
+- Treat v1.1 as a useful hardening result: current sign is now evidenced,
+  timestamp-weighted dwell repaired most of the v1 delta-capacity degradation,
+  but it still does not beat F4 on the main delta target.
+
 ## Important Implementation Notes
 
 The interval builder preserves result-table timestamps in the public schema, but
@@ -532,17 +607,12 @@ PYTHONDONTWRITEBYTECODE=1 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/pytest -p no:cach
 ```
 
 The one warning is the existing `datetime.utcnow()` deprecation warning in
-`src/mbp/data/luh_blank/qa_result_data.py`; it is not a Milestone 0.6
+`src/mbp/data/luh_blank/qa_result_data.py`; it is not a Milestone 0.6/0.6.1
 correctness failure.
 
 ## Recommended Next Step
 
-Review **Milestone 0.6 LOG_AGE Stress-Feature Engineering v1** before adding new
-modalities. The next bounded work should be stress-feature v1.1 hardening:
-
-- confirm current sign convention;
-- remove or separately label any target-derived diagnostic fields;
-- inspect whether interval-level dwell histograms need event segmentation rather
-  than count-weighted dwell;
-- compare stress-feature gains by target and split before making any
-  paper-facing claim.
+Review the **Milestone 0.6.1 LOG_AGE Stress-Feature Hardening v1.1** mixed
+result before adding new modalities. The next bounded decision should focus on
+why C-rate `delta_capacity_Ah` still fails to beat F4 and why voltage-window
+`capacity_Ah_k1` degraded under v1.1.
