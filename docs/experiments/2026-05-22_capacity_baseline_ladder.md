@@ -209,6 +209,8 @@ Decision:
   - generated predictions under `data/processed/` are ignored
 - The real-data L0 smoke baseline and bounded real-data L0-L3 ladder both
   completed.
+- Follow-up Milestone 0.5b diagnostics and robustness reruns are documented in
+  `docs/experiments/2026-05-22_capacity_baseline_robustness.md`.
 - All future experiments and scientific implementation trials should be
   documented under `docs/experiments/`.
 

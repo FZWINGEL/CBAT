@@ -16,13 +16,16 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 0.5: L0-L3 capacity baseline ladder.
+Milestone 0.5b: Capacity baseline review, diagnostics, and robustness.
 
 Current state:
 - Gate 2b implementation and reports are committed.
 - Milestone 0.4 baseline-readiness artifacts are committed: LOG_AGE policy,
   interval subset registry, split audit, and dependency metadata.
-- Milestone 0.5 is limited to first capacity baselines on interval data.
+- Milestone 0.5 bounded capacity baseline reports exist and remain limited to
+  interval scalar features.
+- Milestone 0.5b is limited to interpreting, diagnosing, and stress-testing
+  those capacity baseline reports.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 - LOG_AGE monotonicity has been triaged and propagated into interval quality
@@ -34,11 +37,13 @@ Allowed work:
 - small tests with synthetic fixtures
 - capacity-only baseline runner execution
 - capacity-baseline report hardening
+- baseline diagnostics and robustness reruns
 - capacity targets: `capacity_Ah_k1` and `delta_capacity_Ah`
 - scalar interval features
 - condition-level grouped validation
 - strict/tolerant interval subset sensitivity reporting
 - baseline evaluation cards / leaderboard summaries
+- Ridge numeric standardization and bounded HGB robustness checks
 - documentation/evidence memo updates
 
 Forbidden work:

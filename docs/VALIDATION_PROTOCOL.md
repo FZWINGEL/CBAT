@@ -1,6 +1,8 @@
 # Validation Protocol
 
-Milestone 0.5 authorizes only the first scalar capacity baseline ladder.
+Milestone 0.5/0.5b authorizes only scalar capacity baseline work on interval
+features. Milestone 0.5b is review and robustness hardening, not scope
+expansion.
 
 Required split discipline:
 
@@ -48,6 +50,27 @@ Required Milestone 0.5 report artifacts:
 - `plots/mae_by_model_and_feature.csv`
 - `plots/worst_condition_errors.csv`
 - `plots/strict_vs_tolerant_delta.csv`
+
+Required Milestone 0.5b diagnostic artifacts:
+
+- `baseline_diagnostics.md`
+- `c_rate_holdout_error_analysis.md`
+- `plots/feature_gain_by_split.csv`
+- `plots/best_by_target_split.csv`
+- `plots/c_rate_holdout_errors.csv`
+- `plots/c_rate_holdout_by_condition.csv`
+
+Milestone 0.5b linear baselines use train-fold numeric standardization for
+`L1_ridge`. The standardization statistics must be fit on train rows only.
+
+Milestone 0.5b quantile diagnostics for `L3_quantile_hist_gradient_boosting`
+include:
+
+- `q10_q90_interval_coverage`
+- `q10_q90_interval_width_mean`
+- `pinball_loss_q10`
+- `pinball_loss_q50`
+- `pinball_loss_q90`
 
 Blocked until later milestones:
 

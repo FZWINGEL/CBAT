@@ -719,6 +719,16 @@ def baseline_run_capacity(
         "--feature-groups",
         help="Comma-separated feature groups for L1-L3 models.",
     ),
+    targets: str = typer.Option(
+        "capacity_Ah_k1,delta_capacity_Ah",
+        "--targets",
+        help="Comma-separated capacity targets to run.",
+    ),
+    split_views: str = typer.Option(
+        "condition_fold,temperature_holdout_fold,c_rate_holdout_fold,profile_holdout_fold,voltage_window_holdout_fold",
+        "--split-views",
+        help="Comma-separated split columns to evaluate.",
+    ),
 ) -> None:
     """Run the first L0-L3 scalar capacity baseline ladder."""
     from mbp.baselines.capacity import run_capacity_baselines
@@ -735,6 +745,8 @@ def baseline_run_capacity(
             hgb_max_iter=hgb_max_iter,
             model_levels=_comma_values(model_levels),
             feature_groups=_comma_values(feature_groups),
+            targets=_comma_values(targets),
+            split_views=_comma_values(split_views),
         )
     except RuntimeError as exc:
         typer.echo(str(exc))
@@ -743,6 +755,26 @@ def baseline_run_capacity(
         "Capacity baseline report generated: "
         f"{len(report['metrics'])} metric rows written to {out}"
     )
+
+
+@baseline_app.command("diagnose-capacity")
+def baseline_diagnose_capacity(
+    report: Path = typer.Option(
+        ...,
+        "--report",
+        help="Path to an existing capacity baseline JSON report.",
+    ),
+    out_dir: Path = typer.Option(
+        ...,
+        "--out-dir",
+        help="Directory for diagnostics markdown and plot-ready CSVs.",
+    ),
+) -> None:
+    """Generate Milestone 0.5b diagnostics from a capacity baseline report."""
+    from mbp.baselines.capacity import diagnose_capacity_report
+
+    diagnose_capacity_report(report, out_dir)
+    typer.echo(f"Capacity baseline diagnostics written to {out_dir}")
 
 
 def _comma_values(value: str) -> list[str]:

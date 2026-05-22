@@ -11,10 +11,11 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 0.5: L0-L3 Capacity Baseline Ladder**. Gate 2b
-LOG_AGE integrity triage and Milestone 0.4 baseline readiness are complete.
-Milestone 0.5 now adds the first capacity-baseline runner while keeping the
-project scoped to scalar interval features.
+The repository is in **Milestone 0.5b: Capacity Baseline Review, Diagnostics,
+and Robustness**. Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline
+readiness, and the first bounded Milestone 0.5 capacity baseline ladder are
+complete. Milestone 0.5b keeps the project scoped to scalar interval capacity
+features while hardening the interpretation of the baseline reports.
 
 No EIS/PULSE supervised claims, sequence models, neural architecture, policy
 ranking, CBAT architecture, or EIS embedding work has been started.
@@ -37,6 +38,8 @@ Current state:
   trackable report artifacts under `reports/baselines/capacity_l0_smoke/`.
 - The bounded full real-data L0-L3 ladder completed with `--hgb-max-iter 5` and
   emitted trackable report artifacts under `reports/baselines/capacity_l0_l3/`.
+- Baseline diagnostics now exist for the full report, scaled Ridge rerun, and
+  focused HGB-50 robustness rerun.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -83,6 +86,8 @@ Milestone 0.5 generated predictions are also ignored by default:
 - `data/processed/capacity_baseline_predictions.parquet`
 - `data/processed/capacity_l0_smoke_predictions.parquet`
 - `data/processed/capacity_l0_l3_predictions.parquet`
+- `data/processed/capacity_l1_scaled_predictions.parquet`
+- `data/processed/capacity_hgb50_focused_predictions.parquet`
 
 Milestone 0.5 small report artifacts under `reports/baselines/` are trackable:
 
@@ -271,6 +276,16 @@ Completed Milestone 0.5 experiment artifacts:
 - `reports/baselines/capacity_l0_l3/baseline_summary.md`
 - `reports/baselines/capacity_l0_l3/evaluation_cards/*.json`
 - `reports/baselines/capacity_l0_l3/plots/*.csv`
+- `reports/baselines/capacity_l1_scaled_report.json`
+- `reports/baselines/capacity_l1_scaled/leaderboard.csv`
+- `reports/baselines/capacity_l1_scaled/baseline_summary.md`
+- `reports/baselines/capacity_l1_scaled/evaluation_cards/*.json`
+- `reports/baselines/capacity_l1_scaled/plots/*.csv`
+- `reports/baselines/capacity_hgb50_focused_report.json`
+- `reports/baselines/capacity_hgb50_focused/leaderboard.csv`
+- `reports/baselines/capacity_hgb50_focused/baseline_summary.md`
+- `reports/baselines/capacity_hgb50_focused/evaluation_cards/*.json`
+- `reports/baselines/capacity_hgb50_focused/plots/*.csv`
 
 The L0 smoke report produced `48` metric rows on the real interval table. It
 confirmed `3,827` tolerant-clean rows, `2,773` strict-clean rows, and `1,054`
@@ -290,6 +305,63 @@ Primary-run baseline highlights:
   `c_rate_holdout_fold` at `0.175406`.
 - Strict-vs-tolerant sensitivity was small on average: mean
   primary-minus-sensitivity condition-mean MAE was approximately `-0.000087`.
+
+### Milestone 0.5b
+
+Milestone 0.5b diagnostics and robustness artifacts are implemented:
+
+- CLI: `mbp baseline diagnose-capacity`
+- Diagnostics memo: `baseline_diagnostics.md`
+- C-rate analysis memo: `c_rate_holdout_error_analysis.md`
+- Diagnostic CSVs:
+  - `plots/feature_gain_by_split.csv`
+  - `plots/best_by_target_split.csv`
+  - `plots/c_rate_holdout_errors.csv`
+  - `plots/c_rate_holdout_by_condition.csv`
+
+`L1_ridge` now uses train-fold numeric standardization. Reports record
+`numeric_standardization = train_fold_mean_std` and
+`numeric_standardization_applies_to = ["L1_ridge"]`.
+
+Quantile diagnostics are implemented for `L3_quantile_hist_gradient_boosting`:
+
+- `q10_q90_interval_coverage`
+- `q10_q90_interval_width_mean`
+- `pinball_loss_q10`
+- `pinball_loss_q50`
+- `pinball_loss_q90`
+
+Scaled Ridge rerun:
+
+- Report: `reports/baselines/capacity_l1_scaled_report.json`
+- Metric rows: `288`
+- Best `capacity_Ah_k1`: `L1_ridge` with `F2_state_exposure` on
+  `profile_holdout_fold`, condition-mean MAE `0.077580`.
+- Scaling modestly improves several Ridge rows but does not resolve C-rate
+  holdout difficulty.
+
+Focused HGB-50 robustness rerun:
+
+- Report: `reports/baselines/capacity_hgb50_focused_report.json`
+- Metric rows: `384`
+- `hgb_max_iter`: `50`
+- Best `capacity_Ah_k1`: `L2_hist_gradient_boosting` with
+  `F4_state_log_age_scalar` on `condition_fold`, condition-mean MAE `0.053927`.
+- Best `delta_capacity_Ah`: `L2_hist_gradient_boosting` with
+  `F4_state_log_age_scalar` on `condition_fold`, condition-mean MAE `0.044645`.
+- Best C-rate `delta_capacity_Ah`: `0.101133`, from
+  `L2_hist_gradient_boosting` with `F4_state_log_age_scalar`.
+- Mean q10-q90 coverage for HGB-50 quantile rows: approximately `0.664674`.
+
+Milestone 0.5b interpretation:
+
+- C-rate holdout remains the hardest generalization split.
+- Ridge remains sensitive to feature scaling and LOG_AGE scalar features are not
+  a stable Ridge win.
+- HGB-50 suggests LOG_AGE scalar summaries can help nonlinear baselines, so the
+  `hgb_max_iter=5` run should be treated as a bounded smoke artifact, not as a
+  final HGB conclusion.
+- Nominal protocol features remain consistently useful.
 
 ## Important Implementation Notes
 
@@ -342,7 +414,7 @@ PYTHONDONTWRITEBYTECODE=1 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/ruff check . --no
 All checks passed.
 
 PYTHONDONTWRITEBYTECODE=1 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/pytest -p no:cacheprovider
-69 passed, 1 warning.
+74 passed, 1 warning.
 ```
 
 The one warning is the existing `datetime.utcnow()` deprecation warning in
@@ -351,16 +423,20 @@ correctness failure.
 
 ## Recommended Next Step
 
-Review the full L0-L3 report before adding any new modeling scope. The next
-work should harden the baseline reporting layer and inspect:
+Review the Milestone 0.5b diagnostics before adding any new modeling scope. The
+next work should turn the diagnostics into a short baseline review memo and
+decide whether the next scientific path is stronger scalar capacity feature
+engineering, a PULSE resistance baseline, or EIS QA/feature extraction.
+
+Key open questions:
 
 - why the C-rate holdout is the hardest split;
 - whether state/exposure/nominal feature improvements are stable across both
   targets;
 - whether the strict-vs-tolerant monotonicity sensitivity deltas are small
   enough to keep `baseline_clean_tolerant` as the primary subset;
-- whether a follow-up HGB rerun with higher `--hgb-max-iter` changes the
-  conclusions.
+- whether HGB-50 LOG_AGE scalar gains hold under a more carefully reviewed
+  feature-engineering pass.
 
 Continue to keep EIS/PULSE modeling, sequence models, neural models, policy
 ranking, and CBAT architecture out of scope until the capacity baseline report

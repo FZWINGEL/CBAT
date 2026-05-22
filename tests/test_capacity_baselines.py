@@ -16,9 +16,11 @@ from mbp.baselines.capacity import FeatureEncoder
 from mbp.baselines.capacity import NUMERIC_FEATURES
 from mbp.baselines.capacity import assert_no_parameter_set_leakage
 from mbp.baselines.capacity import compute_metrics
+from mbp.baselines.capacity import diagnose_capacity_report
 from mbp.baselines.capacity import load_baseline_rows
 from mbp.baselines.capacity import predict_capacity_target
 from mbp.baselines.capacity import run_capacity_baselines
+from mbp.baselines.capacity import _feature_gain_rows
 from mbp.data.schema_contracts import INTERVAL_SUBSET_REGISTRY_SCHEMA, INTERVAL_TABLE_SCHEMA
 
 
@@ -165,6 +167,7 @@ def test_capacity_baseline_l0_writes_report_and_predictions(tmp_path: Path) -> N
         "primary",
         "sensitivity_excluding_monotonicity",
     }
+    assert report["numeric_standardization"] == "train_fold_mean_std"
 
 
 def test_capacity_baseline_cli_runs_l0_on_synthetic_fixture(tmp_path: Path) -> None:
@@ -281,6 +284,137 @@ def test_feature_groups_exclude_inserted_diagnostics(tmp_path: Path) -> None:
     for feature_group in FEATURE_GROUPS:
         encoder = FeatureEncoder.fit(rows, feature_group)
         assert not (set(encoder.output_columns) & DIAGNOSTIC_LEAKAGE_FIELDS)
+
+
+def test_ridge_standardization_uses_train_fold_statistics_only() -> None:
+    train_rows = [
+        {"duration_h": 0.0, "calendar_days": 0.0, "checkup_k": 0},
+        {"duration_h": 10.0, "calendar_days": 10.0, "checkup_k": 10},
+    ]
+    test_rows = [{"duration_h": 1000.0, "calendar_days": 1000.0, "checkup_k": 1000}]
+    encoder = FeatureEncoder.fit(train_rows, "F0_time_only")
+
+    train_matrix = encoder.transform(train_rows, standardize_numeric=True)
+    test_matrix = encoder.transform(test_rows, standardize_numeric=True)
+
+    assert train_matrix[0][0] == pytest.approx(-1.0)
+    assert train_matrix[1][0] == pytest.approx(1.0)
+    assert test_matrix[0][0] == pytest.approx(199.0)
+
+
+def test_quantile_metrics_only_computed_for_quantile_predictions() -> None:
+    test_rows = [
+        {"parameter_set": 1, "cell_id": "P001_1", "capacity_Ah_k1": 3.0},
+        {"parameter_set": 1, "cell_id": "P001_2", "capacity_Ah_k1": 2.0},
+    ]
+    point_metrics = compute_metrics(
+        test_rows,
+        [{"y_pred": 3.0}, {"y_pred": 2.0}],
+        target="capacity_Ah_k1",
+        subset_name="baseline_clean_tolerant",
+        run_scope="primary",
+        split_name="condition_fold",
+        heldout_fold=0,
+        model_level="L1_ridge",
+        feature_group="F0_time_only",
+        train_rows=[{"parameter_set": 2}],
+    )
+    quantile_metrics = compute_metrics(
+        test_rows,
+        [
+            {"y_pred": 3.0, "y_pred_q10": 2.0, "y_pred_q50": 3.0, "y_pred_q90": 4.0},
+            {"y_pred": 2.0, "y_pred_q10": 1.0, "y_pred_q50": 2.0, "y_pred_q90": 3.0},
+        ],
+        target="capacity_Ah_k1",
+        subset_name="baseline_clean_tolerant",
+        run_scope="primary",
+        split_name="condition_fold",
+        heldout_fold=0,
+        model_level="L3_quantile_hist_gradient_boosting",
+        feature_group="F0_time_only",
+        train_rows=[{"parameter_set": 2}],
+    )
+
+    assert point_metrics["q10_q90_interval_coverage"] is None
+    assert quantile_metrics["q10_q90_interval_coverage"] == pytest.approx(1.0)
+    assert quantile_metrics["q10_q90_interval_width_mean"] == pytest.approx(2.0)
+    assert quantile_metrics["pinball_loss_q50"] == pytest.approx(0.0)
+
+
+def test_diagnostics_tables_are_generated_from_capacity_report(tmp_path: Path) -> None:
+    interval_path, subset_path = _write_capacity_fixture(tmp_path)
+    report_path = tmp_path / "capacity_baseline_report.json"
+    predictions_path = tmp_path / "capacity_baseline_predictions.parquet"
+
+    run_capacity_baselines(
+        interval_path,
+        subset_path,
+        report_path,
+        predictions_path,
+        model_levels=["L0_persistence"],
+        feature_groups=["F0_time_only"],
+        targets=["delta_capacity_Ah"],
+        split_views=["c_rate_holdout_fold"],
+    )
+    out_dir = tmp_path / "diagnostics"
+    diagnose_capacity_report(report_path, out_dir)
+
+    best_table = (out_dir / "plots" / "best_by_target_split.csv").read_text()
+    c_rate_table = (out_dir / "plots" / "c_rate_holdout_errors.csv").read_text()
+
+    assert (out_dir / "baseline_diagnostics.md").exists()
+    assert "best_model_level" in best_table
+    assert "nominal_charge_C_rate" in c_rate_table
+    assert "capacity_Ah_k_min" in c_rate_table
+
+
+def test_feature_gain_table_is_generated_from_synthetic_leaderboard() -> None:
+    rows = [
+        {
+            "run_scope": "primary",
+            "model_level": "L1_ridge",
+            "feature_group": "F1_state_time",
+            "target": "capacity_Ah_k1",
+            "split_name": "condition_fold",
+            "condition_mean_mae": 0.20,
+            "worst_condition_mae": 0.50,
+        },
+        {
+            "run_scope": "primary",
+            "model_level": "L1_ridge",
+            "feature_group": "F2_state_exposure",
+            "target": "capacity_Ah_k1",
+            "split_name": "condition_fold",
+            "condition_mean_mae": 0.15,
+            "worst_condition_mae": 0.40,
+        },
+    ]
+
+    gains = _feature_gain_rows(rows)
+
+    assert len(gains) == 1
+    assert gains[0]["from_feature_group"] == "F1_state_time"
+    assert gains[0]["to_feature_group"] == "F2_state_exposure"
+    assert gains[0]["condition_mean_mae_gain"] == pytest.approx(0.05)
+
+
+def test_capacity_runner_allows_focused_target_and_split_selection(tmp_path: Path) -> None:
+    interval_path, subset_path = _write_capacity_fixture(tmp_path)
+    report = run_capacity_baselines(
+        interval_path,
+        subset_path,
+        tmp_path / "focused_report.json",
+        tmp_path / "focused_predictions.parquet",
+        model_levels=["L0_persistence"],
+        feature_groups=["F0_time_only"],
+        targets=["delta_capacity_Ah"],
+        split_views=["c_rate_holdout_fold"],
+    )
+
+    assert report["targets"] == ["delta_capacity_Ah"]
+    assert report["split_views"] == ["c_rate_holdout_fold"]
+    assert {metric["target"] for metric in report["metrics"]} == {"delta_capacity_Ah"}
+    assert {metric["split_name"] for metric in report["metrics"]} == {"c_rate_holdout_fold"}
 
 
 def test_parameter_set_leakage_guard_rejects_overlap() -> None:
