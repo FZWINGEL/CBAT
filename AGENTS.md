@@ -8,14 +8,24 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 ## Read First
 
 1. `docs/PROJECT_CHARTER.md`
-2. `docs/DATASET_EVIDENCE_MEMO.md`
-3. `docs/SCHEMA_REGISTRY.md`
-4. `docs/VALIDATION_PROTOCOL.md`
-5. `docs/DECISION_LOG.md`
+2. `docs/REPO_STATUS.md`
+3. `docs/DATASET_EVIDENCE_MEMO.md`
+4. `docs/SCHEMA_REGISTRY.md`
+5. `docs/VALIDATION_PROTOCOL.md`
+6. `docs/DECISION_LOG.md`
 
 ## Current Phase
 
 Gate 2b: LOG_AGE integrity triage and interval-table hardening.
+
+Current state:
+- Gate 2b implementation and reports are committed.
+- `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
+  validation results, and remaining blockers.
+- LOG_AGE monotonicity has been triaged and propagated into interval quality
+  flags.
+- Baselines remain blocked until the LOG_AGE monotonicity handling policy
+  defines the clean interval subset.
 
 Allowed work:
 - LOG_AGE monotonicity investigation
@@ -25,6 +35,8 @@ Allowed work:
 - raw LOG audit scaffolding
 - documentation/evidence memo updates
 - small tests with synthetic fixtures
+- LOG_AGE monotonicity handling policy documentation
+- clean interval subset definition after policy approval
 
 Forbidden work:
 - model training
