@@ -38,9 +38,83 @@ FEATURE_GROUPS = (
     "F2_state_exposure",
     "F3_state_nominal",
     "F4_state_log_age_scalar",
+    "F5_log_age_histograms",
+    "F6_coupled_stress",
+    "F7_c_rate_focused",
 )
+DEFAULT_FEATURE_GROUPS = FEATURE_GROUPS[:5]
 
 DIAGNOSTIC_LEAKAGE_FIELDS = {"cap_aged_est_Ah", "R0_mOhm", "R1_mOhm"}
+STRESS_FEATURE_GROUPS = {
+    "F5_log_age_histograms",
+    "F6_coupled_stress",
+    "F7_c_rate_focused",
+}
+
+LOG_AGE_HISTOGRAM_FEATURES = (
+    "time_voltage_lt_3p3_h",
+    "time_voltage_3p3_3p6_h",
+    "time_voltage_3p6_3p9_h",
+    "time_voltage_3p9_4p1_h",
+    "time_voltage_ge_4p1_h",
+    "high_voltage_time_h",
+    "voltage_dwell_weighted_h",
+    "time_temp_lt_5C_h",
+    "time_temp_5_15C_h",
+    "time_temp_15_30C_h",
+    "time_temp_30_40C_h",
+    "time_temp_ge_40C_h",
+    "cold_time_h",
+    "hot_time_h",
+    "time_soc_lt_20_h",
+    "time_soc_20_50_h",
+    "time_soc_50_80_h",
+    "time_soc_ge_80_h",
+    "high_soc_time_h",
+    "charge_time_h",
+    "discharge_time_h",
+    "rest_time_h",
+    "abs_current_ge_1C_time_h",
+    "abs_current_ge_1p5C_time_h",
+    "abs_current_ge_5over3C_time_h",
+    "charge_current_ge_1C_time_h",
+    "charge_current_ge_1p5C_time_h",
+    "charge_current_ge_5over3C_time_h",
+    "mean_charge_current_A",
+    "mean_discharge_current_A",
+    "log_age_efc_per_day",
+)
+
+COUPLED_STRESS_FEATURES = (
+    "cold_high_charge_time_h",
+    "cold_high_abs_current_time_h",
+    "high_voltage_hot_time_h",
+    "high_soc_hot_time_h",
+    "high_voltage_high_abs_current_time_h",
+    "high_soc_high_abs_current_time_h",
+)
+
+C_RATE_FOCUSED_FEATURES = (
+    "cold_time_h",
+    "hot_time_h",
+    "high_voltage_time_h",
+    "charge_time_h",
+    "discharge_time_h",
+    "rest_time_h",
+    "mean_charge_current_A",
+    "mean_discharge_current_A",
+    "abs_current_ge_1C_time_h",
+    "abs_current_ge_1p5C_time_h",
+    "abs_current_ge_5over3C_time_h",
+    "charge_current_ge_1C_time_h",
+    "charge_current_ge_1p5C_time_h",
+    "charge_current_ge_5over3C_time_h",
+    "cold_high_charge_time_h",
+    "cold_high_abs_current_time_h",
+    "high_voltage_high_abs_current_time_h",
+    "high_soc_high_abs_current_time_h",
+    "log_age_efc_per_day",
+)
 
 NUMERIC_FEATURES: dict[str, tuple[str, ...]] = {
     "F0_time_only": ("duration_h", "calendar_days", "checkup_k"),
@@ -87,6 +161,71 @@ NUMERIC_FEATURES: dict[str, tuple[str, ...]] = {
         "log_age_min_soc",
         "log_age_max_soc",
     ),
+    "F5_log_age_histograms": (
+        *(
+            "capacity_Ah_k",
+            "duration_h",
+            "calendar_days",
+            "checkup_k",
+            "log_age_efc_delta",
+            "log_age_delta_q_Ah",
+            "nominal_temperature_C",
+            "nominal_charge_C_rate",
+            "nominal_discharge_C_rate",
+            "log_age_mean_voltage_V",
+            "log_age_min_voltage_V",
+            "log_age_max_voltage_V",
+            "log_age_mean_temperature_C",
+            "log_age_min_temperature_C",
+            "log_age_max_temperature_C",
+            "log_age_mean_current_A",
+            "log_age_mean_abs_current_A",
+            "log_age_max_abs_current_A",
+            "log_age_mean_soc",
+            "log_age_min_soc",
+            "log_age_max_soc",
+        ),
+        *LOG_AGE_HISTOGRAM_FEATURES,
+    ),
+    "F6_coupled_stress": (
+        *(
+            "capacity_Ah_k",
+            "duration_h",
+            "calendar_days",
+            "checkup_k",
+            "log_age_efc_delta",
+            "log_age_delta_q_Ah",
+            "nominal_temperature_C",
+            "nominal_charge_C_rate",
+            "nominal_discharge_C_rate",
+            "log_age_mean_voltage_V",
+            "log_age_min_voltage_V",
+            "log_age_max_voltage_V",
+            "log_age_mean_temperature_C",
+            "log_age_min_temperature_C",
+            "log_age_max_temperature_C",
+            "log_age_mean_current_A",
+            "log_age_mean_abs_current_A",
+            "log_age_max_abs_current_A",
+            "log_age_mean_soc",
+            "log_age_min_soc",
+            "log_age_max_soc",
+        ),
+        *LOG_AGE_HISTOGRAM_FEATURES,
+        *COUPLED_STRESS_FEATURES,
+    ),
+    "F7_c_rate_focused": (
+        "capacity_Ah_k",
+        "duration_h",
+        "calendar_days",
+        "checkup_k",
+        "log_age_efc_delta",
+        "log_age_delta_q_Ah",
+        "nominal_temperature_C",
+        "nominal_charge_C_rate",
+        "nominal_discharge_C_rate",
+        *C_RATE_FOCUSED_FEATURES,
+    ),
 }
 
 CATEGORICAL_FEATURES: dict[str, tuple[str, ...]] = {
@@ -95,6 +234,9 @@ CATEGORICAL_FEATURES: dict[str, tuple[str, ...]] = {
     "F2_state_exposure": (),
     "F3_state_nominal": ("aging_mode", "voltage_window_family"),
     "F4_state_log_age_scalar": ("aging_mode", "voltage_window_family"),
+    "F5_log_age_histograms": ("aging_mode", "voltage_window_family"),
+    "F6_coupled_stress": ("aging_mode", "voltage_window_family"),
+    "F7_c_rate_focused": ("aging_mode", "voltage_window_family"),
 }
 
 BASELINE_PREDICTION_SCHEMA = pa.schema(
@@ -209,6 +351,7 @@ def run_capacity_baselines(
     interval_subsets_path: Path,
     out_path: Path,
     predictions_out_path: Path,
+    stress_features_path: Path | None = None,
     report_dir: Path | None = None,
     subset: str = "baseline_clean_tolerant",
     seed: int = 42,
@@ -222,12 +365,27 @@ def run_capacity_baselines(
     if hgb_max_iter <= 0:
         raise ValueError("hgb_max_iter must be positive.")
     selected_models = _normalize_selection(model_levels, MODEL_LEVELS, "model level")
-    selected_feature_groups = _normalize_selection(feature_groups, FEATURE_GROUPS, "feature group")
+    selected_feature_groups = _normalize_selection(
+        feature_groups,
+        FEATURE_GROUPS,
+        "feature group",
+        default=DEFAULT_FEATURE_GROUPS,
+    )
     selected_targets = _normalize_selection(targets, TARGETS, "target")
     selected_split_views = _normalize_selection(split_views, SPLIT_COLUMNS, "split view")
+    if STRESS_FEATURE_GROUPS & set(selected_feature_groups) and stress_features_path is None:
+        raise ValueError(
+            "Stress feature groups F5-F7 require --stress-features pointing to "
+            "interval_stress_features_v1.parquet."
+        )
     _preflight_model_dependencies(selected_models)
 
-    all_rows, subset_rows = load_baseline_rows(interval_table_path, interval_subsets_path, subset)
+    all_rows, subset_rows = load_baseline_rows(
+        interval_table_path,
+        interval_subsets_path,
+        subset,
+        stress_features_path=stress_features_path,
+    )
     sensitivity_rows = [
         row for row in subset_rows if not bool(row["sensitivity_flagged_monotonicity"])
     ]
@@ -312,6 +470,7 @@ def run_capacity_baselines(
         "inputs": {
             "interval_table": str(interval_table_path),
             "interval_subsets": str(interval_subsets_path),
+            "stress_features": str(stress_features_path) if stress_features_path else None,
         },
         "outputs": {
             "report": str(out_path),
@@ -368,6 +527,56 @@ def diagnose_capacity_report(
         else None
     )
     render_capacity_diagnostics(report, out_dir, reference_report=reference_report)
+    return report
+
+
+def diagnose_stress_feature_report(
+    report_path: Path,
+    baseline_report_path: Path,
+    l0_reference_report_path: Path,
+    out_dir: Path,
+) -> dict[str, Any]:
+    """Render Milestone 0.6 stress-feature diagnostics against F4 and L0 baselines."""
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    baseline_report = json.loads(baseline_report_path.read_text(encoding="utf-8"))
+    l0_reference_report = json.loads(l0_reference_report_path.read_text(encoding="utf-8"))
+
+    render_capacity_diagnostics(report, out_dir, reference_report=l0_reference_report)
+    plots_dir = out_dir / "plots"
+    plots_dir.mkdir(parents=True, exist_ok=True)
+
+    report_leaderboard = _leaderboard_rows(list(report["metrics"]))
+    baseline_leaderboard = _leaderboard_rows(list(baseline_report["metrics"]))
+    l0_leaderboard = _leaderboard_rows(list(l0_reference_report["metrics"]))
+    report_predictions = _load_prediction_rows(report)
+    baseline_predictions = _load_prediction_rows(baseline_report)
+    l0_predictions = _load_prediction_rows(l0_reference_report)
+    metadata = _condition_metadata_by_parameter_set(report)
+
+    stress_gain_rows = _stress_feature_gain_rows(
+        report_leaderboard, baseline_leaderboard, l0_leaderboard
+    )
+    c_rate_rows = _c_rate_stress_feature_error_rows(
+        stress_gain_rows,
+        report_predictions,
+        baseline_predictions,
+        l0_predictions,
+        metadata,
+    )
+    claim_rows = _stress_feature_claim_readiness_rows(stress_gain_rows, c_rate_rows)
+
+    _write_csv(plots_dir / "stress_feature_gain_by_split.csv", stress_gain_rows)
+    _write_csv(plots_dir / "c_rate_stress_feature_errors.csv", c_rate_rows)
+    _write_csv(plots_dir / "stress_feature_claim_readiness.csv", claim_rows)
+    _write_stress_feature_diagnostics_md(
+        report,
+        baseline_report,
+        l0_reference_report,
+        stress_gain_rows,
+        c_rate_rows,
+        claim_rows,
+        out_dir / "stress_feature_diagnostics.md",
+    )
     return report
 
 
@@ -442,6 +651,7 @@ def load_baseline_rows(
     interval_table_path: Path,
     interval_subsets_path: Path,
     subset: str,
+    stress_features_path: Path | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Load and join interval rows with baseline subset flags."""
     if subset not in SUBSET_COLUMNS:
@@ -458,6 +668,16 @@ def load_baseline_rows(
             "Interval table and interval subset registry row counts differ: "
             f"{len(interval_rows)} vs {len(subset_rows)}."
         )
+    stress_by_key: dict[tuple[str, int, int], dict[str, Any]] = {}
+    if stress_features_path is not None:
+        if not stress_features_path.exists():
+            raise FileNotFoundError(f"Stress-feature table not found: {stress_features_path}")
+        stress_rows = pq.read_table(stress_features_path).to_pylist()
+        for row in stress_rows:
+            key = _interval_key(row)
+            if key in stress_by_key:
+                raise ValueError(f"Duplicate stress-feature interval key: {key}")
+            stress_by_key[key] = row
 
     subset_by_key: dict[tuple[str, int, int], dict[str, Any]] = {}
     for row in subset_rows:
@@ -475,6 +695,21 @@ def load_baseline_rows(
         merged = dict(interval_row)
         for column, value in subset_row.items():
             if column not in {"cell_id", "parameter_set", "replicate_id", "checkup_k", "checkup_k_next"}:
+                merged[column] = value
+        if stress_features_path is not None:
+            stress_row = stress_by_key.get(key)
+            if stress_row is None:
+                raise ValueError(f"Stress-feature table is missing interval key: {key}")
+            for column, value in stress_row.items():
+                if column in {
+                    "cell_id",
+                    "parameter_set",
+                    "replicate_id",
+                    "checkup_k",
+                    "checkup_k_next",
+                    "schema_version",
+                }:
+                    continue
                 merged[column] = value
         merged_rows.append(merged)
 
@@ -1323,6 +1558,288 @@ def _write_claim_readiness_md(
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
+def _stress_feature_gain_rows(
+    stress_leaderboard: list[dict[str, Any]],
+    baseline_leaderboard: list[dict[str, Any]],
+    l0_leaderboard: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    baseline_f4 = _best_reference_by_target_split(
+        baseline_leaderboard,
+        allowed_feature_groups={"F4_state_log_age_scalar"},
+    )
+    l0_reference = _l0_reference_rows(l0_leaderboard)
+    rows: list[dict[str, Any]] = []
+    primary_stress = [
+        row
+        for row in stress_leaderboard
+        if row["run_scope"] == "primary" and row["feature_group"] in STRESS_FEATURE_GROUPS
+    ]
+    for target in sorted({str(row["target"]) for row in primary_stress}):
+        for split_name in sorted({str(row["split_name"]) for row in primary_stress}):
+            group = [
+                row
+                for row in primary_stress
+                if row["target"] == target and row["split_name"] == split_name
+            ]
+            if not group:
+                continue
+            best = min(
+                group,
+                key=lambda row: (
+                    float(row["condition_mean_mae"]),
+                    float(row["worst_condition_mae"]),
+                ),
+            )
+            baseline = baseline_f4.get((target, split_name))
+            l0 = l0_reference.get((target, split_name))
+            best_error = float(best["condition_mean_mae"])
+            baseline_error = _optional_float(
+                baseline["condition_mean_mae"] if baseline else None
+            )
+            l0_error = _optional_float(l0["condition_mean_mae"] if l0 else None)
+            rows.append(
+                {
+                    "target": target,
+                    "split_name": split_name,
+                    "best_stress_model_level": best["model_level"],
+                    "best_stress_feature_group": best["feature_group"],
+                    "best_stress_condition_mean_mae": best_error,
+                    "best_stress_worst_condition_mae": best["worst_condition_mae"],
+                    "baseline_f4_model_level": baseline["model_level"]
+                    if baseline
+                    else "reference_missing",
+                    "baseline_f4_condition_mean_mae": baseline_error
+                    if baseline_error is not None
+                    else "reference_missing",
+                    "condition_mean_mae_gain_vs_f4": baseline_error - best_error
+                    if baseline_error is not None
+                    else "reference_missing",
+                    "l0_condition_mean_mae": l0_error
+                    if l0_error is not None
+                    else "reference_missing",
+                    "condition_mean_mae_gain_vs_l0": l0_error - best_error
+                    if l0_error is not None
+                    else "reference_missing",
+                    "success_vs_f4": bool(baseline_error is not None and best_error < baseline_error),
+                    "material_degradation_vs_f4": bool(
+                        baseline_error is not None
+                        and split_name in {"condition_fold", "temperature_holdout_fold"}
+                        and best_error > baseline_error + 0.005
+                    ),
+                }
+            )
+    return rows
+
+
+def _best_reference_by_target_split(
+    leaderboard_rows: list[dict[str, Any]],
+    *,
+    allowed_feature_groups: set[str],
+) -> dict[tuple[str, str], dict[str, Any]]:
+    grouped: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    for row in leaderboard_rows:
+        if row["run_scope"] != "primary" or row["feature_group"] not in allowed_feature_groups:
+            continue
+        grouped[(str(row["target"]), str(row["split_name"]))].append(row)
+    return {
+        key: min(
+            rows,
+            key=lambda row: (
+                float(row["condition_mean_mae"]),
+                float(row["worst_condition_mae"]),
+            ),
+        )
+        for key, rows in grouped.items()
+    }
+
+
+def _c_rate_stress_feature_error_rows(
+    stress_gain_rows: list[dict[str, Any]],
+    stress_predictions: list[dict[str, Any]],
+    baseline_predictions: list[dict[str, Any]],
+    l0_predictions: list[dict[str, Any]],
+    metadata: dict[int, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for summary in stress_gain_rows:
+        if summary["split_name"] != "c_rate_holdout_fold":
+            continue
+        target = str(summary["target"])
+        stress_errors = _condition_mae_for_selection(
+            stress_predictions,
+            run_scope="primary",
+            model_level=str(summary["best_stress_model_level"]),
+            feature_group=str(summary["best_stress_feature_group"]),
+            target=target,
+            split_name="c_rate_holdout_fold",
+        )
+        baseline_errors = _condition_mae_for_selection(
+            baseline_predictions,
+            run_scope="primary",
+            model_level=str(summary["baseline_f4_model_level"]),
+            feature_group="F4_state_log_age_scalar",
+            target=target,
+            split_name="c_rate_holdout_fold",
+        )
+        l0_errors = _condition_mae_for_selection(
+            l0_predictions,
+            run_scope="primary",
+            model_level="L0_persistence",
+            feature_group="persistence",
+            target=target,
+            split_name="c_rate_holdout_fold",
+        )
+        for parameter_set, stress_error in sorted(stress_errors.items()):
+            baseline_error = baseline_errors.get(parameter_set)
+            l0_error = l0_errors.get(parameter_set)
+            meta = metadata.get(parameter_set, {})
+            rows.append(
+                {
+                    "target": target,
+                    "parameter_set": parameter_set,
+                    "nominal_temperature_C": meta.get("nominal_temperature_C"),
+                    "voltage_window_family": meta.get("voltage_window_family"),
+                    "nominal_charge_C_rate": meta.get("nominal_charge_C_rate"),
+                    "n_intervals": meta.get("n_intervals"),
+                    "best_stress_model_level": summary["best_stress_model_level"],
+                    "best_stress_feature_group": summary["best_stress_feature_group"],
+                    "stress_model_error": stress_error,
+                    "baseline_f4_error": baseline_error
+                    if baseline_error is not None
+                    else "reference_missing",
+                    "gain_vs_f4": baseline_error - stress_error
+                    if baseline_error is not None
+                    else "reference_missing",
+                    "l0_error": l0_error if l0_error is not None else "reference_missing",
+                    "gain_vs_l0": l0_error - stress_error
+                    if l0_error is not None
+                    else "reference_missing",
+                }
+            )
+    return rows
+
+
+def _stress_feature_claim_readiness_rows(
+    stress_gain_rows: list[dict[str, Any]],
+    c_rate_rows: list[dict[str, Any]],
+) -> list[dict[str, str]]:
+    c_rate_gains = [
+        _nullable_float(row.get("condition_mean_mae_gain_vs_f4"))
+        for row in stress_gain_rows
+        if row["split_name"] == "c_rate_holdout_fold"
+    ]
+    condition_degradations = [
+        row
+        for row in stress_gain_rows
+        if row["split_name"] == "condition_fold" and row["material_degradation_vs_f4"]
+    ]
+    temperature_degradations = [
+        row
+        for row in stress_gain_rows
+        if row["split_name"] == "temperature_holdout_fold"
+        and row["material_degradation_vs_f4"]
+    ]
+    c_rate_success = all(gain is not None and gain > 0 for gain in c_rate_gains)
+    no_material_degradation = not condition_degradations and not temperature_degradations
+    return [
+        {
+            "claim": "Stress features improve C-rate holdout",
+            "status": "supported" if c_rate_success else "not_supported",
+            "evidence": (
+                f"C-rate gains vs F4: {_format_gain_list(c_rate_gains)}; "
+                f"condition rows: {len(c_rate_rows)}"
+            ),
+            "decision": "Use stress features for C-rate generalization"
+            if c_rate_success
+            else "Do not claim stress-feature improvement",
+        },
+        {
+            "claim": "Stress features do not degrade condition/temperature folds",
+            "status": "supported" if no_material_degradation else "not_supported",
+            "evidence": (
+                f"condition degradation rows: {len(condition_degradations)}; "
+                f"temperature degradation rows: {len(temperature_degradations)}"
+            ),
+            "decision": "Keep focused stress-feature ladder"
+            if no_material_degradation
+            else "Inspect degraded split rows before promoting",
+        },
+        {
+            "claim": "Stress features authorize new modalities",
+            "status": "blocked",
+            "evidence": "Milestone 0.6 remains capacity-only and scalar-interval only.",
+            "decision": "Keep EIS/PULSE/CBAT blocked.",
+        },
+    ]
+
+
+def _write_stress_feature_diagnostics_md(
+    report: dict[str, Any],
+    baseline_report: dict[str, Any],
+    l0_reference_report: dict[str, Any],
+    stress_gain_rows: list[dict[str, Any]],
+    c_rate_rows: list[dict[str, Any]],
+    claim_rows: list[dict[str, str]],
+    path: Path,
+) -> None:
+    c_rate_rows_summary = [
+        row for row in stress_gain_rows if row["split_name"] == "c_rate_holdout_fold"
+    ]
+    lines = [
+        "# Stress Feature Diagnostics",
+        "",
+        f"Source report: `{report['outputs']['report']}`",
+        f"F4 baseline report: `{baseline_report['outputs']['report']}`",
+        f"L0 reference report: `{l0_reference_report['outputs']['report']}`",
+        f"Generated at UTC: `{datetime.now(UTC).isoformat()}`",
+        "",
+        "## Success Criteria",
+        "",
+        "| Target | Split | Stress feature group | Stress MAE | F4 MAE | Gain vs F4 | Success |",
+        "|---|---|---|---:|---:|---:|---|",
+    ]
+    for row in c_rate_rows_summary:
+        lines.append(
+            "| "
+            f"`{row['target']}` | `{row['split_name']}` | "
+            f"`{row['best_stress_feature_group']}` | "
+            f"{_format_diagnostic_value(row['best_stress_condition_mean_mae'])} | "
+            f"{_format_diagnostic_value(row['baseline_f4_condition_mean_mae'])} | "
+            f"{_format_diagnostic_value(row['condition_mean_mae_gain_vs_f4'])} | "
+            f"{row['success_vs_f4']} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Claim Readiness",
+            "",
+            "| Claim | Status | Evidence | Decision |",
+            "|---|---|---|---|",
+        ]
+    )
+    for row in claim_rows:
+        lines.append(
+            f"| {row['claim']} | {row['status']} | {row['evidence']} | {row['decision']} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Outputs",
+            "",
+            "- `plots/stress_feature_gain_by_split.csv`",
+            "- `plots/c_rate_stress_feature_errors.csv`",
+            "- `plots/stress_feature_claim_readiness.csv`",
+            f"- C-rate condition rows: `{len(c_rate_rows)}`",
+            "",
+        ]
+    )
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def _format_gain_list(values: list[float | None]) -> str:
+    return ", ".join(_format_diagnostic_value(value) for value in values)
+
+
 def _write_evaluation_cards(
     metrics: list[dict[str, Any]],
     cards_dir: Path,
@@ -1666,9 +2183,10 @@ def _normalize_selection(
     selected: list[str] | None,
     allowed: tuple[str, ...],
     label: str,
+    default: tuple[str, ...] | None = None,
 ) -> list[str]:
     if selected is None:
-        return list(allowed)
+        return list(default or allowed)
     normalized = [item.strip() for item in selected if item.strip()]
     unknown = sorted(set(normalized) - set(allowed))
     if unknown:

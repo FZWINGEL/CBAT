@@ -258,6 +258,64 @@ INTERVAL_SUBSET_REGISTRY_SCHEMA = pa.schema(
     ]
 )
 
+# 12. Interval Stress Features Schema
+INTERVAL_STRESS_FEATURES_SCHEMA = pa.schema(
+    [
+        ("cell_id", pa.string(), False),
+        ("parameter_set", pa.int32(), False),
+        ("replicate_id", pa.int32(), False),
+        ("checkup_k", pa.int32(), False),
+        ("checkup_k_next", pa.int32(), False),
+        ("schema_version", pa.string(), False),
+        ("feature_policy_version", pa.string(), False),
+        ("current_sign_policy", pa.string(), False),
+        ("current_sign_convention_confirmed", pa.bool_(), False),
+        ("sign_dependent_features_provisional", pa.bool_(), False),
+        ("stress_log_age_row_count", pa.int64(), False),
+        ("stress_duration_h", pa.float64(), False),
+        ("time_voltage_lt_3p3_h", pa.float64(), False),
+        ("time_voltage_3p3_3p6_h", pa.float64(), False),
+        ("time_voltage_3p6_3p9_h", pa.float64(), False),
+        ("time_voltage_3p9_4p1_h", pa.float64(), False),
+        ("time_voltage_ge_4p1_h", pa.float64(), False),
+        ("high_voltage_time_h", pa.float64(), False),
+        ("voltage_dwell_weighted_h", pa.float64(), False),
+        ("time_temp_lt_5C_h", pa.float64(), False),
+        ("time_temp_5_15C_h", pa.float64(), False),
+        ("time_temp_15_30C_h", pa.float64(), False),
+        ("time_temp_30_40C_h", pa.float64(), False),
+        ("time_temp_ge_40C_h", pa.float64(), False),
+        ("cold_time_h", pa.float64(), False),
+        ("hot_time_h", pa.float64(), False),
+        ("mean_charge_current_A", pa.float64(), True),
+        ("mean_discharge_current_A", pa.float64(), True),
+        ("charge_time_h", pa.float64(), False),
+        ("discharge_time_h", pa.float64(), False),
+        ("rest_time_h", pa.float64(), False),
+        ("abs_current_ge_1C_time_h", pa.float64(), False),
+        ("abs_current_ge_1p5C_time_h", pa.float64(), False),
+        ("abs_current_ge_5over3C_time_h", pa.float64(), False),
+        ("charge_current_ge_1C_time_h", pa.float64(), False),
+        ("charge_current_ge_1p5C_time_h", pa.float64(), False),
+        ("charge_current_ge_5over3C_time_h", pa.float64(), False),
+        ("time_soc_lt_20_h", pa.float64(), False),
+        ("time_soc_20_50_h", pa.float64(), False),
+        ("time_soc_50_80_h", pa.float64(), False),
+        ("time_soc_ge_80_h", pa.float64(), False),
+        ("high_soc_time_h", pa.float64(), False),
+        ("cold_high_charge_time_h", pa.float64(), False),
+        ("cold_high_abs_current_time_h", pa.float64(), False),
+        ("high_voltage_hot_time_h", pa.float64(), False),
+        ("high_soc_hot_time_h", pa.float64(), False),
+        ("high_voltage_high_abs_current_time_h", pa.float64(), False),
+        ("high_soc_high_abs_current_time_h", pa.float64(), False),
+        ("delta_capacity_per_day", pa.float64(), True),
+        ("delta_capacity_per_efc", pa.float64(), True),
+        ("delta_capacity_per_Ah_throughput", pa.float64(), True),
+        ("log_age_efc_per_day", pa.float64(), True),
+    ]
+)
+
 
 def validate_table(table: pa.Table, schema: pa.Schema, strict: bool = True) -> bool:
     """Validate that a pyarrow Table matches the expected schema.

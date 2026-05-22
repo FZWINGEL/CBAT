@@ -161,3 +161,13 @@ Success criterion for the next milestone:
 > Improve C-rate holdout condition-mean MAE over the current HGB-50
 > `F4_state_log_age_scalar` baseline without degrading condition-fold and
 > temperature-fold performance.
+
+## Follow-Up
+
+Milestone 0.6 stress-feature v1 is documented in
+`docs/experiments/2026-05-22_log_age_stress_features_v1.md`.
+
+The v1 result is mixed after target-derived normalized-rate fields were excluded
+from predictive feature groups: `capacity_Ah_k1` C-rate improved marginally, but
+`delta_capacity_Ah` C-rate degraded. The project should harden stress features
+before expanding to PULSE/EIS/CBAT.

@@ -1,0 +1,27 @@
+{
+  "current_sign_convention_confirmed": false,
+  "current_sign_policy": "positive_current_charge_provisional_abs_current_primary",
+  "duration_consistency": {
+    "current_sum_failures": 0,
+    "soc_sum_failures": 0,
+    "temperature_sum_failures": 0,
+    "tolerance_h": 0.0002777777777777778,
+    "voltage_sum_failures": 0
+  },
+  "failures": [],
+  "feature_policy_counts": {
+    "log_age_stress_features.v1": 3827
+  },
+  "feature_policy_version": "log_age_stress_features.v1",
+  "features_exceeding_duration_counts": {},
+  "interval_table": "data/interim/interval_table.parquet",
+  "intervals_missing_stress_features": 0,
+  "negative_feature_counts": {},
+  "row_count": 3827,
+  "schema_version": "gate6.interval_stress_features.v1",
+  "sign_dependent_features_provisional": true,
+  "status": "passed",
+  "stress_features": "data/interim/interval_stress_features_v1.parquet",
+  "unique_cells": 228,
+  "unique_parameter_sets": 76
+}

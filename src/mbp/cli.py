@@ -20,12 +20,14 @@ report_app = typer.Typer(help="Report generation commands.")
 ingest_app = typer.Typer(help="Gate 2 result-data ingestion commands.")
 split_app = typer.Typer(help="Reproducible dataset splitting commands.")
 baseline_app = typer.Typer(help="Milestone 0.5 baseline commands.")
+features_app = typer.Typer(help="Milestone 0.6 scalar feature-engineering commands.")
 
 app.add_typer(audit_app, name="audit")
 app.add_typer(report_app, name="report")
 app.add_typer(ingest_app, name="ingest")
 app.add_typer(split_app, name="split")
 app.add_typer(baseline_app, name="baseline")
+app.add_typer(features_app, name="features")
 
 
 def _load_optional_json(path: Path) -> dict[str, object] | None:
@@ -613,6 +615,63 @@ def ingest_intervals_qa(
         raise typer.Exit(code=1)
 
 
+@features_app.command("build-stress")
+def features_build_stress(
+    interim_dir: Path = typer.Option(
+        ...,
+        "--interim-dir",
+        help="Directory containing Gate 2 interim Parquet data products.",
+    ),
+    interval_table: Path = typer.Option(
+        ...,
+        "--interval-table",
+        help="Path to interval_table.parquet.",
+    ),
+    out: Path = typer.Option(
+        ...,
+        "--out",
+        help="Output path for interval_stress_features_v1.parquet.",
+    ),
+) -> None:
+    """Build scalar LOG_AGE stress features for interval capacity baselines."""
+    from mbp.data.products.stress_features import build_interval_stress_features
+
+    typer.echo(f"Building interval stress features from {interval_table}...")
+    table = build_interval_stress_features(interim_dir, interval_table, out)
+    typer.echo(f"Stress-feature table generated: {len(table)} rows written to {out}")
+
+
+@features_app.command("stress-qa")
+def features_stress_qa(
+    stress_features: Path = typer.Option(
+        ...,
+        "--stress-features",
+        help="Path to interval_stress_features_v1.parquet.",
+    ),
+    out: Path = typer.Option(
+        ...,
+        "--out",
+        help="Output JSON path for stress-feature QA report.",
+    ),
+    interval_table: Path | None = typer.Option(
+        None,
+        "--interval-table",
+        help="Optional interval table path. Defaults beside the stress-feature table.",
+    ),
+) -> None:
+    """Run QA checks on the scalar LOG_AGE stress-feature sidecar."""
+    from mbp.data.products.stress_features import run_stress_feature_qa
+
+    report = run_stress_feature_qa(
+        stress_features,
+        out,
+        interval_table_path=interval_table,
+    )
+    typer.echo(f"Stress-feature QA {report['status']}: wrote {out}")
+    if report["status"] == "failed":
+        raise typer.Exit(code=1)
+
+
 @split_app.command("generate")
 def split_generate(
     condition_table: Path = typer.Option(
@@ -692,6 +751,11 @@ def baseline_run_capacity(
         "--predictions-out",
         help="Output Parquet path for row-level predictions.",
     ),
+    stress_features: Path | None = typer.Option(
+        None,
+        "--stress-features",
+        help="Optional interval_stress_features_v1.parquet sidecar for F5-F7 groups.",
+    ),
     report_dir: Path | None = typer.Option(
         None,
         "--report-dir",
@@ -739,6 +803,7 @@ def baseline_run_capacity(
             interval_subsets,
             out,
             predictions_out,
+            stress_features_path=stress_features,
             report_dir=report_dir,
             subset=subset,
             seed=seed,
@@ -780,6 +845,36 @@ def baseline_diagnose_capacity(
 
     diagnose_capacity_report(report, out_dir, reference_report_path=reference_report)
     typer.echo(f"Capacity baseline diagnostics written to {out_dir}")
+
+
+@baseline_app.command("diagnose-stress-features")
+def baseline_diagnose_stress_features(
+    report: Path = typer.Option(
+        ...,
+        "--report",
+        help="Path to a stress-feature capacity baseline JSON report.",
+    ),
+    baseline_report: Path = typer.Option(
+        ...,
+        "--baseline-report",
+        help="Path to the HGB-50 F4 baseline report for stress-feature comparison.",
+    ),
+    l0_reference_report: Path = typer.Option(
+        ...,
+        "--l0-reference-report",
+        help="Path to a report containing L0_persistence reference rows.",
+    ),
+    out_dir: Path = typer.Option(
+        ...,
+        "--out-dir",
+        help="Directory for stress-feature diagnostics markdown and CSVs.",
+    ),
+) -> None:
+    """Generate Milestone 0.6 diagnostics for stress-feature capacity baselines."""
+    from mbp.baselines.capacity import diagnose_stress_feature_report
+
+    diagnose_stress_feature_report(report, baseline_report, l0_reference_report, out_dir)
+    typer.echo(f"Stress-feature diagnostics written to {out_dir}")
 
 
 def _comma_values(value: str) -> list[str]:

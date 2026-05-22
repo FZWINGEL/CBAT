@@ -1,8 +1,10 @@
 # Validation Protocol
 
-Milestone 0.5/0.5b/0.5c authorizes only scalar capacity baseline work on
+Milestone 0.5/0.5b/0.5c/0.6 authorizes only scalar capacity baseline work on
 interval features. Milestone 0.5b is review and robustness hardening. Milestone
-0.5c is synthesis and stress-feature decision work, not scope expansion.
+0.5c is synthesis and stress-feature decision work. Milestone 0.6 adds
+capacity-only LOG_AGE-derived scalar stress features; it is not a modality or
+architecture expansion.
 
 Required split discipline:
 
@@ -29,6 +31,12 @@ Allowed Milestone 0.5 feature groups:
 - `F2_state_exposure`
 - `F3_state_nominal`
 - `F4_state_log_age_scalar`
+
+Allowed Milestone 0.6 stress-feature groups:
+
+- `F5_log_age_histograms`
+- `F6_coupled_stress`
+- `F7_c_rate_focused`
 
 `F0_time_only` is intentionally weak. Non-persistence learned baselines must
 include prior check-up state through `capacity_Ah_k` in at least one state-aware
@@ -82,6 +90,31 @@ Missing references must be rendered explicitly as `reference_missing`; silent
 Milestone 0.5c claim-readiness summaries are allowed to recommend the next
 feature-engineering direction, but they do not authorize new modalities or
 advanced models.
+
+Milestone 0.6 stress-feature data products must remain modular sidecars keyed by
+`cell_id`, `checkup_k`, and `checkup_k_next`. The baseline runner may join them
+through `--stress-features`; the core interval table should remain stable.
+
+Target-derived stress diagnostics such as `delta_capacity_per_day`,
+`delta_capacity_per_efc`, and `delta_capacity_per_Ah_throughput` must not enter
+predictive feature groups because they encode the capacity target.
+
+Required Milestone 0.6 stress-feature artifacts:
+
+- `data/interim/interval_stress_features_v1.parquet` (ignored generated data)
+- `reports/audit/stress_feature_qa_report.json`
+- `reports/baselines/capacity_stress_features_hgb50_report.json`
+- `reports/baselines/capacity_stress_features_hgb50/stress_feature_diagnostics.md`
+- `reports/baselines/capacity_stress_features_hgb50/plots/stress_feature_gain_by_split.csv`
+- `reports/baselines/capacity_stress_features_hgb50/plots/c_rate_stress_feature_errors.csv`
+- `reports/baselines/capacity_stress_features_hgb50/plots/stress_feature_claim_readiness.csv`
+
+Milestone 0.6 success criterion:
+
+- improve C-rate `capacity_Ah_k1` condition-mean MAE below `0.125186`;
+- improve C-rate `delta_capacity_Ah` condition-mean MAE below `0.101133`;
+- avoid material degradation in `condition_fold` and
+  `temperature_holdout_fold`.
 
 Blocked until later milestones:
 

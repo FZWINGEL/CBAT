@@ -18,9 +18,11 @@ Schema version prefix: `gate1.audit.v1`
 | `split_registry_v1` | Implemented | `mbp.data.splitting` | condition table, deterministic seed, grouped parameter-set folds, voltage-window holdout |
 | `interval_table` | Implemented MVP | `mbp.data.products.interval_table` | joined inputs, split registry SHA-256, LOG_AGE row-group exposure scan, monotonicity report path, leakage checks |
 | `interval_subset_registry_v1` | Implemented | `mbp.data.products.interval_subsets` | interval table path, LOG_AGE monotonicity policy version, EFC jitter threshold, schema version |
+| `interval_stress_features_v1` | Implemented | `mbp.data.products.stress_features` | interval table path, LOG_AGE path, row-group stress scan, feature policy version, current-sign policy |
 | `capacity_baseline_predictions` | Implemented | `mbp.baselines.capacity` | interval table path, interval subset registry path, split view, subset, model level, feature group, schema version |
-| `capacity_baseline_report` | Implemented | `mbp.baselines.capacity` | interval table path, interval subset registry path, subset, model level, feature group, split view, strict/tolerant sensitivity scope |
+| `capacity_baseline_report` | Implemented | `mbp.baselines.capacity` | interval table path, interval subset registry path, optional stress-feature sidecar path, subset, model level, feature group, split view, strict/tolerant sensitivity scope |
 | `capacity_baseline_diagnostics` | Implemented | `mbp.baselines.capacity` | baseline report path, optional L0 reference report path, feature-gain diagnostics, best-by-target/split rows, C-rate holdout condition/grouped errors, claim-readiness memo, quantile metrics |
+| `stress_feature_diagnostics` | Implemented | `mbp.baselines.capacity` | stress-feature baseline report path, HGB-50 F4 baseline report path, L0 reference report path, C-rate success criteria |
 
 ## Gate 2/3 Schema Contracts
 
@@ -29,4 +31,5 @@ Schema version prefix: `gate1.audit.v1`
 - `INTERVAL_TABLE_SCHEMA` is one row per adjacent `checkup_event_table` transition. It includes condition metadata, split labels, prior/post capacity targets, LOG_AGE exposure summaries, masked diagnostic-row counts, monotonicity violation counts/drop magnitudes, `LOG_AGE_monotonicity_clean`, quality flags, and schema provenance.
 - `SPLIT_REGISTRY_SCHEMA` keeps replicates of each 76-parameter condition triplet grouped for headline validation and includes `voltage_window_holdout_fold`. The legacy `soc_window_holdout_fold` is retained as a compatibility alias populated from the corrected voltage-window semantics.
 - `INTERVAL_SUBSET_REGISTRY_SCHEMA` defines strict/tolerant clean interval labels, sensitivity flags, exclusion reasons, and the monotonicity policy version used for baseline readiness.
+- `INTERVAL_STRESS_FEATURES_SCHEMA` is a modular sidecar keyed by `cell_id`, `checkup_k`, and `checkup_k_next`. It contains LOG_AGE-derived scalar dwell, current, SOC, coupled-stress, and diagnostic normalized-rate fields. Target-derived normalized-rate fields are excluded from F5-F7 predictive feature groups.
 - `BASELINE_PREDICTION_SCHEMA` records row-level capacity predictions for the Milestone 0.5 baseline ladder. The JSON report aggregates metrics by held-out parameter-set condition; generated prediction Parquet remains ignored by default. The report renderer also emits leaderboard CSV, baseline summary markdown, evaluation-card JSON files, diagnostic markdown, C-rate error analysis, and plot-ready CSV tables.

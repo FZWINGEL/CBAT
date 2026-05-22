@@ -11,12 +11,11 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 0.5c: Capacity Baseline Synthesis and
-Stress-Feature Decision**. Gate 2b LOG_AGE integrity triage, Milestone 0.4
-baseline readiness, the first bounded Milestone 0.5 capacity baseline ladder,
-and Milestone 0.5b robustness diagnostics are complete. Milestone 0.5c keeps
-the project scoped to scalar interval capacity features while turning those
-diagnostics into a decision-ready synthesis.
+The repository is in **Milestone 0.6: LOG_AGE Stress-Feature Engineering v1**.
+Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
+bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
+diagnostics, and Milestone 0.5c synthesis are complete. Milestone 0.6 remains
+capacity-only and scalar-interval only.
 
 No EIS/PULSE supervised claims, sequence models, neural architecture, policy
 ranking, CBAT architecture, or EIS embedding work has been started.
@@ -45,6 +44,12 @@ Current state:
 - A Milestone 0.5c claim-readiness memo and synthesis note document that the
   next engineering direction should be stronger LOG_AGE-derived scalar stress
   features, not PULSE/EIS/CBAT expansion.
+- Milestone 0.6 stress-feature tooling is implemented with a modular sidecar
+  table, QA report, baseline join path, F5-F7 feature groups, and focused
+  HGB-50 stress-feature diagnostics.
+- The first non-target-derived stress-feature run produced a mixed result:
+  `capacity_Ah_k1` C-rate holdout improved slightly, but `delta_capacity_Ah`
+  C-rate holdout degraded versus the HGB-50 F4 baseline.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -74,6 +79,7 @@ Small audit sidecars that are referenced by documentation are tracked:
 - `reports/audit/interval_subset_report.json`
 - `reports/audit/log_age_monotonicity_summary.csv`
 - `reports/audit/split_registry_report.json`
+- `reports/audit/stress_feature_qa_report.json`
 
 The large Parquet outputs remain local generated artifacts:
 
@@ -84,6 +90,7 @@ The large Parquet outputs remain local generated artifacts:
 | `data/interim/interval_table.parquet` | 3,827 | ignored |
 | `data/splits/split_registry_v1.parquet` | 228 | ignored |
 | `data/splits/interval_subset_registry_v1.parquet` | 3,827 | ignored |
+| `data/interim/interval_stress_features_v1.parquet` | 3,827 | ignored |
 | `reports/audit/raw_log_archive_inventory.parquet` | 541 | ignored |
 
 Milestone 0.5 generated predictions are also ignored by default:
@@ -93,6 +100,7 @@ Milestone 0.5 generated predictions are also ignored by default:
 - `data/processed/capacity_l0_l3_predictions.parquet`
 - `data/processed/capacity_l1_scaled_predictions.parquet`
 - `data/processed/capacity_hgb50_focused_predictions.parquet`
+- `data/processed/capacity_stress_features_hgb50_predictions.parquet`
 
 Milestone 0.5 small report artifacts under `reports/baselines/` are trackable:
 
@@ -405,6 +413,68 @@ Milestone 0.5c decision:
 - The recommended next milestone is LOG_AGE-derived scalar stress-feature
   engineering focused on C-rate generalization.
 
+### Milestone 0.6
+
+Milestone 0.6 stress-feature tooling is implemented:
+
+- CLI: `mbp features build-stress`
+- CLI: `mbp features stress-qa`
+- CLI: `mbp baseline diagnose-stress-features`
+- Sidecar schema: `INTERVAL_STRESS_FEATURES_SCHEMA`
+- Sidecar table: `data/interim/interval_stress_features_v1.parquet` (`ignored`)
+- QA report: `reports/audit/stress_feature_qa_report.json`
+- Baseline join option: `mbp baseline run-capacity --stress-features ...`
+- Feature groups:
+  - `F5_log_age_histograms`
+  - `F6_coupled_stress`
+  - `F7_c_rate_focused`
+
+Stress-feature QA passed:
+
+- Rows: `3,827`
+- Unique cells: `228`
+- Unique parameter sets: `76`
+- Intervals missing stress features: `0`
+- Dwell-bin duration consistency failures: `0`
+- Negative nonnegative-feature counts: `0`
+- Current-sign policy: `positive_current_charge_provisional_abs_current_primary`
+- Sign-dependent features remain provisional because the current sign convention
+  is not yet independently confirmed.
+
+Target-derived diagnostic rates are excluded from F5-F7 predictive feature
+groups:
+
+- `delta_capacity_per_day`
+- `delta_capacity_per_efc`
+- `delta_capacity_per_Ah_throughput`
+
+Focused stress-feature HGB-50 run:
+
+- Report: `reports/baselines/capacity_stress_features_hgb50_report.json`
+- Metric rows: `440`
+- `hgb_max_iter`: `50`
+- Feature groups: `F3`, `F4`, `F5`, `F6`, `F7`
+- Split views: C-rate, condition, temperature, voltage-window
+
+Milestone 0.6 success-criterion result:
+
+| Target | HGB-50 F4 baseline | Best non-target-derived stress row | Gain | Status |
+|---|---:|---:|---:|---|
+| `capacity_Ah_k1` C-rate | `0.125186` | `0.124656` (`F6_coupled_stress`) | `0.000530` | marginal pass |
+| `delta_capacity_Ah` C-rate | `0.101133` | `0.110260` (`F5_log_age_histograms`) | `-0.009128` | fail |
+
+Stress features did not materially degrade condition-fold or
+temperature-holdout performance, but the C-rate success criterion is only
+partially met. The result does **not** support a broad claim that stress
+features improve C-rate generalization yet.
+
+Milestone 0.6 decision:
+
+- Keep PULSE/EIS/CBAT blocked.
+- Do not claim stress-feature improvement from v1.
+- Review stress-feature formulation, current-sign convention, and event
+  segmentation before expanding scope.
+
 ## Important Implementation Notes
 
 The interval builder preserves result-table timestamps in the public schema, but
@@ -458,18 +528,21 @@ PYTHONDONTWRITEBYTECODE=1 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/ruff check . --no
 All checks passed.
 
 PYTHONDONTWRITEBYTECODE=1 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/pytest -p no:cacheprovider
-77 passed, 1 warning.
+82 passed, 1 warning.
 ```
 
 The one warning is the existing `datetime.utcnow()` deprecation warning in
-`src/mbp/data/luh_blank/qa_result_data.py`; it is not a Milestone 0.5
+`src/mbp/data/luh_blank/qa_result_data.py`; it is not a Milestone 0.6
 correctness failure.
 
 ## Recommended Next Step
 
-Start **Milestone 0.6: LOG_AGE Stress-Feature Engineering v1**.
+Review **Milestone 0.6 LOG_AGE Stress-Feature Engineering v1** before adding new
+modalities. The next bounded work should be stress-feature v1.1 hardening:
 
-The first Milestone 0.6 success criterion should be improved C-rate holdout
-condition-mean MAE over the current HGB-50 `F4_state_log_age_scalar` baseline
-without degrading condition-fold and temperature-fold performance. Keep the
-scope capacity-only and scalar-interval only.
+- confirm current sign convention;
+- remove or separately label any target-derived diagnostic fields;
+- inspect whether interval-level dwell histograms need event segmentation rather
+  than count-weighted dwell;
+- compare stress-feature gains by target and split before making any
+  paper-facing claim.
