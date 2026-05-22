@@ -20,6 +20,18 @@ Allowed Milestone 0.5 targets:
 - `capacity_Ah_k1`
 - `delta_capacity_Ah`
 
+Allowed Milestone 0.5 feature groups:
+
+- `F0_time_only`
+- `F1_state_time`
+- `F2_state_exposure`
+- `F3_state_nominal`
+- `F4_state_log_age_scalar`
+
+`F0_time_only` is intentionally weak. Non-persistence learned baselines must
+include prior check-up state through `capacity_Ah_k` in at least one state-aware
+feature group.
+
 Allowed Milestone 0.5 split views:
 
 - `condition_fold`
@@ -27,6 +39,15 @@ Allowed Milestone 0.5 split views:
 - `c_rate_holdout_fold`
 - `profile_holdout_fold`
 - `voltage_window_holdout_fold`
+
+Required Milestone 0.5 report artifacts:
+
+- `leaderboard.csv`
+- `baseline_summary.md`
+- `evaluation_cards/*.json`
+- `plots/mae_by_model_and_feature.csv`
+- `plots/worst_condition_errors.csv`
+- `plots/strict_vs_tolerant_delta.csv`
 
 Blocked until later milestones:
 

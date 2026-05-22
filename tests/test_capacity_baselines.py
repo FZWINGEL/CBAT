@@ -11,10 +11,13 @@ import pytest
 import mbp.baselines.capacity as capacity_module
 from mbp.baselines.capacity import BASELINE_PREDICTION_SCHEMA
 from mbp.baselines.capacity import DIAGNOSTIC_LEAKAGE_FIELDS
+from mbp.baselines.capacity import FEATURE_GROUPS
 from mbp.baselines.capacity import FeatureEncoder
+from mbp.baselines.capacity import NUMERIC_FEATURES
 from mbp.baselines.capacity import assert_no_parameter_set_leakage
 from mbp.baselines.capacity import compute_metrics
 from mbp.baselines.capacity import load_baseline_rows
+from mbp.baselines.capacity import predict_capacity_target
 from mbp.baselines.capacity import run_capacity_baselines
 from mbp.data.schema_contracts import INTERVAL_SUBSET_REGISTRY_SCHEMA, INTERVAL_TABLE_SCHEMA
 
@@ -153,6 +156,15 @@ def test_capacity_baseline_l0_writes_report_and_predictions(tmp_path: Path) -> N
     prediction_table = pq.read_table(predictions_path)
     assert prediction_table.schema == BASELINE_PREDICTION_SCHEMA
     assert prediction_table.num_rows > 0
+    report_dir = tmp_path / "capacity_baseline"
+    assert (report_dir / "leaderboard.csv").exists()
+    assert (report_dir / "baseline_summary.md").exists()
+    assert (report_dir / "plots" / "strict_vs_tolerant_delta.csv").exists()
+    assert any((report_dir / "evaluation_cards").glob("*.json"))
+    assert {metric["run_scope"] for metric in report["metrics"]} == {
+        "primary",
+        "sensitivity_excluding_monotonicity",
+    }
 
 
 def test_capacity_baseline_cli_runs_l0_on_synthetic_fixture(tmp_path: Path) -> None:
@@ -209,6 +221,37 @@ def test_capacity_baseline_l1_l3_dependency_error_is_actionable(
         )
 
 
+def test_state_feature_groups_include_prior_capacity() -> None:
+    assert "capacity_Ah_k" not in NUMERIC_FEATURES["F0_time_only"]
+    state_groups = [group for group in FEATURE_GROUPS if group != "F0_time_only"]
+    assert state_groups
+    assert all("capacity_Ah_k" in NUMERIC_FEATURES[group] for group in state_groups)
+
+
+def test_persistence_predictions_use_prior_capacity_and_zero_delta() -> None:
+    rows = [{"capacity_Ah_k": 2.75, "capacity_Ah_k1": 2.5, "delta_capacity_Ah": -0.25}]
+
+    next_capacity = predict_capacity_target(
+        model_level="L0_persistence",
+        feature_group="persistence",
+        train_rows=[],
+        test_rows=rows,
+        target="capacity_Ah_k1",
+        seed=42,
+    )
+    delta = predict_capacity_target(
+        model_level="L0_persistence",
+        feature_group="persistence",
+        train_rows=[],
+        test_rows=rows,
+        target="delta_capacity_Ah",
+        seed=42,
+    )
+
+    assert next_capacity[0]["y_pred"] == 2.75
+    assert delta[0]["y_pred"] == 0.0
+
+
 def test_capacity_baseline_requires_existing_subset_registry(tmp_path: Path) -> None:
     interval_path, _ = _write_capacity_fixture(tmp_path)
 
@@ -235,7 +278,7 @@ def test_feature_groups_exclude_inserted_diagnostics(tmp_path: Path) -> None:
     interval_path, subset_path = _write_capacity_fixture(tmp_path)
     _, rows = load_baseline_rows(interval_path, subset_path, "baseline_clean_tolerant")
 
-    for feature_group in ("F0_time_only", "F1_time_efc", "F2_nominal_protocol", "F3_log_age_scalar"):
+    for feature_group in FEATURE_GROUPS:
         encoder = FeatureEncoder.fit(rows, feature_group)
         assert not (set(encoder.output_columns) & DIAGNOSTIC_LEAKAGE_FIELDS)
 

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
+import csv
 from dataclasses import dataclass
 from datetime import UTC, datetime
 import json
@@ -13,6 +15,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 SCHEMA_VERSION = "gate5.capacity_baseline.v1"
+DEFAULT_HGB_MAX_ITER = 10
 
 TARGETS = ("capacity_Ah_k1", "delta_capacity_Ah")
 SPLIT_COLUMNS = (
@@ -29,20 +32,29 @@ MODEL_LEVELS = (
     "L2_hist_gradient_boosting",
     "L3_quantile_hist_gradient_boosting",
 )
-FEATURE_GROUPS = ("F0_time_only", "F1_time_efc", "F2_nominal_protocol", "F3_log_age_scalar")
+FEATURE_GROUPS = (
+    "F0_time_only",
+    "F1_state_time",
+    "F2_state_exposure",
+    "F3_state_nominal",
+    "F4_state_log_age_scalar",
+)
 
 DIAGNOSTIC_LEAKAGE_FIELDS = {"cap_aged_est_Ah", "R0_mOhm", "R1_mOhm"}
 
 NUMERIC_FEATURES: dict[str, tuple[str, ...]] = {
     "F0_time_only": ("duration_h", "calendar_days", "checkup_k"),
-    "F1_time_efc": (
+    "F1_state_time": ("capacity_Ah_k", "duration_h", "calendar_days", "checkup_k"),
+    "F2_state_exposure": (
+        "capacity_Ah_k",
         "duration_h",
         "calendar_days",
         "checkup_k",
         "log_age_efc_delta",
         "log_age_delta_q_Ah",
     ),
-    "F2_nominal_protocol": (
+    "F3_state_nominal": (
+        "capacity_Ah_k",
         "duration_h",
         "calendar_days",
         "checkup_k",
@@ -52,7 +64,8 @@ NUMERIC_FEATURES: dict[str, tuple[str, ...]] = {
         "nominal_charge_C_rate",
         "nominal_discharge_C_rate",
     ),
-    "F3_log_age_scalar": (
+    "F4_state_log_age_scalar": (
+        "capacity_Ah_k",
         "duration_h",
         "calendar_days",
         "checkup_k",
@@ -78,9 +91,10 @@ NUMERIC_FEATURES: dict[str, tuple[str, ...]] = {
 
 CATEGORICAL_FEATURES: dict[str, tuple[str, ...]] = {
     "F0_time_only": (),
-    "F1_time_efc": (),
-    "F2_nominal_protocol": ("aging_mode", "voltage_window_family"),
-    "F3_log_age_scalar": ("aging_mode", "voltage_window_family"),
+    "F1_state_time": (),
+    "F2_state_exposure": (),
+    "F3_state_nominal": ("aging_mode", "voltage_window_family"),
+    "F4_state_log_age_scalar": ("aging_mode", "voltage_window_family"),
 }
 
 BASELINE_PREDICTION_SCHEMA = pa.schema(
@@ -176,12 +190,16 @@ def run_capacity_baselines(
     interval_subsets_path: Path,
     out_path: Path,
     predictions_out_path: Path,
+    report_dir: Path | None = None,
     subset: str = "baseline_clean_tolerant",
     seed: int = 42,
+    hgb_max_iter: int = DEFAULT_HGB_MAX_ITER,
     model_levels: list[str] | None = None,
     feature_groups: list[str] | None = None,
 ) -> dict[str, Any]:
     """Run the L0-L3 capacity baseline ladder and write report/predictions."""
+    if hgb_max_iter <= 0:
+        raise ValueError("hgb_max_iter must be positive.")
     selected_models = _normalize_selection(model_levels, MODEL_LEVELS, "model level")
     selected_feature_groups = _normalize_selection(feature_groups, FEATURE_GROUPS, "feature group")
     _preflight_model_dependencies(selected_models)
@@ -217,6 +235,7 @@ def run_capacity_baselines(
                                 test_rows=test_rows,
                                 target=target,
                                 seed=seed,
+                                hgb_max_iter=hgb_max_iter,
                             )
                             metrics.append(
                                 compute_metrics(
@@ -249,6 +268,7 @@ def run_capacity_baselines(
     if not metrics:
         raise ValueError("No baseline metrics were generated.")
 
+    resolved_report_dir = report_dir or _default_report_dir(out_path)
     predictions_out_path.parent.mkdir(parents=True, exist_ok=True)
     prediction_table = pa.Table.from_pylist(predictions, schema=BASELINE_PREDICTION_SCHEMA)
     pq.write_table(
@@ -273,8 +293,10 @@ def run_capacity_baselines(
         "outputs": {
             "report": str(out_path),
             "predictions": str(predictions_out_path),
+            "report_dir": str(resolved_report_dir),
         },
         "seed": seed,
+        "hgb_max_iter": hgb_max_iter,
         "subset": subset,
         "targets": list(TARGETS),
         "model_levels": selected_models,
@@ -285,7 +307,26 @@ def run_capacity_baselines(
     }
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    render_capacity_report_artifacts(report, resolved_report_dir)
     return report
+
+
+def render_capacity_report_artifacts(report: dict[str, Any], report_dir: Path) -> None:
+    """Render human-readable baseline summaries from the metrics JSON."""
+    report_dir.mkdir(parents=True, exist_ok=True)
+    cards_dir = report_dir / "evaluation_cards"
+    plots_dir = report_dir / "plots"
+    cards_dir.mkdir(parents=True, exist_ok=True)
+    plots_dir.mkdir(parents=True, exist_ok=True)
+
+    metrics = list(report["metrics"])
+    leaderboard_rows = _leaderboard_rows(metrics)
+    _write_csv(report_dir / "leaderboard.csv", leaderboard_rows)
+    _write_csv(plots_dir / "mae_by_model_and_feature.csv", leaderboard_rows)
+    _write_csv(plots_dir / "worst_condition_errors.csv", _worst_condition_rows(metrics))
+    _write_csv(plots_dir / "strict_vs_tolerant_delta.csv", _sensitivity_delta_rows(metrics))
+    _write_evaluation_cards(metrics, cards_dir, report)
+    _write_baseline_summary(report, leaderboard_rows, report_dir / "baseline_summary.md")
 
 
 def load_baseline_rows(
@@ -385,6 +426,7 @@ def predict_capacity_target(
     test_rows: list[dict[str, Any]],
     target: str,
     seed: int,
+    hgb_max_iter: int = DEFAULT_HGB_MAX_ITER,
 ) -> list[dict[str, float | None]]:
     """Fit/predict one target for one model and feature group."""
     if target not in TARGETS:
@@ -405,7 +447,7 @@ def predict_capacity_target(
         return [_point_prediction(float(value)) for value in values]
 
     if model_level == "L2_hist_gradient_boosting":
-        model = HistGradientBoostingRegressor(random_state=seed, max_iter=100)
+        model = HistGradientBoostingRegressor(random_state=seed, max_iter=hgb_max_iter)
         model.fit(x_train, y_train)
         values = model.predict(x_test)
         return [_point_prediction(float(value)) for value in values]
@@ -417,7 +459,7 @@ def predict_capacity_target(
                 loss="quantile",
                 quantile=quantile,
                 random_state=seed,
-                max_iter=100,
+                max_iter=hgb_max_iter,
             )
             model.fit(x_train, y_train)
             quantile_predictions[quantile] = model.predict(x_test)
@@ -479,6 +521,226 @@ def compute_metrics(
         "condition_median_mae": _median(condition_mae),
         "worst_condition_mae": max(condition_mae),
     }
+
+
+def _leaderboard_rows(metrics: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    grouped: dict[tuple[str, str, str, str, str], list[dict[str, Any]]] = defaultdict(list)
+    for metric in metrics:
+        key = (
+            str(metric["run_scope"]),
+            str(metric["model_level"]),
+            str(metric["feature_group"]),
+            str(metric["target"]),
+            str(metric["split_name"]),
+        )
+        grouped[key].append(metric)
+
+    rows: list[dict[str, Any]] = []
+    for key, group in sorted(grouped.items()):
+        run_scope, model_level, feature_group, target, split_name = key
+        rows.append(
+            {
+                "run_scope": run_scope,
+                "model_level": model_level,
+                "feature_group": feature_group,
+                "target": target,
+                "split_name": split_name,
+                "fold_count": len(group),
+                "mean_mae": _mean([float(item["mae"]) for item in group]),
+                "mean_rmse": _mean([float(item["rmse"]) for item in group]),
+                "condition_mean_mae": _mean(
+                    [float(item["condition_mean_mae"]) for item in group]
+                ),
+                "condition_median_mae": _mean(
+                    [float(item["condition_median_mae"]) for item in group]
+                ),
+                "worst_condition_mae": max(float(item["worst_condition_mae"]) for item in group),
+                "test_rows": sum(int(item["test_rows"]) for item in group),
+                "test_parameter_sets": sum(int(item["test_parameter_sets"]) for item in group),
+            }
+        )
+    return rows
+
+
+def _worst_condition_rows(metrics: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "run_scope": metric["run_scope"],
+            "model_level": metric["model_level"],
+            "feature_group": metric["feature_group"],
+            "target": metric["target"],
+            "split_name": metric["split_name"],
+            "heldout_fold": metric["heldout_fold"],
+            "worst_condition_mae": metric["worst_condition_mae"],
+            "condition_mean_mae": metric["condition_mean_mae"],
+            "condition_median_mae": metric["condition_median_mae"],
+            "test_parameter_sets": metric["test_parameter_sets"],
+        }
+        for metric in metrics
+    ]
+
+
+def _sensitivity_delta_rows(metrics: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    by_key: dict[tuple[str, str, str, str, int], dict[str, dict[str, Any]]] = defaultdict(dict)
+    for metric in metrics:
+        key = (
+            str(metric["model_level"]),
+            str(metric["feature_group"]),
+            str(metric["target"]),
+            str(metric["split_name"]),
+            int(metric["heldout_fold"]),
+        )
+        by_key[key][str(metric["run_scope"])] = metric
+
+    rows: list[dict[str, Any]] = []
+    for key, group in sorted(by_key.items()):
+        primary = group.get("primary")
+        sensitivity = group.get("sensitivity_excluding_monotonicity")
+        if not primary or not sensitivity:
+            continue
+        model_level, feature_group, target, split_name, heldout_fold = key
+        rows.append(
+            {
+                "model_level": model_level,
+                "feature_group": feature_group,
+                "target": target,
+                "split_name": split_name,
+                "heldout_fold": heldout_fold,
+                "primary_mae": primary["mae"],
+                "sensitivity_mae": sensitivity["mae"],
+                "primary_minus_sensitivity_mae": float(primary["mae"])
+                - float(sensitivity["mae"]),
+                "primary_condition_mean_mae": primary["condition_mean_mae"],
+                "sensitivity_condition_mean_mae": sensitivity["condition_mean_mae"],
+                "primary_minus_sensitivity_condition_mean_mae": float(
+                    primary["condition_mean_mae"]
+                )
+                - float(sensitivity["condition_mean_mae"]),
+            }
+        )
+    return rows
+
+
+def _write_evaluation_cards(
+    metrics: list[dict[str, Any]],
+    cards_dir: Path,
+    report: dict[str, Any],
+) -> None:
+    grouped: dict[tuple[str, str, str, str], list[dict[str, Any]]] = defaultdict(list)
+    for metric in metrics:
+        key = (
+            str(metric["model_level"]),
+            str(metric["feature_group"]),
+            str(metric["target"]),
+            str(metric["split_name"]),
+        )
+        grouped[key].append(metric)
+
+    for key, group in sorted(grouped.items()):
+        model_level, feature_group, target, split_name = key
+        primary = [item for item in group if item["run_scope"] == "primary"]
+        sensitivity = [
+            item for item in group if item["run_scope"] == "sensitivity_excluding_monotonicity"
+        ]
+        card = {
+            "schema_version": SCHEMA_VERSION,
+            "model_level": model_level,
+            "feature_group": feature_group,
+            "target": target,
+            "split_name": split_name,
+            "row_counts": report["row_counts"],
+            "primary_summary": _metric_summary(primary),
+            "sensitivity_excluding_monotonicity_summary": _metric_summary(sensitivity),
+            "fold_metrics": group,
+        }
+        filename = "__".join(_slug(part) for part in key) + ".json"
+        (cards_dir / filename).write_text(
+            json.dumps(card, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+
+
+def _metric_summary(metrics: list[dict[str, Any]]) -> dict[str, Any]:
+    if not metrics:
+        return {}
+    return {
+        "fold_count": len(metrics),
+        "mean_mae": _mean([float(item["mae"]) for item in metrics]),
+        "mean_rmse": _mean([float(item["rmse"]) for item in metrics]),
+        "condition_mean_mae": _mean([float(item["condition_mean_mae"]) for item in metrics]),
+        "condition_median_mae": _mean(
+            [float(item["condition_median_mae"]) for item in metrics]
+        ),
+        "worst_condition_mae": max(float(item["worst_condition_mae"]) for item in metrics),
+    }
+
+
+def _write_baseline_summary(
+    report: dict[str, Any],
+    leaderboard_rows: list[dict[str, Any]],
+    path: Path,
+) -> None:
+    row_counts = report["row_counts"]
+    primary_rows = [row for row in leaderboard_rows if row["run_scope"] == "primary"]
+    best_rows = sorted(primary_rows, key=lambda row: float(row["condition_mean_mae"]))[:10]
+    lines = [
+        "# Capacity Baseline Summary",
+        "",
+        f"Schema version: `{report['schema_version']}`",
+        f"Generated at UTC: `{report['generated_at_utc']}`",
+        f"Primary subset: `{report['subset']}`",
+        "",
+        "## Row Counts",
+        "",
+        "| Count | Value |",
+        "|---|---:|",
+    ]
+    for key, value in row_counts.items():
+        lines.append(f"| `{key}` | {value} |")
+
+    lines.extend(
+        [
+            "",
+            "## Best Primary Rows",
+            "",
+            "| Model | Feature group | Target | Split | Condition mean MAE | Worst condition MAE |",
+            "|---|---|---|---|---:|---:|",
+        ]
+    )
+    for row in best_rows:
+        lines.append(
+            "| "
+            f"`{row['model_level']}` | `{row['feature_group']}` | `{row['target']}` | "
+            f"`{row['split_name']}` | {float(row['condition_mean_mae']):.6g} | "
+            f"{float(row['worst_condition_mae']):.6g} |"
+        )
+
+    lines.extend(
+        [
+            "",
+            "## Artifacts",
+            "",
+            "- `leaderboard.csv`",
+            "- `evaluation_cards/*.json`",
+            "- `plots/mae_by_model_and_feature.csv`",
+            "- `plots/worst_condition_errors.csv`",
+            "- `plots/strict_vs_tolerant_delta.csv`",
+            "",
+        ]
+    )
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if not rows:
+        path.write_text("", encoding="utf-8")
+        return
+    fieldnames = list(rows[0].keys())
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
 
 
 def _prediction_rows(
@@ -591,6 +853,23 @@ def _persistence_prediction(row: dict[str, Any], target: str) -> dict[str, float
 
 def _point_prediction(value: float) -> dict[str, float | None]:
     return {"y_pred": value, "y_pred_q10": None, "y_pred_q50": None, "y_pred_q90": None}
+
+
+def _default_report_dir(out_path: Path) -> Path:
+    stem = out_path.stem
+    if stem.endswith("_report"):
+        stem = stem[: -len("_report")]
+    return out_path.with_name(stem)
+
+
+def _slug(value: str) -> str:
+    return (
+        value.replace("/", "_")
+        .replace("\\", "_")
+        .replace(" ", "_")
+        .replace("=", "-")
+        .replace(".", "p")
+    )
 
 
 def _interval_key(row: dict[str, Any]) -> tuple[str, int, int]:

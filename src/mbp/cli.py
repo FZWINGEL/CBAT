@@ -692,19 +692,30 @@ def baseline_run_capacity(
         "--predictions-out",
         help="Output Parquet path for row-level predictions.",
     ),
+    report_dir: Path | None = typer.Option(
+        None,
+        "--report-dir",
+        help="Optional directory for leaderboard, summary, cards, and plot CSVs.",
+    ),
     subset: str = typer.Option(
         "baseline_clean_tolerant",
         "--subset",
         help="Interval subset flag to use as the primary baseline population.",
     ),
     seed: int = typer.Option(42, "--seed", help="Deterministic model seed."),
+    hgb_max_iter: int = typer.Option(
+        10,
+        "--hgb-max-iter",
+        min=1,
+        help="Maximum iterations for HistGradientBoosting baseline models.",
+    ),
     model_levels: str = typer.Option(
         "L0_persistence,L1_ridge,L2_hist_gradient_boosting,L3_quantile_hist_gradient_boosting",
         "--model-levels",
         help="Comma-separated model levels to run.",
     ),
     feature_groups: str = typer.Option(
-        "F0_time_only,F1_time_efc,F2_nominal_protocol,F3_log_age_scalar",
+        "F0_time_only,F1_state_time,F2_state_exposure,F3_state_nominal,F4_state_log_age_scalar",
         "--feature-groups",
         help="Comma-separated feature groups for L1-L3 models.",
     ),
@@ -718,8 +729,10 @@ def baseline_run_capacity(
             interval_subsets,
             out,
             predictions_out,
+            report_dir=report_dir,
             subset=subset,
             seed=seed,
+            hgb_max_iter=hgb_max_iter,
             model_levels=_comma_values(model_levels),
             feature_groups=_comma_values(feature_groups),
         )

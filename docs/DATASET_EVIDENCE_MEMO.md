@@ -90,7 +90,7 @@ Inserted LOG_AGE diagnostics (`cap_aged_est_Ah`, `R0_mOhm`, `R1_mOhm`) are activ
 | Interval subset registry | `passed` | `2,773` strict-clean; `3,827` tolerant-clean; threshold `0.00025` EFC |
 | Raw LOG archive inventory | `generated` | `541` archive members inventoried; sampled header available `True` |
 
-Gate 2b classifies the LOG_AGE monotonicity issue as small EFC decreases in the reduced table and propagates affected rows into interval quality flags. Milestone 0.4 defines strict and tolerant clean subsets; Milestone 0.5 baseline tooling must consume the interval subset registry and report sensitivity excluding monotonicity-flagged intervals.
+Gate 2b classifies the LOG_AGE monotonicity issue as small EFC decreases in the reduced table and propagates affected rows into interval quality flags. Milestone 0.4 defines strict and tolerant clean subsets; Milestone 0.5 baseline tooling must consume the interval subset registry, include prior check-up capacity state for learned baselines, and report sensitivity excluding monotonicity-flagged intervals.
 
 ---
 

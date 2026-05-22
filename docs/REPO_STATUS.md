@@ -33,6 +33,11 @@ Current state:
   optional extras only.
 - `mbp baseline run-capacity` implements the first L0-L3 capacity baseline
   runner and is gated by `interval_subset_registry_v1.parquet`.
+- The dependency-free real-data L0 persistence smoke run completed and emitted
+  trackable report artifacts under `reports/baselines/capacity_l0_smoke/`.
+- The full real-data L0-L3 ladder has not completed yet; initial attempts were
+  stopped after running too long for an interactive session.
+- Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
 
@@ -67,6 +72,16 @@ The large Parquet outputs remain local generated artifacts:
 Milestone 0.5 generated predictions are also ignored by default:
 
 - `data/processed/capacity_baseline_predictions.parquet`
+- `data/processed/capacity_l0_smoke_predictions.parquet`
+- `data/processed/capacity_l0_l3_predictions.parquet`
+
+Milestone 0.5 small report artifacts under `reports/baselines/` are trackable:
+
+- baseline metrics JSON
+- `leaderboard.csv`
+- `baseline_summary.md`
+- `evaluation_cards/*.json`
+- plot-ready CSV summaries
 
 ## Gate Status
 
@@ -208,18 +223,53 @@ Implemented model levels:
 - `L3_quantile_hist_gradient_boosting`
 
 `L0_persistence` is dependency-free. L1-L3 require the optional baseline extra
-(`uv sync --extra baseline`) because the current local `.venv` does not include
-`numpy`, `pandas`, or `scikit-learn`.
+(`uv sync --extra baseline`). The current local `.venv` was restored with
+`uv sync --extra dev --extra baseline`, so both validation tooling and baseline
+dependencies are available in this working environment.
 
 Implemented feature groups:
 
 - `F0_time_only`
-- `F1_time_efc`
-- `F2_nominal_protocol`
-- `F3_log_age_scalar`
+- `F1_state_time`
+- `F2_state_exposure`
+- `F3_state_nominal`
+- `F4_state_log_age_scalar`
 
 Inserted LOG_AGE diagnostics (`cap_aged_est_Ah`, `R0_mOhm`, `R1_mOhm`) are not
-eligible baseline features.
+eligible baseline features. `F0_time_only` remains a deliberately weak sanity
+feature set; learned non-persistence state-aware feature groups include
+`capacity_Ah_k`.
+
+Milestone 0.5 report rendering emits:
+
+- `leaderboard.csv`
+- `baseline_summary.md`
+- `evaluation_cards/*.json`
+- `plots/mae_by_model_and_feature.csv`
+- `plots/worst_condition_errors.csv`
+- `plots/strict_vs_tolerant_delta.csv`
+
+Completed Milestone 0.5 experiment artifacts:
+
+- `docs/experiments/2026-05-22_capacity_baseline_ladder.md`
+- `reports/baselines/capacity_l0_smoke_report.json`
+- `reports/baselines/capacity_l0_smoke/leaderboard.csv`
+- `reports/baselines/capacity_l0_smoke/baseline_summary.md`
+- `reports/baselines/capacity_l0_smoke/evaluation_cards/*.json`
+- `reports/baselines/capacity_l0_smoke/plots/*.csv`
+
+The L0 smoke report produced `48` metric rows on the real interval table. It
+confirmed `3,827` tolerant-clean rows, `2,773` strict-clean rows, and `1,054`
+monotonicity-flagged sensitivity intervals.
+
+Pending Milestone 0.5 artifact:
+
+- `reports/baselines/capacity_l0_l3_report.json`
+
+The first full L0-L3 attempts were stopped before completion. The next full
+run should be bounded explicitly, either by running one split/model family at a
+time or by adding a quick/full execution mode before attempting another
+unattended full ladder.
 
 ## Important Implementation Notes
 
@@ -272,7 +322,7 @@ UV_CACHE_DIR=/tmp/uv-cache .venv/bin/ruff check .
 All checks passed.
 
 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/pytest
-67 passed, 1 warning.
+69 passed, 1 warning.
 ```
 
 The one warning is the existing `datetime.utcnow()` deprecation warning in
@@ -281,16 +331,20 @@ correctness failure.
 
 ## Recommended Next Step
 
-Install the optional baseline extra and run the real-data capacity baseline
-ladder:
+The optional baseline extra is installed in the current local `.venv`. The next
+step is to make the full real-data L0-L3 run operationally bounded, then rerun
+the capacity ladder:
 
 ```text
-UV_CACHE_DIR=/tmp/uv-cache uv sync --extra baseline
+UV_CACHE_DIR=/tmp/uv-cache .venv/bin/python -m uv sync --extra dev --extra baseline
 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/mbp baseline run-capacity \
   --interval-table data/interim/interval_table.parquet \
   --interval-subsets data/splits/interval_subset_registry_v1.parquet \
-  --out reports/baselines/capacity_baseline_report.json \
-  --predictions-out data/processed/capacity_baseline_predictions.parquet
+  --out reports/baselines/capacity_l0_l3_report.json \
+  --predictions-out data/processed/capacity_l0_l3_predictions.parquet \
+  --hgb-max-iter 5
 ```
 
 Keep the first report limited to capacity targets and scalar interval features.
+Do not leave long-running baseline terminals active; document any run outcome
+under `docs/experiments/`.

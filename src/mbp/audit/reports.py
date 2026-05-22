@@ -288,7 +288,7 @@ def render_evidence_memo(
                     f"sampled header available `{raw_log_report.get('sampled_header_available', 'N/A')}` |"
                 ),
                 "",
-                "Gate 2b classifies the LOG_AGE monotonicity issue as small EFC decreases in the reduced table and propagates affected rows into interval quality flags. Milestone 0.4 defines strict and tolerant clean subsets; Milestone 0.5 baseline tooling must consume the interval subset registry and report sensitivity excluding monotonicity-flagged intervals.",
+                "Gate 2b classifies the LOG_AGE monotonicity issue as small EFC decreases in the reduced table and propagates affected rows into interval quality flags. Milestone 0.4 defines strict and tolerant clean subsets; Milestone 0.5 baseline tooling must consume the interval subset registry, include prior check-up capacity state for learned baselines, and report sensitivity excluding monotonicity-flagged intervals.",
             ]
         )
 

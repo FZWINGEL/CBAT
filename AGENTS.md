@@ -32,18 +32,21 @@ Current state:
 
 Allowed work:
 - small tests with synthetic fixtures
+- capacity-only baseline runner execution
+- capacity-baseline report hardening
 - capacity targets: `capacity_Ah_k1` and `delta_capacity_Ah`
-- scalar interval feature baselines using time, EFC/Ah, nominal protocol, and
-  LOG_AGE summary features
+- scalar interval features
 - condition-level grouped validation
 - strict/tolerant interval subset sensitivity reporting
+- baseline evaluation cards / leaderboard summaries
 - documentation/evidence memo updates
 
 Forbidden work:
-- EIS or PULSE supervised claims
+- EIS/PULSE modeling
+- knee prediction
 - sequence models
-- CBAT architecture
 - neural models
+- CBAT architecture
 - policy ranking
 - EIS embeddings
 
@@ -60,6 +63,9 @@ Forbidden work:
 - Update `docs/REPO_STATUS.md` whenever significant repo state changes happen:
   new gates completed, validation status changes, major artifacts are created,
   blockers are resolved or introduced, or the recommended next step changes.
+- Document experiments, findings, and decisions under `docs/experiments/`
+  whenever baseline runs, data-product experiments, policy checks, or other
+  scientifically meaningful implementation trials are performed.
 
 ## GitHub CLI
 
