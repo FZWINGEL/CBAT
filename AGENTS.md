@@ -56,6 +56,9 @@ Forbidden work:
 - All paths must be configurable.
 - Every data product must include provenance and schema version.
 - Every CLI command must be testable without the full dataset.
+- Update `docs/REPO_STATUS.md` whenever significant repo state changes happen:
+  new gates completed, validation status changes, major artifacts are created,
+  blockers are resolved or introduced, or the recommended next step changes.
 
 ## GitHub CLI
 
