@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 import csv
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -683,6 +683,75 @@ def diagnose_stress_feature_report(
         c_rate_rows,
         claim_rows,
         out_dir / "stress_feature_diagnostics.md",
+    )
+    return report
+
+
+def diagnose_target_consistency_report(
+    report_path: Path,
+    predictions_path: Path,
+    out_dir: Path,
+) -> dict[str, Any]:
+    """Render target-consistency and C-rate failure diagnostics."""
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    prediction_rows = pq.read_table(predictions_path).to_pylist()
+    interval_by_key = _interval_rows_by_key(report)
+    plots_dir = out_dir / "plots"
+    plots_dir.mkdir(parents=True, exist_ok=True)
+
+    target_metric_rows = _target_consistency_metric_rows(prediction_rows, interval_by_key)
+    derived_delta_rows = [
+        row for row in target_metric_rows if row["target_path"] == "derived_delta_from_capacity"
+    ]
+    derived_capacity_rows = [
+        row for row in target_metric_rows if row["target_path"] == "derived_capacity_from_delta"
+    ]
+    direct_vs_derived_rows = _direct_vs_derived_target_rows(target_metric_rows)
+    c_rate_residual_rows = _c_rate_residual_rows(report, prediction_rows, interval_by_key)
+    stress_gain_rows = _stress_ablation_gain_rows(_leaderboard_rows(list(report["metrics"])))
+    c_rate_gain_rows = [
+        row for row in stress_gain_rows if row["split_name"] == "c_rate_holdout_fold"
+    ]
+
+    _write_csv(plots_dir / "derived_delta_from_capacity_metrics.csv", derived_delta_rows)
+    _write_csv(plots_dir / "derived_capacity_from_delta_metrics.csv", derived_capacity_rows)
+    _write_csv(plots_dir / "direct_vs_derived_target_metrics.csv", direct_vs_derived_rows)
+    _write_csv(plots_dir / "c_rate_residuals_by_parameter_set.csv", c_rate_residual_rows)
+    _write_csv(
+        plots_dir / "c_rate_residuals_by_temperature.csv",
+        _residual_group_rows(c_rate_residual_rows, "nominal_temperature_C"),
+    )
+    _write_csv(
+        plots_dir / "c_rate_residuals_by_voltage_window.csv",
+        _residual_group_rows(c_rate_residual_rows, "voltage_window_family"),
+    )
+    _write_csv(
+        plots_dir / "c_rate_residuals_by_capacity_bin.csv",
+        _residual_group_rows(c_rate_residual_rows, "capacity_Ah_k_bin"),
+    )
+    _write_csv(
+        plots_dir / "c_rate_residuals_by_interval_count.csv",
+        _residual_group_rows(c_rate_residual_rows, "interval_count_bucket"),
+    )
+    _write_csv(
+        plots_dir / "c_rate_signed_error_summary.csv",
+        _residual_group_rows(c_rate_residual_rows, "target"),
+    )
+    _write_csv(plots_dir / "f4_to_f5_f6_f7_f8_f9_f10_gain_matrix.csv", stress_gain_rows)
+    _write_csv(plots_dir / "c_rate_gain_by_feature_group.csv", c_rate_gain_rows)
+    _write_target_consistency_md(
+        report,
+        target_metric_rows,
+        direct_vs_derived_rows,
+        out_dir / "target_consistency_diagnostics.md",
+    )
+    _write_c_rate_residual_analysis_md(
+        c_rate_residual_rows,
+        out_dir / "c_rate_residual_analysis.md",
+    )
+    _write_stress_ablation_summary_md(
+        stress_gain_rows,
+        out_dir / "stress_feature_ablation_summary.md",
     )
     return report
 
@@ -1385,6 +1454,475 @@ def _c_rate_grouped_summary_rows(c_rate_rows: list[dict[str, Any]]) -> list[dict
                 }
             )
     return output_rows
+
+
+def _target_consistency_metric_rows(
+    prediction_rows: list[dict[str, Any]],
+    interval_by_key: dict[tuple[str, int, int], dict[str, Any]],
+) -> list[dict[str, Any]]:
+    grouped: dict[tuple[str, str, str, str, int, str, str], list[dict[str, Any]]] = defaultdict(list)
+    for row in prediction_rows:
+        interval = interval_by_key.get(_interval_key(row))
+        if interval is None:
+            continue
+        capacity_k = _as_float(interval.get("capacity_Ah_k"))
+        capacity_k1 = _as_float(interval.get("capacity_Ah_k1"))
+        delta = _as_float(interval.get("delta_capacity_Ah"))
+        prediction = _as_float(row.get("y_pred"))
+        if not all(math.isfinite(value) for value in (capacity_k, capacity_k1, delta, prediction)):
+            continue
+        base_key = (
+            str(row["run_scope"]),
+            str(row["model_level"]),
+            str(row["feature_group"]),
+            str(row["split_name"]),
+            int(row["heldout_fold"]),
+        )
+        if str(row["target"]) == "capacity_Ah_k1":
+            grouped[(*base_key, "capacity_Ah_k1", "direct_capacity")].append(
+                _metric_row_payload(row, capacity_k1, prediction)
+            )
+            grouped[(*base_key, "delta_capacity_Ah", "derived_delta_from_capacity")].append(
+                _metric_row_payload(row, delta, prediction - capacity_k)
+            )
+        elif str(row["target"]) == "delta_capacity_Ah":
+            grouped[(*base_key, "delta_capacity_Ah", "direct_delta")].append(
+                _metric_row_payload(row, delta, prediction)
+            )
+            grouped[(*base_key, "capacity_Ah_k1", "derived_capacity_from_delta")].append(
+                _metric_row_payload(row, capacity_k1, capacity_k + prediction)
+            )
+
+    rows: list[dict[str, Any]] = []
+    for key, values in sorted(grouped.items()):
+        run_scope, model_level, feature_group, split_name, heldout_fold, target, target_path = key
+        rows.append(
+            {
+                "run_scope": run_scope,
+                "model_level": model_level,
+                "feature_group": feature_group,
+                "split_name": split_name,
+                "heldout_fold": heldout_fold,
+                "target": target,
+                "target_path": target_path,
+                **_prediction_metric_summary(values),
+            }
+        )
+    return rows
+
+
+def _direct_vs_derived_target_rows(metric_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    by_key = {
+        (
+            row["run_scope"],
+            row["model_level"],
+            row["feature_group"],
+            row["split_name"],
+            row["heldout_fold"],
+            row["target"],
+            row["target_path"],
+        ): row
+        for row in metric_rows
+    }
+    pairs = (
+        ("capacity_Ah_k1", "direct_capacity", "derived_capacity_from_delta"),
+        ("delta_capacity_Ah", "direct_delta", "derived_delta_from_capacity"),
+    )
+    rows: list[dict[str, Any]] = []
+    bases = sorted(
+        {
+            (row["run_scope"], row["model_level"], row["feature_group"], row["split_name"], row["heldout_fold"])
+            for row in metric_rows
+        }
+    )
+    for base in bases:
+        for target, direct_path, derived_path in pairs:
+            direct = by_key.get((*base, target, direct_path))
+            derived = by_key.get((*base, target, derived_path))
+            if not direct or not derived:
+                continue
+            direct_mae = float(direct["mae"])
+            derived_mae = float(derived["mae"])
+            rows.append(
+                {
+                    "run_scope": base[0],
+                    "model_level": base[1],
+                    "feature_group": base[2],
+                    "split_name": base[3],
+                    "heldout_fold": base[4],
+                    "target": target,
+                    "direct_path": direct_path,
+                    "derived_path": derived_path,
+                    "direct_mae": direct_mae,
+                    "derived_mae": derived_mae,
+                    "derived_minus_direct_mae": derived_mae - direct_mae,
+                    "derived_better": derived_mae < direct_mae,
+                    "direct_condition_mean_mae": direct["condition_mean_mae"],
+                    "derived_condition_mean_mae": derived["condition_mean_mae"],
+                    "derived_minus_direct_condition_mean_mae": float(
+                        derived["condition_mean_mae"]
+                    )
+                    - float(direct["condition_mean_mae"]),
+                }
+            )
+    return rows
+
+
+def _c_rate_residual_rows(
+    report: dict[str, Any],
+    prediction_rows: list[dict[str, Any]],
+    interval_by_key: dict[tuple[str, int, int], dict[str, Any]],
+) -> list[dict[str, Any]]:
+    leaderboard = _leaderboard_rows(list(report["metrics"]))
+    best = _best_reference_by_target_split(
+        leaderboard,
+        allowed_feature_groups=set(FEATURE_GROUPS),
+    )
+    param_interval_counts = Counter(
+        int(row["parameter_set"]) for row in interval_by_key.values()
+    )
+    rows: list[dict[str, Any]] = []
+    for target in TARGETS:
+        selection = best.get((target, "c_rate_holdout_fold"))
+        if not selection:
+            continue
+        selected_predictions = [
+            row
+            for row in prediction_rows
+            if row["run_scope"] == "primary"
+            and row["target"] == target
+            and row["split_name"] == "c_rate_holdout_fold"
+            and row["model_level"] == selection["model_level"]
+            and row["feature_group"] == selection["feature_group"]
+        ]
+        grouped: dict[int, list[dict[str, Any]]] = defaultdict(list)
+        for row in selected_predictions:
+            interval = interval_by_key.get(_interval_key(row))
+            if interval is None:
+                continue
+            y_true = _as_float(row.get("y_true"))
+            y_pred = _as_float(row.get("y_pred"))
+            if not math.isfinite(y_true) or not math.isfinite(y_pred):
+                continue
+            payload = dict(interval)
+            payload["error"] = y_pred - y_true
+            payload["abs_error"] = abs(y_pred - y_true)
+            grouped[int(row["parameter_set"])].append(payload)
+        for parameter_set, values in sorted(grouped.items()):
+            errors = [float(row["error"]) for row in values]
+            abs_errors = [float(row["abs_error"]) for row in values]
+            capacity_values = [_as_float(row.get("capacity_Ah_k")) for row in values]
+            delta_values = [_as_float(row.get("delta_capacity_Ah")) for row in values]
+            finite_capacity = [value for value in capacity_values if math.isfinite(value)]
+            finite_delta = [value for value in delta_values if math.isfinite(value)]
+            first = values[0]
+            n_intervals = param_interval_counts[parameter_set]
+            rows.append(
+                {
+                    "target": target,
+                    "parameter_set": parameter_set,
+                    "best_model_level": selection["model_level"],
+                    "best_feature_group": selection["feature_group"],
+                    "n_intervals": n_intervals,
+                    "nominal_temperature_C": first.get("nominal_temperature_C"),
+                    "voltage_window_family": first.get("voltage_window_family"),
+                    "aging_mode": first.get("aging_mode"),
+                    "nominal_charge_C_rate": first.get("nominal_charge_C_rate"),
+                    "nominal_discharge_C_rate": first.get("nominal_discharge_C_rate"),
+                    "capacity_Ah_k_min": min(finite_capacity) if finite_capacity else None,
+                    "capacity_Ah_k_max": max(finite_capacity) if finite_capacity else None,
+                    "delta_capacity_Ah_min": min(finite_delta) if finite_delta else None,
+                    "delta_capacity_Ah_max": max(finite_delta) if finite_delta else None,
+                    "capacity_Ah_k_bin": _value_range_bucket(
+                        min(finite_capacity) if finite_capacity else None,
+                        max(finite_capacity) if finite_capacity else None,
+                        thresholds=(2.4, 2.6, 2.8),
+                        labels=("<2.4", "2.4-2.6", "2.6-2.8", ">=2.8"),
+                    ),
+                    "interval_count_bucket": _interval_count_bucket(n_intervals),
+                    "mae": _mean(abs_errors),
+                    "rmse": math.sqrt(_mean([error * error for error in errors])),
+                    "signed_bias": _mean(errors),
+                    "worst_abs_error": max(abs_errors),
+                }
+            )
+    return rows
+
+
+def _residual_group_rows(
+    residual_rows: list[dict[str, Any]],
+    group_column: str,
+) -> list[dict[str, Any]]:
+    grouped: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    for row in residual_rows:
+        grouped[(str(row["target"]), _group_value(row.get(group_column)))].append(row)
+    rows: list[dict[str, Any]] = []
+    for (target, group_value), values in sorted(grouped.items()):
+        maes = [_as_float(row["mae"]) for row in values]
+        biases = [_as_float(row["signed_bias"]) for row in values]
+        rmses = [_as_float(row["rmse"]) for row in values]
+        rows.append(
+            {
+                "target": target,
+                "grouping": group_column,
+                "group_value": group_value,
+                "parameter_set_count": len(values),
+                "total_intervals": sum(int(row["n_intervals"]) for row in values),
+                "mean_mae": _mean(maes),
+                "mean_rmse": _mean(rmses),
+                "mean_signed_bias": _mean(biases),
+                "worst_parameter_set": max(values, key=lambda row: float(row["mae"]))[
+                    "parameter_set"
+                ],
+                "worst_mae": max(float(row["mae"]) for row in values),
+            }
+        )
+    return rows
+
+
+def _stress_ablation_gain_rows(
+    leaderboard_rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    stress_groups = (
+        "F5_log_age_histograms",
+        "F6_coupled_stress",
+        "F7_c_rate_focused",
+        "F8_timestamp_weighted_stress",
+        "F9_event_segmented_stress",
+        "F10_c_rate_v1_1",
+    )
+    by_key = {
+        (
+            row["run_scope"],
+            row["model_level"],
+            row["target"],
+            row["split_name"],
+            row["feature_group"],
+        ): row
+        for row in leaderboard_rows
+        if row["run_scope"] == "primary"
+    }
+    rows: list[dict[str, Any]] = []
+    base_keys = sorted(
+        {
+            (row["run_scope"], row["model_level"], row["target"], row["split_name"])
+            for row in leaderboard_rows
+            if row["run_scope"] == "primary"
+        }
+    )
+    for base in base_keys:
+        f4 = by_key.get((*base, "F4_state_log_age_scalar"))
+        if not f4:
+            continue
+        f4_error = float(f4["condition_mean_mae"])
+        for feature_group in stress_groups:
+            row = by_key.get((*base, feature_group))
+            if not row:
+                continue
+            error = float(row["condition_mean_mae"])
+            rows.append(
+                {
+                    "run_scope": base[0],
+                    "model_level": base[1],
+                    "target": base[2],
+                    "split_name": base[3],
+                    "from_feature_group": "F4_state_log_age_scalar",
+                    "to_feature_group": feature_group,
+                    "f4_condition_mean_mae": f4_error,
+                    "feature_condition_mean_mae": error,
+                    "condition_mean_mae_gain": f4_error - error,
+                    "f4_worst_condition_mae": f4["worst_condition_mae"],
+                    "feature_worst_condition_mae": row["worst_condition_mae"],
+                    "success_vs_f4": error < f4_error,
+                }
+            )
+    return rows
+
+
+def _metric_row_payload(
+    prediction_row: dict[str, Any],
+    y_true: float,
+    y_pred: float,
+) -> dict[str, Any]:
+    return {
+        "parameter_set": int(prediction_row["parameter_set"]),
+        "cell_id": str(prediction_row["cell_id"]),
+        "y_true": y_true,
+        "y_pred": y_pred,
+        "error": y_pred - y_true,
+        "abs_error": abs(y_pred - y_true),
+    }
+
+
+def _prediction_metric_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    errors = [float(row["error"]) for row in rows]
+    abs_errors = [float(row["abs_error"]) for row in rows]
+    by_condition: dict[int, list[float]] = defaultdict(list)
+    for row in rows:
+        by_condition[int(row["parameter_set"])].append(float(row["abs_error"]))
+    condition_maes = [_mean(values) for values in by_condition.values()]
+    return {
+        "test_rows": len(rows),
+        "test_parameter_sets": len(by_condition),
+        "mae": _mean(abs_errors),
+        "rmse": math.sqrt(_mean([error * error for error in errors])),
+        "signed_bias": _mean(errors),
+        "condition_mean_mae": _mean(condition_maes),
+        "condition_median_mae": _median(condition_maes),
+        "worst_condition_mae": max(condition_maes),
+    }
+
+
+def _interval_rows_by_key(report: dict[str, Any]) -> dict[tuple[str, int, int], dict[str, Any]]:
+    interval_path = Path(report["inputs"]["interval_table"])
+    if not interval_path.exists():
+        return {}
+    return {_interval_key(row): row for row in pq.read_table(interval_path).to_pylist()}
+
+
+def _write_target_consistency_md(
+    report: dict[str, Any],
+    target_metric_rows: list[dict[str, Any]],
+    direct_vs_derived_rows: list[dict[str, Any]],
+    path: Path,
+) -> None:
+    c_rate_rows = [
+        row
+        for row in direct_vs_derived_rows
+        if row["run_scope"] == "primary" and row["split_name"] == "c_rate_holdout_fold"
+    ]
+    best_c_rate = sorted(
+        c_rate_rows,
+        key=lambda row: (
+            row["target"],
+            min(float(row["direct_mae"]), float(row["derived_mae"])),
+        ),
+    )
+    delta_c_rate = [
+        row for row in c_rate_rows if row["target"] == "delta_capacity_Ah"
+    ]
+    derived_delta_wins = sum(bool(row["derived_better"]) for row in delta_c_rate)
+    lines = [
+        "# Capacity Target Consistency Diagnostics",
+        "",
+        f"Source report: `{report['outputs']['report']}`",
+        f"Generated at UTC: `{datetime.now(UTC).isoformat()}`",
+        "",
+        "This diagnostic checks whether the algebraic relationship",
+        "`capacity_Ah_k1 = capacity_Ah_k + delta_capacity_Ah` changes the",
+        "interpretation of direct target-specific predictions.",
+        "",
+        "## C-Rate Direct Vs Derived",
+        "",
+        "| Target | Model | Feature group | Direct MAE | Derived MAE | Derived - direct | Derived better |",
+        "|---|---|---|---:|---:|---:|---|",
+    ]
+    for row in best_c_rate[:20]:
+        lines.append(
+            "| "
+            f"`{row['target']}` | `{row['model_level']}` | `{row['feature_group']}` | "
+            f"{float(row['direct_mae']):.6g} | {float(row['derived_mae']):.6g} | "
+            f"{float(row['derived_minus_direct_mae']):.6g} | {row['derived_better']} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Decision Signal",
+            "",
+            f"C-rate delta rows where derived delta beats direct delta: `{derived_delta_wins}/{len(delta_c_rate)}`.",
+            "",
+            "If derived delta consistently beats direct delta on C-rate, report a",
+            "capacity-first target path before adding new stress features. If direct",
+            "delta remains stronger, the failure is not only target formulation.",
+            "",
+            "## Outputs",
+            "",
+            "- `plots/derived_delta_from_capacity_metrics.csv`",
+            "- `plots/derived_capacity_from_delta_metrics.csv`",
+            "- `plots/direct_vs_derived_target_metrics.csv`",
+            f"- Target metric rows: `{len(target_metric_rows)}`",
+            "",
+        ]
+    )
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def _write_c_rate_residual_analysis_md(
+    residual_rows: list[dict[str, Any]],
+    path: Path,
+) -> None:
+    worst = sorted(residual_rows, key=lambda row: float(row["mae"]), reverse=True)[:12]
+    lines = [
+        "# C-Rate Residual Analysis",
+        "",
+        "This diagnostic uses row-level predictions for the best primary C-rate",
+        "selection per target in the focused stress-feature report.",
+        "",
+        "| Target | Parameter set | Feature group | Temperature C | Voltage family | Intervals | MAE | Bias | RMSE |",
+        "|---|---:|---|---:|---|---:|---:|---:|---:|",
+    ]
+    for row in worst:
+        lines.append(
+            "| "
+            f"`{row['target']}` | {row['parameter_set']} | `{row['best_feature_group']}` | "
+            f"{_format_optional_float(row['nominal_temperature_C'])} | "
+            f"`{row['voltage_window_family']}` | {row['n_intervals']} | "
+            f"{float(row['mae']):.6g} | {float(row['signed_bias']):.6g} | "
+            f"{float(row['rmse']):.6g} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Outputs",
+            "",
+            "- `plots/c_rate_residuals_by_parameter_set.csv`",
+            "- `plots/c_rate_residuals_by_temperature.csv`",
+            "- `plots/c_rate_residuals_by_voltage_window.csv`",
+            "- `plots/c_rate_residuals_by_capacity_bin.csv`",
+            "- `plots/c_rate_residuals_by_interval_count.csv`",
+            "- `plots/c_rate_signed_error_summary.csv`",
+            "",
+        ]
+    )
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def _write_stress_ablation_summary_md(
+    stress_gain_rows: list[dict[str, Any]],
+    path: Path,
+) -> None:
+    c_rate_rows = [
+        row
+        for row in stress_gain_rows
+        if row["run_scope"] == "primary" and row["split_name"] == "c_rate_holdout_fold"
+    ]
+    best = sorted(c_rate_rows, key=lambda row: float(row["condition_mean_mae_gain"]), reverse=True)
+    lines = [
+        "# Stress Feature Ablation Summary",
+        "",
+        "This table compares F5-F10 against F4 within the existing v1.1 report.",
+        "No new model training is performed.",
+        "",
+        "| Target | Model | Feature group | Gain vs F4 | Success |",
+        "|---|---|---|---:|---|",
+    ]
+    for row in best[:20]:
+        lines.append(
+            "| "
+            f"`{row['target']}` | `{row['model_level']}` | `{row['to_feature_group']}` | "
+            f"{float(row['condition_mean_mae_gain']):.6g} | {row['success_vs_f4']} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Outputs",
+            "",
+            "- `plots/f4_to_f5_f6_f7_f8_f9_f10_gain_matrix.csv`",
+            "- `plots/c_rate_gain_by_feature_group.csv`",
+            "",
+        ]
+    )
+    path.write_text("\n".join(lines), encoding="utf-8")
 
 
 def _write_baseline_diagnostics_md(

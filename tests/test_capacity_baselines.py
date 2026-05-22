@@ -18,10 +18,12 @@ from mbp.baselines.capacity import NUMERIC_FEATURES
 from mbp.baselines.capacity import assert_no_parameter_set_leakage
 from mbp.baselines.capacity import compute_metrics
 from mbp.baselines.capacity import diagnose_capacity_report
+from mbp.baselines.capacity import diagnose_target_consistency_report
 from mbp.baselines.capacity import load_baseline_rows
 from mbp.baselines.capacity import predict_capacity_target
 from mbp.baselines.capacity import run_capacity_baselines
 from mbp.baselines.capacity import _feature_gain_rows
+from mbp.baselines.capacity import _stress_ablation_gain_rows
 from mbp.data.schema_contracts import INTERVAL_SUBSET_REGISTRY_SCHEMA, INTERVAL_TABLE_SCHEMA
 
 
@@ -488,6 +490,94 @@ def test_c_rate_grouped_summaries_and_claim_readiness_render(tmp_path: Path) -> 
     assert "interval_count_bucket" in grouped
     assert "State-aware baselines" in claim_readiness
     assert "Grouped Summaries" in c_rate_memo
+
+
+def test_target_consistency_diagnostics_render_from_predictions(tmp_path: Path) -> None:
+    interval_path, subset_path = _write_capacity_fixture(tmp_path)
+    report_path = tmp_path / "capacity_baseline_report.json"
+    predictions_path = tmp_path / "capacity_baseline_predictions.parquet"
+    run_capacity_baselines(
+        interval_path,
+        subset_path,
+        report_path,
+        predictions_path,
+        model_levels=["L0_persistence"],
+        feature_groups=["F0_time_only"],
+        targets=["capacity_Ah_k1", "delta_capacity_Ah"],
+        split_views=["c_rate_holdout_fold"],
+    )
+
+    out_dir = tmp_path / "target_consistency"
+    diagnose_target_consistency_report(report_path, predictions_path, out_dir)
+
+    direct_vs_derived = (
+        out_dir / "plots" / "direct_vs_derived_target_metrics.csv"
+    ).read_text()
+    derived_delta = (
+        out_dir / "plots" / "derived_delta_from_capacity_metrics.csv"
+    ).read_text()
+
+    assert (out_dir / "target_consistency_diagnostics.md").exists()
+    assert "derived_delta_from_capacity" in direct_vs_derived
+    assert "derived_capacity_from_delta" in direct_vs_derived
+    assert "condition_mean_mae" in derived_delta
+
+
+def test_c_rate_residual_outputs_are_generated(tmp_path: Path) -> None:
+    interval_path, subset_path = _write_capacity_fixture(tmp_path)
+    report_path = tmp_path / "capacity_baseline_report.json"
+    predictions_path = tmp_path / "capacity_baseline_predictions.parquet"
+    run_capacity_baselines(
+        interval_path,
+        subset_path,
+        report_path,
+        predictions_path,
+        model_levels=["L0_persistence", "L1_ridge"],
+        feature_groups=["F4_state_log_age_scalar"],
+        targets=["capacity_Ah_k1", "delta_capacity_Ah"],
+        split_views=["c_rate_holdout_fold"],
+    )
+
+    out_dir = tmp_path / "target_consistency"
+    diagnose_target_consistency_report(report_path, predictions_path, out_dir)
+
+    residuals = (out_dir / "plots" / "c_rate_residuals_by_parameter_set.csv").read_text()
+    by_temperature = (
+        out_dir / "plots" / "c_rate_residuals_by_temperature.csv"
+    ).read_text()
+
+    assert "signed_bias" in residuals
+    assert "nominal_temperature_C" in by_temperature
+    assert (out_dir / "c_rate_residual_analysis.md").exists()
+
+
+def test_stress_feature_gain_matrix_from_synthetic_leaderboard() -> None:
+    rows = [
+        {
+            "run_scope": "primary",
+            "model_level": "L2_hist_gradient_boosting",
+            "feature_group": "F4_state_log_age_scalar",
+            "target": "delta_capacity_Ah",
+            "split_name": "c_rate_holdout_fold",
+            "condition_mean_mae": 0.10,
+            "worst_condition_mae": 0.20,
+        },
+        {
+            "run_scope": "primary",
+            "model_level": "L2_hist_gradient_boosting",
+            "feature_group": "F8_timestamp_weighted_stress",
+            "target": "delta_capacity_Ah",
+            "split_name": "c_rate_holdout_fold",
+            "condition_mean_mae": 0.09,
+            "worst_condition_mae": 0.18,
+        },
+    ]
+
+    gains = _stress_ablation_gain_rows(rows)
+
+    assert len(gains) == 1
+    assert gains[0]["to_feature_group"] == "F8_timestamp_weighted_stress"
+    assert gains[0]["condition_mean_mae_gain"] == pytest.approx(0.01)
 
 
 def test_feature_gain_table_is_generated_from_synthetic_leaderboard() -> None:

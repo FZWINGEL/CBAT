@@ -925,6 +925,31 @@ def baseline_diagnose_stress_features(
     typer.echo(f"Stress-feature diagnostics written to {out_dir}")
 
 
+@baseline_app.command("diagnose-target-consistency")
+def baseline_diagnose_target_consistency(
+    report: Path = typer.Option(
+        ...,
+        "--report",
+        help="Path to a capacity baseline JSON report.",
+    ),
+    predictions: Path = typer.Option(
+        ...,
+        "--predictions",
+        help="Path to the matching row-level prediction Parquet.",
+    ),
+    out_dir: Path = typer.Option(
+        ...,
+        "--out-dir",
+        help="Directory for target-consistency and C-rate failure diagnostics.",
+    ),
+) -> None:
+    """Generate Milestone 0.6.2 target-consistency diagnostics."""
+    from mbp.baselines.capacity import diagnose_target_consistency_report
+
+    diagnose_target_consistency_report(report, predictions, out_dir)
+    typer.echo(f"Target-consistency diagnostics written to {out_dir}")
+
+
 def _comma_values(value: str) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
 

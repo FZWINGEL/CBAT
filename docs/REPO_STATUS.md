@@ -1,6 +1,6 @@
 # Repository Status
 
-Last updated: 2026-05-22
+Last updated: 2026-05-23
 
 Current branch: `main`
 
@@ -11,11 +11,12 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 0.6.1: LOG_AGE Stress-Feature Hardening v1.1**.
+The repository is in **Milestone 0.6.2: Capacity Target Consistency and C-rate Failure Audit**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
-complete. Milestone 0.6.1 remains capacity-only and scalar-interval only.
+complete. Milestone 0.6.1 stress-feature hardening is complete. Milestone
+0.6.2 remains capacity-only and scalar-interval only.
 
 No EIS/PULSE supervised claims, sequence models, neural architecture, policy
 ranking, CBAT architecture, or EIS embedding work has been started.
@@ -55,6 +56,9 @@ Current state:
   gives high-confidence positive-current charge evidence, v1.1 QA passes, and
   the focused HGB-50 stress-feature run remains mixed: C-rate `capacity_Ah_k1`
   improves, but C-rate `delta_capacity_Ah` still fails to beat F4.
+- Milestone 0.6.2 target-consistency diagnostics are implemented and run on the
+  v1.1 report. Direct delta remains the stronger C-rate delta target path;
+  deriving delta from capacity does not solve the failure.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -107,6 +111,7 @@ Milestone 0.5 generated predictions are also ignored by default:
 - `data/processed/capacity_l1_scaled_predictions.parquet`
 - `data/processed/capacity_hgb50_focused_predictions.parquet`
 - `data/processed/capacity_stress_features_hgb50_predictions.parquet`
+- `data/processed/capacity_stress_features_v1_1_hgb50_predictions.parquet`
 
 Milestone 0.5 small report artifacts under `reports/baselines/` are trackable:
 
@@ -550,6 +555,48 @@ Decision:
   timestamp-weighted dwell repaired most of the v1 delta-capacity degradation,
   but it still does not beat F4 on the main delta target.
 
+### Milestone 0.6.2
+
+Milestone 0.6.2 target-consistency and C-rate failure diagnostics are
+implemented and run on the v1.1 stress-feature report. No new model training was
+performed.
+
+Implemented command:
+
+- CLI: `mbp baseline diagnose-target-consistency`
+
+Real-data outputs:
+
+- `reports/baselines/capacity_stress_features_v1_1_hgb50/target_consistency_diagnostics.md`
+- `reports/baselines/capacity_stress_features_v1_1_hgb50/c_rate_residual_analysis.md`
+- `reports/baselines/capacity_stress_features_v1_1_hgb50/stress_feature_ablation_summary.md`
+- `reports/baselines/capacity_stress_features_v1_1_hgb50/plots/direct_vs_derived_target_metrics.csv`
+- `reports/baselines/capacity_stress_features_v1_1_hgb50/plots/c_rate_residuals_by_parameter_set.csv`
+- `reports/baselines/capacity_stress_features_v1_1_hgb50/plots/f4_to_f5_f6_f7_f8_f9_f10_gain_matrix.csv`
+
+Target-consistency finding:
+
+| Target | C-rate rows | Derived path better by MAE | Derived path better by condition mean MAE |
+|---|---:|---:|---:|
+| `capacity_Ah_k1` | `14` | `10` | `10` |
+| `delta_capacity_Ah` | `14` | `4` | `4` |
+
+Best C-rate target paths by condition-mean MAE:
+
+| Target interpreted | Best path | Model / feature group | Condition mean MAE |
+|---|---|---|---:|
+| `capacity_Ah_k1` | derived from direct delta | `L2_hist_gradient_boosting` / `F4_state_log_age_scalar` | `0.101133` |
+| `delta_capacity_Ah` | direct delta | `L2_hist_gradient_boosting` / `F4_state_log_age_scalar` | `0.101133` |
+| `delta_capacity_Ah` | derived from direct capacity | `L2_hist_gradient_boosting` / `F5_log_age_histograms` | `0.120605` |
+
+Decision:
+
+- Keep direct `delta_capacity_Ah` as the primary C-rate delta target.
+- Do not switch to derived delta from capacity predictions.
+- Report derived capacity-from-delta as a diagnostic because it can outperform
+  direct capacity on C-rate.
+- Keep PULSE/EIS/CBAT blocked until the C-rate delta failure mode is understood.
+
 ## Important Implementation Notes
 
 The interval builder preserves result-table timestamps in the public schema, but
@@ -591,8 +638,8 @@ exist. First baseline work must use:
   architecture
 
 EIS and PULSE scientific claims remain blocked by their known audit issues.
-The next authorized engineering direction is capacity-only stress-feature
-engineering from LOG_AGE interval summaries.
+The next authorized engineering direction remains capacity-only C-rate failure
+analysis, target-formulation review, or a narrow C-rate delta feature pass.
 
 ## Validation
 
@@ -603,16 +650,17 @@ PYTHONDONTWRITEBYTECODE=1 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/ruff check . --no
 All checks passed.
 
 PYTHONDONTWRITEBYTECODE=1 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/pytest -p no:cacheprovider
-82 passed, 1 warning.
+85 passed, 1 warning.
 ```
 
 The one warning is the existing `datetime.utcnow()` deprecation warning in
-`src/mbp/data/luh_blank/qa_result_data.py`; it is not a Milestone 0.6/0.6.1
+`src/mbp/data/luh_blank/qa_result_data.py`; it is not a Milestone 0.6/0.6.2
 correctness failure.
 
 ## Recommended Next Step
 
-Review the **Milestone 0.6.1 LOG_AGE Stress-Feature Hardening v1.1** mixed
-result before adding new modalities. The next bounded decision should focus on
-why C-rate `delta_capacity_Ah` still fails to beat F4 and why voltage-window
-`capacity_Ah_k1` degraded under v1.1.
+Review the **Milestone 0.6.2 Capacity Target Consistency and C-rate Failure
+Audit** before adding new modalities. The next bounded decision should choose
+between a narrow C-rate delta feature pass, residual/bias correction for
+cold/cool high-C-rate conditions, or stopping stress-feature expansion and
+considering PULSE as an independent evidence stream.

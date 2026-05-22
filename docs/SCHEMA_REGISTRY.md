@@ -25,6 +25,7 @@ Schema version prefix: `gate1.audit.v1`
 | `capacity_baseline_report` | Implemented | `mbp.baselines.capacity` | interval table path, interval subset registry path, optional stress-feature sidecar path, subset, model level, feature group, split view, strict/tolerant sensitivity scope |
 | `capacity_baseline_diagnostics` | Implemented | `mbp.baselines.capacity` | baseline report path, optional L0 reference report path, feature-gain diagnostics, best-by-target/split rows, C-rate holdout condition/grouped errors, claim-readiness memo, quantile metrics |
 | `stress_feature_diagnostics` | Implemented | `mbp.baselines.capacity` | stress-feature baseline report path, HGB-50 F4 baseline report path, L0 reference report path, C-rate success criteria |
+| `target_consistency_diagnostics` | Implemented | `mbp.baselines.capacity` | capacity report path, prediction Parquet path, interval-table join, direct-vs-derived target metrics, C-rate residual groupings, stress-feature ablation gains |
 
 ## Gate 2/3 Schema Contracts
 

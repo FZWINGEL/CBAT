@@ -1,0 +1,3 @@
+target,grouping,group_value,parameter_set_count,total_intervals,mean_mae,mean_rmse,mean_signed_bias,worst_parameter_set,worst_mae
+capacity_Ah_k1,target,capacity_Ah_k1,12,157,0.12060529262628518,0.16002642996319263,0.10041304901966279,36,0.24303524846680977
+delta_capacity_Ah,target,delta_capacity_Ah,12,157,0.10113277130259181,0.1294402929672305,0.05023026353826521,20,0.193505570859936

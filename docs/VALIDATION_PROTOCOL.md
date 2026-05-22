@@ -1,12 +1,13 @@
 # Validation Protocol
 
-Milestone 0.5/0.5b/0.5c/0.6/0.6.1 authorizes only scalar capacity baseline work on
+Milestone 0.5/0.5b/0.5c/0.6/0.6.1/0.6.2 authorizes only scalar capacity baseline work on
 interval features. Milestone 0.5b is review and robustness hardening. Milestone
 0.5c is synthesis and stress-feature decision work. Milestone 0.6 adds
 capacity-only LOG_AGE-derived scalar stress features. Milestone 0.6.1 hardens
 those features with current-sign audit evidence, timestamp-weighted dwell, and
-event-segmented scalar summaries. These milestones are not modality or
-architecture expansions.
+event-segmented scalar summaries. Milestone 0.6.2 audits target consistency and
+C-rate failure modes without adding new modalities or model classes. These
+milestones are not modality or architecture expansions.
 
 Required split discipline:
 
@@ -140,6 +141,27 @@ Milestone 0.6.1 success criterion:
   `temperature_holdout_fold`;
 - do not promote sign-dependent charge features unless current-sign evidence is
   high confidence.
+
+Required Milestone 0.6.2 diagnostic artifacts:
+
+- `target_consistency_diagnostics.md`
+- `c_rate_residual_analysis.md`
+- `stress_feature_ablation_summary.md`
+- `plots/derived_delta_from_capacity_metrics.csv`
+- `plots/derived_capacity_from_delta_metrics.csv`
+- `plots/direct_vs_derived_target_metrics.csv`
+- `plots/c_rate_residuals_by_parameter_set.csv`
+- `plots/c_rate_residuals_by_temperature.csv`
+- `plots/c_rate_residuals_by_voltage_window.csv`
+- `plots/c_rate_residuals_by_capacity_bin.csv`
+- `plots/c_rate_residuals_by_interval_count.csv`
+- `plots/c_rate_signed_error_summary.csv`
+- `plots/f4_to_f5_f6_f7_f8_f9_f10_gain_matrix.csv`
+- `plots/c_rate_gain_by_feature_group.csv`
+
+Milestone 0.6.2 must not retrain by default. It should use existing row-level
+prediction Parquet files and JSON reports to decide whether direct delta,
+derived delta from capacity, or both target paths should be reported.
 
 Blocked until later milestones:
 
