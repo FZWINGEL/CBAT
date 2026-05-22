@@ -230,7 +230,7 @@ UV_CACHE_DIR=/tmp/uv-cache .venv/bin/ruff check .
 All checks passed.
 
 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/pytest
-56 passed, 1 warning.
+59 passed, 1 warning.
 ```
 
 The one warning is the existing `datetime.utcnow()` deprecation warning in
