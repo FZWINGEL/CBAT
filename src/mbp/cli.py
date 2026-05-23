@@ -910,6 +910,30 @@ def baseline_compare_prior_pulse_capacity(
     )
 
 
+@baseline_app.command("compare-prior-pulse-vs-best-nonpulse")
+def baseline_compare_prior_pulse_vs_best_nonpulse(
+    nonpulse_reports: str = typer.Option(..., "--nonpulse-reports", help="Comma-separated capacity reports without prior-PULSE feature groups."),
+    prior_pulse_report: Path = typer.Option(..., "--prior-pulse-report", help="Capacity baseline report with prior-PULSE feature groups."),
+    out_dir: Path = typer.Option(..., "--out-dir", help="Output directory for strongest non-PULSE comparison diagnostics."),
+    bootstrap_resamples: int = typer.Option(1000, "--bootstrap-resamples", help="Parameter-set bootstrap resamples."),
+    seed: int = typer.Option(42, "--seed", help="Bootstrap random seed."),
+) -> None:
+    """Compare prior-PULSE groups against strongest supplied non-PULSE reports."""
+    from mbp.baselines.capacity import compare_prior_pulse_vs_best_nonpulse_reports
+
+    report = compare_prior_pulse_vs_best_nonpulse_reports(
+        [Path(value) for value in _comma_values(nonpulse_reports)],
+        prior_pulse_report,
+        out_dir,
+        bootstrap_resamples=bootstrap_resamples,
+        seed=seed,
+    )
+    typer.echo(
+        "Prior-PULSE vs best non-PULSE comparison generated: "
+        f"{report['row_counts']['paired_gain_rows']} paired condition rows"
+    )
+
+
 @baseline_app.command("diagnose-capacity")
 def baseline_diagnose_capacity(
     report: Path = typer.Option(

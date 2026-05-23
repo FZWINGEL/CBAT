@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 0.9: Non-neural capacity + prior-PULSE predictive baseline.
+Milestone 0.9.1: Prior-PULSE vs strongest non-PULSE baseline.
 
 Current state:
 - Gate 2b implementation and reports are committed.
@@ -40,7 +40,9 @@ Current state:
   Milestone 0.9 tests a narrow non-neural predictive claim: prior PULSE state at
   check-up `k` may improve `capacity_Ah_k1` under grouped validation. It keeps
   `delta_capacity_Ah` as a secondary guardrail and does not authorize broad
-  multimodal claims.
+  multimodal claims. Milestone 0.9.1 checks whether that gain survives
+  comparison against the strongest supplied non-PULSE HGB baselines on the same
+  PULSE-covered interval population.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 - LOG_AGE monotonicity has been triaged and propagated into interval quality
@@ -102,6 +104,7 @@ Allowed work:
 - grouped paired comparisons
 - bootstrap confidence intervals over parameter_set
 - coverage/missingness diagnostics
+- strongest non-PULSE baseline comparison
 
 Forbidden work:
 - EIS modeling

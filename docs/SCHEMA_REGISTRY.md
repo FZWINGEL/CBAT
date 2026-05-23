@@ -37,6 +37,7 @@ Schema version prefix: `gate1.audit.v1`
 | `pulse_capacity_coupling_diagnostics` | Implemented | `mbp.coupling.pulse_capacity` | capacity report path, capacity prediction path, interval table path, PULSE target table path, residual/PULSE-growth correlation outputs |
 | `pulse_capacity_coupling_robustness` | Implemented | `mbp.coupling.pulse_capacity` | canonical model/feature/target selection, interval-level aggregation, condition-level aggregation, parameter-set bootstrap, residualized confound-control diagnostics |
 | `prior_pulse_capacity_predictive_comparison` | Implemented | `mbp.baselines.capacity` | capacity baseline report, prior-PULSE capacity report, paired condition-level gains, parameter-set bootstrap, coverage effects, leakage audit |
+| `prior_pulse_vs_best_nonpulse_comparison` | Implemented | `mbp.baselines.capacity` | non-PULSE capacity reports, prior-PULSE capacity report, PULSE-covered interval restriction, strongest non-PULSE group selection, paired gains, bootstrap intervals |
 
 ## Gate 2/3 Schema Contracts
 
@@ -56,3 +57,4 @@ Schema version prefix: `gate1.audit.v1`
 - `pulse_capacity_coupling_diagnostics` joins capacity prediction residuals to canonical PULSE growth and reports Pearson/Spearman correlations plus grouped C-rate/cold-rate summaries. It is a prediction-row diagnostic only and does not authorize multimodal claims.
 - `pulse_capacity_coupling_robustness` filters to one canonical capacity model/feature/target, then reports interval-level and condition-level correlations, parameter-set bootstrap summaries, residualized confound-control correlations, subgroup summaries, and coupling claim-readiness.
 - `prior_pulse_capacity_predictive_comparison` compares F4 against the best prior-PULSE feature group on the same PULSE-covered interval population. It reports paired condition-level gains, split-level bootstrap intervals, coverage effects, and claim-readiness. Future PULSE state and PULSE deltas are forbidden as capacity inputs.
+- `prior_pulse_vs_best_nonpulse_comparison` compares the best prior-PULSE HGB group against the strongest supplied non-PULSE HGB group by target/split on the same PULSE-covered interval population. It reports paired condition-level gains, bootstrap intervals, and claim-readiness.

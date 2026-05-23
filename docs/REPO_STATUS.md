@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 0.9: Non-Neural Capacity + Prior-PULSE Predictive Baseline**.
+The repository is in **Milestone 0.9.1: Prior-PULSE vs Strongest Non-PULSE Baseline**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -27,6 +27,8 @@ interval-level aggregation, condition-level aggregation, parameter-set bootstrap
 summaries, and simple confound-control residualization.
 Milestone 0.9 tests a narrow non-neural predictive claim using prior PULSE state
 at check-up `k` only.
+Milestone 0.9.1 compares that prior-PULSE result against the strongest supplied
+non-PULSE HGB baselines on the same PULSE-covered interval population.
 
 No EIS claims, PULSE scientific claims beyond scalar resistance baselines,
 sequence models, neural architecture, policy ranking, CBAT architecture, or EIS
@@ -93,6 +95,9 @@ Current state:
 - Milestone 0.9 prior-PULSE predictive comparison is implemented and run. It
   supports a narrow `capacity_Ah_k1` level-prediction claim for selected OOD
   splits, while `delta_capacity_Ah` remains a negative guardrail.
+- Milestone 0.9.1 strongest non-PULSE comparison is implemented and run. It
+  does not support the stronger claim that prior PULSE beats the best supplied
+  non-PULSE HGB baseline.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -1040,6 +1045,51 @@ Decision:
 - Broad multimodal claims, future-PULSE inputs, EIS, sequence/neural models,
   policy ranking, and CBAT remain blocked.
 
+### Milestone 0.9.1
+
+Milestone 0.9.1 compares prior-PULSE feature groups against the strongest
+supplied non-PULSE HGB baselines on the same PULSE-covered interval population.
+The non-PULSE pool used the focused HGB-50 report and the v1.1 stress-feature
+HGB-50 report.
+
+Implemented artifacts:
+
+- CLI: `mbp baseline compare-prior-pulse-vs-best-nonpulse`
+- Report directory:
+  `reports/baselines/capacity_prior_pulse_vs_best_nonpulse/`
+- Paired gains:
+  `reports/baselines/capacity_prior_pulse_vs_best_nonpulse/paired_gain_vs_best_nonpulse.csv`
+- Split-level bootstrap summary:
+  `reports/baselines/capacity_prior_pulse_vs_best_nonpulse/split_level_gain_vs_best_nonpulse.csv`
+- C-rate summary:
+  `reports/baselines/capacity_prior_pulse_vs_best_nonpulse/c_rate_gain_vs_best_nonpulse.csv`
+- Claim readiness:
+  `reports/baselines/capacity_prior_pulse_vs_best_nonpulse/prior_pulse_vs_best_nonpulse_claim_readiness.md`
+- Decision memo:
+  `docs/experiments/2026-05-23_prior_pulse_vs_best_nonpulse.md`
+
+Paired gains versus strongest supplied non-PULSE baselines:
+
+| Target | Split | Prior-PULSE group | Best non-PULSE group | Mean gain | p05 | p50 | p95 | Win rate |
+|---|---|---|---|---:|---:|---:|---:|---:|
+| `capacity_Ah_k1` | C-rate | `C_P3_stress_pulse` | `F5_log_age_histograms` | `0.000392605` | `-0.00553843` | `0.000727887` | `0.00645520` | `0.5` |
+| `capacity_Ah_k1` | temperature | `C_P3_stress_pulse` | `F6_coupled_stress` | `-0.000753049` | `-0.00294184` | `-0.000680351` | `0.00123690` | `0.552632` |
+| `capacity_Ah_k1` | profile | `C_P0_state_time_pulse` | `F1_state_time` | `-0.000697582` | `-0.00281975` | `-0.000582270` | `0.00111274` | `0.583333` |
+| `delta_capacity_Ah` | C-rate | `C_P3_stress_pulse` | `F4_state_log_age_scalar` | `-0.00234428` | `-0.0169742` | `-0.00185231` | `0.0119867` | `0.583333` |
+
+Decision:
+
+- Prior PULSE still improves over F4 in Milestone 0.9, but the stronger
+  “beats best supplied non-PULSE baseline” claim is not supported.
+- The best non-PULSE C-rate `capacity_Ah_k1` baseline is
+  `F5_log_age_histograms`; prior PULSE is only marginally better on mean gain
+  and has a bootstrap interval crossing zero.
+- Temperature/profile `capacity_Ah_k1` gains versus strongest non-PULSE are
+  negative on average.
+- `delta_capacity_Ah` remains unsupported.
+- Keep only the narrow “prior PULSE improves over F4” statement. Do not claim
+  prior PULSE is the best available non-neural capacity feature path.
+
 ## Important Implementation Notes
 
 The interval builder preserves result-table timestamps in the public schema, but
@@ -1093,7 +1143,7 @@ PYTHONDONTWRITEBYTECODE=1 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/ruff check . --no
 All checks passed.
 
 PYTHONDONTWRITEBYTECODE=1 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/pytest -p no:cacheprovider
-106 passed.
+107 passed.
 ```
 
 The previous `datetime.utcnow()` deprecation warning in
@@ -1101,8 +1151,9 @@ The previous `datetime.utcnow()` deprecation warning in
 
 ## Recommended Next Step
 
-Review the **Milestone 0.9 Prior-PULSE Capacity Predictive Baseline** before
-opening any broader multimodal milestone. The current result supports only a
-narrow non-neural `capacity_Ah_k1` level-prediction claim. The C-rate
-`delta_capacity_Ah` forecast failure remains unresolved. EIS, sequence models,
-neural models, policy ranking, CBAT, and architecture work remain blocked.
+Review the **Milestone 0.9.1 Prior-PULSE vs Strongest Non-PULSE Baseline**
+before opening any broader multimodal milestone. The current result supports
+prior PULSE over F4, but not over the strongest supplied non-PULSE baselines.
+The C-rate `delta_capacity_Ah` forecast failure remains unresolved. EIS,
+sequence models, neural models, policy ranking, CBAT, and architecture work
+remain blocked.

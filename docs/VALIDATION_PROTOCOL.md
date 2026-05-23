@@ -27,7 +27,8 @@ non-neural prior-PULSE predictive baseline for `capacity_Ah_k1`, using prior
 PULSE state at check-up `k` only and paired grouped comparisons. It does not
 authorize EIS modeling, future PULSE state, PULSE deltas as capacity inputs,
 broad capacity+PULSE multimodal claims, sequence models, neural models, policy
-ranking, or CBAT.
+ranking, or CBAT. Milestone 0.9.1 compares prior-PULSE groups against the
+strongest supplied non-PULSE HGB baselines before strengthening the 0.9 claim.
 
 Required split discipline:
 
@@ -374,6 +375,26 @@ Milestone 0.9 claim rules:
   improves under paired grouped validation.
 - Future PULSE state and PULSE deltas invalidate the result if they enter
   capacity feature groups.
+
+Required Milestone 0.9.1 strongest non-PULSE comparison artifacts:
+
+- `reports/baselines/capacity_prior_pulse_vs_best_nonpulse/prior_pulse_vs_best_nonpulse_report.json`
+- `reports/baselines/capacity_prior_pulse_vs_best_nonpulse/paired_gain_vs_best_nonpulse.csv`
+- `reports/baselines/capacity_prior_pulse_vs_best_nonpulse/split_level_gain_vs_best_nonpulse.csv`
+- `reports/baselines/capacity_prior_pulse_vs_best_nonpulse/c_rate_gain_vs_best_nonpulse.csv`
+- `reports/baselines/capacity_prior_pulse_vs_best_nonpulse/bootstrap_gain_vs_best_nonpulse.csv`
+- `reports/baselines/capacity_prior_pulse_vs_best_nonpulse/prior_pulse_vs_best_nonpulse_claim_readiness.md`
+- `docs/experiments/2026-05-23_prior_pulse_vs_best_nonpulse.md`
+
+Milestone 0.9.1 claim rules:
+
+- If prior PULSE beats the strongest supplied non-PULSE baseline for
+  `capacity_Ah_k1` with bootstrap p05 above zero in C-rate and at least one
+  other OOD split, a narrow prior-PULSE level-prediction claim is allowed.
+- If prior PULSE beats F4 but not the strongest supplied non-PULSE baseline,
+  report only the F4 improvement.
+- If `delta_capacity_Ah` remains negative, fade-rate prediction claims remain
+  blocked.
 
 Blocked until later milestones:
 

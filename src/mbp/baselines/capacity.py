@@ -1055,6 +1055,106 @@ def compare_prior_pulse_capacity_reports(
     return report
 
 
+def compare_prior_pulse_vs_best_nonpulse_reports(
+    nonpulse_report_paths: list[Path],
+    prior_pulse_report_path: Path,
+    out_dir: Path,
+    *,
+    seed: int = 42,
+    bootstrap_resamples: int = 1000,
+) -> dict[str, Any]:
+    """Compare prior-PULSE feature groups against strongest supplied non-PULSE reports."""
+    _assert_pulse_feature_groups_are_leakage_safe()
+    if not nonpulse_report_paths:
+        raise ValueError("At least one non-PULSE report is required.")
+    nonpulse_reports = [
+        json.loads(path.read_text(encoding="utf-8")) for path in nonpulse_report_paths
+    ]
+    prior_report = json.loads(prior_pulse_report_path.read_text(encoding="utf-8"))
+    out_dir.mkdir(parents=True, exist_ok=True)
+    plots_dir = out_dir / "plots"
+    plots_dir.mkdir(parents=True, exist_ok=True)
+
+    prior_predictions = _load_prediction_rows(prior_report)
+    covered_keys = _all_primary_prediction_keys(prior_predictions)
+    metadata = _condition_metadata_by_parameter_set(prior_report)
+    prior_condition_rows = _selection_condition_mae_rows(
+        prior_predictions,
+        allowed_feature_groups=PULSE_FEATURE_GROUPS,
+        covered_keys=covered_keys,
+        source_report=Path(prior_report["outputs"]["report"]).name,
+    )
+    nonpulse_condition_rows: list[dict[str, Any]] = []
+    for report_path, report in zip(nonpulse_report_paths, nonpulse_reports, strict=True):
+        nonpulse_condition_rows.extend(
+            _selection_condition_mae_rows(
+                _load_prediction_rows(report),
+                allowed_feature_groups=None,
+                covered_keys=covered_keys,
+                source_report=report_path.name,
+                exclude_feature_groups=PULSE_FEATURE_GROUPS,
+            )
+        )
+    best_prior = _best_selection_by_target_split(prior_condition_rows)
+    best_nonpulse = _best_selection_by_target_split(nonpulse_condition_rows)
+    paired_rows = _paired_best_nonpulse_gain_rows(
+        prior_condition_rows,
+        nonpulse_condition_rows,
+        best_prior,
+        best_nonpulse,
+        metadata,
+    )
+    split_summary = _prior_pulse_split_gain_summary(paired_rows, bootstrap_resamples, seed)
+    c_rate_summary = [row for row in split_summary if row["split_name"] == "c_rate_holdout_fold"]
+    claim_rows = _prior_pulse_vs_best_nonpulse_claim_rows(split_summary)
+
+    _write_csv(out_dir / "paired_gain_vs_best_nonpulse.csv", paired_rows)
+    _write_csv(out_dir / "split_level_gain_vs_best_nonpulse.csv", split_summary)
+    _write_csv(out_dir / "c_rate_gain_vs_best_nonpulse.csv", c_rate_summary)
+    _write_csv(out_dir / "bootstrap_gain_vs_best_nonpulse.csv", split_summary)
+    _write_csv(plots_dir / "paired_gain_vs_best_nonpulse.csv", paired_rows)
+    _write_csv(plots_dir / "split_level_gain_vs_best_nonpulse.csv", split_summary)
+    _write_csv(plots_dir / "c_rate_gain_vs_best_nonpulse.csv", c_rate_summary)
+    _write_csv(plots_dir / "bootstrap_gain_vs_best_nonpulse.csv", split_summary)
+    _write_prior_pulse_vs_best_nonpulse_md(
+        claim_rows,
+        split_summary,
+        out_dir / "prior_pulse_vs_best_nonpulse_claim_readiness.md",
+    )
+
+    report = {
+        "status": "passed",
+        "schema_version": SCHEMA_VERSION,
+        "generated_at_utc": datetime.now(UTC).isoformat(),
+        "inputs": {
+            "nonpulse_reports": [str(path) for path in nonpulse_report_paths],
+            "prior_pulse_report": str(prior_pulse_report_path),
+        },
+        "outputs": {
+            "out_dir": str(out_dir),
+            "paired_gain_vs_best_nonpulse": str(out_dir / "paired_gain_vs_best_nonpulse.csv"),
+            "split_level_gain_vs_best_nonpulse": str(out_dir / "split_level_gain_vs_best_nonpulse.csv"),
+            "claim_readiness": str(out_dir / "prior_pulse_vs_best_nonpulse_claim_readiness.md"),
+        },
+        "bootstrap_resamples": bootstrap_resamples,
+        "seed": seed,
+        "best_prior_pulse_groups": _selection_summary_rows(best_prior),
+        "best_nonpulse_groups": _selection_summary_rows(best_nonpulse),
+        "row_counts": {
+            "nonpulse_condition_rows": len(nonpulse_condition_rows),
+            "prior_pulse_condition_rows": len(prior_condition_rows),
+            "paired_gain_rows": len(paired_rows),
+            "split_summary_rows": len(split_summary),
+        },
+        "claim_rows": claim_rows,
+    }
+    (out_dir / "prior_pulse_vs_best_nonpulse_report.json").write_text(
+        json.dumps(report, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return report
+
+
 def render_capacity_diagnostics(
     report: dict[str, Any],
     report_dir: Path,
@@ -3044,6 +3144,300 @@ def _paired_prior_pulse_condition_gain_rows(
     return rows
 
 
+def _selection_condition_mae_rows(
+    prediction_rows: list[dict[str, Any]],
+    *,
+    allowed_feature_groups: set[str] | None,
+    covered_keys: set[tuple[str, str, int, str, int, int]],
+    source_report: str,
+    exclude_feature_groups: set[str] | None = None,
+) -> list[dict[str, Any]]:
+    grouped: dict[tuple[str, str, int, int, str, str, str], list[float]] = defaultdict(list)
+    for row in prediction_rows:
+        if str(row.get("run_scope")) != "primary":
+            continue
+        feature_group = str(row["feature_group"])
+        model_level = str(row["model_level"])
+        if model_level != "L2_hist_gradient_boosting":
+            continue
+        if allowed_feature_groups is not None and feature_group not in allowed_feature_groups:
+            continue
+        if exclude_feature_groups is not None and feature_group in exclude_feature_groups:
+            continue
+        key = _prediction_covered_key(row)
+        if key not in covered_keys:
+            continue
+        y_true = _as_float(row.get("y_true"))
+        y_pred = _as_float(row.get("y_pred"))
+        if not math.isfinite(y_true) or not math.isfinite(y_pred):
+            continue
+        group_key = (
+            str(row["target"]),
+            str(row["split_name"]),
+            int(row["heldout_fold"]),
+            int(row["parameter_set"]),
+            model_level,
+            feature_group,
+            source_report,
+        )
+        grouped[group_key].append(abs(y_pred - y_true))
+    rows = []
+    for (
+        target,
+        split_name,
+        heldout_fold,
+        parameter_set,
+        model_level,
+        feature_group,
+        source_report,
+    ), errors in sorted(grouped.items()):
+        rows.append(
+            {
+                "target": target,
+                "split_name": split_name,
+                "heldout_fold": heldout_fold,
+                "parameter_set": parameter_set,
+                "model_level": model_level,
+                "feature_group": feature_group,
+                "source_report": source_report,
+                "condition_mae": _mean(errors),
+                "n_intervals": len(errors),
+            }
+        )
+    return rows
+
+
+def _best_selection_by_target_split(
+    condition_rows: list[dict[str, Any]],
+) -> dict[tuple[str, str], dict[str, Any]]:
+    grouped: dict[tuple[str, str, str, str, str], list[dict[str, Any]]] = defaultdict(list)
+    for row in condition_rows:
+        grouped[
+            (
+                str(row["target"]),
+                str(row["split_name"]),
+                str(row["model_level"]),
+                str(row["feature_group"]),
+                str(row["source_report"]),
+            )
+        ].append(row)
+    best: dict[tuple[str, str], dict[str, Any]] = {}
+    for (target, split_name, model_level, feature_group, source_report), rows in grouped.items():
+        errors = [float(row["condition_mae"]) for row in rows]
+        candidate = {
+            "target": target,
+            "split_name": split_name,
+            "model_level": model_level,
+            "feature_group": feature_group,
+            "source_report": source_report,
+            "condition_mean_mae": _mean(errors),
+            "worst_condition_mae": max(errors),
+            "n_conditions": len(rows),
+        }
+        key = (target, split_name)
+        if key not in best or (
+            candidate["condition_mean_mae"],
+            candidate["worst_condition_mae"],
+        ) < (
+            float(best[key]["condition_mean_mae"]),
+            float(best[key]["worst_condition_mae"]),
+        ):
+            best[key] = candidate
+    return best
+
+
+def _paired_best_nonpulse_gain_rows(
+    prior_rows: list[dict[str, Any]],
+    nonpulse_rows: list[dict[str, Any]],
+    best_prior: dict[tuple[str, str], dict[str, Any]],
+    best_nonpulse: dict[tuple[str, str], dict[str, Any]],
+    metadata: dict[int, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    prior_lookup = _condition_selection_lookup(prior_rows)
+    nonpulse_lookup = _condition_selection_lookup(nonpulse_rows)
+    rows = []
+    for key in sorted(set(best_prior) & set(best_nonpulse)):
+        target, split_name = key
+        prior = best_prior[key]
+        nonpulse = best_nonpulse[key]
+        prior_key = (
+            target,
+            split_name,
+            str(prior["model_level"]),
+            str(prior["feature_group"]),
+            str(prior["source_report"]),
+        )
+        nonpulse_key = (
+            target,
+            split_name,
+            str(nonpulse["model_level"]),
+            str(nonpulse["feature_group"]),
+            str(nonpulse["source_report"]),
+        )
+        for condition_key in sorted(set(prior_lookup[prior_key]) & set(nonpulse_lookup[nonpulse_key])):
+            heldout_fold, parameter_set = condition_key
+            prior_row = prior_lookup[prior_key][condition_key]
+            nonpulse_row = nonpulse_lookup[nonpulse_key][condition_key]
+            meta = metadata.get(parameter_set, {})
+            rows.append(
+                {
+                    "target": target,
+                    "split_name": split_name,
+                    "heldout_fold": heldout_fold,
+                    "parameter_set": parameter_set,
+                    "prior_pulse_feature_group": prior["feature_group"],
+                    "prior_pulse_source_report": prior["source_report"],
+                    "best_nonpulse_feature_group": nonpulse["feature_group"],
+                    "best_nonpulse_source_report": nonpulse["source_report"],
+                    "best_nonpulse_condition_mae": nonpulse_row["condition_mae"],
+                    "prior_pulse_condition_mae": prior_row["condition_mae"],
+                    "gain": float(nonpulse_row["condition_mae"]) - float(prior_row["condition_mae"]),
+                    "n_intervals": prior_row["n_intervals"],
+                    "nominal_temperature_C": meta.get("nominal_temperature_C"),
+                    "voltage_window_family": meta.get("voltage_window_family"),
+                    "nominal_charge_C_rate": meta.get("nominal_charge_C_rate"),
+                    "aging_mode": meta.get("aging_mode"),
+                }
+            )
+    return rows
+
+
+def _condition_selection_lookup(
+    rows: list[dict[str, Any]],
+) -> dict[tuple[str, str, str, str, str], dict[tuple[int, int], dict[str, Any]]]:
+    output: dict[tuple[str, str, str, str, str], dict[tuple[int, int], dict[str, Any]]] = defaultdict(dict)
+    for row in rows:
+        selection_key = (
+            str(row["target"]),
+            str(row["split_name"]),
+            str(row["model_level"]),
+            str(row["feature_group"]),
+            str(row["source_report"]),
+        )
+        output[selection_key][(int(row["heldout_fold"]), int(row["parameter_set"]))] = row
+    return output
+
+
+def _all_primary_prediction_keys(
+    prediction_rows: list[dict[str, Any]],
+) -> set[tuple[str, str, int, str, int, int]]:
+    return {
+        _prediction_covered_key(row)
+        for row in prediction_rows
+        if str(row.get("run_scope")) == "primary"
+    }
+
+
+def _prediction_covered_key(row: dict[str, Any]) -> tuple[str, str, int, str, int, int]:
+    return (
+        str(row["target"]),
+        str(row["split_name"]),
+        int(row["parameter_set"]),
+        str(row["cell_id"]),
+        int(row["checkup_k"]),
+        int(row["checkup_k_next"]),
+    )
+
+
+def _selection_summary_rows(
+    selections: dict[tuple[str, str], dict[str, Any]],
+) -> list[dict[str, Any]]:
+    return [
+        {
+            "target": target,
+            "split_name": split_name,
+            "model_level": row["model_level"],
+            "feature_group": row["feature_group"],
+            "source_report": row["source_report"],
+            "condition_mean_mae": row["condition_mean_mae"],
+            "n_conditions": row["n_conditions"],
+        }
+        for (target, split_name), row in sorted(selections.items())
+    ]
+
+
+def _prior_pulse_vs_best_nonpulse_claim_rows(
+    split_summary: list[dict[str, Any]],
+) -> list[dict[str, str]]:
+    capacity_c_rate = _summary_row(split_summary, "capacity_Ah_k1", "c_rate_holdout_fold")
+    capacity_temp = _summary_row(split_summary, "capacity_Ah_k1", "temperature_holdout_fold")
+    capacity_profile = _summary_row(split_summary, "capacity_Ah_k1", "profile_holdout_fold")
+    delta_c_rate = _summary_row(split_summary, "delta_capacity_Ah", "c_rate_holdout_fold")
+    beats_c_rate = _as_float(capacity_c_rate.get("gain_p05")) > 0
+    beats_temp = _as_float(capacity_temp.get("gain_p05")) > 0
+    beats_profile = _as_float(capacity_profile.get("gain_p05")) > 0
+    delta_beats = _as_float(delta_c_rate.get("gain_p05")) > 0
+    return [
+        {
+            "claim": "Prior PULSE beats strongest non-PULSE for capacity_Ah_k1",
+            "status": "supported" if beats_c_rate and (beats_temp or beats_profile) else "not_supported",
+            "evidence": (
+                f"C-rate p05 {_format_diagnostic_value(capacity_c_rate.get('gain_p05'))}; "
+                f"temperature p05 {_format_diagnostic_value(capacity_temp.get('gain_p05'))}; "
+                f"profile p05 {_format_diagnostic_value(capacity_profile.get('gain_p05'))}"
+            ),
+            "decision": "Allow narrow prior-PULSE level-prediction claim"
+            if beats_c_rate and (beats_temp or beats_profile)
+            else "Claim only improvement over weaker baselines or selected splits",
+        },
+        {
+            "claim": "Prior PULSE beats strongest non-PULSE for delta_capacity_Ah",
+            "status": "supported" if delta_beats else "not_supported",
+            "evidence": (
+                f"C-rate delta mean {_format_diagnostic_value(delta_c_rate.get('mean_gain'))}; "
+                f"p05 {_format_diagnostic_value(delta_c_rate.get('gain_p05'))}"
+            ),
+            "decision": "Do not claim fade-rate improvement" if not delta_beats else "Report cautiously",
+        },
+        {
+            "claim": "Leakage safety",
+            "status": "supported",
+            "evidence": "Prior-PULSE groups allow `pulse_1s_resistance_k` only.",
+            "decision": "Future PULSE state and PULSE deltas remain blocked.",
+        },
+    ]
+
+
+def _write_prior_pulse_vs_best_nonpulse_md(
+    claim_rows: list[dict[str, str]],
+    split_summary: list[dict[str, Any]],
+    path: Path,
+) -> None:
+    lines = [
+        "# Prior-PULSE vs Strongest Non-PULSE Claim Readiness",
+        "",
+        "This Milestone 0.9.1 report compares prior-PULSE feature groups against",
+        "the strongest supplied non-PULSE HGB feature group on the same",
+        "PULSE-covered interval population.",
+        "",
+        "| Claim | Status | Evidence | Decision |",
+        "|---|---|---|---|",
+    ]
+    for row in claim_rows:
+        lines.append(
+            f"| {row['claim']} | `{row['status']}` | {row['evidence']} | {row['decision']} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Paired Gain Summary",
+            "",
+            "| Target | Split | Prior-PULSE group | Non-PULSE group | Conditions | Mean gain | p05 | p50 | p95 | Win rate |",
+            "|---|---|---|---|---:|---:|---:|---:|---:|---:|",
+        ]
+    )
+    for row in split_summary:
+        lines.append(
+            f"| `{row['target']}` | `{row['split_name']}` | `{row['prior_pulse_feature_group']}` | "
+            f"`{row.get('best_nonpulse_feature_group', 'see_csv')}` | {row['n_conditions']} | "
+            f"{_format_diagnostic_value(row['mean_gain'])} | {_format_diagnostic_value(row['gain_p05'])} | "
+            f"{_format_diagnostic_value(row['gain_p50'])} | {_format_diagnostic_value(row['gain_p95'])} | "
+            f"{_format_diagnostic_value(row['win_rate'])} |"
+        )
+    lines.append("")
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
 def _condition_mae_by_fold_for_selection(
     prediction_rows: list[dict[str, Any]],
     *,
@@ -3093,6 +3487,8 @@ def _prior_pulse_split_gain_summary(
                 "target": target,
                 "split_name": split_name,
                 "prior_pulse_feature_group": feature_group,
+                "best_nonpulse_feature_group": rows[0].get("best_nonpulse_feature_group", ""),
+                "best_nonpulse_source_report": rows[0].get("best_nonpulse_source_report", ""),
                 "n_conditions": len(rows),
                 "mean_gain": _mean(gains),
                 "median_gain": _median(gains),
