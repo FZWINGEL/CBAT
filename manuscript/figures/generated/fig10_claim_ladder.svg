@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="424" viewBox="0 0 980 424" role="img">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="30.0" y="38.0" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#1f2937">Claim Ladder</text>
+<text x="30.0" y="62.0" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#1f2937">Paper-facing claim statuses from reports/synthesis/claim_matrix.csv.</text>
+<line x1="280" y1="74" x2="910" y2="74" stroke="#d1d5db"/>
+<line x1="280.0" y1="64" x2="280.0" y2="360" stroke="#6b7280" stroke-dasharray="4 4"/>
+<text x="30.0" y="113.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">blocked</text>
+<rect x="280.0" y="92.0" width="157.5" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="445.5" y="109.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">1</text>
+<text x="30.0" y="145.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">gated</text>
+<rect x="280.0" y="124.0" width="157.5" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="445.5" y="141.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">1</text>
+<text x="30.0" y="177.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">not_supported</text>
+<rect x="280.0" y="156.0" width="630.0" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="860.0" y="173.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">4</text>
+<text x="30.0" y="209.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">partially_supported</text>
+<rect x="280.0" y="188.0" width="157.5" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="445.5" y="205.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">1</text>
+<text x="30.0" y="241.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">supported</text>
+<rect x="280.0" y="220.0" width="315.0" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="603.0" y="237.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">2</text>
+<text x="30.0" y="273.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">supported_for_diagnosti.</text>
+<rect x="280.0" y="252.0" width="157.5" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="445.5" y="269.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">1</text>
+<text x="30.0" y="305.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">supported_for_explanato.</text>
+<rect x="280.0" y="284.0" width="157.5" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="445.5" y="301.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">1</text>
+<text x="30.0" y="337.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">supported_for_selected_.</text>
+<rect x="280.0" y="316.0" width="157.5" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="445.5" y="333.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">1</text>
+<text x="280.0" y="396.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">Number of claims</text>
+</svg>

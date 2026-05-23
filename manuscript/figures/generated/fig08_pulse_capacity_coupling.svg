@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="424" viewBox="0 0 980 424" role="img">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="30.0" y="38.0" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#1f2937">Capacity Residual and PULSE Growth Coupling</text>
+<text x="30.0" y="62.0" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#1f2937">Condition-level Pearson correlations for capacity_Ah_k1 residual diagnostics.</text>
+<line x1="280" y1="74" x2="910" y2="74" stroke="#d1d5db"/>
+<line x1="280.0" y1="64" x2="280.0" y2="360" stroke="#6b7280" stroke-dasharray="4 4"/>
+<text x="30.0" y="113.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">all capacity_residual</text>
+<rect x="280.0" y="92.0" width="556.2" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="844.2" y="109.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">0.8209</text>
+<text x="30.0" y="145.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">all capacity_abs_residu.</text>
+<rect x="280.0" y="124.0" width="612.4" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="860.0" y="141.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">0.9038</text>
+<text x="30.0" y="177.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">c_rate_holdout capacity.</text>
+<rect x="280.0" y="156.0" width="630.0" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="860.0" y="173.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">0.9299</text>
+<text x="30.0" y="209.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">c_rate_holdout capacity.</text>
+<rect x="280.0" y="188.0" width="593.0" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="860.0" y="205.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">0.8752</text>
+<text x="30.0" y="241.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">cold_c_rate capacity_re.</text>
+<rect x="280.0" y="220.0" width="611.4" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="860.0" y="237.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">0.9025</text>
+<text x="30.0" y="273.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">cold_c_rate capacity_ab.</text>
+<rect x="280.0" y="252.0" width="516.6" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="804.6" y="269.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">0.7625</text>
+<text x="30.0" y="305.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">voltage_window_approx_0.</text>
+<rect x="280.0" y="284.0" width="585.6" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="860.0" y="301.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">0.8643</text>
+<text x="30.0" y="337.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">voltage_window_approx_0.</text>
+<rect x="280.0" y="316.0" width="600.2" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="860.0" y="333.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">0.8858</text>
+<text x="280.0" y="396.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">Pearson correlation</text>
+</svg>

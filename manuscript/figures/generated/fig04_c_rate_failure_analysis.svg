@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="420" viewBox="0 0 980 420" role="img">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="30.0" y="38.0" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#1f2937">Split Difficulty Summary</text>
+<text x="30.0" y="62.0" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#1f2937">Best-known capacity_Ah_k1 metrics by grouped split; lower is better.</text>
+<line x1="280" y1="74" x2="910" y2="74" stroke="#d1d5db"/>
+<line x1="280.0" y1="64" x2="280.0" y2="264" stroke="#6b7280" stroke-dasharray="4 4"/>
+<text x="30.0" y="113.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">condition</text>
+<rect x="280.0" y="92.0" width="277.4" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="565.4" y="109.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">0.05293</text>
+<text x="30.0" y="145.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">temperature</text>
+<rect x="280.0" y="124.0" width="336.0" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="624.0" y="141.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">0.06412</text>
+<text x="30.0" y="177.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">c_rate</text>
+<rect x="280.0" y="156.0" width="630.0" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="860.0" y="173.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">0.1202</text>
+<text x="30.0" y="209.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">profile</text>
+<rect x="280.0" y="188.0" width="324.1" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="612.1" y="205.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">0.06184</text>
+<text x="30.0" y="241.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">voltage_window</text>
+<rect x="280.0" y="220.0" width="440.2" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="728.2" y="237.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">0.084</text>
+<text x="280.0" y="392.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">Best-known condition-mean MAE</text>
+</svg>

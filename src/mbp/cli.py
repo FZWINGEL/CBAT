@@ -377,6 +377,72 @@ def report_evidence_memo(
     typer.echo(f"Generated dataset evidence memo at {out}")
 
 
+@report_app.command("build-manuscript-assets")
+def report_build_manuscript_assets(
+    out_dir: Path = typer.Option(
+        Path("manuscript"),
+        "--out-dir",
+        help="Manuscript directory where generated assets and v0.2 draft are written.",
+    ),
+    reports_dir: Path = typer.Option(
+        Path("reports"),
+        "--reports-dir",
+        help="Reports directory containing tracked synthesis artifacts.",
+    ),
+    docs_dir: Path = typer.Option(
+        Path("docs"),
+        "--docs-dir",
+        help="Documentation directory containing claim ledgers and status files.",
+    ),
+) -> None:
+    """Build Milestone 1.2 manuscript figures, tables, captions, checks, and v0.2 draft."""
+    from mbp.reporting import build_manuscript_assets
+
+    result = build_manuscript_assets(out_dir=out_dir, reports_dir=reports_dir, docs_dir=docs_dir)
+    typer.echo(
+        "Manuscript assets generated: "
+        f"{len(result['figures'])} figures, {len(result['tables'])} tables, "
+        f"status={result['status']}"
+    )
+    if result["status"] != "passed":
+        raise typer.Exit(code=1)
+
+
+@report_app.command("check-manuscript")
+def report_check_manuscript(
+    manuscript: Path = typer.Option(
+        ...,
+        "--manuscript",
+        help="Continuous manuscript markdown file to check.",
+    ),
+    claim_ledger: Path = typer.Option(
+        ...,
+        "--claim-ledger",
+        help="Paper claim ledger markdown file.",
+    ),
+    traceability: Path = typer.Option(
+        ...,
+        "--traceability",
+        help="Manuscript source traceability markdown file.",
+    ),
+) -> None:
+    """Check a manuscript draft for claim IDs, callouts, and blocked wording."""
+    from mbp.reporting import check_manuscript
+
+    result = check_manuscript(
+        manuscript=manuscript,
+        claim_ledger=claim_ledger,
+        traceability=traceability,
+    )
+    typer.echo(f"Manuscript check {result['status']}: {manuscript}")
+    for warning in result["warnings"]:
+        typer.echo(f"warning: {warning}")
+    for failure in result["failures"]:
+        typer.echo(f"failure: {failure}")
+    if result["status"] != "passed":
+        raise typer.Exit(code=1)
+
+
 @ingest_app.command("run-pipeline")
 def ingest_run_pipeline(
     data_root: Path = typer.Option(

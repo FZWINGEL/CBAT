@@ -44,6 +44,12 @@ figure/table specifications, claim-to-section mapping, source traceability, and
 reviewer-risk mitigation prose. It is still paper-first work only and does not
 authorize new model training, feature engineering, EIS modeling, neural models,
 sequence models, policy ranking, CBAT, or broad multimodal claims.
+Milestone 1.2 is figure/table generation and manuscript v0.2 assembly. It
+authorizes only generated figures/tables from existing tracked artifacts,
+caption drafting, continuous manuscript assembly, source-traceability checks,
+and no-overclaim checks. It still does not authorize new model training, new
+feature engineering, EIS modeling, neural models, sequence models, policy
+ranking, CBAT, or broad multimodal claims.
 
 Required split discipline:
 
@@ -94,6 +100,25 @@ Required Milestone 1.1 manuscript package artifacts:
 - `manuscript/reviewer_response_prep.md`
 - `manuscript/figures/*.md`
 - `manuscript/tables/*.md`
+
+Required Milestone 1.2 manuscript asset artifacts:
+
+- `manuscript/manuscript_v0_2.md`
+- `manuscript/figures/generated/*.svg`
+- `manuscript/tables/generated/*.md`
+- `manuscript/captions/figure_captions.md`
+- `manuscript/captions/table_captions.md`
+- `manuscript/checks/manuscript_claim_check.md`
+- `manuscript/checks/figure_source_check.md`
+- `docs/experiments/2026-05-23_manuscript_v0_2_assets.md`
+
+Required Milestone 1.2 checks:
+
+- `mbp report build-manuscript-assets`
+- `mbp report check-manuscript`
+- `git diff --check`
+- `ruff check . --no-cache` and `pytest -p no:cacheprovider` when reporting
+  code is added or changed.
 
 Milestone 1.0 claim statuses must distinguish supported claims,
 partially-supported claims, not-supported claims, gated claims, and blocked
