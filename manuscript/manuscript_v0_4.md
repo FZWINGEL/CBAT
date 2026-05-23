@@ -373,12 +373,4 @@ The benchmark is based on grouped observational experimental conditions, not
 same-cell counterfactual interventions. PULSE growth correlations are
 explanatory diagnostics, not causal proof.
 
-Forbidden wording:
-
-- "validated calibrated intervals";
-- "EIS has demonstrated predictive benefit";
-- "PULSE supports fade-rate prediction";
-- "CBAT has been validated";
-- "same-cell counterfactual".
-
 Figure 10 summarizes the final claim ladder.

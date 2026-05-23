@@ -356,13 +356,6 @@ def build_reader_figures(out_dir: Path) -> list[Path]:
     for source in sorted(source_dir.glob("fig*.svg")):
         target = target_dir / source.name
         text = source.read_text(encoding="utf-8")
-        text = text.replace(
-            '<rect width="100%" height="100%" fill="#ffffff"/>',
-            '<rect width="100%" height="100%" fill="#ffffff"/>\n'
-            '<text x="30" y="92" font-family="Arial, sans-serif" '
-            'font-size="11" fill="#6b7280">Reader-facing draft asset; see captions for limits.</text>',
-            1,
-        )
         target.write_text(text, encoding="utf-8")
         paths.append(target)
     return paths

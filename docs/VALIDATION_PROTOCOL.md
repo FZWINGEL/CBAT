@@ -62,6 +62,11 @@ existing artifacts, traceability sidecar updates, and reader-facing
 no-overclaim checks. It still does not authorize new model training, new
 feature engineering, EIS modeling, neural models, sequence models, policy
 ranking, CBAT, or broad multimodal claims.
+Milestone 1.4.1 is reader-facing cleanup and check hardening. It authorizes
+only removal of remaining internal scaffold language, reader-check hardening,
+caption/figure wording cleanup, and no-overclaim checks. It still does not
+authorize new model training, new feature engineering, EIS modeling, neural
+models, sequence models, policy ranking, CBAT, or broad multimodal claims.
 
 Required split discipline:
 
@@ -143,6 +148,14 @@ Required Milestone 1.4 reader-facing artifacts:
 - `manuscript/figures/generated_v0_4/*.svg`
 - `docs/experiments/2026-05-23_manuscript_v0_4_reader_polish.md`
 
+Required Milestone 1.4.1 cleanup artifacts:
+
+- cleaned `manuscript/manuscript_v0_4.md` without `Forbidden wording:`
+- updated `manuscript/manuscript_v0_4_traceability.md` with prose guardrails
+- regenerated `manuscript/figures/generated_v0_4/*.svg` without internal draft
+  labels
+- `docs/experiments/2026-05-23_manuscript_v0_4_1_reader_cleanup.md`
+
 Required Milestone 1.2 checks:
 
 - `mbp report build-manuscript-assets`
@@ -158,6 +171,8 @@ traceability file.
 Milestone 1.4 `mbp report check-reader-manuscript` must fail if reader-facing
 prose contains raw claim IDs, allowed/blocked claim blocks, source-artifact
 blocks, referenced-asset notes, or forbidden overclaim wording.
+Milestone 1.4.1 extends that rule to fail on `Forbidden wording:` in the
+reader-facing manuscript body.
 
 Milestone 1.0 claim statuses must distinguish supported claims,
 partially-supported claims, not-supported claims, gated claims, and blocked

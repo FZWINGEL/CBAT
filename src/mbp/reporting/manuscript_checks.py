@@ -190,6 +190,7 @@ def check_reader_manuscript(
         "source artifact:",
         "referenced assets:",
         "claim ids:",
+        "forbidden wording:",
     ]
     for marker in blocked_blocks:
         if marker in lower:

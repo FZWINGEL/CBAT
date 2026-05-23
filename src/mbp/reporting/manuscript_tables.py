@@ -340,6 +340,7 @@ def _reader_clean_section(text: str) -> str:
         "blocked claim:",
         "blocked claims:",
         "figure/table references:",
+        "forbidden wording:",
         "source artifact:",
         "source artifacts:",
     }
@@ -407,7 +408,11 @@ def write_reader_traceability(out_dir: Path) -> Path:
         "This sidecar preserves the claim, figure/table, source artifact, allowed wording, "
         "and forbidden wording mappings that were removed from the reader-facing v0.4 body.\n\n"
     )
-    return _write(out_dir / "manuscript_v0_4_traceability.md", text.replace("\n\n", "\n\n" + intro, 1))
+    forbidden_section = """\n## Reader-Facing Prose Guardrails\n\nThe following internal scaffold labels are allowed in this sidecar but not in `manuscript/manuscript_v0_4.md`:\n\n- `Allowed claims:`\n- `Blocked claims:`\n- `Source artifacts:`\n- `Claim IDs:`\n- `Referenced assets:`\n- `Forbidden wording:`\n\nThe reader-facing manuscript must also avoid unsupported assertions such as validated calibrated intervals, demonstrated EIS predictive benefit, PULSE support for fade-rate prediction, CBAT validation, and same-cell counterfactual claims.\n"""
+    return _write(
+        out_dir / "manuscript_v0_4_traceability.md",
+        text.replace("\n\n", "\n\n" + intro, 1) + forbidden_section,
+    )
 
 
 def write_figure_data_check(out_dir: Path, reports_dir: Path) -> Path:
@@ -490,19 +495,18 @@ def _write_asset_note(
 def _write_reader_note(out_dir: Path, reader_result: dict[str, object]) -> Path:
     status = "passed" if reader_result.get("status") == "passed" else "failed"
     lines = [
-        "# Manuscript v0.4 Reader Polish",
+        "# Manuscript v0.4.1 Reader Cleanup",
         "",
         "Date: 2026-05-23",
         "",
-        "Milestone 1.4 converts the internally traceable v0.3 draft into a reader-facing v0.4 manuscript while preserving claim traceability in a sidecar.",
+        "Milestone 1.4.1 removes the remaining internal scaffold wording from the reader-facing manuscript, hardens the reader check, and removes internal draft labels from v0.4 SVGs.",
         "",
-        "## Changed From v0.3",
+        "## Changed From v0.4",
         "",
-        "- Removed raw claim IDs from the main manuscript body.",
-        "- Removed allowed-claim, blocked-claim, source-artifact, and referenced-asset scaffolding from reader prose.",
-        "- Added `manuscript/manuscript_v0_4_traceability.md` for claim/source mapping.",
-        "- Added v0.4 reader-facing captions.",
-        "- Added `manuscript/figures/generated_v0_4/*.svg` draft figure assets.",
+        "- Removed the remaining `Forbidden wording:` block from the reader-facing manuscript.",
+        "- Moved reader-facing prose guardrails into `manuscript/manuscript_v0_4_traceability.md`.",
+        "- Hardened `check-reader-manuscript` to fail on `Forbidden wording:` in the manuscript body.",
+        "- Removed internal draft labels from `manuscript/figures/generated_v0_4/*.svg`.",
         "",
         "## Validation Summary",
         "",
@@ -516,7 +520,7 @@ def _write_reader_note(out_dir: Path, reader_result: dict[str, object]) -> Path:
         "- Decide whether traceability belongs in supplement or repository-only material.",
     ]
     return _write(
-        out_dir.parent / "docs" / "experiments" / "2026-05-23_manuscript_v0_4_reader_polish.md",
+        out_dir.parent / "docs" / "experiments" / "2026-05-23_manuscript_v0_4_1_reader_cleanup.md",
         "\n".join(lines) + "\n",
     )
 

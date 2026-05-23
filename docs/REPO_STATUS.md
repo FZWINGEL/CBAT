@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 1.4: Reader-facing manuscript v0.4 and publication figure pass**.
+The repository is in **Milestone 1.4.1: Reader-facing cleanup and check hardening**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -44,6 +44,8 @@ extraction, adds figure data checks, and expands no-overclaim checks across
 paper-facing manuscript files.
 Milestone 1.4 converts the internally traceable manuscript into a reader-facing
 v0.4 draft, preserving claim/source mapping in sidecar traceability files.
+Milestone 1.4.1 removes the last reader-facing scaffold block, hardens checks,
+and removes internal draft labels from v0.4 SVG figures.
 
 No EIS claims, PULSE scientific claims beyond scalar resistance baselines,
 sequence models, neural architecture, policy ranking, CBAT architecture, or EIS
@@ -119,12 +121,13 @@ Current state:
 - Milestone 1.0.1 is the active paper-artifact QA workstream. It does not add
   models or features; it prepares the synthesis artifacts for manuscript
   drafting.
-- Milestone 1.4 is now the active paper-first workstream. It removes internal
-  claim-control scaffolding from the main manuscript body, creates
-  `manuscript/manuscript_v0_4.md`, keeps traceability in
-  `manuscript/manuscript_v0_4_traceability.md`, and adds reader-facing checks.
-  It keeps all new modeling, EIS modeling, feature engineering, CBAT,
-  neural/sequence models, policy ranking, and broad multimodal claims blocked.
+- Milestone 1.4.1 is now the active paper-first cleanup patch. It removes the
+  remaining `Forbidden wording:` scaffold from `manuscript/manuscript_v0_4.md`,
+  keeps that guardrail in the traceability sidecar, hardens
+  `check-reader-manuscript`, and removes internal draft labels from
+  `manuscript/figures/generated_v0_4/*.svg`. It keeps all new modeling, EIS
+  modeling, feature engineering, CBAT, neural/sequence models, policy ranking,
+  and broad multimodal claims blocked.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -1296,6 +1299,23 @@ Implemented reader-facing updates:
 - Experiment note:
   `docs/experiments/2026-05-23_manuscript_v0_4_reader_polish.md`
 
+### Milestone 1.4.1
+
+Milestone 1.4.1 is a reader-facing cleanup and check-hardening patch.
+
+Implemented cleanup updates:
+
+- Removed the remaining `Forbidden wording:` block from
+  `manuscript/manuscript_v0_4.md`.
+- Added reader-facing prose guardrails to
+  `manuscript/manuscript_v0_4_traceability.md`.
+- Hardened `mbp report check-reader-manuscript` to fail on `Forbidden wording:`
+  in the reader-facing manuscript body.
+- Regenerated `manuscript/figures/generated_v0_4/*.svg` without internal
+  "Reader-facing draft asset" labels.
+- Experiment note:
+  `docs/experiments/2026-05-23_manuscript_v0_4_1_reader_cleanup.md`
+
 ## Important Implementation Notes
 
 The interval builder preserves result-table timestamps in the public schema, but
@@ -1386,14 +1406,18 @@ Milestone 1.4 updates reader-facing manuscript/caption/check generation only.
 It does not add model training, feature engineering, generated Parquet data
 products, prediction artifacts, EIS modeling, or architecture work.
 
+Milestone 1.4.1 updates reader-facing manuscript/check/figure wording only. It
+does not add model training, feature engineering, generated Parquet data
+products, prediction artifacts, EIS modeling, or architecture work.
+
 The previous `datetime.utcnow()` deprecation warning in
 `src/mbp/data/luh_blank/qa_result_data.py` has been fixed.
 
 ## Recommended Next Step
 
-Review the **Milestone 1.4 Reader-Facing Manuscript v0.4** outputs. The
-preferred next branch is venue-targeted manuscript formatting or a final
-publication-quality figure pass, still using the locked claim ledger. If a
-technical stream is needed afterward, open a separately gated EIS QA milestone;
-do not jump directly to EIS modeling, sequence models, neural models, policy
-ranking, CBAT, or broad multimodal claims.
+Review the **Milestone 1.4.1 Reader-Facing Cleanup** outputs. The preferred
+next branch is Milestone 1.5 venue-targeted manuscript formatting and submission
+skeleton, still using the locked claim ledger. If a technical stream is needed
+afterward, open a separately gated EIS QA milestone; do not jump directly to
+EIS modeling, sequence models, neural models, policy ranking, CBAT, or broad
+multimodal claims.

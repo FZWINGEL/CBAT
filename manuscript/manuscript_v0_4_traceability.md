@@ -21,3 +21,16 @@ This sidecar preserves the claim, figure/table, source artifact, allowed wording
 | Discussion | C09 | Table 5 | `reports/baselines/capacity_hgb50_focused/claim_readiness.md` | Quantile outputs are diagnostics only. | Calibration claim. |
 | Discussion | C10 | Table 4, Table 5 | `docs/REPO_STATUS.md` | EIS is gated. | EIS has demonstrated predictive value. |
 | Discussion | C11 | Table 4 | `docs/PROJECT_CHARTER.md` | CBAT is reserved for late-stage work. | CBAT is validated. |
+
+## Reader-Facing Prose Guardrails
+
+The following internal scaffold labels are allowed in this sidecar but not in `manuscript/manuscript_v0_4.md`:
+
+- `Allowed claims:`
+- `Blocked claims:`
+- `Source artifacts:`
+- `Claim IDs:`
+- `Referenced assets:`
+- `Forbidden wording:`
+
+The reader-facing manuscript must also avoid unsupported assertions such as validated calibrated intervals, demonstrated EIS predictive benefit, PULSE support for fade-rate prediction, CBAT validation, and same-cell counterfactual claims.

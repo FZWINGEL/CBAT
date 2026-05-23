@@ -161,7 +161,10 @@ def test_reader_manuscript_rejects_internal_scaffolding(tmp_path: Path) -> None:
     manuscript = tmp_path / "manuscript_v0_4.md"
     ledger = tmp_path / "PAPER_CLAIM_LEDGER.md"
     traceability = tmp_path / "manuscript_v0_4_traceability.md"
-    manuscript.write_text("Allowed claims:\n\n- C01: internal note.\n", encoding="utf-8")
+    manuscript.write_text(
+        "Allowed claims:\n\n- C01: internal note.\n\nForbidden wording:\n\n- internal note.\n",
+        encoding="utf-8",
+    )
     _write_minimal_ledger(ledger)
     traceability.write_text("C01 source mapping.\n", encoding="utf-8")
 
@@ -173,6 +176,7 @@ def test_reader_manuscript_rejects_internal_scaffolding(tmp_path: Path) -> None:
 
     assert result["status"] == "failed"
     assert any("Internal scaffolding" in failure for failure in result["failures"])
+    assert any("forbidden wording:" in failure for failure in result["failures"])
     assert any("raw claim IDs" in failure for failure in result["failures"])
 
 
