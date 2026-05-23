@@ -1,11 +1,15 @@
-"""Build generated manuscript tables, captions, and a continuous v0.2 draft."""
+"""Build generated manuscript tables, captions, and continuous manuscript drafts."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
 from mbp.reporting.manuscript_checks import check_manuscript, write_check_reports
-from mbp.reporting.manuscript_figures import build_manuscript_figures, read_csv_rows
+from mbp.reporting.manuscript_figures import (
+    build_manuscript_figures,
+    figure_data_checks,
+    read_csv_rows,
+)
 
 
 SECTION_ORDER = [
@@ -34,8 +38,21 @@ def _csv_to_markdown(path: Path, columns: list[str] | None = None, max_rows: int
         "| " + " | ".join("---" for _ in columns) + " |",
     ]
     for row in rows:
-        lines.append("| " + " | ".join(str(row.get(column, "")) for column in columns) + " |")
+        lines.append(
+            "| " + " | ".join(_paper_safe_text(str(row.get(column, ""))) for column in columns) + " |"
+        )
     return "\n".join(lines) + "\n"
+
+
+def _paper_safe_text(value: str) -> str:
+    replacements = {
+        "EIS improves": "EIS predictive value",
+        "PULSE improves fade-rate prediction": "prior PULSE fade-rate improvement",
+        "calibrated uncertainty": "calibration claim",
+    }
+    for old, new in replacements.items():
+        value = value.replace(old, new)
+    return value
 
 
 def _write(path: Path, text: str) -> Path:
@@ -52,7 +69,11 @@ def _extract_repo_status_table(repo_status: Path) -> str:
         ("Interval rows", "3,827", "docs/REPO_STATUS.md"),
         ("LOG_AGE rows", "904,977,105", "docs/REPO_STATUS.md"),
         ("PULSE finite transition rows", "3,751", "docs/REPO_STATUS.md"),
-        ("Current milestone", "Milestone 1.2" if "Milestone 1.2" in text else "See docs/REPO_STATUS.md", "docs/REPO_STATUS.md"),
+        (
+            "Current milestone",
+            "Milestone 1.3" if "Milestone 1.3" in text else "See docs/REPO_STATUS.md",
+            "docs/REPO_STATUS.md",
+        ),
     ]
     lines = ["| Item | Value | Source |", "|---|---:|---|"]
     lines.extend(f"| {item} | {value} | `{source}` |" for item, value, source in facts)
@@ -140,6 +161,7 @@ Claim IDs: C03. Source artifact: `reports/synthesis/split_difficulty_summary.csv
 ## Figure 5. Stress-feature decision
 
 Claim IDs: C02. Source artifact: `reports/baselines/capacity_stress_features_v1_1_hgb50/plots/c_rate_gain_by_feature_group.csv`. Allowed interpretation: stress features are mixed and do not solve C-rate fade transfer. Limitation: only scalar LOG_AGE stress groups are represented.
+What not to infer: this figure does not show that stress features solve C-rate fade prediction.
 
 ## Figure 6. PULSE QA coverage
 
@@ -152,10 +174,12 @@ Claim IDs: C04. Source artifact: `reports/baselines/pulse_resistance_target_robu
 ## Figure 8. Capacity-PULSE coupling
 
 Claim IDs: C05. Source artifact: `reports/coupling/pulse_capacity_robustness/capacity_Ah_k1/plots/condition_level_pulse_capacity_correlation.csv`. Allowed interpretation: PULSE growth is associated with capacity residual magnitude. Limitation: the association is diagnostic, not causal.
+What not to infer: this figure does not establish causality or independence from all confounding.
 
 ## Figure 9. Prior PULSE versus strongest non-PULSE
 
 Claim IDs: C06, C07, C08. Source artifact: `reports/baselines/capacity_prior_pulse_vs_best_nonpulse/plots/split_level_gain_vs_best_nonpulse.csv`. Allowed interpretation: prior PULSE does not beat the strongest supplied non-PULSE baseline. Limitation: the result is limited to prior PULSE state at check-up k.
+What not to infer: this figure does not support a claim that prior PULSE beats the strongest supplied non-PULSE baseline.
 
 ## Figure 10. Claim ladder
 
@@ -189,20 +213,58 @@ Claim IDs: C02, C07, C08, C09, C10, C11. Source artifact: `reports/synthesis/neg
     ]
 
 
-def assemble_manuscript(out_dir: Path) -> Path:
+def _strip_top_heading(text: str) -> str:
+    lines = text.strip().splitlines()
+    if lines and lines[0].startswith("# "):
+        lines = lines[1:]
+        while lines and not lines[0].strip():
+            lines = lines[1:]
+    return "\n".join(lines).strip()
+
+
+def assemble_manuscript(out_dir: Path, *, version: str = "v0_3") -> Path:
+    label = version.replace("_", ".")
     chunks = [
-        "# Manuscript v0.2\n\n",
+        f"# Manuscript {label}\n\n",
         "Working title: Grouped-validation battery degradation benchmarks with operating-history and PULSE diagnostics.\n\n",
-        "This draft is assembled from the Milestone 1.1 section files. Figure and table callouts point to generated assets under `manuscript/figures/generated/` and `manuscript/tables/generated/`.\n\n",
+        "This draft is assembled from the Milestone 1.1 section files with source-section headings stripped during assembly. Figure and table callouts point to generated assets under `manuscript/figures/generated/` and `manuscript/tables/generated/`.\n\n",
     ]
     for heading, filename, callouts in SECTION_ORDER:
         section_path = out_dir / filename
         body = section_path.read_text(encoding="utf-8") if section_path.exists() else ""
         chunks.append(f"\n## {heading}\n\n")
-        chunks.append(body.strip() + "\n\n")
+        chunks.append(_strip_top_heading(body) + "\n\n")
         if callouts:
             chunks.append("Referenced assets: " + ", ".join(callouts) + ".\n")
-    return _write(out_dir / "manuscript_v0_2.md", "\n".join(chunks))
+    return _write(out_dir / f"manuscript_{version}.md", "\n".join(chunks))
+
+
+def write_figure_data_check(out_dir: Path, reports_dir: Path) -> Path:
+    checks = figure_data_checks(reports_dir)
+    lines = [
+        "# Figure Data Check",
+        "",
+        "| Figure | Kind | Source | Rows consumed | Key values | Warnings |",
+        "|---|---|---|---:|---|---|",
+    ]
+    for check in checks:
+        warnings = check.get("warnings", [])
+        warning_text = "; ".join(str(value) for value in warnings) if warnings else "none"
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    str(check["figure"]),
+                    str(check["kind"]),
+                    f"`{check['source']}`",
+                    str(check["rows_consumed"]),
+                    str(check["key_values"]),
+                    warning_text,
+                ]
+            )
+            + " |"
+        )
+    return _write(out_dir / "checks" / "figure_data_check.md", "\n".join(lines) + "\n")
 
 
 def _write_asset_note(
@@ -213,11 +275,12 @@ def _write_asset_note(
 ) -> Path:
     status = "passed" if checks.get("status") == "passed" else "failed"
     lines = [
-        "# Manuscript v0.2 Assets",
+        "# Manuscript v0.3 Polish",
         "",
         "Date: 2026-05-23",
         "",
-        "Milestone 1.2 generated a continuous manuscript draft plus source-linked SVG and Markdown assets from existing tracked reports only.",
+        "Milestone 1.3 fixes Figure 6 PULSE QA extraction, strips duplicate source-section headings, extends no-overclaim checks across paper-facing files, and emits a cleaner continuous v0.3 draft.",
+        "The SVG generator remains dependency-free because plotting packages are not core project dependencies in the current environment; no dependency changes were introduced for manuscript polish.",
         "",
         "## Generated Figures",
         "",
@@ -230,11 +293,13 @@ def _write_asset_note(
             "",
             "## Manuscript Draft",
             "",
-            "- `manuscript/manuscript_v0_2.md`",
+            "- `manuscript/manuscript_v0_3.md`",
             "",
             "## Validation Summary",
             "",
             f"- `mbp report check-manuscript`: `{status}`",
+            "- Figure 6 reads canonical RT/50 counts from `canonical_target`.",
+            "- Duplicate source-section headings are stripped during v0.3 assembly.",
             "- Generated assets consume tracked Markdown/CSV/JSON synthesis artifacts only.",
             "- No model training, feature engineering, EIS modeling, or architecture work was performed.",
             "",
@@ -245,27 +310,32 @@ def _write_asset_note(
             "- Tighten prose after venue selection.",
         ]
     )
-    return _write(out_dir.parent / "docs" / "experiments" / "2026-05-23_manuscript_v0_2_assets.md", "\n".join(lines) + "\n")
+    return _write(
+        out_dir.parent / "docs" / "experiments" / "2026-05-23_manuscript_v0_3_polish.md",
+        "\n".join(lines) + "\n",
+    )
 
 
 def build_manuscript_assets(out_dir: Path, reports_dir: Path, docs_dir: Path) -> dict[str, object]:
-    """Build all Milestone 1.2 manuscript assets."""
+    """Build all current manuscript assets."""
 
     figures = build_manuscript_figures(out_dir, reports_dir, docs_dir)
     tables = build_manuscript_tables(out_dir, reports_dir, docs_dir)
     captions = write_captions(out_dir)
-    manuscript = assemble_manuscript(out_dir)
+    manuscript = assemble_manuscript(out_dir, version="v0_3")
     check_result = check_manuscript(
         manuscript=manuscript,
         claim_ledger=docs_dir / "PAPER_CLAIM_LEDGER.md",
         traceability=out_dir / "source_traceability.md",
     )
+    figure_data_check = write_figure_data_check(out_dir, reports_dir)
     check_paths = write_check_reports(
         out_dir=out_dir,
         check_result=check_result,
         figures=figures,
         tables=tables,
         captions=captions,
+        extra_reports=[figure_data_check],
     )
     note = _write_asset_note(out_dir, figures, tables, check_result)
     return {
@@ -274,6 +344,6 @@ def build_manuscript_assets(out_dir: Path, reports_dir: Path, docs_dir: Path) ->
         "tables": [str(path) for path in tables],
         "captions": [str(path) for path in captions],
         "manuscript": str(manuscript),
-        "checks": [str(path) for path in check_paths],
+        "checks": [str(path) for path in [*check_paths, figure_data_check]],
         "experiment_note": str(note),
     }

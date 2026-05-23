@@ -382,7 +382,7 @@ def report_build_manuscript_assets(
     out_dir: Path = typer.Option(
         Path("manuscript"),
         "--out-dir",
-        help="Manuscript directory where generated assets and v0.2 draft are written.",
+        help="Manuscript directory where generated assets and the latest continuous draft are written.",
     ),
     reports_dir: Path = typer.Option(
         Path("reports"),
@@ -395,7 +395,7 @@ def report_build_manuscript_assets(
         help="Documentation directory containing claim ledgers and status files.",
     ),
 ) -> None:
-    """Build Milestone 1.2 manuscript figures, tables, captions, checks, and v0.2 draft."""
+    """Build manuscript figures, tables, captions, checks, and the latest continuous draft."""
     from mbp.reporting import build_manuscript_assets
 
     result = build_manuscript_assets(out_dir=out_dir, reports_dir=reports_dir, docs_dir=docs_dir)

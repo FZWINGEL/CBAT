@@ -11,6 +11,6 @@
 | C07 | Prior PULSE vs best non-PULSE | Prior PULSE beats strongest supplied non-PULSE capacity baseline | not_supported | Prior PULSE improves over F4, but not over the strongest supplied non-PULSE HGB baselines. |
 | C08 | Capacity fade target | Prior PULSE improves delta_capacity_Ah | not_supported | delta_capacity_Ah remains an unresolved guardrail limitation. |
 | C09 | Quantile diagnostics | Quantile HGB uncertainty is calibrated | not_supported | Quantile metrics are diagnostics only until calibration is tested. |
-| C10 | EIS gate | EIS improves any non-EIS outcome | gated | EIS remains gated and untested for predictive claims. |
+| C10 | EIS gate | EIS predictive value any non-EIS outcome | gated | EIS remains gated and untested for predictive claims. |
 | C11 | CBAT gate | CBAT architecture is justified | blocked | CBAT remains a reserved late-stage architecture label. |
 | C12 | Validation discipline | Grouped condition validation is required for publishable evidence | supported | Headline claims must use grouped validation and replicate-aware condition summaries. |

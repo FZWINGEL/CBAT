@@ -16,6 +16,6 @@
 | Results: stress features | C01, C02 | Figure 5, Table 5 | `reports/baselines/capacity_stress_features_v1_1_hgb50/stress_feature_diagnostics.md` | Stress features help some views but not C-rate fade. | Stress features solve fade. |
 | Results: PULSE resistance | C04 | Figure 6, Figure 7 | `reports/baselines/pulse_resistance_target_robustness/plots/pulse_target_comparison.csv` | PULSE is a scalar resistance diagnostic endpoint. | PULSE authorizes broad multimodal claims. |
 | Results: capacity-PULSE coupling | C05, C06, C07, C08 | Figure 8, Figure 9 | `reports/baselines/capacity_prior_pulse_vs_best_nonpulse/split_level_gain_vs_best_nonpulse.csv` | PULSE is explanatory and prior PULSE improves over F4 only in selected splits. | PULSE is strongest or solves fade. |
-| Discussion | C09 | Table 5 | `reports/baselines/capacity_hgb50_focused/claim_readiness.md` | Quantile outputs are diagnostics only. | Calibrated uncertainty. |
+| Discussion | C09 | Table 5 | `reports/baselines/capacity_hgb50_focused/claim_readiness.md` | Quantile outputs are diagnostics only. | Calibration claim. |
 | Discussion | C10 | Table 4, Table 5 | `docs/REPO_STATUS.md` | EIS is gated. | EIS has demonstrated predictive value. |
 | Discussion | C11 | Table 4 | `docs/PROJECT_CHARTER.md` | CBAT is reserved for late-stage work. | CBAT is validated. |

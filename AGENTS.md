@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 1.2: Figure/table generation and manuscript v0.2 assembly.
+Milestone 1.3: Manuscript v0.3 polish and figure QA.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-0.9.1 are implemented
@@ -27,6 +27,8 @@ Current state:
   source-artifact checks, reviewer-risk tracking, and a manuscript package plan.
   Milestone 1.1 created the manuscript draft package with prose sections,
   figure/table specifications, source traceability, and reviewer response prep.
+  Milestone 1.2 generated the continuous v0.2 manuscript, SVG figures, tables,
+  captions, and manuscript checks.
 - The strongest current prior-PULSE result is deliberately narrow: prior PULSE
   state improves `capacity_Ah_k1` over F4 in selected grouped splits, but it
   does not beat the strongest supplied non-PULSE HGB baselines and does not
@@ -35,11 +37,12 @@ Current state:
   validation results, and remaining blockers.
 
 Allowed work:
-- figure/table generation from existing tracked artifacts
-- manuscript v0.2 assembly
+- manuscript prose polish
+- generated figure/table QA
+- manuscript v0.3 assembly
 - caption drafting
-- source-traceability checks
-- no-overclaim checks
+- source traceability hardening
+- no-overclaim checks across manuscript, captions, tables, and figure specs
 - manuscript draft formatting
 - figure/table source checks
 - documentation/evidence memo updates

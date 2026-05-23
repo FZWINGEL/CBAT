@@ -19,6 +19,7 @@ Claim IDs: C03. Source artifact: `reports/synthesis/split_difficulty_summary.csv
 ## Figure 5. Stress-feature decision
 
 Claim IDs: C02. Source artifact: `reports/baselines/capacity_stress_features_v1_1_hgb50/plots/c_rate_gain_by_feature_group.csv`. Allowed interpretation: stress features are mixed and do not solve C-rate fade transfer. Limitation: only scalar LOG_AGE stress groups are represented.
+What not to infer: this figure does not show that stress features solve C-rate fade prediction.
 
 ## Figure 6. PULSE QA coverage
 
@@ -31,10 +32,12 @@ Claim IDs: C04. Source artifact: `reports/baselines/pulse_resistance_target_robu
 ## Figure 8. Capacity-PULSE coupling
 
 Claim IDs: C05. Source artifact: `reports/coupling/pulse_capacity_robustness/capacity_Ah_k1/plots/condition_level_pulse_capacity_correlation.csv`. Allowed interpretation: PULSE growth is associated with capacity residual magnitude. Limitation: the association is diagnostic, not causal.
+What not to infer: this figure does not establish causality or independence from all confounding.
 
 ## Figure 9. Prior PULSE versus strongest non-PULSE
 
 Claim IDs: C06, C07, C08. Source artifact: `reports/baselines/capacity_prior_pulse_vs_best_nonpulse/plots/split_level_gain_vs_best_nonpulse.csv`. Allowed interpretation: prior PULSE does not beat the strongest supplied non-PULSE baseline. Limitation: the result is limited to prior PULSE state at check-up k.
+What not to infer: this figure does not support a claim that prior PULSE beats the strongest supplied non-PULSE baseline.
 
 ## Figure 10. Claim ladder
 

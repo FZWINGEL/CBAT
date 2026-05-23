@@ -157,6 +157,22 @@ def _status_chart(path: Path, claim_matrix: Path) -> None:
     )
 
 
+def _pulse_qa_rows(qa_path: Path) -> list[tuple[str, float]]:
+    if not qa_path.exists():
+        return [("PULSE QA report missing", 0.0)]
+    qa = json.loads(qa_path.read_text(encoding="utf-8"))
+    canonical = qa.get("canonical_target", {})
+    if not isinstance(canonical, dict):
+        canonical = {}
+    return [
+        ("summary rows", _float(str(qa.get("row_count", 0)))),
+        ("unique cells", _float(str(qa.get("unique_cells", 0)))),
+        ("available checkups", _float(str(canonical.get("available_cell_checkups", 0)))),
+        ("missing checkups", _float(str(canonical.get("missing_cell_checkups", 0)))),
+        ("duplicate checkups", _float(str(canonical.get("duplicate_cell_checkups", 0)))),
+    ]
+
+
 def build_manuscript_figures(out_dir: Path, reports_dir: Path, docs_dir: Path) -> list[Path]:
     """Generate manuscript SVG figures from existing tracked artifacts."""
 
@@ -248,16 +264,7 @@ def build_manuscript_figures(out_dir: Path, reports_dir: Path, docs_dir: Path) -
     paths.append(fig05)
 
     qa_path = reports_dir / "audit" / "pulse_qa_report.json"
-    if qa_path.exists():
-        qa = json.loads(qa_path.read_text(encoding="utf-8"))
-        qa_rows = [
-            ("summary rows", _float(str(qa.get("row_count", 0)))),
-            ("unique cells", _float(str(qa.get("unique_cells", 0)))),
-            ("canonical checkups", _float(str(qa.get("canonical_available_cell_checkups", 0)))),
-            ("missing canonical", _float(str(qa.get("missing_canonical_cell_checkups", 0)))),
-        ]
-    else:
-        qa_rows = [("PULSE QA report missing", 0.0)]
+    qa_rows = _pulse_qa_rows(qa_path)
     fig06 = figure_dir / "fig06_pulse_qa_coverage.svg"
     _bar_chart_svg(
         fig06,
@@ -337,3 +344,169 @@ def build_manuscript_figures(out_dir: Path, reports_dir: Path, docs_dir: Path) -
     paths.append(fig10)
 
     return paths
+
+
+def figure_data_checks(reports_dir: Path) -> list[dict[str, object]]:
+    """Return data-source metadata for generated manuscript figures."""
+
+    checks: list[dict[str, object]] = [
+        {
+            "figure": "Figure 1",
+            "source": "docs/PAPER_FIGURE_PLAN.md",
+            "rows_consumed": 0,
+            "key_values": "schematic data-product flow",
+            "kind": "schematic",
+            "warnings": [],
+        },
+        {
+            "figure": "Figure 2",
+            "source": "docs/VALIDATION_PROTOCOL.md",
+            "rows_consumed": 0,
+            "key_values": "228 cells; 76 condition triplets",
+            "kind": "schematic",
+            "warnings": [],
+        },
+    ]
+
+    model_ladder = reports_dir / "synthesis" / "model_ladder_summary.csv"
+    model_rows = [
+        row
+        for row in read_csv_rows(model_ladder)
+        if row.get("split") == "c_rate_holdout_fold"
+        and row.get("target") in {"capacity_Ah_k1", "delta_capacity_Ah"}
+    ]
+    checks.append(
+        {
+            "figure": "Figure 3",
+            "source": str(model_ladder),
+            "rows_consumed": len(model_rows),
+            "key_values": "C-rate capacity and delta ladder metrics",
+            "kind": "data-driven",
+            "warnings": [],
+        }
+    )
+
+    split_path = reports_dir / "synthesis" / "split_difficulty_summary.csv"
+    split_rows = read_csv_rows(split_path)
+    checks.append(
+        {
+            "figure": "Figure 4",
+            "source": str(split_path),
+            "rows_consumed": len(split_rows),
+            "key_values": "best-known capacity_Ah_k1 by split",
+            "kind": "data-driven",
+            "warnings": [],
+        }
+    )
+
+    stress_path = (
+        reports_dir
+        / "baselines"
+        / "capacity_stress_features_v1_1_hgb50"
+        / "plots"
+        / "c_rate_gain_by_feature_group.csv"
+    )
+    stress_rows = read_csv_rows(stress_path)
+    checks.append(
+        {
+            "figure": "Figure 5",
+            "source": str(stress_path),
+            "rows_consumed": min(12, len(stress_rows)),
+            "key_values": "F4-to-stress C-rate gains",
+            "kind": "data-driven",
+            "warnings": ["does not imply stress features solve C-rate fade"],
+        }
+    )
+
+    qa_path = reports_dir / "audit" / "pulse_qa_report.json"
+    qa_rows = _pulse_qa_rows(qa_path)
+    checks.append(
+        {
+            "figure": "Figure 6",
+            "source": str(qa_path),
+            "rows_consumed": len(qa_rows),
+            "key_values": "; ".join(f"{label}={value:g}" for label, value in qa_rows),
+            "kind": "data-driven",
+            "warnings": [],
+        }
+    )
+
+    pulse_path = (
+        reports_dir
+        / "baselines"
+        / "pulse_resistance_target_robustness"
+        / "plots"
+        / "pulse_target_comparison.csv"
+    )
+    pulse_rows = [
+        row
+        for row in read_csv_rows(pulse_path)
+        if row.get("target") in {"delta_pulse_1s_resistance", "delta_pulse_10ms_resistance"}
+    ][:10]
+    checks.append(
+        {
+            "figure": "Figure 7",
+            "source": str(pulse_path),
+            "rows_consumed": len(pulse_rows),
+            "key_values": "1s and 10ms RT/50 transition-target rows",
+            "kind": "data-driven",
+            "warnings": [],
+        }
+    )
+
+    coupling_path = (
+        reports_dir
+        / "coupling"
+        / "pulse_capacity_robustness"
+        / "capacity_Ah_k1"
+        / "plots"
+        / "condition_level_pulse_capacity_correlation.csv"
+    )
+    coupling_rows = [
+        row
+        for row in read_csv_rows(coupling_path)
+        if row.get("pulse_column") == "delta_pulse_1s_resistance"
+    ][:8]
+    checks.append(
+        {
+            "figure": "Figure 8",
+            "source": str(coupling_path),
+            "rows_consumed": len(coupling_rows),
+            "key_values": "condition-level Pearson correlations",
+            "kind": "data-driven",
+            "warnings": ["diagnostic association, not causality"],
+        }
+    )
+
+    gain_path = (
+        reports_dir
+        / "baselines"
+        / "capacity_prior_pulse_vs_best_nonpulse"
+        / "plots"
+        / "split_level_gain_vs_best_nonpulse.csv"
+    )
+    gain_rows = read_csv_rows(gain_path)
+    checks.append(
+        {
+            "figure": "Figure 9",
+            "source": str(gain_path),
+            "rows_consumed": len(gain_rows),
+            "key_values": "prior-PULSE paired gains versus strongest non-PULSE",
+            "kind": "data-driven",
+            "warnings": ["does not support prior PULSE beating strongest non-PULSE"],
+        }
+    )
+
+    claim_path = reports_dir / "synthesis" / "claim_matrix.csv"
+    claim_rows = read_csv_rows(claim_path)
+    checks.append(
+        {
+            "figure": "Figure 10",
+            "source": str(claim_path),
+            "rows_consumed": len(claim_rows),
+            "key_values": "claim status counts",
+            "kind": "data-driven",
+            "warnings": [],
+        }
+    )
+    return checks

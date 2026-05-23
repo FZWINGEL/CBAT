@@ -61,6 +61,28 @@ def _future_pulse_input_phrases(text: str) -> list[str]:
     return [phrase for phrase in blocked if phrase.lower() in lower]
 
 
+def _paper_facing_paths(manuscript: Path, traceability: Path) -> list[Path]:
+    root = manuscript.parent
+    paths = [manuscript, traceability]
+    paths.extend(sorted((root / "captions").glob("*.md")))
+    paths.extend(sorted((root / "tables" / "generated").glob("*.md")))
+    paths.extend(sorted((root / "figures").glob("*.md")))
+    return [path for path in paths if path.exists()]
+
+
+def _caption_numbers(path: Path, kind: str) -> set[int]:
+    if not path.exists():
+        return set()
+    return {
+        int(value)
+        for value in re.findall(
+            rf"^##\s+{kind}\s+(\d+)\b",
+            path.read_text(encoding="utf-8"),
+            flags=re.MULTILINE,
+        )
+    }
+
+
 def check_manuscript(
     *,
     manuscript: Path,
@@ -72,22 +94,29 @@ def check_manuscript(
     warnings: list[str] = []
     failures: list[str] = []
 
-    manuscript_text = manuscript.read_text(encoding="utf-8") if manuscript.exists() else ""
+    paper_paths = _paper_facing_paths(manuscript, traceability)
+    paper_text_by_path = {
+        path: path.read_text(encoding="utf-8", errors="replace") for path in paper_paths
+    }
+    manuscript_text = paper_text_by_path.get(manuscript, "")
     ledger_text = claim_ledger.read_text(encoding="utf-8") if claim_ledger.exists() else ""
-    traceability_text = traceability.read_text(encoding="utf-8") if traceability.exists() else ""
+    traceability_text = paper_text_by_path.get(traceability, "")
 
     ledger_ids = _ledger_claim_ids(ledger_text)
-    manuscript_ids = _claim_ids(manuscript_text)
-    unknown_ids = sorted(manuscript_ids - ledger_ids)
+    paper_ids: set[str] = set()
+    for text in paper_text_by_path.values():
+        paper_ids.update(_claim_ids(text))
+    unknown_ids = sorted(paper_ids - ledger_ids)
     if unknown_ids:
-        failures.append(f"Unknown claim IDs in manuscript: {', '.join(unknown_ids)}")
-    if not manuscript_ids:
+        failures.append(f"Unknown claim IDs in paper-facing files: {', '.join(unknown_ids)}")
+    if not _claim_ids(manuscript_text):
         warnings.append("No explicit claim IDs found in manuscript text.")
 
-    lower_text = manuscript_text.lower()
-    for phrase in FORBIDDEN_PHRASES:
-        if phrase.lower() in lower_text:
-            failures.append(f"Forbidden phrase found in manuscript: {phrase}")
+    for path, text in paper_text_by_path.items():
+        lower_text = text.lower()
+        for phrase in FORBIDDEN_PHRASES:
+            if phrase.lower() in lower_text:
+                failures.append(f"Forbidden phrase found in {path}: {phrase}")
 
     manuscript_root = manuscript.parent
     for number in sorted(_callout_numbers(manuscript_text, "Figure")):
@@ -98,22 +127,36 @@ def check_manuscript(
             failures.append(f"Missing generated/spec artifact for Table {number}")
 
     trace_ids = _claim_ids(traceability_text)
-    missing_trace_ids = sorted(manuscript_ids - trace_ids)
+    missing_trace_ids = sorted(_claim_ids(manuscript_text) - trace_ids)
     if missing_trace_ids:
         warnings.append(f"Claim IDs used in manuscript but absent from traceability: {', '.join(missing_trace_ids)}")
 
     for line in _supported_eis_or_cbat(ledger_text):
         failures.append(f"EIS/CBAT claim appears marked supported: {line}")
 
-    for phrase in _future_pulse_input_phrases(manuscript_text):
-        failures.append(f"Future PULSE feature appears as capacity input: {phrase}")
+    for path, text in paper_text_by_path.items():
+        for phrase in _future_pulse_input_phrases(text):
+            failures.append(f"Future PULSE feature appears as capacity input in {path}: {phrase}")
+
+    figure_captions = manuscript_root / "captions" / "figure_captions.md"
+    table_captions = manuscript_root / "captions" / "table_captions.md"
+    captioned_figures = _caption_numbers(figure_captions, "Figure")
+    captioned_tables = _caption_numbers(table_captions, "Table")
+    for figure_path in sorted((manuscript_root / "figures" / "generated").glob("fig*.svg")):
+        match = re.match(r"fig(\d+)_", figure_path.name)
+        if match and int(match.group(1)) not in captioned_figures:
+            failures.append(f"Generated figure lacks caption: {figure_path}")
+    for table_path in sorted((manuscript_root / "tables" / "generated").glob("table*.md")):
+        match = re.match(r"table(\d+)_", table_path.name)
+        if match and int(match.group(1)) not in captioned_tables:
+            failures.append(f"Generated table lacks caption: {table_path}")
 
     return {
         "status": "failed" if failures else "passed",
-        "checked_files": [str(manuscript), str(claim_ledger), str(traceability)],
+        "checked_files": [str(path) for path in [*paper_paths, claim_ledger]],
         "warnings": warnings,
         "failures": failures,
-        "claim_ids": sorted(manuscript_ids),
+        "claim_ids": sorted(paper_ids),
     }
 
 
@@ -131,6 +174,7 @@ def write_check_reports(
     figures: list[Path],
     tables: list[Path],
     captions: list[Path],
+    extra_reports: list[Path] | None = None,
 ) -> list[Path]:
     """Write manuscript check summaries."""
 
@@ -188,6 +232,9 @@ def write_check_reports(
                 "## Caption Files",
                 "",
                 _markdown_list(str(path) for path in captions),
+                "## Additional Check Reports",
+                "",
+                _markdown_list(str(path) for path in (extra_reports or [])),
                 "## Warnings",
                 "",
                 _markdown_list(warnings),

@@ -50,6 +50,12 @@ caption drafting, continuous manuscript assembly, source-traceability checks,
 and no-overclaim checks. It still does not authorize new model training, new
 feature engineering, EIS modeling, neural models, sequence models, policy
 ranking, CBAT, or broad multimodal claims.
+Milestone 1.3 is manuscript v0.3 polish and figure QA. It authorizes manuscript
+prose polish, generated figure/table QA, source traceability hardening,
+caption/table wording cleanup, and expanded no-overclaim checks across
+paper-facing manuscript files. It still does not authorize new model training,
+new feature engineering, EIS modeling, neural models, sequence models, policy
+ranking, CBAT, or broad multimodal claims.
 
 Required split discipline:
 
@@ -112,6 +118,14 @@ Required Milestone 1.2 manuscript asset artifacts:
 - `manuscript/checks/figure_source_check.md`
 - `docs/experiments/2026-05-23_manuscript_v0_2_assets.md`
 
+Required Milestone 1.3 manuscript polish artifacts:
+
+- `manuscript/manuscript_v0_3.md`
+- corrected `manuscript/figures/generated/fig06_pulse_qa_coverage.svg`
+- `manuscript/checks/figure_data_check.md`
+- updated caption files with "what not to infer" notes
+- `docs/experiments/2026-05-23_manuscript_v0_3_polish.md`
+
 Required Milestone 1.2 checks:
 
 - `mbp report build-manuscript-assets`
@@ -119,6 +133,10 @@ Required Milestone 1.2 checks:
 - `git diff --check`
 - `ruff check . --no-cache` and `pytest -p no:cacheprovider` when reporting
   code is added or changed.
+
+Milestone 1.3 `mbp report check-manuscript` must scan the continuous
+manuscript, captions, generated tables, figure specifications, and source
+traceability file.
 
 Milestone 1.0 claim statuses must distinguish supported claims,
 partially-supported claims, not-supported claims, gated claims, and blocked

@@ -3,18 +3,21 @@
 <text x="30.0" y="38.0" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#1f2937">PULSE QA and Canonical Target Coverage</text>
 <text x="30.0" y="62.0" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#1f2937">Counts from reports/audit/pulse_qa_report.json.</text>
 <line x1="280" y1="74" x2="910" y2="74" stroke="#d1d5db"/>
-<line x1="280.0" y1="64" x2="280.0" y2="232" stroke="#6b7280" stroke-dasharray="4 4"/>
+<line x1="280.0" y1="64" x2="280.0" y2="264" stroke="#6b7280" stroke-dasharray="4 4"/>
 <text x="30.0" y="113.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">summary rows</text>
 <rect x="280.0" y="92.0" width="630.0" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
 <text x="860.0" y="109.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">3.936e+04</text>
 <text x="30.0" y="145.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">unique cells</text>
 <rect x="280.0" y="124.0" width="3.6" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
 <text x="291.6" y="141.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">228</text>
-<text x="30.0" y="177.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">canonical checkups</text>
-<rect x="280.0" y="156.0" width="1.0" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
-<text x="289.0" y="173.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">0</text>
-<text x="30.0" y="209.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">missing canonical</text>
-<rect x="280.0" y="188.0" width="1.0" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
-<text x="289.0" y="205.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">0</text>
+<text x="30.0" y="177.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">available checkups</text>
+<rect x="280.0" y="156.0" width="63.7" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="351.7" y="173.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">3980</text>
+<text x="30.0" y="209.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">missing checkups</text>
+<rect x="280.0" y="188.0" width="1.2" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="289.2" y="205.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">75</text>
+<text x="30.0" y="241.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">duplicate checkups</text>
+<rect x="280.0" y="220.0" width="1.0" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="289.0" y="237.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">0</text>
 <text x="280.0" y="392.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">Count</text>
 </svg>

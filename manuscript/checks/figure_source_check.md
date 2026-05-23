@@ -28,6 +28,10 @@ Status: `passed`
 - manuscript/captions/figure_captions.md
 - manuscript/captions/table_captions.md
 
+## Additional Check Reports
+
+- manuscript/checks/figure_data_check.md
+
 ## Warnings
 
 - none
