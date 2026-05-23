@@ -1,0 +1,788 @@
+{
+  "canonical_correlations": [
+    {
+      "level": "canonical_prediction_row",
+      "n": 143,
+      "pearson": 0.8111197633035231,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "all",
+      "spearman": 0.5200351291900588
+    },
+    {
+      "level": "canonical_prediction_row",
+      "n": 143,
+      "pearson": 0.8576532465709484,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "all",
+      "spearman": 0.6339587642404545
+    },
+    {
+      "level": "canonical_prediction_row",
+      "n": 143,
+      "pearson": 0.8026517774202394,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "all",
+      "spearman": 0.5460290882826094
+    },
+    {
+      "level": "canonical_prediction_row",
+      "n": 143,
+      "pearson": 0.8345775808909025,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "all",
+      "spearman": 0.6115310745592436
+    },
+    {
+      "level": "canonical_prediction_row",
+      "n": 143,
+      "pearson": 0.8111197633035231,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "c_rate_holdout",
+      "spearman": 0.5200351291900588
+    },
+    {
+      "level": "canonical_prediction_row",
+      "n": 143,
+      "pearson": 0.8576532465709484,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "c_rate_holdout",
+      "spearman": 0.6339587642404545
+    },
+    {
+      "level": "canonical_prediction_row",
+      "n": 143,
+      "pearson": 0.8026517774202394,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "c_rate_holdout",
+      "spearman": 0.5460290882826094
+    },
+    {
+      "level": "canonical_prediction_row",
+      "n": 143,
+      "pearson": 0.8345775808909025,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "c_rate_holdout",
+      "spearman": 0.6115310745592436
+    },
+    {
+      "level": "canonical_prediction_row",
+      "n": 44,
+      "pearson": 0.8212492673266594,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "cold_c_rate",
+      "spearman": 0.7007751937984497
+    },
+    {
+      "level": "canonical_prediction_row",
+      "n": 44,
+      "pearson": 0.8520472498593066,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "cold_c_rate",
+      "spearman": 0.7400986610288937
+    },
+    {
+      "level": "canonical_prediction_row",
+      "n": 44,
+      "pearson": 0.8102791140644252,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "cold_c_rate",
+      "spearman": 0.7123326286116984
+    },
+    {
+      "level": "canonical_prediction_row",
+      "n": 44,
+      "pearson": 0.8373334101305899,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "cold_c_rate",
+      "spearman": 0.7415081042988021
+    },
+    {
+      "level": "canonical_prediction_row",
+      "n": 27,
+      "pearson": 0.787199785355762,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "voltage_window_approx_0_100",
+      "spearman": 0.6941391941391942
+    },
+    {
+      "level": "canonical_prediction_row",
+      "n": 27,
+      "pearson": 0.842512477238424,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "voltage_window_approx_0_100",
+      "spearman": 0.7588522588522589
+    },
+    {
+      "level": "canonical_prediction_row",
+      "n": 27,
+      "pearson": 0.7956312615179502,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "voltage_window_approx_0_100",
+      "spearman": 0.7557997557997559
+    },
+    {
+      "level": "canonical_prediction_row",
+      "n": 27,
+      "pearson": 0.8355743393480846,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "voltage_window_approx_0_100",
+      "spearman": 0.8107448107448109
+    },
+    {
+      "level": "canonical_prediction_row",
+      "n": 33,
+      "pearson": 0.9561188931297351,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "voltage_window_approx_10_100",
+      "spearman": 0.7118983957219251
+    },
+    {
+      "level": "canonical_prediction_row",
+      "n": 33,
+      "pearson": 0.9715207424007717,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "voltage_window_approx_10_100",
+      "spearman": 0.8435828877005348
+    },
+    {
+      "level": "canonical_prediction_row",
+      "n": 33,
+      "pearson": 0.944306375550143,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "voltage_window_approx_10_100",
+      "spearman": 0.733957219251337
+    },
+    {
+      "level": "canonical_prediction_row",
+      "n": 33,
+      "pearson": 0.9568890931636086,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "voltage_window_approx_10_100",
+      "spearman": 0.829879679144385
+    },
+    {
+      "level": "canonical_prediction_row",
+      "n": 0,
+      "pearson": NaN,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "profile_holdout",
+      "spearman": NaN
+    },
+    {
+      "level": "canonical_prediction_row",
+      "n": 0,
+      "pearson": NaN,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "profile_holdout",
+      "spearman": NaN
+    },
+    {
+      "level": "canonical_prediction_row",
+      "n": 0,
+      "pearson": NaN,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "profile_holdout",
+      "spearman": NaN
+    },
+    {
+      "level": "canonical_prediction_row",
+      "n": 0,
+      "pearson": NaN,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "profile_holdout",
+      "spearman": NaN
+    }
+  ],
+  "condition_correlations": [
+    {
+      "level": "condition",
+      "n": 12,
+      "pearson": 0.9547302169322412,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "all",
+      "spearman": 0.9440559440559441
+    },
+    {
+      "level": "condition",
+      "n": 12,
+      "pearson": 0.9565992016792333,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "all",
+      "spearman": 0.9790209790209791
+    },
+    {
+      "level": "condition",
+      "n": 12,
+      "pearson": 0.9508660617867254,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "all",
+      "spearman": 0.9440559440559441
+    },
+    {
+      "level": "condition",
+      "n": 12,
+      "pearson": 0.9450730582561631,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "all",
+      "spearman": 0.951048951048951
+    },
+    {
+      "level": "condition",
+      "n": 12,
+      "pearson": 0.9547302169322412,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "c_rate_holdout",
+      "spearman": 0.9440559440559441
+    },
+    {
+      "level": "condition",
+      "n": 12,
+      "pearson": 0.9565992016792333,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "c_rate_holdout",
+      "spearman": 0.9790209790209791
+    },
+    {
+      "level": "condition",
+      "n": 12,
+      "pearson": 0.9508660617867254,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "c_rate_holdout",
+      "spearman": 0.9440559440559441
+    },
+    {
+      "level": "condition",
+      "n": 12,
+      "pearson": 0.9450730582561631,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "c_rate_holdout",
+      "spearman": 0.951048951048951
+    },
+    {
+      "level": "condition",
+      "n": 6,
+      "pearson": 0.9486807820972754,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "cold_c_rate",
+      "spearman": 1.0
+    },
+    {
+      "level": "condition",
+      "n": 6,
+      "pearson": 0.9441785186490631,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "cold_c_rate",
+      "spearman": 1.0
+    },
+    {
+      "level": "condition",
+      "n": 6,
+      "pearson": 0.9597131767133185,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "cold_c_rate",
+      "spearman": 0.9428571428571428
+    },
+    {
+      "level": "condition",
+      "n": 6,
+      "pearson": 0.9536059687856595,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "cold_c_rate",
+      "spearman": 0.9428571428571428
+    },
+    {
+      "level": "condition",
+      "n": 4,
+      "pearson": 0.9411014591129615,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "voltage_window_approx_0_100",
+      "spearman": 0.9999999999999998
+    },
+    {
+      "level": "condition",
+      "n": 4,
+      "pearson": 0.9476741686602078,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "voltage_window_approx_0_100",
+      "spearman": 0.9999999999999998
+    },
+    {
+      "level": "condition",
+      "n": 4,
+      "pearson": 0.9508438109556164,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "voltage_window_approx_0_100",
+      "spearman": 0.9999999999999998
+    },
+    {
+      "level": "condition",
+      "n": 4,
+      "pearson": 0.9637686413618323,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "voltage_window_approx_0_100",
+      "spearman": 0.9999999999999998
+    },
+    {
+      "level": "condition",
+      "n": 4,
+      "pearson": 0.9954050597540265,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "voltage_window_approx_10_100",
+      "spearman": 0.9999999999999998
+    },
+    {
+      "level": "condition",
+      "n": 4,
+      "pearson": 0.9957199387468111,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "voltage_window_approx_10_100",
+      "spearman": 0.9999999999999998
+    },
+    {
+      "level": "condition",
+      "n": 4,
+      "pearson": 0.9878969992671026,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "voltage_window_approx_10_100",
+      "spearman": 0.9999999999999998
+    },
+    {
+      "level": "condition",
+      "n": 4,
+      "pearson": 0.9811894124367927,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "voltage_window_approx_10_100",
+      "spearman": 0.9999999999999998
+    },
+    {
+      "level": "condition",
+      "n": 0,
+      "pearson": NaN,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "profile_holdout",
+      "spearman": NaN
+    },
+    {
+      "level": "condition",
+      "n": 0,
+      "pearson": NaN,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "profile_holdout",
+      "spearman": NaN
+    },
+    {
+      "level": "condition",
+      "n": 0,
+      "pearson": NaN,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "profile_holdout",
+      "spearman": NaN
+    },
+    {
+      "level": "condition",
+      "n": 0,
+      "pearson": NaN,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "profile_holdout",
+      "spearman": NaN
+    }
+  ],
+  "generated_at_utc": "2026-05-23T09:51:10.762506+00:00",
+  "inputs": {
+    "capacity_predictions": "data/processed/capacity_hgb50_focused_predictions.parquet",
+    "capacity_report": "reports/baselines/capacity_hgb50_focused_report.json",
+    "interval_table": "data/interim/interval_table.parquet",
+    "pulse_targets": "data/interim/pulse_target_table.parquet"
+  },
+  "interval_correlations": [
+    {
+      "level": "interval",
+      "n": 143,
+      "pearson": 0.8111197633035231,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "all",
+      "spearman": 0.5200351291900588
+    },
+    {
+      "level": "interval",
+      "n": 143,
+      "pearson": 0.8576532465709484,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "all",
+      "spearman": 0.6339587642404545
+    },
+    {
+      "level": "interval",
+      "n": 143,
+      "pearson": 0.8026517774202394,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "all",
+      "spearman": 0.5460290882826094
+    },
+    {
+      "level": "interval",
+      "n": 143,
+      "pearson": 0.8345775808909025,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "all",
+      "spearman": 0.6115310745592436
+    },
+    {
+      "level": "interval",
+      "n": 143,
+      "pearson": 0.8111197633035231,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "c_rate_holdout",
+      "spearman": 0.5200351291900588
+    },
+    {
+      "level": "interval",
+      "n": 143,
+      "pearson": 0.8576532465709484,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "c_rate_holdout",
+      "spearman": 0.6339587642404545
+    },
+    {
+      "level": "interval",
+      "n": 143,
+      "pearson": 0.8026517774202394,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "c_rate_holdout",
+      "spearman": 0.5460290882826094
+    },
+    {
+      "level": "interval",
+      "n": 143,
+      "pearson": 0.8345775808909025,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "c_rate_holdout",
+      "spearman": 0.6115310745592436
+    },
+    {
+      "level": "interval",
+      "n": 44,
+      "pearson": 0.8212492673266594,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "cold_c_rate",
+      "spearman": 0.7007751937984497
+    },
+    {
+      "level": "interval",
+      "n": 44,
+      "pearson": 0.8520472498593066,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "cold_c_rate",
+      "spearman": 0.7400986610288937
+    },
+    {
+      "level": "interval",
+      "n": 44,
+      "pearson": 0.8102791140644252,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "cold_c_rate",
+      "spearman": 0.7123326286116984
+    },
+    {
+      "level": "interval",
+      "n": 44,
+      "pearson": 0.8373334101305899,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "cold_c_rate",
+      "spearman": 0.7415081042988021
+    },
+    {
+      "level": "interval",
+      "n": 27,
+      "pearson": 0.787199785355762,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "voltage_window_approx_0_100",
+      "spearman": 0.6941391941391942
+    },
+    {
+      "level": "interval",
+      "n": 27,
+      "pearson": 0.842512477238424,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "voltage_window_approx_0_100",
+      "spearman": 0.7588522588522589
+    },
+    {
+      "level": "interval",
+      "n": 27,
+      "pearson": 0.7956312615179502,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "voltage_window_approx_0_100",
+      "spearman": 0.7557997557997559
+    },
+    {
+      "level": "interval",
+      "n": 27,
+      "pearson": 0.8355743393480846,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "voltage_window_approx_0_100",
+      "spearman": 0.8107448107448109
+    },
+    {
+      "level": "interval",
+      "n": 33,
+      "pearson": 0.9561188931297351,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "voltage_window_approx_10_100",
+      "spearman": 0.7118983957219251
+    },
+    {
+      "level": "interval",
+      "n": 33,
+      "pearson": 0.9715207424007717,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "voltage_window_approx_10_100",
+      "spearman": 0.8435828877005348
+    },
+    {
+      "level": "interval",
+      "n": 33,
+      "pearson": 0.944306375550143,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "voltage_window_approx_10_100",
+      "spearman": 0.733957219251337
+    },
+    {
+      "level": "interval",
+      "n": 33,
+      "pearson": 0.9568890931636086,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "voltage_window_approx_10_100",
+      "spearman": 0.829879679144385
+    },
+    {
+      "level": "interval",
+      "n": 0,
+      "pearson": NaN,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "profile_holdout",
+      "spearman": NaN
+    },
+    {
+      "level": "interval",
+      "n": 0,
+      "pearson": NaN,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "profile_holdout",
+      "spearman": NaN
+    },
+    {
+      "level": "interval",
+      "n": 0,
+      "pearson": NaN,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_residual",
+      "scope": "profile_holdout",
+      "spearman": NaN
+    },
+    {
+      "level": "interval",
+      "n": 0,
+      "pearson": NaN,
+      "pulse_column": "delta_pulse_10ms_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "profile_holdout",
+      "spearman": NaN
+    }
+  ],
+  "outputs": {
+    "coupling_table": "reports/coupling/pulse_capacity_robustness/capacity_Ah_k1_c_rate/capacity_pulse_coupling_table.parquet",
+    "out_dir": "reports/coupling/pulse_capacity_robustness/capacity_Ah_k1_c_rate"
+  },
+  "residualized_correlations": [
+    {
+      "n": 143,
+      "pearson": 0.8381454767171014,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "all",
+      "spearman": 0.6270437309169704
+    },
+    {
+      "n": 143,
+      "pearson": 0.8381454767171014,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "c_rate_holdout",
+      "spearman": 0.6270437309169704
+    },
+    {
+      "n": 44,
+      "pearson": 0.8863465905907516,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "cold_c_rate",
+      "spearman": 0.813248766737139
+    },
+    {
+      "n": 27,
+      "pearson": 0.8855568845222818,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "voltage_window_approx_0_100",
+      "spearman": 0.7277167277167278
+    },
+    {
+      "n": 33,
+      "pearson": 0.984180472768116,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "voltage_window_approx_10_100",
+      "spearman": 0.9622326203208557
+    },
+    {
+      "n": 0,
+      "pearson": NaN,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "profile_holdout",
+      "spearman": NaN
+    }
+  ],
+  "row_counts": {
+    "canonical_prediction_rows": 143,
+    "condition_rows": 12,
+    "coupling_rows": 3751,
+    "interval_rows": 143,
+    "joined_prediction_rows": 162144
+  },
+  "schema_version": "gate8.capacity_pulse_coupling.v2",
+  "selection": {
+    "feature_group": "F4_state_log_age_scalar",
+    "model_level": "L2_hist_gradient_boosting",
+    "split": "c_rate_holdout_fold",
+    "target": "capacity_Ah_k1"
+  },
+  "status": "passed",
+  "subgroup_correlations": [
+    {
+      "level": "interval",
+      "n": 143,
+      "pearson": 0.8576532465709484,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "all",
+      "spearman": 0.6339587642404545
+    },
+    {
+      "level": "interval",
+      "n": 143,
+      "pearson": 0.8576532465709484,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "c_rate_holdout",
+      "spearman": 0.6339587642404545
+    },
+    {
+      "level": "interval",
+      "n": 44,
+      "pearson": 0.8520472498593066,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "cold_c_rate",
+      "spearman": 0.7400986610288937
+    },
+    {
+      "level": "interval",
+      "n": 27,
+      "pearson": 0.842512477238424,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "voltage_window_approx_0_100",
+      "spearman": 0.7588522588522589
+    },
+    {
+      "level": "interval",
+      "n": 33,
+      "pearson": 0.9715207424007717,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "voltage_window_approx_10_100",
+      "spearman": 0.8435828877005348
+    },
+    {
+      "level": "interval",
+      "n": 0,
+      "pearson": NaN,
+      "pulse_column": "delta_pulse_1s_resistance",
+      "residual_column": "capacity_abs_residual",
+      "scope": "profile_holdout",
+      "spearman": NaN
+    }
+  ]
+}

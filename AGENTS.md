@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 0.8: Capacity-PULSE coupling diagnostics.
+Milestone 0.8.1: Coupling robustness and confound-control diagnostics.
 
 Current state:
 - Gate 2b implementation and reports are committed.
@@ -34,6 +34,9 @@ Current state:
   baseline sensitivity runs. Milestone 0.7.2 finalized target robustness and
   claim-readiness for scalar PULSE resistance baselines. Milestone 0.8 tests
   capacity-PULSE scalar coupling diagnostics without opening architecture work.
+  Milestone 0.8.1 hardens those diagnostics with canonical-model selection,
+  interval-level aggregation, condition-level aggregation, parameter-set
+  bootstrap summaries, and simple confound-control residualization.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 - LOG_AGE monotonicity has been triaged and propagated into interval quality
@@ -85,6 +88,11 @@ Allowed work:
 - scalar prior-PULSE feature additions to capacity baselines
 - capacity residual versus PULSE growth analysis
 - grouped coupling diagnostic reports
+- capacity-PULSE coupling robustness diagnostics
+- interval-level residual correlation analysis
+- condition-level residual correlation analysis
+- parameter-set bootstrap confidence intervals
+- simple non-neural confound-control diagnostics
 
 Forbidden work:
 - EIS modeling
@@ -96,6 +104,7 @@ Forbidden work:
 - policy ranking
 - capacity+PULSE multimodal claims
 - broad multimodal claims
+- capacity+PULSE predictive claims
 - PULSE scientific claims beyond scalar resistance baselines
 
 ## Coding Standards

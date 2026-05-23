@@ -19,8 +19,12 @@ tables, canonical-target missingness reports, and scalar resistance baseline
 sensitivity runs. Milestone 0.7.2 evaluates secondary PULSE targets and
 claim-readiness for scalar resistance baselines. Milestone 0.8 authorizes
 capacity-PULSE scalar coupling diagnostics and prior-PULSE capacity baseline
-feature checks. It does not authorize EIS modeling, capacity+PULSE multimodal
-claims, sequence models, neural models, policy ranking, or CBAT.
+feature checks. Milestone 0.8.1 authorizes robustness checks for those coupling
+diagnostics: canonical-model selection, interval-level aggregation,
+condition-level aggregation, parameter-set bootstrap summaries, and simple
+confound-control residualization. It does not authorize EIS modeling,
+capacity+PULSE predictive or multimodal claims, sequence models, neural models,
+policy ranking, or CBAT.
 
 Required split discipline:
 
@@ -316,6 +320,35 @@ Milestone 0.8 feature policy:
   capacity predictive feature groups.
 - Any apparent gain from future PULSE deltas is leakage and is not publishable
   evidence.
+
+Required Milestone 0.8.1 coupling robustness artifacts:
+
+- `reports/coupling/pulse_capacity_robustness/capacity_Ah_k1/`
+- `reports/coupling/pulse_capacity_robustness/delta_capacity_Ah/`
+- `reports/coupling/pulse_capacity_robustness/capacity_Ah_k1_c_rate/`
+- `reports/coupling/pulse_capacity_robustness/delta_capacity_Ah_c_rate/`
+- `canonical_model_correlation.md`
+- `interval_level_correlation.md`
+- `condition_level_correlation.md`
+- `bootstrap_correlation_summary.md`
+- `residualized_correlation.md`
+- `subgroup_coupling_summary.md`
+- `coupling_claim_readiness.md`
+- `plots/canonical_model_residual_vs_pulse.csv`
+- `plots/canonical_model_correlation_by_split.csv`
+- `plots/interval_level_pulse_capacity_correlation.csv`
+- `plots/condition_level_pulse_capacity_correlation.csv`
+- `plots/pulse_capacity_correlation_bootstrap.csv`
+- `plots/residualized_pulse_capacity_correlation.csv`
+- `plots/subgroup_pulse_capacity_correlation.csv`
+- `docs/experiments/2026-05-23_capacity_pulse_coupling_robustness.md`
+
+Milestone 0.8.1 decision rule:
+
+- Coupling evidence may be described as scalar explanatory diagnostics when it
+  survives canonical-model filtering and interval/condition aggregation.
+- Predictive capacity+PULSE claims remain blocked unless a later non-neural
+  baseline demonstrates grouped predictive gains without future PULSE leakage.
 
 Blocked until later milestones:
 

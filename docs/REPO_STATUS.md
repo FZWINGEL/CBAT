@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 0.8: Capacity-PULSE Coupling Diagnostics**.
+The repository is in **Milestone 0.8.1: Coupling Robustness and Confound-Control Diagnostics**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -22,6 +22,9 @@ Milestone 0.7 opened a scoped PULSE QA-first resistance evidence stream.
 Milestone 0.7.1 hardened that stream before any PULSE scientific claim.
 Milestone 0.7.2 finalized scalar target robustness and claim-readiness.
 Milestone 0.8 opens controlled scalar capacity-PULSE coupling diagnostics.
+Milestone 0.8.1 hardens that evidence with canonical-model filtering,
+interval-level aggregation, condition-level aggregation, parameter-set bootstrap
+summaries, and simple confound-control residualization.
 
 No EIS claims, PULSE scientific claims beyond scalar resistance baselines,
 sequence models, neural architecture, policy ranking, CBAT architecture, or EIS
@@ -80,6 +83,11 @@ Current state:
 - Milestone 0.8 capacity-PULSE coupling diagnostics are implemented and run:
   capacity residuals are joined to PULSE growth, and HGB-50 capacity baselines
   are rerun with prior PULSE state only.
+- Milestone 0.8.1 coupling robustness diagnostics are implemented and run for
+  canonical `L2_hist_gradient_boosting + F4_state_log_age_scalar` capacity
+  predictions. The association survives interval- and condition-level
+  aggregation, but remains explanatory and does not authorize a capacity+PULSE
+  predictive claim.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -913,6 +921,68 @@ Decision:
 - The result supports PULSE as an explanatory scalar diagnostic endpoint, but
   not yet a capacity+PULSE predictive claim or multimodal architecture.
 
+### Milestone 0.8.1
+
+Milestone 0.8.1 checks whether the 0.8 prediction-row coupling signal survives
+canonical-model filtering, interval-level aggregation, condition-level
+aggregation, parameter-set bootstrap, and simple confound-control
+residualization.
+
+Implemented artifacts:
+
+- CLI: `mbp coupling pulse-capacity-robustness`
+- Capacity target robustness directory:
+  `reports/coupling/pulse_capacity_robustness/capacity_Ah_k1/`
+- Delta target robustness directory:
+  `reports/coupling/pulse_capacity_robustness/delta_capacity_Ah/`
+- C-rate split robustness directories:
+  `reports/coupling/pulse_capacity_robustness/capacity_Ah_k1_c_rate/` and
+  `reports/coupling/pulse_capacity_robustness/delta_capacity_Ah_c_rate/`
+- Decision memo:
+  `docs/experiments/2026-05-23_capacity_pulse_coupling_robustness.md`
+
+Canonical all-split interval/condition results for
+`L2_hist_gradient_boosting + F4_state_log_age_scalar`:
+
+| Target | Level | n | Pearson | Spearman |
+|---|---|---:|---:|---:|
+| `capacity_Ah_k1` | interval abs residual | 3,751 | `0.593280` | `0.304567` |
+| `capacity_Ah_k1` | condition abs residual | 76 | `0.903834` | `0.905345` |
+| `delta_capacity_Ah` | interval abs residual | 3,751 | `0.485245` | `0.314490` |
+| `delta_capacity_Ah` | condition abs residual | 76 | `0.779516` | `0.773069` |
+
+Canonical C-rate-split results:
+
+| Target | Level | n | Pearson | Spearman |
+|---|---|---:|---:|---:|
+| `capacity_Ah_k1` | interval abs residual | 143 | `0.857653` | `0.633959` |
+| `capacity_Ah_k1` | condition abs residual | 12 | `0.956599` | `0.979021` |
+| `delta_capacity_Ah` | interval abs residual | 143 | `0.647125` | `0.646779` |
+| `delta_capacity_Ah` | condition abs residual | 12 | `0.903590` | `0.881119` |
+
+Residualized diagnostic correlations after controlling for observed state and
+condition metadata:
+
+| Target | Scope | n | Pearson | Spearman |
+|---|---|---:|---:|---:|
+| `capacity_Ah_k1` | all intervals | 3,751 | `0.451220` | `0.251932` |
+| `capacity_Ah_k1` | C-rate split | 143 | `0.838145` | `0.627044` |
+| `delta_capacity_Ah` | all intervals | 3,751 | `0.330324` | `0.182004` |
+| `delta_capacity_Ah` | C-rate split | 143 | `0.519771` | `0.447610` |
+
+Decision:
+
+- PULSE growth remains associated with capacity residual magnitude after
+  canonical-model filtering and interval-level aggregation.
+- The association is stronger at parameter-set condition level, especially in
+  C-rate views, but the C-rate condition sample is small.
+- Basic residualization weakens the all-interval association, especially for
+  `delta_capacity_Ah`, but C-rate split associations remain visible.
+- The result strengthens PULSE as an explanatory scalar diagnostic endpoint.
+- A capacity+PULSE predictive claim remains blocked because prior PULSE did not
+  solve C-rate `delta_capacity_Ah`, and this milestone is diagnostic rather than
+  a predictive benchmark.
+
 ## Important Implementation Notes
 
 The interval builder preserves result-table timestamps in the public schema, but
@@ -966,7 +1036,7 @@ PYTHONDONTWRITEBYTECODE=1 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/ruff check . --no
 All checks passed.
 
 PYTHONDONTWRITEBYTECODE=1 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/pytest -p no:cacheprovider
-103 passed.
+104 passed.
 ```
 
 The previous `datetime.utcnow()` deprecation warning in
@@ -974,8 +1044,9 @@ The previous `datetime.utcnow()` deprecation warning in
 
 ## Recommended Next Step
 
-Review the **Milestone 0.8 Capacity-PULSE Coupling Diagnostics** before opening
-any capacity+PULSE prediction milestone. The current result supports PULSE as a
-scalar explanatory diagnostic, but the C-rate `delta_capacity_Ah` forecast
-failure remains unresolved. EIS, sequence models, neural models, policy ranking,
-CBAT, and architecture work remain blocked.
+Review the **Milestone 0.8.1 Coupling Robustness and Confound-Control
+Diagnostics** before opening any capacity+PULSE prediction milestone. The
+current result supports PULSE as a scalar explanatory diagnostic, especially for
+C-rate residual analysis, but the C-rate `delta_capacity_Ah` forecast failure
+remains unresolved. EIS, sequence models, neural models, policy ranking, CBAT,
+and architecture work remain blocked.

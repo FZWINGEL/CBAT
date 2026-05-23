@@ -9,10 +9,11 @@ import math
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-SCHEMA_VERSION = "gate8.capacity_pulse_coupling.v1"
+SCHEMA_VERSION = "gate8.capacity_pulse_coupling.v2"
 
 COUPLING_SCHEMA = pa.schema(
     [
@@ -40,6 +41,8 @@ COUPLING_SCHEMA = pa.schema(
         ("nominal_temperature_C", pa.float64()),
         ("voltage_window_family", pa.string()),
         ("nominal_charge_C_rate", pa.float64()),
+        ("log_age_efc_delta", pa.float64()),
+        ("calendar_days", pa.float64()),
         ("quality_flags", pa.string()),
     ]
 )
@@ -95,6 +98,8 @@ def build_capacity_pulse_coupling_table(
                 "nominal_temperature_C": _as_float(interval.get("nominal_temperature_C")),
                 "voltage_window_family": str(interval.get("voltage_window_family", "")),
                 "nominal_charge_C_rate": _as_float(interval.get("nominal_charge_C_rate")),
+                "log_age_efc_delta": _as_float(interval.get("log_age_efc_delta")),
+                "calendar_days": _as_float(interval.get("calendar_days")),
                 "quality_flags": str(pulse.get("quality_flags", "")),
             }
         )
@@ -177,6 +182,148 @@ def write_pulse_capacity_diagnostics(
     return report
 
 
+def write_pulse_capacity_robustness_diagnostics(
+    capacity_report_path: Path,
+    capacity_predictions_path: Path,
+    pulse_targets_path: Path,
+    interval_table_path: Path,
+    out_dir: Path,
+    *,
+    model_level: str = "L2_hist_gradient_boosting",
+    feature_group: str = "F4_state_log_age_scalar",
+    target: str = "capacity_Ah_k1",
+    split: str = "all",
+    bootstrap_resamples: int = 1000,
+    seed: int = 42,
+    coupling_table_out: Path | None = None,
+) -> dict[str, Any]:
+    """Write canonical-model, aggregated, and confound-control coupling diagnostics."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    plots_dir = out_dir / "plots"
+    plots_dir.mkdir(parents=True, exist_ok=True)
+    coupling_path = coupling_table_out or out_dir / "capacity_pulse_coupling_table.parquet"
+    table = build_capacity_pulse_coupling_table(interval_table_path, pulse_targets_path, coupling_path)
+    coupling_rows = table.to_pylist()
+    coupling_by_key = {_interval_key(row): row for row in coupling_rows}
+    prediction_rows = pq.read_table(capacity_predictions_path).to_pylist()
+    joined = _joined_residual_rows(prediction_rows, coupling_by_key)
+    canonical = _canonical_rows(
+        joined,
+        model_level=model_level,
+        feature_group=feature_group,
+        target=target,
+        split=split,
+    )
+    interval_rows = _interval_level_rows(canonical)
+    condition_rows = _condition_level_rows(interval_rows)
+    canonical_corr = _scope_correlation_rows(canonical, level="canonical_prediction_row")
+    interval_corr = _scope_correlation_rows(interval_rows, level="interval")
+    condition_corr = _scope_correlation_rows(condition_rows, level="condition")
+    bootstrap_rows = _bootstrap_correlation_rows(interval_rows, condition_rows, bootstrap_resamples, seed)
+    residualized_rows = _residualized_correlation_rows(interval_rows)
+    subgroup_rows = _subgroup_correlation_rows(interval_rows)
+
+    _write_csv(plots_dir / "canonical_model_residual_vs_pulse.csv", _canonical_plot_rows(canonical))
+    _write_csv(plots_dir / "canonical_model_correlation_by_split.csv", canonical_corr)
+    _write_csv(plots_dir / "interval_level_pulse_capacity_correlation.csv", interval_corr)
+    _write_csv(plots_dir / "condition_level_pulse_capacity_correlation.csv", condition_corr)
+    _write_csv(plots_dir / "pulse_capacity_correlation_bootstrap.csv", bootstrap_rows)
+    _write_csv(plots_dir / "residualized_pulse_capacity_correlation.csv", residualized_rows)
+    _write_csv(plots_dir / "subgroup_pulse_capacity_correlation.csv", subgroup_rows)
+
+    _write_correlation_table_md(
+        "Canonical Model Correlation",
+        [
+            "These rows are filtered to one model, feature group, target, and optional split.",
+            f"Selection: `{model_level}` + `{feature_group}` + `{target}` + split `{split}`.",
+        ],
+        canonical_corr,
+        out_dir / "canonical_model_correlation.md",
+    )
+    _write_correlation_table_md(
+        "Interval-Level Correlation",
+        ["Rows are unique physical intervals after canonical-model filtering."],
+        interval_corr,
+        out_dir / "interval_level_correlation.md",
+    )
+    _write_correlation_table_md(
+        "Condition-Level Correlation",
+        ["Rows are parameter-set condition aggregates."],
+        condition_corr,
+        out_dir / "condition_level_correlation.md",
+    )
+    _write_correlation_table_md(
+        "Bootstrap Correlation Summary",
+        [
+            "Bootstrap resampling is clustered by parameter_set.",
+            f"Resamples: `{bootstrap_resamples}`; seed: `{seed}`.",
+        ],
+        bootstrap_rows,
+        out_dir / "bootstrap_correlation_summary.md",
+    )
+    _write_correlation_table_md(
+        "Residualized Correlation",
+        [
+            "Residualization controls for observed state and condition metadata.",
+            "This is a diagnostic association check, not causal evidence.",
+        ],
+        residualized_rows,
+        out_dir / "residualized_correlation.md",
+    )
+    _write_correlation_table_md(
+        "Subgroup Coupling Summary",
+        ["Subgroups test whether coupling is concentrated in C-rate/cold-rate regimes."],
+        subgroup_rows,
+        out_dir / "subgroup_coupling_summary.md",
+    )
+    _write_claim_readiness(
+        interval_corr,
+        condition_corr,
+        residualized_rows,
+        subgroup_rows,
+        out_dir / "coupling_claim_readiness.md",
+    )
+
+    report = {
+        "status": "passed",
+        "schema_version": SCHEMA_VERSION,
+        "generated_at_utc": datetime.now(UTC).isoformat(),
+        "selection": {
+            "model_level": model_level,
+            "feature_group": feature_group,
+            "target": target,
+            "split": split,
+        },
+        "inputs": {
+            "capacity_report": str(capacity_report_path),
+            "capacity_predictions": str(capacity_predictions_path),
+            "pulse_targets": str(pulse_targets_path),
+            "interval_table": str(interval_table_path),
+        },
+        "outputs": {
+            "out_dir": str(out_dir),
+            "coupling_table": str(coupling_path),
+        },
+        "row_counts": {
+            "coupling_rows": len(coupling_rows),
+            "joined_prediction_rows": len(joined),
+            "canonical_prediction_rows": len(canonical),
+            "interval_rows": len(interval_rows),
+            "condition_rows": len(condition_rows),
+        },
+        "canonical_correlations": canonical_corr,
+        "interval_correlations": interval_corr,
+        "condition_correlations": condition_corr,
+        "residualized_correlations": residualized_rows,
+        "subgroup_correlations": subgroup_rows,
+    }
+    (out_dir / "pulse_capacity_robustness_report.json").write_text(
+        json.dumps(report, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return report
+
+
 def _joined_residual_rows(
     prediction_rows: list[dict[str, Any]],
     coupling_by_key: dict[tuple[str, int, int], dict[str, Any]],
@@ -202,9 +349,18 @@ def _joined_residual_rows(
                     "replicate_id",
                     "checkup_k",
                     "checkup_k_next",
+                    "capacity_Ah_k",
+                    "log_age_efc_delta",
+                    "calendar_days",
+                    "aging_mode",
                     "nominal_temperature_C",
                     "voltage_window_family",
                     "nominal_charge_C_rate",
+                    "condition_fold",
+                    "temperature_holdout_fold",
+                    "c_rate_holdout_fold",
+                    "profile_holdout_fold",
+                    "voltage_window_holdout_fold",
                 )},
                 "split_name": pred["split_name"],
                 "model_level": pred["model_level"],
@@ -304,6 +460,405 @@ def _pulse_growth_by_capacity_error_decile(rows: list[dict[str, Any]]) -> list[d
     return output
 
 
+def _canonical_rows(
+    rows: list[dict[str, Any]],
+    *,
+    model_level: str,
+    feature_group: str,
+    target: str,
+    split: str,
+) -> list[dict[str, Any]]:
+    output = [
+        row
+        for row in rows
+        if row["model_level"] == model_level
+        and row["feature_group"] == feature_group
+        and row["target"] == target
+        and (split == "all" or row["split_name"] == split)
+    ]
+    if not output:
+        raise ValueError(
+            "No canonical prediction rows matched "
+            f"model_level={model_level!r}, feature_group={feature_group!r}, target={target!r}, split={split!r}."
+        )
+    return output
+
+
+def _canonical_plot_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "cell_id": row["cell_id"],
+            "parameter_set": row["parameter_set"],
+            "checkup_k": row["checkup_k"],
+            "checkup_k_next": row["checkup_k_next"],
+            "split_name": row["split_name"],
+            "capacity_residual": row["capacity_residual"],
+            "capacity_abs_residual": row["capacity_abs_residual"],
+            "delta_pulse_1s_resistance": row["delta_pulse_1s_resistance"],
+            "delta_pulse_10ms_resistance": row["delta_pulse_10ms_resistance"],
+            "nominal_temperature_C": row["nominal_temperature_C"],
+            "nominal_charge_C_rate": row["nominal_charge_C_rate"],
+            "voltage_window_family": row["voltage_window_family"],
+            "cold_c_rate_subgroup": row["cold_c_rate_subgroup"],
+        }
+        for row in rows
+    ]
+
+
+def _interval_level_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    output = []
+    for key, group in _group_by(rows, _interval_key).items():
+        first = group[0]
+        output.append(
+            {
+                **_metadata_row(first),
+                "level": "interval",
+                "n_predictions": len(group),
+                "capacity_residual": _mean([row["capacity_residual"] for row in group]),
+                "capacity_abs_residual": _mean([row["capacity_abs_residual"] for row in group]),
+                "delta_pulse_1s_resistance": _mean([row["delta_pulse_1s_resistance"] for row in group]),
+                "delta_pulse_10ms_resistance": _mean([row["delta_pulse_10ms_resistance"] for row in group]),
+                "interval_key": "|".join(str(part) for part in key),
+            }
+        )
+    return output
+
+
+def _condition_level_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    output = []
+    for parameter_set, group in _group_by(rows, lambda row: int(row["parameter_set"])).items():
+        first = group[0]
+        output.append(
+            {
+                "level": "condition",
+                "parameter_set": parameter_set,
+                "n_intervals": len(group),
+                "capacity_residual": _mean([row["capacity_residual"] for row in group]),
+                "capacity_abs_residual": _mean([row["capacity_abs_residual"] for row in group]),
+                "delta_pulse_1s_resistance": _mean([row["delta_pulse_1s_resistance"] for row in group]),
+                "delta_pulse_10ms_resistance": _mean([row["delta_pulse_10ms_resistance"] for row in group]),
+                "capacity_Ah_k": _mean([row["capacity_Ah_k"] for row in group]),
+                "checkup_k": _mean([row["checkup_k"] for row in group]),
+                "log_age_efc_delta": _mean([row["log_age_efc_delta"] for row in group]),
+                "calendar_days": _mean([row["calendar_days"] for row in group]),
+                "nominal_temperature_C": first["nominal_temperature_C"],
+                "nominal_charge_C_rate": first["nominal_charge_C_rate"],
+                "voltage_window_family": first["voltage_window_family"],
+                "aging_mode": first["aging_mode"],
+                "condition_fold": first["condition_fold"],
+                "temperature_holdout_fold": first["temperature_holdout_fold"],
+                "c_rate_holdout_fold": first["c_rate_holdout_fold"],
+                "profile_holdout_fold": first["profile_holdout_fold"],
+                "voltage_window_holdout_fold": first["voltage_window_holdout_fold"],
+                "cold_c_rate_subgroup": any(bool(row["cold_c_rate_subgroup"]) for row in group),
+            }
+        )
+    return output
+
+
+def _scope_correlation_rows(rows: list[dict[str, Any]], *, level: str) -> list[dict[str, Any]]:
+    output = []
+    for scope, group in _robustness_groups(rows).items():
+        for pulse_column in ("delta_pulse_1s_resistance", "delta_pulse_10ms_resistance"):
+            for residual_column in ("capacity_residual", "capacity_abs_residual"):
+                output.append(_correlation_summary(level, scope, group, pulse_column, residual_column))
+    return output
+
+
+def _subgroup_correlation_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    output = []
+    for scope, group in _robustness_groups(rows).items():
+        output.append(
+            _correlation_summary(
+                "interval",
+                scope,
+                group,
+                "delta_pulse_1s_resistance",
+                "capacity_abs_residual",
+            )
+        )
+    return output
+
+
+def _robustness_groups(rows: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    return {
+        "all": rows,
+        "c_rate_holdout": [row for row in rows if int(row.get("c_rate_holdout_fold", 0)) != 0],
+        "cold_c_rate": [row for row in rows if row.get("cold_c_rate_subgroup")],
+        "voltage_window_approx_0_100": [
+            row for row in rows if str(row.get("voltage_window_family")) == "approx_0_100"
+        ],
+        "voltage_window_approx_10_100": [
+            row for row in rows if str(row.get("voltage_window_family")) == "approx_10_100"
+        ],
+        "profile_holdout": [row for row in rows if int(row.get("profile_holdout_fold", 0)) != 0],
+    }
+
+
+def _correlation_summary(
+    level: str,
+    scope: str,
+    rows: list[dict[str, Any]],
+    pulse_column: str,
+    residual_column: str,
+) -> dict[str, Any]:
+    x = [_as_float(row.get(pulse_column)) for row in rows]
+    y = [_as_float(row.get(residual_column)) for row in rows]
+    return {
+        "level": level,
+        "scope": scope,
+        "pulse_column": pulse_column,
+        "residual_column": residual_column,
+        "n": len([(a, b) for a, b in zip(x, y) if math.isfinite(a) and math.isfinite(b)]),
+        "pearson": _pearson(x, y),
+        "spearman": _pearson(_ranks(x), _ranks(y)),
+    }
+
+
+def _bootstrap_correlation_rows(
+    interval_rows: list[dict[str, Any]],
+    condition_rows: list[dict[str, Any]],
+    resamples: int,
+    seed: int,
+) -> list[dict[str, Any]]:
+    output = []
+    for level, rows in (("interval", interval_rows), ("condition", condition_rows)):
+        by_condition = _group_by(rows, lambda row: int(row["parameter_set"]))
+        condition_ids = sorted(by_condition)
+        if not condition_ids:
+            continue
+        rng = np.random.default_rng(seed)
+        sampled: dict[tuple[str, str, str], list[float]] = {}
+        for _ in range(max(1, resamples)):
+            picked_ids = rng.choice(condition_ids, size=len(condition_ids), replace=True)
+            sample = [row for condition_id in picked_ids for row in by_condition[int(condition_id)]]
+            for pulse_column in ("delta_pulse_1s_resistance", "delta_pulse_10ms_resistance"):
+                for residual_column in ("capacity_residual", "capacity_abs_residual"):
+                    x = [_as_float(row[pulse_column]) for row in sample]
+                    y = [_as_float(row[residual_column]) for row in sample]
+                    sampled.setdefault((level, pulse_column, residual_column, "pearson"), []).append(_pearson(x, y))
+                    sampled.setdefault((level, pulse_column, residual_column, "spearman"), []).append(
+                        _pearson(_ranks(x), _ranks(y))
+                    )
+        for (level_name, pulse_column, residual_column, correlation), values in sampled.items():
+            finite = sorted(value for value in values if math.isfinite(value))
+            output.append(
+                {
+                    "level": level_name,
+                    "pulse_column": pulse_column,
+                    "residual_column": residual_column,
+                    "correlation": correlation,
+                    "resamples": len(finite),
+                    "mean": _mean(finite),
+                    "p05": _quantile(finite, 0.05),
+                    "p50": _quantile(finite, 0.50),
+                    "p95": _quantile(finite, 0.95),
+                }
+            )
+    return output
+
+
+def _residualized_correlation_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    output = []
+    for scope, group in _robustness_groups(rows).items():
+        if len(group) < 3:
+            output.append(
+                {
+                    "scope": scope,
+                    "n": len(group),
+                    "pulse_column": "delta_pulse_1s_resistance",
+                    "residual_column": "capacity_abs_residual",
+                    "pearson": math.nan,
+                    "spearman": math.nan,
+                }
+            )
+            continue
+        residual_y = _linear_residuals(group, "capacity_abs_residual")
+        residual_x = _linear_residuals(group, "delta_pulse_1s_resistance")
+        output.append(
+            {
+                "scope": scope,
+                "n": len(group),
+                "pulse_column": "delta_pulse_1s_resistance",
+                "residual_column": "capacity_abs_residual",
+                "pearson": _pearson(residual_x, residual_y),
+                "spearman": _pearson(_ranks(residual_x), _ranks(residual_y)),
+            }
+        )
+    return output
+
+
+def _linear_residuals(rows: list[dict[str, Any]], outcome: str) -> list[float]:
+    y = np.array([_as_float(row.get(outcome)) for row in rows], dtype=float)
+    x = _control_matrix(rows)
+    finite = np.isfinite(y) & np.all(np.isfinite(x), axis=1)
+    residuals = np.full(len(rows), math.nan, dtype=float)
+    if int(finite.sum()) < 3:
+        return residuals.tolist()
+    beta, *_ = np.linalg.lstsq(x[finite], y[finite], rcond=None)
+    residuals[finite] = y[finite] - x[finite].dot(beta)
+    return residuals.tolist()
+
+
+def _control_matrix(rows: list[dict[str, Any]]) -> np.ndarray:
+    numeric_columns = (
+        "capacity_Ah_k",
+        "checkup_k",
+        "log_age_efc_delta",
+        "nominal_temperature_C",
+        "nominal_charge_C_rate",
+    )
+    categorical_columns = ("voltage_window_family", "aging_mode")
+    numeric = []
+    for row in rows:
+        numeric.append([1.0, *[_as_float(row.get(column)) for column in numeric_columns]])
+    matrices = [np.array(numeric, dtype=float)]
+    for column in categorical_columns:
+        values = sorted({str(row.get(column, "")) for row in rows})
+        if len(values) <= 1:
+            continue
+        for value in values[1:]:
+            matrices.append(np.array([[1.0 if str(row.get(column, "")) == value else 0.0] for row in rows]))
+    return np.hstack(matrices)
+
+
+def _write_correlation_table_md(
+    title: str,
+    notes: list[str],
+    rows: list[dict[str, Any]],
+    path: Path,
+) -> None:
+    lines = [f"# {title}", ""]
+    for note in notes:
+        lines.append(note)
+    lines.extend(
+        [
+            "",
+            "| Level | Scope | Pulse | Residual | n | Pearson | Spearman |",
+            "|---|---|---|---|---:|---:|---:|",
+        ]
+    )
+    for row in rows:
+        lines.append(
+            f"| `{row.get('level', 'diagnostic')}` | `{row.get('scope', 'all')}` | "
+            f"`{row.get('pulse_column', '')}` | `{row.get('residual_column', '')}` | "
+            f"{row.get('n', row.get('resamples', ''))} | {_fmt(row.get('pearson', row.get('mean')))} | "
+            f"{_fmt(row.get('spearman', row.get('p50')))} |"
+        )
+    lines.append("")
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def _write_claim_readiness(
+    interval_corr: list[dict[str, Any]],
+    condition_corr: list[dict[str, Any]],
+    residualized_rows: list[dict[str, Any]],
+    subgroup_rows: list[dict[str, Any]],
+    path: Path,
+) -> None:
+    interval_all = _find_corr(interval_corr, "all", "delta_pulse_1s_resistance", "capacity_abs_residual")
+    condition_all = _find_corr(condition_corr, "all", "delta_pulse_1s_resistance", "capacity_abs_residual")
+    residualized_all = next((row for row in residualized_rows if row.get("scope") == "all"), {})
+    c_rate = _find_corr(subgroup_rows, "c_rate_holdout", "delta_pulse_1s_resistance", "capacity_abs_residual")
+    cold_c_rate = _find_corr(subgroup_rows, "cold_c_rate", "delta_pulse_1s_resistance", "capacity_abs_residual")
+    lines = [
+        "# Capacity-PULSE Coupling Claim Readiness",
+        "",
+        "| Claim area | Status | Evidence | Decision |",
+        "|---|---|---|---|",
+        (
+            "| Interval-level association | "
+            f"{_status_from_corr(interval_all)} | Spearman `{_fmt(interval_all.get('spearman'))}` over "
+            f"`{interval_all.get('n', 0)}` intervals | Explanatory diagnostic only |"
+        ),
+        (
+            "| Condition-level association | "
+            f"{_status_from_corr(condition_all)} | Spearman `{_fmt(condition_all.get('spearman'))}` over "
+            f"`{condition_all.get('n', 0)}` conditions | Do not inflate prediction-row evidence |"
+        ),
+        (
+            "| C-rate/cold-rate association | "
+            f"{_status_from_corr(c_rate)} | C-rate Spearman `{_fmt(c_rate.get('spearman'))}`, "
+            f"cold C-rate Spearman `{_fmt(cold_c_rate.get('spearman'))}` | Keep subgroup diagnostics |"
+        ),
+        (
+            "| Confound-controlled association | "
+            f"{_status_from_corr(residualized_all)} | Residualized Spearman "
+            f"`{_fmt(residualized_all.get('spearman'))}` | Diagnostic, not causal evidence |"
+        ),
+        (
+            "| Prior-PULSE capacity gain | partially_supported | Prior PULSE helps `capacity_Ah_k1` in 0.8 but "
+            "not C-rate `delta_capacity_Ah` | Predictive claim not authorized |"
+        ),
+        (
+            "| Leakage safety | supported_for_explanatory_diagnostics | Capacity feature groups allow "
+            "`pulse_1s_resistance_k` only | Future PULSE targets remain blocked |"
+        ),
+        (
+            "| Coverage limitation | partially_supported | PULSE-covered capacity rows drop one tolerant "
+            "interval versus capacity-only | Report coverage in any follow-up |"
+        ),
+        (
+            "| Predictive claim readiness | predictive_claim_not_authorized | Coupling remains diagnostic and "
+            "delta target is unresolved | No broad capacity+PULSE claim |"
+        ),
+        "",
+    ]
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def _find_corr(
+    rows: list[dict[str, Any]],
+    scope: str,
+    pulse_column: str,
+    residual_column: str,
+) -> dict[str, Any]:
+    return next(
+        (
+            row
+            for row in rows
+            if row.get("scope") == scope
+            and row.get("pulse_column") == pulse_column
+            and row.get("residual_column") == residual_column
+        ),
+        {},
+    )
+
+
+def _status_from_corr(row: dict[str, Any]) -> str:
+    spearman = abs(_as_float(row.get("spearman")))
+    if not math.isfinite(spearman):
+        return "not_supported"
+    if spearman >= 0.5:
+        return "supported_for_explanatory_diagnostics"
+    if spearman >= 0.25:
+        return "partially_supported"
+    return "not_supported"
+
+
+def _metadata_row(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "cell_id": row["cell_id"],
+        "parameter_set": row["parameter_set"],
+        "replicate_id": row["replicate_id"],
+        "checkup_k": row["checkup_k"],
+        "checkup_k_next": row["checkup_k_next"],
+        "capacity_Ah_k": row["capacity_Ah_k"],
+        "log_age_efc_delta": row["log_age_efc_delta"],
+        "calendar_days": row["calendar_days"],
+        "aging_mode": row["aging_mode"],
+        "nominal_temperature_C": row["nominal_temperature_C"],
+        "voltage_window_family": row["voltage_window_family"],
+        "nominal_charge_C_rate": row["nominal_charge_C_rate"],
+        "condition_fold": row["condition_fold"],
+        "temperature_holdout_fold": row["temperature_holdout_fold"],
+        "c_rate_holdout_fold": row["c_rate_holdout_fold"],
+        "profile_holdout_fold": row["profile_holdout_fold"],
+        "voltage_window_holdout_fold": row["voltage_window_holdout_fold"],
+        "cold_c_rate_subgroup": row["cold_c_rate_subgroup"],
+    }
+
+
 def _write_correlation_md(
     capacity_report_path: Path,
     capacity_predictions_path: Path,
@@ -328,6 +883,8 @@ def _write_correlation_md(
         )
     lines.extend(
         [
+            "",
+            "These correlations are prediction-row diagnostics over selected model/feature/split predictions and are not independent interval-level correlations.",
             "",
             "This is a scalar diagnostic report. It does not authorize capacity+PULSE multimodal claims.",
             "",
@@ -395,6 +952,21 @@ def _ranks(values: list[float]) -> list[float]:
 def _mean(values: Any) -> float:
     finite = [float(value) for value in values if math.isfinite(float(value))]
     return sum(finite) / len(finite) if finite else math.nan
+
+
+def _quantile(values: list[float], q: float) -> float:
+    finite = sorted(value for value in values if math.isfinite(value))
+    if not finite:
+        return math.nan
+    if len(finite) == 1:
+        return finite[0]
+    pos = q * (len(finite) - 1)
+    lo = int(math.floor(pos))
+    hi = int(math.ceil(pos))
+    if lo == hi:
+        return finite[lo]
+    weight = pos - lo
+    return finite[lo] * (1 - weight) + finite[hi] * weight
 
 
 def _fmt(value: Any) -> str:

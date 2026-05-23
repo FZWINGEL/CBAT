@@ -97,7 +97,7 @@
       "target": "delta_capacity_Ah"
     }
   ],
-  "generated_at_utc": "2026-05-23T09:19:21.532506+00:00",
+  "generated_at_utc": "2026-05-23T09:51:42.623621+00:00",
   "inputs": {
     "capacity_predictions": "data/processed/capacity_hgb50_focused_predictions.parquet",
     "capacity_report": "reports/baselines/capacity_hgb50_focused_report.json",
@@ -112,6 +112,6 @@
     "coupling_rows": 3751,
     "joined_prediction_rows": 162144
   },
-  "schema_version": "gate8.capacity_pulse_coupling.v1",
+  "schema_version": "gate8.capacity_pulse_coupling.v2",
   "status": "passed"
 }

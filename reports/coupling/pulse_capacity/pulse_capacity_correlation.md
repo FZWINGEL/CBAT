@@ -19,4 +19,6 @@ Coupling table: `data/interim/capacity_pulse_coupling_table.parquet`
 | `cold_c_rate` | `delta_capacity_Ah` | `capacity_residual` | 352 | 0.721839 | 0.658572 |
 | `cold_c_rate` | `delta_capacity_Ah` | `capacity_abs_residual` | 352 | 0.769408 | 0.72349 |
 
+These correlations are prediction-row diagnostics over selected model/feature/split predictions and are not independent interval-level correlations.
+
 This is a scalar diagnostic report. It does not authorize capacity+PULSE multimodal claims.

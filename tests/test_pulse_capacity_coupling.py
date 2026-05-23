@@ -8,6 +8,7 @@ from mbp.baselines.capacity import run_capacity_baselines
 from mbp.coupling.pulse_capacity import (
     build_capacity_pulse_coupling_table,
     write_pulse_capacity_diagnostics,
+    write_pulse_capacity_robustness_diagnostics,
 )
 from mbp.data.products.pulse_targets import build_pulse_target_table
 from test_pulse_baselines import _write_subset_registry
@@ -75,3 +76,46 @@ def test_capacity_runner_joins_prior_pulse_without_future_targets(tmp_path: Path
 
     assert report["inputs"]["pulse_targets"] == str(pulse_targets)
     assert report["row_counts"]["selected_subset_rows"] > 0
+
+
+def test_coupling_robustness_outputs_canonical_interval_condition_views(tmp_path: Path) -> None:
+    pulse_summary, _, interval_path = _write_pulse_fixture(tmp_path)
+    subset_path = _write_subset_registry(interval_path, tmp_path)
+    pulse_targets = tmp_path / "pulse_targets.parquet"
+    build_pulse_target_table(pulse_summary, interval_path, pulse_targets)
+    capacity_report = tmp_path / "capacity_report.json"
+    capacity_predictions = tmp_path / "capacity_predictions.parquet"
+    run_capacity_baselines(
+        interval_path,
+        subset_path,
+        capacity_report,
+        capacity_predictions,
+        model_levels=["L0_persistence"],
+        feature_groups=["F1_state_time"],
+        targets=["capacity_Ah_k1"],
+        split_views=["condition_fold"],
+    )
+
+    report = write_pulse_capacity_robustness_diagnostics(
+        capacity_report,
+        capacity_predictions,
+        pulse_targets,
+        interval_path,
+        tmp_path / "robustness",
+        model_level="L0_persistence",
+        feature_group="persistence",
+        target="capacity_Ah_k1",
+        split="condition_fold",
+        bootstrap_resamples=10,
+        seed=7,
+    )
+
+    assert report["row_counts"]["canonical_prediction_rows"] > 0
+    assert report["row_counts"]["interval_rows"] > 0
+    assert report["row_counts"]["condition_rows"] > 0
+    assert (tmp_path / "robustness" / "canonical_model_correlation.md").exists()
+    assert (tmp_path / "robustness" / "interval_level_correlation.md").exists()
+    assert (tmp_path / "robustness" / "condition_level_correlation.md").exists()
+    assert (tmp_path / "robustness" / "bootstrap_correlation_summary.md").exists()
+    assert (tmp_path / "robustness" / "residualized_correlation.md").exists()
+    assert (tmp_path / "robustness" / "coupling_claim_readiness.md").exists()

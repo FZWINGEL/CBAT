@@ -1,0 +1,7 @@
+n,pearson,pulse_column,residual_column,scope,spearman
+3751,0.4512199690614152,delta_pulse_1s_resistance,capacity_abs_residual,all,0.251931641711464
+143,0.784666866543071,delta_pulse_1s_resistance,capacity_abs_residual,c_rate_holdout,0.49189484224695496
+106,0.8199449902509275,delta_pulse_1s_resistance,capacity_abs_residual,cold_c_rate,0.7069199183817416
+1092,0.2484310959151019,delta_pulse_1s_resistance,capacity_abs_residual,voltage_window_approx_0_100,0.14173038640045163
+502,0.7938677200349388,delta_pulse_1s_resistance,capacity_abs_residual,voltage_window_approx_10_100,0.6002854452833064
+733,0.286333818844282,delta_pulse_1s_resistance,capacity_abs_residual,profile_holdout,0.1517815317564868

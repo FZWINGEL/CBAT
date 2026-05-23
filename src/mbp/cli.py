@@ -1126,6 +1126,45 @@ def coupling_pulse_capacity(
     )
 
 
+@coupling_app.command("pulse-capacity-robustness")
+def coupling_pulse_capacity_robustness(
+    capacity_report: Path = typer.Option(..., "--capacity-report", help="Capacity baseline report JSON."),
+    capacity_predictions: Path = typer.Option(..., "--capacity-predictions", help="Capacity row-level predictions parquet."),
+    pulse_targets: Path = typer.Option(..., "--pulse-targets", help="Path to pulse_target_table.parquet."),
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    out_dir: Path = typer.Option(..., "--out-dir", help="Output directory for coupling robustness diagnostics."),
+    model_level: str = typer.Option("L2_hist_gradient_boosting", "--model-level", help="Canonical capacity model level."),
+    feature_group: str = typer.Option("F4_state_log_age_scalar", "--feature-group", help="Canonical capacity feature group."),
+    target: str = typer.Option("capacity_Ah_k1", "--target", help="Canonical capacity target."),
+    split: str = typer.Option("all", "--split", help="Canonical split view, or 'all'."),
+    bootstrap_resamples: int = typer.Option(1000, "--bootstrap-resamples", help="Parameter-set bootstrap resamples."),
+    seed: int = typer.Option(42, "--seed", help="Bootstrap random seed."),
+    coupling_table_out: Path | None = typer.Option(None, "--coupling-table-out", help="Optional output coupling-table parquet path."),
+) -> None:
+    """Generate canonical, interval-level, condition-level, and controlled coupling diagnostics."""
+    from mbp.coupling.pulse_capacity import write_pulse_capacity_robustness_diagnostics
+
+    report = write_pulse_capacity_robustness_diagnostics(
+        capacity_report,
+        capacity_predictions,
+        pulse_targets,
+        interval_table,
+        out_dir,
+        model_level=model_level,
+        feature_group=feature_group,
+        target=target,
+        split=split,
+        bootstrap_resamples=bootstrap_resamples,
+        seed=seed,
+        coupling_table_out=coupling_table_out,
+    )
+    typer.echo(
+        "Capacity/PULSE coupling robustness diagnostics generated: "
+        f"{report['row_counts']['interval_rows']} interval rows, "
+        f"{report['row_counts']['condition_rows']} condition rows"
+    )
+
+
 def _comma_values(value: str) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
 
