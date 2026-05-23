@@ -15,6 +15,8 @@ from mbp.baselines.capacity import DIAGNOSTIC_LEAKAGE_FIELDS
 from mbp.baselines.capacity import FEATURE_GROUPS
 from mbp.baselines.capacity import FeatureEncoder
 from mbp.baselines.capacity import NUMERIC_FEATURES
+from mbp.baselines.capacity import PULSE_FEATURE_GROUPS
+from mbp.baselines.capacity import PULSE_FUTURE_LEAKAGE_FIELDS
 from mbp.baselines.capacity import RATE_TARGETS
 from mbp.baselines.capacity import assert_no_parameter_set_leakage
 from mbp.baselines.capacity import compute_metrics
@@ -262,7 +264,9 @@ def test_capacity_baseline_l1_l3_dependency_error_is_actionable(
 
 def test_state_feature_groups_include_prior_capacity() -> None:
     assert "capacity_Ah_k" not in NUMERIC_FEATURES["F0_time_only"]
-    state_groups = [group for group in FEATURE_GROUPS if group != "F0_time_only"]
+    state_groups = [
+        group for group in FEATURE_GROUPS if group != "F0_time_only" and group not in PULSE_FEATURE_GROUPS
+    ]
     assert state_groups
     assert all("capacity_Ah_k" in NUMERIC_FEATURES[group] for group in state_groups)
 
@@ -371,6 +375,14 @@ def test_rate_targets_are_not_input_features() -> None:
     }
     for feature_group in ("F11_minimal_cold_current", "F12_voltage_cold_current_interactions", "F13_sparse_c_rate_context"):
         assert not (set(NUMERIC_FEATURES[feature_group]) & forbidden)
+
+
+def test_prior_pulse_feature_groups_exclude_future_pulse_targets() -> None:
+    assert PULSE_FEATURE_GROUPS
+    for feature_group in PULSE_FEATURE_GROUPS:
+        features = set(NUMERIC_FEATURES[feature_group])
+        assert "pulse_1s_resistance_k" in features
+        assert not (features & PULSE_FUTURE_LEAKAGE_FIELDS)
 
 
 def test_ridge_standardization_uses_train_fold_statistics_only() -> None:

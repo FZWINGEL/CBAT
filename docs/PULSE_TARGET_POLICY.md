@@ -107,3 +107,9 @@ No scientific PULSE resistance claim is allowed until:
 - duplicate aggregation is explicit;
 - the interval target table is generated and schema-valid;
 - grouped baseline reports include target coverage limitations.
+
+Milestone 0.7.2 satisfies the scalar resistance-baseline diagnostic gate for
+canonical RT / 50% mean PULSE. This does not authorize a broad PULSE scientific
+claim, capacity+PULSE multimodal modeling, policy ranking, CBAT, or architecture
+work. It only authorizes controlled scalar coupling diagnostics in later
+milestones.

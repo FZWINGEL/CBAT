@@ -54,10 +54,20 @@ FEATURE_GROUPS = (
     "F11_minimal_cold_current",
     "F12_voltage_cold_current_interactions",
     "F13_sparse_c_rate_context",
+    "C_P0_state_time_pulse",
+    "C_P1_nominal_pulse",
+    "C_P2_log_age_pulse",
+    "C_P3_stress_pulse",
 )
 DEFAULT_FEATURE_GROUPS = FEATURE_GROUPS[:5]
 
 DIAGNOSTIC_LEAKAGE_FIELDS = {"cap_aged_est_Ah", "R0_mOhm", "R1_mOhm"}
+PULSE_FUTURE_LEAKAGE_FIELDS = {
+    "pulse_1s_resistance_k1",
+    "delta_pulse_1s_resistance",
+    "pulse_10ms_resistance_k1",
+    "delta_pulse_10ms_resistance",
+}
 STRESS_FEATURE_GROUPS = {
     "F5_log_age_histograms",
     "F6_coupled_stress",
@@ -68,6 +78,13 @@ STRESS_FEATURE_GROUPS = {
     "F11_minimal_cold_current",
     "F12_voltage_cold_current_interactions",
     "F13_sparse_c_rate_context",
+    "C_P3_stress_pulse",
+}
+PULSE_FEATURE_GROUPS = {
+    "C_P0_state_time_pulse",
+    "C_P1_nominal_pulse",
+    "C_P2_log_age_pulse",
+    "C_P3_stress_pulse",
 }
 
 LOG_AGE_HISTOGRAM_FEATURES = (
@@ -382,6 +399,78 @@ NUMERIC_FEATURES: dict[str, tuple[str, ...]] = {
     "F11_minimal_cold_current": MINIMAL_COLD_CURRENT_FEATURES,
     "F12_voltage_cold_current_interactions": VOLTAGE_COLD_CURRENT_FEATURES,
     "F13_sparse_c_rate_context": SPARSE_C_RATE_CONTEXT_FEATURES,
+    "C_P0_state_time_pulse": (
+        "capacity_Ah_k",
+        "duration_h",
+        "calendar_days",
+        "checkup_k",
+        "pulse_1s_resistance_k",
+    ),
+    "C_P1_nominal_pulse": (
+        "capacity_Ah_k",
+        "duration_h",
+        "calendar_days",
+        "checkup_k",
+        "log_age_efc_delta",
+        "log_age_delta_q_Ah",
+        "nominal_temperature_C",
+        "nominal_charge_C_rate",
+        "nominal_discharge_C_rate",
+        "pulse_1s_resistance_k",
+    ),
+    "C_P2_log_age_pulse": (
+        *(
+            "capacity_Ah_k",
+            "duration_h",
+            "calendar_days",
+            "checkup_k",
+            "log_age_efc_delta",
+            "log_age_delta_q_Ah",
+            "nominal_temperature_C",
+            "nominal_charge_C_rate",
+            "nominal_discharge_C_rate",
+            "log_age_mean_voltage_V",
+            "log_age_min_voltage_V",
+            "log_age_max_voltage_V",
+            "log_age_mean_temperature_C",
+            "log_age_min_temperature_C",
+            "log_age_max_temperature_C",
+            "log_age_mean_current_A",
+            "log_age_mean_abs_current_A",
+            "log_age_max_abs_current_A",
+            "log_age_mean_soc",
+            "log_age_min_soc",
+            "log_age_max_soc",
+        ),
+        "pulse_1s_resistance_k",
+    ),
+    "C_P3_stress_pulse": (
+        *(
+            "capacity_Ah_k",
+            "duration_h",
+            "calendar_days",
+            "checkup_k",
+            "log_age_efc_delta",
+            "log_age_delta_q_Ah",
+            "nominal_temperature_C",
+            "nominal_charge_C_rate",
+            "nominal_discharge_C_rate",
+            "log_age_mean_voltage_V",
+            "log_age_min_voltage_V",
+            "log_age_max_voltage_V",
+            "log_age_mean_temperature_C",
+            "log_age_min_temperature_C",
+            "log_age_max_temperature_C",
+            "log_age_mean_current_A",
+            "log_age_mean_abs_current_A",
+            "log_age_max_abs_current_A",
+            "log_age_mean_soc",
+            "log_age_min_soc",
+            "log_age_max_soc",
+        ),
+        *TIMESTAMP_WEIGHTED_STRESS_FEATURES,
+        "pulse_1s_resistance_k",
+    ),
 }
 
 CATEGORICAL_FEATURES: dict[str, tuple[str, ...]] = {
@@ -402,6 +491,10 @@ CATEGORICAL_FEATURES: dict[str, tuple[str, ...]] = {
         "voltage_window_family",
         "parameter_set_interval_count_bucket",
     ),
+    "C_P0_state_time_pulse": (),
+    "C_P1_nominal_pulse": ("aging_mode", "voltage_window_family"),
+    "C_P2_log_age_pulse": ("aging_mode", "voltage_window_family"),
+    "C_P3_stress_pulse": ("aging_mode", "voltage_window_family"),
 }
 
 BASELINE_PREDICTION_SCHEMA = pa.schema(
@@ -451,6 +544,11 @@ class FeatureEncoder:
         leakage &= DIAGNOSTIC_LEAKAGE_FIELDS
         if leakage:
             raise ValueError(f"Feature group {feature_group} includes leakage fields: {sorted(leakage)}")
+        pulse_leakage = (set(numeric_columns) | set(categorical_columns)) & PULSE_FUTURE_LEAKAGE_FIELDS
+        if pulse_leakage:
+            raise ValueError(
+                f"Feature group {feature_group} includes future PULSE fields: {sorted(pulse_leakage)}"
+            )
 
         impute_values: dict[str, float] = {}
         scale_values: dict[str, float] = {}
@@ -517,6 +615,7 @@ def run_capacity_baselines(
     out_path: Path,
     predictions_out_path: Path,
     stress_features_path: Path | None = None,
+    pulse_targets_path: Path | None = None,
     report_dir: Path | None = None,
     subset: str = "baseline_clean_tolerant",
     seed: int = 42,
@@ -544,6 +643,11 @@ def run_capacity_baselines(
             "Stress feature groups F5-F13 require --stress-features pointing to "
             "an interval stress-feature sidecar parquet."
         )
+    if PULSE_FEATURE_GROUPS & set(selected_feature_groups) and pulse_targets_path is None:
+        raise ValueError(
+            "PULSE capacity feature groups require --pulse-targets pointing to "
+            "a pulse target table parquet."
+        )
     _preflight_model_dependencies(selected_models)
 
     all_rows, subset_rows = load_baseline_rows(
@@ -551,6 +655,7 @@ def run_capacity_baselines(
         interval_subsets_path,
         subset,
         stress_features_path=stress_features_path,
+        pulse_targets_path=pulse_targets_path,
     )
     sensitivity_rows = [
         row for row in subset_rows if not bool(row["sensitivity_flagged_monotonicity"])
@@ -675,6 +780,7 @@ def run_capacity_baselines(
             "interval_table": str(interval_table_path),
             "interval_subsets": str(interval_subsets_path),
             "stress_features": str(stress_features_path) if stress_features_path else None,
+            "pulse_targets": str(pulse_targets_path) if pulse_targets_path else None,
         },
         "outputs": {
             "report": str(out_path),
@@ -931,6 +1037,7 @@ def load_baseline_rows(
     interval_subsets_path: Path,
     subset: str,
     stress_features_path: Path | None = None,
+    pulse_targets_path: Path | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Load and join interval rows with baseline subset flags."""
     if subset not in SUBSET_COLUMNS:
@@ -957,6 +1064,16 @@ def load_baseline_rows(
             if key in stress_by_key:
                 raise ValueError(f"Duplicate stress-feature interval key: {key}")
             stress_by_key[key] = row
+    pulse_by_key: dict[tuple[str, int, int], dict[str, Any]] = {}
+    if pulse_targets_path is not None:
+        if not pulse_targets_path.exists():
+            raise FileNotFoundError(f"PULSE target table not found: {pulse_targets_path}")
+        pulse_rows = pq.read_table(pulse_targets_path).to_pylist()
+        for row in pulse_rows:
+            key = _interval_key(row)
+            if key in pulse_by_key:
+                raise ValueError(f"Duplicate PULSE target interval key: {key}")
+            pulse_by_key[key] = row
 
     subset_by_key: dict[tuple[str, int, int], dict[str, Any]] = {}
     for row in subset_rows:
@@ -990,6 +1107,21 @@ def load_baseline_rows(
                 }:
                     continue
                 merged[column] = value
+        if pulse_targets_path is not None:
+            pulse_row = pulse_by_key.get(key)
+            if pulse_row is None:
+                continue
+            for column, value in pulse_row.items():
+                if column in {
+                    "cell_id",
+                    "parameter_set",
+                    "replicate_id",
+                    "checkup_k",
+                    "checkup_k_next",
+                    "schema_version",
+                }:
+                    continue
+                merged[column] = value
         merged_rows.append(merged)
 
     parameter_set_counts = Counter(int(row["parameter_set"]) for row in merged_rows)
@@ -999,6 +1131,10 @@ def load_baseline_rows(
         row["parameter_set_interval_count_bucket"] = _interval_count_bucket(count)
 
     selected_rows = [row for row in merged_rows if bool(row[subset])]
+    if pulse_targets_path is not None:
+        selected_rows = [
+            row for row in selected_rows if math.isfinite(_as_float(row.get("pulse_1s_resistance_k")))
+        ]
     if not selected_rows:
         raise ValueError(f"Requested subset '{subset}' has zero rows.")
     return merged_rows, selected_rows
@@ -2874,7 +3010,7 @@ def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
         return
     fieldnames = list(rows[0].keys())
     with path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
 

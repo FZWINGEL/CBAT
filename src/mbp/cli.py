@@ -22,6 +22,7 @@ split_app = typer.Typer(help="Reproducible dataset splitting commands.")
 baseline_app = typer.Typer(help="Milestone 0.5 baseline commands.")
 features_app = typer.Typer(help="Milestone 0.6 scalar feature-engineering commands.")
 pulse_app = typer.Typer(help="Milestone 0.7 PULSE QA and target commands.")
+coupling_app = typer.Typer(help="Milestone 0.8 coupling diagnostics commands.")
 
 app.add_typer(audit_app, name="audit")
 app.add_typer(report_app, name="report")
@@ -30,6 +31,7 @@ app.add_typer(split_app, name="split")
 app.add_typer(baseline_app, name="baseline")
 app.add_typer(features_app, name="features")
 app.add_typer(pulse_app, name="pulse")
+app.add_typer(coupling_app, name="coupling")
 
 
 def _load_optional_json(path: Path) -> dict[str, object] | None:
@@ -806,6 +808,11 @@ def baseline_run_capacity(
         "--stress-features",
         help="Optional interval_stress_features_v1.parquet sidecar for F5-F7 groups.",
     ),
+    pulse_targets: Path | None = typer.Option(
+        None,
+        "--pulse-targets",
+        help="Optional pulse_target_table.parquet sidecar for prior-PULSE capacity feature groups.",
+    ),
     report_dir: Path | None = typer.Option(
         None,
         "--report-dir",
@@ -859,6 +866,7 @@ def baseline_run_capacity(
             out,
             predictions_out,
             stress_features_path=stress_features,
+            pulse_targets_path=pulse_targets,
             report_dir=report_dir,
             subset=subset,
             seed=seed,
@@ -1077,6 +1085,45 @@ def pulse_missingness(
         by_split_out,
     )
     typer.echo(f"PULSE missingness reports generated: {report['missing_rows']} missing rows")
+
+
+@coupling_app.command("build-pulse-capacity-table")
+def coupling_build_pulse_capacity_table(
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    pulse_targets: Path = typer.Option(..., "--pulse-targets", help="Path to pulse_target_table.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output capacity_pulse_coupling_table.parquet path."),
+) -> None:
+    """Build the scalar capacity/PULSE coupling sidecar table."""
+    from mbp.coupling.pulse_capacity import build_capacity_pulse_coupling_table
+
+    table = build_capacity_pulse_coupling_table(interval_table, pulse_targets, out)
+    typer.echo(f"Capacity/PULSE coupling table generated: {table.num_rows} rows written to {out}")
+
+
+@coupling_app.command("pulse-capacity")
+def coupling_pulse_capacity(
+    capacity_report: Path = typer.Option(..., "--capacity-report", help="Capacity baseline report JSON."),
+    capacity_predictions: Path = typer.Option(..., "--capacity-predictions", help="Capacity row-level predictions parquet."),
+    pulse_targets: Path = typer.Option(..., "--pulse-targets", help="Path to pulse_target_table.parquet."),
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    out_dir: Path = typer.Option(..., "--out-dir", help="Output directory for coupling diagnostics."),
+    coupling_table_out: Path | None = typer.Option(None, "--coupling-table-out", help="Optional output coupling-table parquet path."),
+) -> None:
+    """Generate capacity residual versus PULSE growth diagnostics."""
+    from mbp.coupling.pulse_capacity import write_pulse_capacity_diagnostics
+
+    report = write_pulse_capacity_diagnostics(
+        capacity_report,
+        capacity_predictions,
+        pulse_targets,
+        interval_table,
+        out_dir,
+        coupling_table_out=coupling_table_out,
+    )
+    typer.echo(
+        "Capacity/PULSE coupling diagnostics generated: "
+        f"{report['row_counts']['joined_prediction_rows']} joined prediction rows"
+    )
 
 
 def _comma_values(value: str) -> list[str]:

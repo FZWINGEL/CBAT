@@ -33,6 +33,8 @@ Schema version prefix: `gate1.audit.v1`
 | `pulse_missingness_reports` | Implemented | `mbp.data.products.pulse_targets` | PULSE target table path, interval table path, missing endpoint rows, condition groupings, split groupings |
 | `pulse_resistance_baseline_report` | Implemented | `mbp.baselines.pulse` | interval table path, interval subset registry path, PULSE target table path, optional stress-feature sidecar, grouped split view, target coverage |
 | `pulse_target_robustness_report` | Implemented | `mbp.baselines.pulse` | PULSE baseline report path, scalar target list, grouped split view, 1s/10ms comparisons, delta/k1 comparisons, claim-readiness memo |
+| `capacity_pulse_coupling_table` | Implemented | `mbp.coupling.pulse_capacity` | interval table path, PULSE target table path, canonical target policy, schema version |
+| `pulse_capacity_coupling_diagnostics` | Implemented | `mbp.coupling.pulse_capacity` | capacity report path, capacity prediction path, interval table path, PULSE target table path, residual/PULSE-growth correlation outputs |
 
 ## Gate 2/3 Schema Contracts
 
@@ -48,3 +50,5 @@ Schema version prefix: `gate1.audit.v1`
 - `pulse_missingness_reports` record missing canonical PULSE endpoints by interval, parameter-set condition, C-rate holdout fold, and profile holdout fold.
 - `PULSE_PREDICTION_SCHEMA` records row-level scalar PULSE resistance baseline predictions. Generated prediction Parquet remains ignored by default; JSON/CSV/markdown report artifacts are trackable.
 - `pulse_target_robustness_report` reuses the scalar PULSE baseline report schema and adds rendered comparison CSVs for target family, 1s-vs-10ms behavior, and delta-vs-k1 behavior.
+- `capacity_pulse_coupling_table` is one row per interval with finite capacity targets and canonical PULSE targets. It includes condition metadata, split labels, quality flags, and schema version.
+- `pulse_capacity_coupling_diagnostics` joins capacity prediction residuals to canonical PULSE growth and reports Pearson/Spearman correlations plus grouped C-rate/cold-rate summaries. It is diagnostic only and does not authorize multimodal claims.

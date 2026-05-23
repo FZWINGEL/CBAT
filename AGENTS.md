@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 0.7.2: PULSE target robustness and claim-readiness finalization.
+Milestone 0.8: Capacity-PULSE coupling diagnostics.
 
 Current state:
 - Gate 2b implementation and reports are committed.
@@ -31,9 +31,9 @@ Current state:
   C-rate delta pass failed to beat the F4 threshold. Milestone 0.7.1 hardened
   that stream with alignment-threshold sensitivity, direction-specific target
   extraction, canonical-target missingness reports, and scalar resistance
-  baseline sensitivity runs. Milestone 0.7.2 finalizes target robustness and
-  claim-readiness for scalar PULSE resistance baselines before any coupling or
-  multimodal work.
+  baseline sensitivity runs. Milestone 0.7.2 finalized target robustness and
+  claim-readiness for scalar PULSE resistance baselines. Milestone 0.8 tests
+  capacity-PULSE scalar coupling diagnostics without opening architecture work.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 - LOG_AGE monotonicity has been triaged and propagated into interval quality
@@ -81,6 +81,10 @@ Allowed work:
 - PULSE claim-readiness summaries
 - PULSE interval target table construction
 - PULSE resistance baselines
+- capacity-PULSE coupling diagnostics
+- scalar prior-PULSE feature additions to capacity baselines
+- capacity residual versus PULSE growth analysis
+- grouped coupling diagnostic reports
 
 Forbidden work:
 - EIS modeling
@@ -91,6 +95,7 @@ Forbidden work:
 - CBAT architecture
 - policy ranking
 - capacity+PULSE multimodal claims
+- broad multimodal claims
 - PULSE scientific claims beyond scalar resistance baselines
 
 ## Coding Standards

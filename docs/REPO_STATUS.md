@@ -11,8 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 0.7.2: PULSE Target Robustness and
-Claim-Readiness Finalization**.
+The repository is in **Milestone 0.8: Capacity-PULSE Coupling Diagnostics**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -21,7 +20,8 @@ consistency diagnostics are complete. Milestone 0.6.3 closed the broad
 LOG_AGE-only scalar stress-feature path for the current C-rate delta problem.
 Milestone 0.7 opened a scoped PULSE QA-first resistance evidence stream.
 Milestone 0.7.1 hardened that stream before any PULSE scientific claim.
-Milestone 0.7.2 finalizes scalar target robustness and claim-readiness.
+Milestone 0.7.2 finalized scalar target robustness and claim-readiness.
+Milestone 0.8 opens controlled scalar capacity-PULSE coupling diagnostics.
 
 No EIS claims, PULSE scientific claims beyond scalar resistance baselines,
 sequence models, neural architecture, policy ranking, CBAT architecture, or EIS
@@ -77,6 +77,9 @@ Current state:
 - Milestone 0.7.2 PULSE target robustness is implemented and run across
   `delta_pulse_1s_resistance`, `pulse_1s_resistance_k1`,
   `delta_pulse_10ms_resistance`, and `pulse_10ms_resistance_k1`.
+- Milestone 0.8 capacity-PULSE coupling diagnostics are implemented and run:
+  capacity residuals are joined to PULSE growth, and HGB-50 capacity baselines
+  are rerun with prior PULSE state only.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -857,6 +860,59 @@ Decision:
   diagnostics. A broader PULSE scientific claim and capacity+PULSE multimodal
   modeling remain blocked until explicitly opened.
 
+### Milestone 0.8
+
+Milestone 0.8 tests whether scalar canonical PULSE signals explain capacity
+baseline failures. It is not architecture work and does not authorize
+capacity+PULSE multimodal claims.
+
+Implemented artifacts:
+
+- Coupling table:
+  `data/interim/capacity_pulse_coupling_table.parquet` (ignored generated data)
+- Coupling diagnostics:
+  `reports/coupling/pulse_capacity/pulse_capacity_correlation.md`
+- Coupling plot tables under `reports/coupling/pulse_capacity/plots/`
+- Prior-PULSE capacity report:
+  `reports/baselines/capacity_with_prior_pulse_hgb50_report.json`
+- Prior-PULSE capacity diagnostics:
+  `reports/baselines/capacity_with_prior_pulse_hgb50/pulse_feature_gain.md`
+- Decision memo:
+  `docs/experiments/2026-05-23_capacity_pulse_coupling_diagnostics.md`
+
+Capacity residual/PULSE-growth correlations from the focused HGB-50 capacity
+report:
+
+| Scope | Target | Residual | Pearson | Spearman |
+|---|---|---|---:|---:|
+| all | `capacity_Ah_k1` | absolute residual | `0.559997` | `0.236657` |
+| all | `delta_capacity_Ah` | absolute residual | `0.604807` | `0.304910` |
+| C-rate | `capacity_Ah_k1` | absolute residual | `0.894547` | `0.664034` |
+| C-rate | `delta_capacity_Ah` | absolute residual | `0.822463` | `0.639033` |
+| cold C-rate | `capacity_Ah_k1` | absolute residual | `0.877023` | `0.824406` |
+| cold C-rate | `delta_capacity_Ah` | absolute residual | `0.769408` | `0.723490` |
+
+Best prior-PULSE capacity gains versus F4 on the PULSE-covered interval
+population:
+
+| Target | Split | Best prior-PULSE group | Gain vs F4 |
+|---|---|---|---:|
+| `capacity_Ah_k1` | C-rate | `C_P3_stress_pulse` | `0.00669208` |
+| `delta_capacity_Ah` | C-rate | `C_P3_stress_pulse` | `-0.00574230` |
+| `capacity_Ah_k1` | temperature | `C_P3_stress_pulse` | `0.00509620` |
+| `delta_capacity_Ah` | condition | `C_P3_stress_pulse` | `0.00249507` |
+
+Decision:
+
+- PULSE growth is strongly associated with capacity residual magnitude,
+  especially in C-rate and cold C-rate views.
+- Prior PULSE state improves `capacity_Ah_k1` on C-rate, temperature, profile,
+  and most other views.
+- Prior PULSE state does not solve the C-rate `delta_capacity_Ah` failure; the
+  best C-rate delta prior-PULSE row is worse than F4.
+- The result supports PULSE as an explanatory scalar diagnostic endpoint, but
+  not yet a capacity+PULSE predictive claim or multimodal architecture.
+
 ## Important Implementation Notes
 
 The interval builder preserves result-table timestamps in the public schema, but
@@ -910,7 +966,7 @@ PYTHONDONTWRITEBYTECODE=1 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/ruff check . --no
 All checks passed.
 
 PYTHONDONTWRITEBYTECODE=1 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/pytest -p no:cacheprovider
-100 passed.
+103 passed.
 ```
 
 The previous `datetime.utcnow()` deprecation warning in
@@ -918,7 +974,8 @@ The previous `datetime.utcnow()` deprecation warning in
 
 ## Recommended Next Step
 
-Review the **Milestone 0.7.2 PULSE Target Robustness and Claim-Readiness**
-results before making PULSE claims. If accepted, the next bounded step is
-capacity-PULSE coupling diagnostics, not EIS, sequence models, neural models,
-policy ranking, CBAT, or architecture work.
+Review the **Milestone 0.8 Capacity-PULSE Coupling Diagnostics** before opening
+any capacity+PULSE prediction milestone. The current result supports PULSE as a
+scalar explanatory diagnostic, but the C-rate `delta_capacity_Ah` forecast
+failure remains unresolved. EIS, sequence models, neural models, policy ranking,
+CBAT, and architecture work remain blocked.

@@ -17,9 +17,10 @@ tables, and scalar grouped PULSE resistance baselines. Milestone 0.7.1 hardens
 that endpoint with alignment-threshold sensitivity, direction-specific target
 tables, canonical-target missingness reports, and scalar resistance baseline
 sensitivity runs. Milestone 0.7.2 evaluates secondary PULSE targets and
-claim-readiness for scalar resistance baselines. It does not authorize EIS
-modeling, capacity+PULSE multimodal claims, sequence models, neural models,
-policy ranking, or CBAT.
+claim-readiness for scalar resistance baselines. Milestone 0.8 authorizes
+capacity-PULSE scalar coupling diagnostics and prior-PULSE capacity baseline
+feature checks. It does not authorize EIS modeling, capacity+PULSE multimodal
+claims, sequence models, neural models, policy ranking, or CBAT.
 
 Required split discipline:
 
@@ -291,6 +292,30 @@ Milestone 0.7.2 target policy:
   not direct transition prediction.
 - Direction-specific claims remain blocked; current RT/50 `mean` is documented
   as effectively equivalent to `charge` in the available generated target table.
+
+Required Milestone 0.8 coupling artifacts:
+
+- `data/interim/capacity_pulse_coupling_table.parquet` (ignored generated data)
+- `reports/coupling/pulse_capacity/pulse_capacity_correlation.md`
+- `reports/coupling/pulse_capacity/plots/capacity_residual_vs_delta_pulse.csv`
+- `reports/coupling/pulse_capacity/plots/capacity_residual_by_pulse_growth_bin.csv`
+- `reports/coupling/pulse_capacity/plots/c_rate_capacity_residual_by_pulse_growth.csv`
+- `reports/coupling/pulse_capacity/plots/pulse_growth_by_capacity_error_decile.csv`
+- `reports/baselines/capacity_with_prior_pulse_hgb50_report.json`
+- `reports/baselines/capacity_with_prior_pulse_hgb50/pulse_feature_gain.md`
+- `reports/baselines/capacity_with_prior_pulse_hgb50/plots/capacity_pulse_feature_gain_by_split.csv`
+- `reports/baselines/capacity_with_prior_pulse_hgb50/plots/c_rate_capacity_pulse_feature_gain.csv`
+- `reports/baselines/capacity_with_prior_pulse_hgb50/plots/pulse_feature_gain_claim_readiness.csv`
+- `docs/experiments/2026-05-23_capacity_pulse_coupling_diagnostics.md`
+
+Milestone 0.8 feature policy:
+
+- Capacity baselines may use prior PULSE state at check-up `k`.
+- `pulse_1s_resistance_k1`, `delta_pulse_1s_resistance`,
+  `pulse_10ms_resistance_k1`, and `delta_pulse_10ms_resistance` must not enter
+  capacity predictive feature groups.
+- Any apparent gain from future PULSE deltas is leakage and is not publishable
+  evidence.
 
 Blocked until later milestones:
 
