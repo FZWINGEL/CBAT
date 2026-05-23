@@ -138,6 +138,13 @@ authorize new model training, new feature engineering, neural models, sequence
 models, transformers, CBAT, DRT, EIS embeddings, policy ranking,
 detector-knee prediction, calibrated risk claims, causal/mechanistic claims,
 same-cell counterfactual claims, or broad multimodal claims.
+Milestone 3.3 authorizes release polish and GitHub release drafting for the
+already-tagged `benchmark-v0.1-rc1` release candidate. It authorizes handoff
+summaries, release-draft text, final release checklists, and future-branch
+organization notes. It does not authorize new model training, new feature
+engineering, neural models, sequence models, transformers, CBAT, DRT, EIS
+embeddings, policy ranking, detector-knee prediction, calibrated risk claims,
+causal claims, same-cell counterfactual claims, or broad multimodal claims.
 
 Required split discipline:
 
@@ -173,6 +180,13 @@ Required Milestone 3.2 release-candidate validation artifacts:
 - updated `docs/BENCHMARK_RELEASE_CHECKLIST.md`
 - updated `reports/synthesis/release_candidate_check.md`
 - `docs/experiments/2026-05-23_benchmark_v0_1_rc_validation.md`
+
+Required Milestone 3.3 release-polish artifacts:
+
+- `docs/BENCHMARK_V0_1_RC1_SUMMARY.md`
+- `reports/synthesis/benchmark_v0_1_rc1_handoff_check.md`
+- `docs/GITHUB_RELEASE_DRAFT_v0.1-rc1.md`
+- optional `docs/FUTURE_BRANCHES.md`
 
 Required Milestone 1.0 synthesis artifacts:
 

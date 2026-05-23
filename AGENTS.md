@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 3.2: Benchmark release candidate v0.1 validation.
+Milestone 3.3: Benchmark v0.1 release polish and GitHub release draft.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -35,14 +35,18 @@ Current state:
   state improves `capacity_Ah_k1` over F4 in selected grouped splits, but it
   does not beat the strongest supplied non-PULSE HGB baselines and does not
   improve `delta_capacity_Ah`.
-- The current main-project track makes the release-candidate package executable
-  and tag-ready with `mbp report check-release-candidate`, release notes, tag
-  preparation docs, artifact/claim validation, and command-coverage checks.
-  This is release engineering, not a new modeling milestone.
+- The current main-project track polishes the already-tagged
+  `benchmark-v0.1-rc1` release candidate for external handoff and GitHub
+  release drafting. This is release communication and handoff work, not a new
+  modeling milestone.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
 Allowed work:
+- release handoff summaries
+- GitHub release draft text
+- release checklist finalization
+- future-branch organization notes
 - release-candidate validation
 - executable artifact and claim checks
 - release notes and tag-preparation docs

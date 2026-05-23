@@ -11,8 +11,8 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 3.2: Benchmark release candidate v0.1
-validation**.
+The repository is in **Milestone 3.3: Benchmark v0.1 release polish and GitHub
+release draft**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -91,6 +91,9 @@ Milestone 3.2 makes the release-candidate checks executable with
 `mbp report check-release-candidate`, adds v0.1-rc1 release notes and tagging
 instructions, and keeps the release tag path auditable without adding new
 science.
+Milestone 3.3 polishes the already-tagged `benchmark-v0.1-rc1` handoff with a
+release summary, handoff checklist, GitHub release draft text, and future
+branch organization notes. It remains release communication work only.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -99,9 +102,10 @@ improvement claims have been started.
 
 Current state:
 
-- Milestone 3.2 is release-candidate validation. It checks required release
-  docs, phase alignment, artifact manifest paths, blocked-claim posture, claim
-  matrix IDs, ignored-artifact locations, and major CLI command coverage.
+- Milestone 3.3 is release polish. The `benchmark-v0.1-rc1` tag has been
+  pushed at commit `ff4c8c2`, the executable release checker passes, and the
+  handoff package is being prepared for a GitHub release draft and external
+  reviewer orientation.
 - LOG_AGE monotonicity policy is documented in
   `docs/LOG_AGE_MONOTONICITY_POLICY.md`.
 - Interval subset registry generation is implemented with
