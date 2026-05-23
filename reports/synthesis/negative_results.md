@@ -130,3 +130,14 @@ Threshold-event labels are more promising: `capacity_below_80pct_initial`
 has replicate consistency within 2 check-ups of 0.897 and condition coverage
 of 0.763, with median event check-up 8. This supports a possible future
 threshold-event label gate, not a current prediction claim.
+
+## Threshold-event warning does not authorize calibrated risk or policy ranking
+
+Milestone 2.6 shows a leakage-safe non-neural HGB baseline can forecast the
+80% threshold event diagnostically, but the result is not a calibrated-risk,
+policy-ranking, causal, or detector-knee claim. The first pass uses only
+check-up-k state/time/nominal features and keeps future interval exposure,
+future capacity, PULSE/EIS deltas, and detector knees out of the feature set.
+
+Decision: threshold-event forecasting is supported for diagnostics; calibrated
+risk and policy ranking remain blocked.

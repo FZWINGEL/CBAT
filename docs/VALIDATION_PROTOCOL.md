@@ -113,6 +113,12 @@ Milestone 2.5.1 authorizes knee-label forensics, stable-condition registry
 generation, threshold-event label stability diagnostics, and knee-vs-threshold
 target-readiness comparisons. It still does not authorize knee prediction
 models or any early-warning claim without a later grouped prediction gate.
+Milestone 2.6 authorizes prospective threshold-event warning table
+construction, threshold-warning QA, non-neural classification baselines,
+grouped warning evaluation, leakage audits, and calibration diagnostics for
+`capacity_below_80pct_initial`. It does not authorize detector-knee
+prediction, neural/sequence models, CBAT, policy ranking, causal claims,
+same-cell counterfactual claims, or future interval exposure leakage.
 
 Required split discipline:
 
@@ -312,6 +318,19 @@ Required Milestone 2.5.1 knee forensics and threshold-event artifacts:
 - `reports/analysis/knee/knee_vs_threshold_decision.md`
 - `docs/experiments/2026-05-23_knee_threshold_label_forensics.md`
 
+Required Milestone 2.6 threshold-warning artifacts:
+
+- `reports/analysis/knee/threshold_warning_qa_report.json`
+- `reports/analysis/knee/threshold_warning_class_balance.csv`
+- `reports/analysis/knee/threshold_warning_split_coverage.csv`
+- `reports/baselines/threshold_warning_l0_l2_report.json`
+- `reports/baselines/threshold_warning_l0_l2/leaderboard.csv`
+- `reports/baselines/threshold_warning_l0_l2/baseline_summary.md`
+- `reports/baselines/threshold_warning_l0_l2/threshold_warning_calibration.md`
+- `reports/baselines/threshold_warning_l0_l2/threshold_warning_leakage_audit.md`
+- `reports/baselines/threshold_warning_l0_l2/threshold_warning_claim_readiness.md`
+- `docs/experiments/2026-05-23_threshold_event_warning_baseline.md`
+
 Required Milestone 1.2 checks:
 
 - `mbp report build-manuscript-assets`
@@ -393,6 +412,15 @@ Milestone 2.5.1 validation commands:
 - `mbp analysis knee-stable-registry`
 - `mbp analysis threshold-event-labels`
 - `mbp analysis knee-vs-threshold`
+- `ruff check . --no-cache`
+- `pytest -p no:cacheprovider`
+- `git diff --check`
+
+Milestone 2.6 validation commands:
+
+- `mbp analysis build-threshold-warning-table`
+- `mbp analysis threshold-warning-qa`
+- `mbp baseline run-threshold-warning`
 - `ruff check . --no-cache`
 - `pytest -p no:cacheprovider`
 - `git diff --check`

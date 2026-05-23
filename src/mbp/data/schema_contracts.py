@@ -509,6 +509,39 @@ THRESHOLD_EVENT_LABEL_TABLE_V1_SCHEMA = pa.schema(
     ]
 )
 
+THRESHOLD_WARNING_TABLE_V1_SCHEMA = pa.schema(
+    [
+        ("cell_id", pa.string(), False),
+        ("parameter_set", pa.int32(), False),
+        ("replicate_id", pa.int32(), False),
+        ("checkup_k", pa.int32(), False),
+        ("capacity_Ah_k", pa.float64(), False),
+        ("soh_k", pa.float64(), True),
+        ("calendar_day_k", pa.float64(), True),
+        ("cumulative_efc_k", pa.float64(), True),
+        ("nominal_temperature_C", pa.float64(), False),
+        ("voltage_window_family", pa.string(), False),
+        ("nominal_charge_C_rate", pa.float64(), False),
+        ("nominal_discharge_C_rate", pa.float64(), True),
+        ("profile_label", pa.string(), False),
+        ("aging_mode", pa.string(), False),
+        ("condition_fold", pa.int32(), False),
+        ("temperature_holdout_fold", pa.int32(), False),
+        ("c_rate_holdout_fold", pa.int32(), False),
+        ("profile_holdout_fold", pa.int32(), False),
+        ("voltage_window_holdout_fold", pa.int32(), False),
+        ("threshold_name", pa.string(), False),
+        ("event_checkup_k", pa.int32(), True),
+        ("time_to_event_checkups", pa.int32(), True),
+        ("event_within_1_checkup", pa.bool_(), False),
+        ("event_within_2_checkups", pa.bool_(), False),
+        ("event_within_3_checkups", pa.bool_(), False),
+        ("event_observed", pa.bool_(), False),
+        ("label_quality", pa.string(), False),
+        ("schema_version", pa.string(), False),
+    ]
+)
+
 # 13. PULSE interval target table schema
 PULSE_TARGET_TABLE_SCHEMA = pa.schema(
     [

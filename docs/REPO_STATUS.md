@@ -11,8 +11,8 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 2.5.1: Knee label forensics and
-threshold-event alternative gate**.
+The repository is in **Milestone 2.6: Non-neural threshold-event early-warning
+baseline gate**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -72,6 +72,9 @@ Milestone 2.5.1 diagnoses the primary knee replicate-consistency failures,
 builds a stable-condition registry, and evaluates threshold-event labels as a
 possible more stable early-warning target family before any prediction model is
 allowed.
+Milestone 2.6 builds a prospective leakage-safe `capacity_below_80pct_initial`
+warning table and evaluates non-neural grouped classifier baselines before any
+threshold-event warning claim is strengthened.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -243,6 +246,21 @@ Current state:
   within 2 check-ups of 0.897, condition coverage of 0.763, and median event
   check-up 8. This is stronger than detector-knee replicate consistency, but
   it authorizes only a possible next label gate, not a prediction model.
+- Milestone 2.6 is implemented and run. `mbp analysis
+  build-threshold-warning-table` generates 3,827 prospective warning rows for
+  `capacity_below_80pct_initial` using only check-up-k state/time/nominal
+  fields. The table excludes future capacity, capacity deltas, future interval
+  exposure, and future PULSE/EIS fields as model inputs.
+- Threshold-warning QA passes. Positive rates are 0.045205 for
+  `event_within_1_checkup`, 0.090410 for `event_within_2_checkups`, and
+  0.129083 for `event_within_3_checkups`.
+- The non-neural threshold-warning baseline produces 360 grouped metric rows.
+  HGB with W2 nominal/state features beats the event-rate prior on all
+  horizons. For `event_within_3_checkups`, mean Brier improves from 0.145791
+  to 0.065575. C-rate holdout has 80 positives and 77 negatives for the
+  3-check-up horizon, and Brier improves from 0.407317 to 0.159930. This
+  supports diagnostic threshold-event forecasting, not calibrated risk or
+  policy ranking.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -300,6 +318,15 @@ Small audit sidecars that are referenced by documentation are tracked:
 - `reports/analysis/knee/threshold_event_by_condition.csv`
 - `reports/analysis/knee/threshold_event_claim_readiness.md`
 - `reports/analysis/knee/knee_vs_threshold_decision.md`
+- `reports/analysis/knee/threshold_warning_qa_report.json`
+- `reports/analysis/knee/threshold_warning_class_balance.csv`
+- `reports/analysis/knee/threshold_warning_split_coverage.csv`
+- `reports/baselines/threshold_warning_l0_l2_report.json`
+- `reports/baselines/threshold_warning_l0_l2/leaderboard.csv`
+- `reports/baselines/threshold_warning_l0_l2/baseline_summary.md`
+- `reports/baselines/threshold_warning_l0_l2/threshold_warning_calibration.md`
+- `reports/baselines/threshold_warning_l0_l2/threshold_warning_leakage_audit.md`
+- `reports/baselines/threshold_warning_l0_l2/threshold_warning_claim_readiness.md`
 
 The large Parquet outputs remain local generated artifacts:
 
@@ -320,6 +347,7 @@ The large Parquet outputs remain local generated artifacts:
 | `data/interim/knee_risk_label_table_v1.parquet` | 3,827 | ignored |
 | `data/interim/knee_stable_condition_registry_v1.parquet` | 76 | ignored |
 | `data/interim/threshold_event_label_table_v1.parquet` | 22,962 | ignored |
+| `data/interim/threshold_warning_table_v1.parquet` | 3,827 | ignored |
 | `reports/audit/raw_log_archive_inventory.parquet` | 541 | ignored |
 
 Milestone 0.5 generated predictions are also ignored by default:
@@ -1519,7 +1547,7 @@ Latest validation run:
 All checks passed.
 
 .venv/bin/pytest -p no:cacheprovider
-137 passed.
+139 passed.
 
 git diff --check
 passed.
@@ -1593,6 +1621,19 @@ mbp analysis knee-vs-threshold
 Knee-vs-threshold decision written to reports/analysis/knee/knee_vs_threshold_decision.md
 ```
 
+Milestone 2.6 report commands were also run successfully:
+
+```text
+mbp analysis build-threshold-warning-table
+Threshold-warning table generated: 3827 rows written to data/interim/threshold_warning_table_v1.parquet
+
+mbp analysis threshold-warning-qa
+Threshold-warning QA passed: rows=3827
+
+mbp baseline run-threshold-warning
+Threshold-warning baseline report generated: 360 metric rows written to reports/baselines/threshold_warning_l0_l2_report.json
+```
+
 Milestone 2.1.1 report commands were also run successfully:
 
 ```text
@@ -1640,11 +1681,11 @@ The previous `datetime.utcnow()` deprecation warning in
 
 ## Recommended Next Step
 
-Review the **Milestone 2.5.1 Knee Label Forensics And Threshold-Event
-Alternative Gate** outputs. Primary detector-knee labels remain too
-replicate-inconsistent for prediction, but 80% threshold-event labels are more
-stable and may justify a later non-neural threshold-event baseline gate if the
-target timing and grouped prevalence are accepted.
+Review the **Milestone 2.6 Non-Neural Threshold-Event Early-Warning Baseline
+Gate** outputs. The 80% threshold-event baseline is diagnostically promising
+and beats event-rate priors under grouped validation, including C-rate, but
+calibrated risk, detector-knee prediction, policy ranking, causality,
+same-cell counterfactuals, neural/sequence models, and CBAT remain blocked.
 
 The next technical step should stay baseline-first and claim-gated. Do not jump
 directly to knee prediction models, neural models, sequence models, CBAT, DRT,

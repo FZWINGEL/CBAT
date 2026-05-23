@@ -1,0 +1,613 @@
+"""Non-neural threshold-event early-warning baselines."""
+
+from __future__ import annotations
+
+from collections import defaultdict
+import csv
+from dataclasses import dataclass
+from datetime import UTC, datetime
+import json
+import math
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+from mbp.baselines.capacity import (
+    SPLIT_COLUMNS,
+    assert_no_parameter_set_leakage,
+    iter_split_instances,
+)
+
+SCHEMA_VERSION = "gate26.threshold_warning_baseline.v1"
+TARGETS = ("event_within_1_checkup", "event_within_2_checkups", "event_within_3_checkups")
+MODEL_LEVELS = (
+    "B0_event_rate_prior",
+    "B1_logistic_regression",
+    "B2_ridge_logistic",
+    "B3_hist_gradient_boosting_classifier",
+)
+FEATURE_GROUPS = ("W0_capacity_state", "W1_state_time", "W2_nominal")
+DEFAULT_TARGETS = TARGETS
+DEFAULT_MODELS = MODEL_LEVELS
+DEFAULT_FEATURE_GROUPS = FEATURE_GROUPS
+LEAKAGE_FIELDS = {
+    "capacity_Ah_k1",
+    "delta_capacity_Ah",
+    "event_checkup_k",
+    "time_to_event_checkups",
+    "event_within_1_checkup",
+    "event_within_2_checkups",
+    "event_within_3_checkups",
+    "pulse_1s_resistance_k1",
+    "delta_pulse_1s_resistance",
+    "eis_z_abs_1kHz_k1",
+    "delta_eis_z_abs_1kHz",
+}
+
+NUMERIC_FEATURES = {
+    "W0_capacity_state": ("capacity_Ah_k", "soh_k"),
+    "W1_state_time": ("capacity_Ah_k", "soh_k", "checkup_k", "calendar_day_k", "cumulative_efc_k"),
+    "W2_nominal": (
+        "capacity_Ah_k",
+        "soh_k",
+        "checkup_k",
+        "calendar_day_k",
+        "cumulative_efc_k",
+        "nominal_temperature_C",
+        "nominal_charge_C_rate",
+        "nominal_discharge_C_rate",
+    ),
+}
+CATEGORICAL_FEATURES = {
+    "W0_capacity_state": (),
+    "W1_state_time": (),
+    "W2_nominal": ("voltage_window_family", "profile_label", "aging_mode"),
+}
+
+
+@dataclass(frozen=True)
+class WarningFeatureEncoder:
+    feature_group: str
+    numeric_columns: tuple[str, ...]
+    categorical_columns: tuple[str, ...]
+    numeric_impute_values: dict[str, float]
+    numeric_scale_values: dict[str, float]
+    categorical_values: dict[str, tuple[str, ...]]
+
+    @classmethod
+    def fit(cls, rows: list[dict[str, Any]], feature_group: str) -> "WarningFeatureEncoder":
+        if feature_group not in FEATURE_GROUPS:
+            raise ValueError(f"Unknown threshold-warning feature group: {feature_group}")
+        numeric_columns = NUMERIC_FEATURES[feature_group]
+        categorical_columns = CATEGORICAL_FEATURES[feature_group]
+        leakage = (set(numeric_columns) | set(categorical_columns)) & LEAKAGE_FIELDS
+        if leakage:
+            raise ValueError(f"Feature group {feature_group} includes leakage fields: {sorted(leakage)}")
+        impute: dict[str, float] = {}
+        scale: dict[str, float] = {}
+        for column in numeric_columns:
+            values = [_as_float(row.get(column)) for row in rows]
+            finite = [value for value in values if math.isfinite(value)]
+            mean = sum(finite) / len(finite) if finite else 0.0
+            variance = sum((value - mean) ** 2 for value in finite) / len(finite) if finite else 0.0
+            impute[column] = mean
+            scale[column] = math.sqrt(variance) if variance > 0 else 1.0
+        categories = {
+            column: tuple(sorted({_category(row.get(column)) for row in rows}))
+            for column in categorical_columns
+        }
+        return cls(feature_group, numeric_columns, categorical_columns, impute, scale, categories)
+
+    def transform(self, rows: list[dict[str, Any]], *, standardize_numeric: bool = False) -> list[list[float]]:
+        matrix = []
+        for row in rows:
+            values = []
+            for column in self.numeric_columns:
+                value = _as_float(row.get(column))
+                numeric = value if math.isfinite(value) else self.numeric_impute_values[column]
+                if standardize_numeric:
+                    numeric = (numeric - self.numeric_impute_values[column]) / self.numeric_scale_values[column]
+                values.append(numeric)
+            for column in self.categorical_columns:
+                observed = _category(row.get(column))
+                values.extend(1.0 if observed == category else 0.0 for category in self.categorical_values[column])
+            matrix.append(values)
+        return matrix
+
+
+def run_threshold_warning_baselines(
+    warning_table_path: Path,
+    out_path: Path,
+    predictions_out_path: Path,
+    *,
+    seed: int = 42,
+    hgb_max_iter: int = 50,
+    targets: list[str] | None = None,
+    model_levels: list[str] | None = None,
+    feature_groups: list[str] | None = None,
+    split_views: list[str] | None = None,
+) -> dict[str, Any]:
+    """Run non-neural grouped threshold-event warning baselines."""
+    selected_targets = _normalize_selection(targets, TARGETS, DEFAULT_TARGETS, "target")
+    selected_models = _normalize_selection(model_levels, MODEL_LEVELS, DEFAULT_MODELS, "model")
+    selected_features = _normalize_selection(feature_groups, FEATURE_GROUPS, DEFAULT_FEATURE_GROUPS, "feature group")
+    selected_splits = _normalize_selection(split_views, SPLIT_COLUMNS, SPLIT_COLUMNS, "split view")
+    if hgb_max_iter <= 0:
+        raise ValueError("hgb_max_iter must be positive.")
+    if any(model != "B0_event_rate_prior" for model in selected_models):
+        _import_sklearn()
+    rows = pq.read_table(warning_table_path).to_pylist()
+    if not rows:
+        raise ValueError("Threshold-warning table is empty.")
+    _audit_warning_feature_groups(selected_features)
+
+    metrics: list[dict[str, Any]] = []
+    predictions: list[dict[str, Any]] = []
+    for split_name in selected_splits:
+        for heldout_fold, train_rows, test_rows in iter_split_instances(rows, split_name):
+            assert_no_parameter_set_leakage(train_rows, test_rows, split_name, heldout_fold)
+            for target in selected_targets:
+                for model_level in selected_models:
+                    model_features = ("prior_rate",) if model_level == "B0_event_rate_prior" else tuple(selected_features)
+                    for feature_group in model_features:
+                        probs, train_one_class = predict_warning_probability(
+                            model_level,
+                            feature_group,
+                            train_rows,
+                            test_rows,
+                            target,
+                            seed=seed,
+                            hgb_max_iter=hgb_max_iter,
+                        )
+                        metrics.append(
+                            warning_metrics(
+                                test_rows,
+                                probs,
+                                target=target,
+                                split_name=split_name,
+                                heldout_fold=heldout_fold,
+                                model_level=model_level,
+                                feature_group=feature_group,
+                                train_rows=train_rows,
+                                train_one_class=train_one_class,
+                            )
+                        )
+                        predictions.extend(
+                            prediction_rows(
+                                test_rows,
+                                probs,
+                                target=target,
+                                split_name=split_name,
+                                heldout_fold=heldout_fold,
+                                model_level=model_level,
+                                feature_group=feature_group,
+                            )
+                        )
+
+    predictions_out_path.parent.mkdir(parents=True, exist_ok=True)
+    pq.write_table(pa.Table.from_pylist(predictions), predictions_out_path)
+    report_dir = _default_report_dir(out_path)
+    report = {
+        "status": "passed",
+        "schema_version": SCHEMA_VERSION,
+        "generated_at_utc": datetime.now(UTC).isoformat(),
+        "inputs": {"warning_table": str(warning_table_path)},
+        "outputs": {
+            "report": str(out_path),
+            "predictions": str(predictions_out_path),
+            "report_dir": str(report_dir),
+        },
+        "seed": seed,
+        "hgb_max_iter": hgb_max_iter,
+        "targets": selected_targets,
+        "model_levels": selected_models,
+        "feature_groups": selected_features,
+        "split_views": selected_splits,
+        "row_counts": {
+            "rows": len(rows),
+            "cells": len({str(row["cell_id"]) for row in rows}),
+            "parameter_sets": len({int(row["parameter_set"]) for row in rows}),
+            "metrics": len(metrics),
+            "predictions": len(predictions),
+        },
+        "leakage_audit": leakage_audit(selected_features),
+        "metrics": metrics,
+    }
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    render_threshold_warning_artifacts(report, report_dir)
+    return report
+
+
+def predict_warning_probability(
+    model_level: str,
+    feature_group: str,
+    train_rows: list[dict[str, Any]],
+    test_rows: list[dict[str, Any]],
+    target: str,
+    *,
+    seed: int,
+    hgb_max_iter: int,
+) -> tuple[list[float], bool]:
+    if target not in TARGETS:
+        raise ValueError(f"Unknown target: {target}")
+    y_train = np.asarray([1.0 if row[target] else 0.0 for row in train_rows], dtype=float)
+    base_rate = float(np.mean(y_train)) if len(y_train) else 0.0
+    train_one_class = len(set(y_train.tolist())) < 2
+    if model_level == "B0_event_rate_prior" or train_one_class:
+        return [base_rate for _ in test_rows], train_one_class
+
+    LogisticRegression, HistGradientBoostingClassifier = _import_sklearn()
+    encoder = WarningFeatureEncoder.fit(train_rows, feature_group)
+    standardize = model_level in {"B1_logistic_regression", "B2_ridge_logistic"}
+    x_train = np.asarray(encoder.transform(train_rows, standardize_numeric=standardize), dtype=float)
+    x_test = np.asarray(encoder.transform(test_rows, standardize_numeric=standardize), dtype=float)
+    if model_level == "B1_logistic_regression":
+        model = LogisticRegression(C=1e6, max_iter=1000, random_state=seed)
+    elif model_level == "B2_ridge_logistic":
+        model = LogisticRegression(C=1.0, max_iter=1000, random_state=seed)
+    elif model_level == "B3_hist_gradient_boosting_classifier":
+        model = HistGradientBoostingClassifier(random_state=seed, max_iter=hgb_max_iter)
+    else:
+        raise ValueError(f"Unknown model level: {model_level}")
+    model.fit(x_train, y_train)
+    return [float(value) for value in model.predict_proba(x_test)[:, 1]], False
+
+
+def warning_metrics(
+    test_rows: list[dict[str, Any]],
+    probabilities: list[float],
+    *,
+    target: str,
+    split_name: str,
+    heldout_fold: int,
+    model_level: str,
+    feature_group: str,
+    train_rows: list[dict[str, Any]],
+    train_one_class: bool,
+) -> dict[str, Any]:
+    y_true = [1 if row[target] else 0 for row in test_rows]
+    probs = [_clip_probability(value) for value in probabilities]
+    condition_brier = _condition_brier_rows(test_rows, y_true, probs)
+    return {
+        "target": target,
+        "split_name": split_name,
+        "heldout_fold": heldout_fold,
+        "model_level": model_level,
+        "feature_group": feature_group,
+        "n_train": len(train_rows),
+        "n_test": len(test_rows),
+        "train_positive_count": sum(1 for row in train_rows if row[target]),
+        "test_positive_count": sum(y_true),
+        "test_negative_count": len(y_true) - sum(y_true),
+        "train_one_class": train_one_class,
+        "test_one_class": len(set(y_true)) < 2,
+        "auroc": auroc(y_true, probs),
+        "auprc": auprc(y_true, probs),
+        "brier": brier_score(y_true, probs),
+        "log_loss": log_loss(y_true, probs),
+        "condition_mean_brier": _mean([row["brier"] for row in condition_brier]),
+        "worst_condition_brier": max((row["brier"] for row in condition_brier), default=None),
+        "ece_10_bin": expected_calibration_error(y_true, probs, bins=10),
+    }
+
+
+def prediction_rows(
+    test_rows: list[dict[str, Any]],
+    probabilities: list[float],
+    *,
+    target: str,
+    split_name: str,
+    heldout_fold: int,
+    model_level: str,
+    feature_group: str,
+) -> list[dict[str, Any]]:
+    rows = []
+    for row, prob in zip(test_rows, probabilities):
+        rows.append(
+            {
+                "cell_id": str(row["cell_id"]),
+                "parameter_set": int(row["parameter_set"]),
+                "replicate_id": int(row["replicate_id"]),
+                "checkup_k": int(row["checkup_k"]),
+                "target": target,
+                "y_true": bool(row[target]),
+                "y_prob": _clip_probability(prob),
+                "split_name": split_name,
+                "heldout_fold": heldout_fold,
+                "model_level": model_level,
+                "feature_group": feature_group,
+                "schema_version": SCHEMA_VERSION,
+            }
+        )
+    return rows
+
+
+def render_threshold_warning_artifacts(report: dict[str, Any], report_dir: Path) -> None:
+    report_dir.mkdir(parents=True, exist_ok=True)
+    _write_csv(report_dir / "leaderboard.csv", _leaderboard_rows(report["metrics"]))
+    _write_calibration_md(report["metrics"], report_dir / "threshold_warning_calibration.md")
+    _write_leakage_audit_md(report["leakage_audit"], report_dir / "threshold_warning_leakage_audit.md")
+    _write_claim_readiness_md(report["metrics"], report["leakage_audit"], report_dir / "threshold_warning_claim_readiness.md")
+    _write_summary_md(report, report_dir / "baseline_summary.md")
+
+
+def leakage_audit(feature_groups: list[str]) -> dict[str, Any]:
+    rows = []
+    status = "passed"
+    for group in feature_groups:
+        fields = set(NUMERIC_FEATURES[group]) | set(CATEGORICAL_FEATURES[group])
+        leakage = sorted(fields & LEAKAGE_FIELDS)
+        if leakage:
+            status = "failed"
+        rows.append({"feature_group": group, "leakage_fields": leakage})
+    return {
+        "status": status,
+        "allowed": "capacity/state/time/nominal fields known at check-up k",
+        "forbidden": sorted(LEAKAGE_FIELDS),
+        "rows": rows,
+    }
+
+
+def auroc(y_true: list[int], probabilities: list[float]) -> float | None:
+    positives = sum(y_true)
+    negatives = len(y_true) - positives
+    if positives == 0 or negatives == 0:
+        return None
+    pairs = sorted(zip(probabilities, y_true), key=lambda item: item[0])
+    ranks: list[float] = [0.0] * len(pairs)
+    idx = 0
+    while idx < len(pairs):
+        end = idx + 1
+        while end < len(pairs) and pairs[end][0] == pairs[idx][0]:
+            end += 1
+        avg_rank = (idx + 1 + end) / 2.0
+        for rank_idx in range(idx, end):
+            ranks[rank_idx] = avg_rank
+        idx = end
+    pos_rank_sum = sum(rank for rank, (_, label) in zip(ranks, pairs) if label == 1)
+    return (pos_rank_sum - positives * (positives + 1) / 2.0) / (positives * negatives)
+
+
+def auprc(y_true: list[int], probabilities: list[float]) -> float | None:
+    positives = sum(y_true)
+    if positives == 0:
+        return None
+    ordered = sorted(zip(probabilities, y_true), key=lambda item: item[0], reverse=True)
+    tp = 0
+    fp = 0
+    prev_recall = 0.0
+    area = 0.0
+    for _, label in ordered:
+        if label:
+            tp += 1
+        else:
+            fp += 1
+        recall = tp / positives
+        precision = tp / max(tp + fp, 1)
+        area += (recall - prev_recall) * precision
+        prev_recall = recall
+    return area
+
+
+def brier_score(y_true: list[int], probabilities: list[float]) -> float:
+    return sum((prob - truth) ** 2 for truth, prob in zip(y_true, probabilities)) / len(y_true)
+
+
+def log_loss(y_true: list[int], probabilities: list[float]) -> float:
+    return -sum(
+        truth * math.log(prob) + (1 - truth) * math.log(1 - prob)
+        for truth, prob in zip(y_true, probabilities)
+    ) / len(y_true)
+
+
+def expected_calibration_error(y_true: list[int], probabilities: list[float], *, bins: int) -> float:
+    total = len(y_true)
+    ece = 0.0
+    for bin_idx in range(bins):
+        left = bin_idx / bins
+        right = (bin_idx + 1) / bins
+        in_bin = [
+            idx
+            for idx, prob in enumerate(probabilities)
+            if (left <= prob < right) or (bin_idx == bins - 1 and prob == right)
+        ]
+        if not in_bin:
+            continue
+        confidence = sum(probabilities[idx] for idx in in_bin) / len(in_bin)
+        accuracy = sum(y_true[idx] for idx in in_bin) / len(in_bin)
+        ece += len(in_bin) / total * abs(accuracy - confidence)
+    return ece
+
+
+def _condition_brier_rows(
+    rows: list[dict[str, Any]], y_true: list[int], probabilities: list[float]
+) -> list[dict[str, Any]]:
+    grouped: dict[int, list[tuple[int, float]]] = defaultdict(list)
+    for row, truth, prob in zip(rows, y_true, probabilities):
+        grouped[int(row["parameter_set"])].append((truth, prob))
+    output = []
+    for parameter_set, values in grouped.items():
+        output.append(
+            {
+                "parameter_set": parameter_set,
+                "brier": sum((prob - truth) ** 2 for truth, prob in values) / len(values),
+            }
+        )
+    return output
+
+
+def _leaderboard_rows(metrics: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    grouped: dict[tuple[str, str, str], list[dict[str, Any]]] = defaultdict(list)
+    for row in metrics:
+        grouped[(row["target"], row["model_level"], row["feature_group"])].append(row)
+    output = []
+    for (target, model, feature), rows in sorted(grouped.items()):
+        output.append(
+            {
+                "target": target,
+                "model_level": model,
+                "feature_group": feature,
+                "mean_auroc": _mean([row["auroc"] for row in rows if row["auroc"] is not None]),
+                "mean_auprc": _mean([row["auprc"] for row in rows if row["auprc"] is not None]),
+                "mean_brier": _mean([row["brier"] for row in rows]),
+                "mean_ece_10_bin": _mean([row["ece_10_bin"] for row in rows]),
+                "n_rows": len(rows),
+            }
+        )
+    return output
+
+
+def _write_calibration_md(metrics: list[dict[str, Any]], path: Path) -> None:
+    rows = _leaderboard_rows(metrics)
+    best = min(rows, key=lambda row: row["mean_brier"] if row["mean_brier"] is not None else math.inf)
+    lines = [
+        "# Threshold-Warning Calibration Diagnostics",
+        "",
+        "This report summarizes probability diagnostics only. It does not authorize calibrated risk claims.",
+        "",
+        f"Best mean Brier row: `{best['model_level']} + {best['feature_group']}` on `{best['target']}` with mean Brier `{_fmt(best['mean_brier'])}`.",
+        "",
+        "Calibration remains claim-gated until grouped calibration and C-rate behavior are reviewed.",
+    ]
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _write_leakage_audit_md(audit: dict[str, Any], path: Path) -> None:
+    lines = [
+        "# Threshold-Warning Leakage Audit",
+        "",
+        f"Status: `{audit['status']}`",
+        "",
+        "Allowed inputs are prior state/time/nominal fields known at check-up `k`.",
+        "",
+        "Forbidden fields include future capacity, interval deltas, event targets, future PULSE/EIS, and future interval exposure.",
+        "",
+        "| Feature group | Leakage fields |",
+        "|---|---|",
+    ]
+    for row in audit["rows"]:
+        fields = ", ".join(row["leakage_fields"]) if row["leakage_fields"] else "none"
+        lines.append(f"| `{row['feature_group']}` | {fields} |")
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _write_claim_readiness_md(metrics: list[dict[str, Any]], audit: dict[str, Any], path: Path) -> None:
+    rows = _leaderboard_rows(metrics)
+    prior_rows = [row for row in rows if row["model_level"] == "B0_event_rate_prior"]
+    model_rows = [row for row in rows if row["model_level"] != "B0_event_rate_prior"]
+    best_prior = min(prior_rows, key=lambda row: row["mean_brier"] if row["mean_brier"] is not None else math.inf)
+    best_model = min(model_rows, key=lambda row: row["mean_brier"] if row["mean_brier"] is not None else math.inf)
+    gain = (best_prior["mean_brier"] or 0.0) - (best_model["mean_brier"] or 0.0)
+    feasibility = "partially_supported" if gain > 0 and audit["status"] == "passed" else "not_supported"
+    lines = [
+        "# Threshold-Warning Claim Readiness",
+        "",
+        "| Claim area | Status | Evidence |",
+        "|---|---|---|",
+        "| Threshold label stability | `partially_supported` | Milestone 2.5.1 selected `capacity_below_80pct_initial` as the strongest threshold target candidate. |",
+        f"| Warning baseline feasibility | `{feasibility}` | Best model mean Brier gain versus event-rate prior is `{gain:.6g}`. |",
+        "| Grouped warning performance | `exploratory_only` | This first pass reports grouped metrics but does not authorize an early-warning claim. |",
+        "| C-rate warning performance | `exploratory_only` | C-rate rows require separate review for positive counts and performance. |",
+        "| Calibration | `not_supported` | Probability outputs are diagnostic; no calibrated-risk claim is authorized. |",
+        "| Detector-knee prediction | `blocked` | Detector-knee labels failed replicate consistency in Milestone 2.5. |",
+        "| Policy ranking | `blocked` | No intervention or ranking claim is tested. |",
+    ]
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _write_summary_md(report: dict[str, Any], path: Path) -> None:
+    rows = _leaderboard_rows(report["metrics"])
+    best = min(rows, key=lambda row: row["mean_brier"] if row["mean_brier"] is not None else math.inf)
+    lines = [
+        "# Threshold-Warning Baseline Summary",
+        "",
+        f"Rows: {report['row_counts']['rows']}",
+        f"Parameter sets: {report['row_counts']['parameter_sets']}",
+        f"Best mean Brier row: `{best['target']} / {best['model_level']} / {best['feature_group']}` = `{_fmt(best['mean_brier'])}`",
+        "",
+        "This is a non-neural threshold-event warning baseline. It is not detector-knee prediction.",
+    ]
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if not rows:
+        path.write_text("", encoding="utf-8")
+        return
+    fieldnames = sorted({key for row in rows for key in row})
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def _default_report_dir(out_path: Path) -> Path:
+    stem = out_path.stem
+    if stem.endswith("_report"):
+        stem = stem[: -len("_report")]
+    return out_path.with_name(stem)
+
+
+def _audit_warning_feature_groups(feature_groups: list[str]) -> None:
+    audit = leakage_audit(feature_groups)
+    if audit["status"] != "passed":
+        raise ValueError("Threshold-warning leakage audit failed.")
+
+
+def _normalize_selection(
+    values: list[str] | None,
+    allowed: tuple[str, ...],
+    default: tuple[str, ...],
+    label: str,
+) -> list[str]:
+    selected = list(default if values is None else values)
+    unknown = sorted(set(selected) - set(allowed))
+    if unknown:
+        raise ValueError(f"Unknown {label}: {unknown}")
+    return selected
+
+
+def _import_sklearn() -> tuple[Any, Any]:
+    try:
+        from sklearn.ensemble import HistGradientBoostingClassifier
+        from sklearn.linear_model import LogisticRegression
+    except ImportError as exc:
+        raise RuntimeError(
+            "Threshold-warning baselines require the baseline dependency extra. "
+            "Run `uv sync --extra baseline` and retry."
+        ) from exc
+    return LogisticRegression, HistGradientBoostingClassifier
+
+
+def _as_float(value: Any, default: float = math.nan) -> float:
+    try:
+        output = float(value)
+    except (TypeError, ValueError):
+        return default
+    return output if math.isfinite(output) else default
+
+
+def _category(value: Any) -> str:
+    if value is None:
+        return "<missing>"
+    text = str(value)
+    return text if text else "<missing>"
+
+
+def _clip_probability(value: float) -> float:
+    return min(max(float(value), 1e-6), 1.0 - 1e-6)
+
+
+def _mean(values: list[float | None]) -> float | None:
+    finite = [float(value) for value in values if value is not None and math.isfinite(float(value))]
+    return sum(finite) / len(finite) if finite else None
+
+
+def _fmt(value: Any) -> str:
+    number = _as_float(value)
+    return "NA" if not math.isfinite(number) else f"{number:.6g}"

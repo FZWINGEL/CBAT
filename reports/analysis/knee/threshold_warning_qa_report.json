@@ -1,0 +1,18 @@
+{
+  "generated_at_utc": "2026-05-23T17:59:37.041299+00:00",
+  "outputs": {
+    "class_balance": "reports/analysis/knee/threshold_warning_class_balance.csv",
+    "report": "reports/analysis/knee/threshold_warning_qa_report.json",
+    "split_coverage": "reports/analysis/knee/threshold_warning_split_coverage.csv"
+  },
+  "row_counts": {
+    "cells": 228,
+    "censored_or_not_yet_reached_rows": 1394,
+    "event_observed_rows": 2433,
+    "parameter_sets": 76,
+    "rows": 3827
+  },
+  "schema_version": "gate26.threshold_warning.v1",
+  "status": "passed",
+  "warnings": []
+}

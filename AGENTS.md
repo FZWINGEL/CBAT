@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 2.5.1: Knee label forensics and threshold-event alternative gate.
+Milestone 2.6: Non-neural threshold-event early-warning baseline gate.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -35,10 +35,10 @@ Current state:
   state improves `capacity_Ah_k1` over F4 in selected grouped splits, but it
   does not beat the strongest supplied non-PULSE HGB baselines and does not
   improve `delta_capacity_Ah`.
-- The current main-project track explains why primary degradation-knee labels
-  fail replicate consistency, defines a stable-condition subset, and evaluates
-  threshold-event labels as a more stable alternative. This is still a
-  label/target-readiness milestone, not a knee-prediction milestone.
+- The current main-project track evaluates whether the more stable
+  `capacity_below_80pct_initial` threshold-event label can support a narrow
+  non-neural prospective warning baseline. This is threshold-event forecasting,
+  not detector-knee prediction.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
@@ -52,6 +52,11 @@ Allowed work:
 - stable-condition registry generation
 - threshold-event label stability diagnostics
 - knee-vs-threshold target-readiness comparisons
+- threshold-event warning table construction
+- threshold-warning QA and class-balance diagnostics
+- non-neural threshold-warning classification baselines
+- grouped warning evaluation
+- probability calibration diagnostics
 - exploratory candidate knee label tables
 - knee claim-readiness reporting
 - documentation/evidence memo updates
@@ -70,6 +75,7 @@ Forbidden work:
 - capacity+PULSE+EIS architecture work
 - causal or mechanistic overclaims
 - same-cell counterfactual claims
+- future interval exposure leakage
 - calibrated uncertainty claims unless grouped coverage passes
 - broad EIS predictive claims
 - future EIS state as capacity/PULSE input

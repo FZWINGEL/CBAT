@@ -1462,6 +1462,34 @@ def analysis_knee_vs_threshold(
     typer.echo(f"Knee-vs-threshold decision written to {out}")
 
 
+@analysis_app.command("build-threshold-warning-table")
+def analysis_build_threshold_warning_table(
+    threshold_labels: Path = typer.Option(..., "--threshold-labels", help="Path to threshold_event_label_table_v1.parquet."),
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output path for threshold_warning_table_v1.parquet."),
+    threshold: str = typer.Option("capacity_below_80pct_initial", "--threshold", help="Threshold label to use."),
+) -> None:
+    """Build prospective threshold-event warning rows using only check-up-k state."""
+    from mbp.analysis.knee import build_threshold_warning_table
+
+    table = build_threshold_warning_table(threshold_labels, interval_table, out, threshold)
+    typer.echo(f"Threshold-warning table generated: {table.num_rows} rows written to {out}")
+
+
+@analysis_app.command("threshold-warning-qa")
+def analysis_threshold_warning_qa(
+    warning_table: Path = typer.Option(..., "--warning-table", help="Path to threshold_warning_table_v1.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output JSON QA report path."),
+    class_balance_out: Path = typer.Option(..., "--class-balance-out", help="Output class-balance CSV path."),
+    split_coverage_out: Path = typer.Option(..., "--split-coverage-out", help="Output split-coverage CSV path."),
+) -> None:
+    """Write threshold-event warning class-balance and split-coverage QA."""
+    from mbp.analysis.knee import write_threshold_warning_qa
+
+    report = write_threshold_warning_qa(warning_table, out, class_balance_out, split_coverage_out)
+    typer.echo(f"Threshold-warning QA {report['status']}: rows={report['row_counts']['rows']}")
+
+
 @baseline_app.command("diagnose-capacity")
 def baseline_diagnose_capacity(
     report: Path = typer.Option(
@@ -1485,6 +1513,38 @@ def baseline_diagnose_capacity(
 
     diagnose_capacity_report(report, out_dir, reference_report_path=reference_report)
     typer.echo(f"Capacity baseline diagnostics written to {out_dir}")
+
+
+@baseline_app.command("run-threshold-warning")
+def baseline_run_threshold_warning(
+    warning_table: Path = typer.Option(..., "--warning-table", help="Path to threshold_warning_table_v1.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output JSON report path."),
+    predictions_out: Path = typer.Option(..., "--predictions-out", help="Output prediction Parquet path."),
+    seed: int = typer.Option(42, "--seed", help="Deterministic model seed."),
+    hgb_max_iter: int = typer.Option(50, "--hgb-max-iter", min=1, help="HGB classifier max_iter."),
+    targets: str | None = typer.Option(None, "--targets", help="Comma-separated target labels."),
+    model_levels: str | None = typer.Option(None, "--model-levels", help="Comma-separated model levels."),
+    feature_groups: str | None = typer.Option(None, "--feature-groups", help="Comma-separated feature groups."),
+    split_views: str | None = typer.Option(None, "--split-views", help="Comma-separated split views."),
+) -> None:
+    """Run non-neural grouped threshold-event warning baselines."""
+    from mbp.baselines.threshold_warning import run_threshold_warning_baselines
+
+    report = run_threshold_warning_baselines(
+        warning_table,
+        out,
+        predictions_out,
+        seed=seed,
+        hgb_max_iter=hgb_max_iter,
+        targets=_comma_values(targets) if targets else None,
+        model_levels=_comma_values(model_levels) if model_levels else None,
+        feature_groups=_comma_values(feature_groups) if feature_groups else None,
+        split_views=_comma_values(split_views) if split_views else None,
+    )
+    typer.echo(
+        "Threshold-warning baseline report generated: "
+        f"{report['row_counts']['metrics']} metric rows written to {out}"
+    )
 
 
 @baseline_app.command("diagnose-stress-features")

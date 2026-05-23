@@ -21,6 +21,7 @@ from mbp.data.schema_contracts import (
     KNEE_RISK_LABEL_TABLE_V1_SCHEMA,
     KNEE_STABLE_CONDITION_REGISTRY_V1_SCHEMA,
     THRESHOLD_EVENT_LABEL_TABLE_V1_SCHEMA,
+    THRESHOLD_WARNING_TABLE_V1_SCHEMA,
     validate_table,
 )
 
@@ -28,6 +29,7 @@ SCHEMA_VERSION = "gate25.knee_candidates.v1"
 RISK_SCHEMA_VERSION = "gate25.knee_risk_labels.v1"
 STABLE_REGISTRY_SCHEMA_VERSION = "gate251.knee_stable_conditions.v1"
 THRESHOLD_SCHEMA_VERSION = "gate251.threshold_event_labels.v1"
+WARNING_SCHEMA_VERSION = "gate26.threshold_warning.v1"
 DETECTORS = (
     "piecewise_linear_bic",
     "max_chord_distance",
@@ -304,6 +306,178 @@ def write_knee_vs_threshold_decision(
     threshold_rows = threshold_stability_rows(interval_rows, trajectories)
     _write_knee_vs_threshold_decision(knee_candidates_path, threshold_rows, out_path, candidates)
     return {"outputs": {"decision": str(out_path)}}
+
+
+def build_threshold_warning_table(
+    threshold_labels_path: Path,
+    interval_table_path: Path,
+    out_path: Path,
+    threshold: str = "capacity_below_80pct_initial",
+) -> pa.Table:
+    """Build prospective threshold-event warning rows using only state known at check-up k."""
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    threshold_rows = [
+        row
+        for row in pq.read_table(threshold_labels_path).to_pylist()
+        if str(row["threshold_label"]) == threshold
+    ]
+    if not threshold_rows:
+        raise ValueError(f"Threshold label {threshold!r} is not present in {threshold_labels_path}.")
+    intervals = pq.read_table(interval_table_path).to_pylist()
+    trajectories = {trajectory.cell_id: trajectory for trajectory in extract_capacity_trajectories(intervals)}
+    labels_by_key = {
+        (str(row["cell_id"]), int(row["checkup_k"])): row
+        for row in threshold_rows
+    }
+    rows = []
+    for interval in intervals:
+        cell_id = str(interval["cell_id"])
+        checkup_k = int(interval["checkup_k"])
+        label = labels_by_key.get((cell_id, checkup_k))
+        if label is None:
+            continue
+        trajectory = trajectories[cell_id]
+        soh_k = _trajectory_value_at_checkup(trajectory, "soh", checkup_k)
+        calendar_day_k = _trajectory_value_at_checkup(trajectory, "calendar_days", checkup_k)
+        cumulative_efc_k = _trajectory_value_at_checkup(trajectory, "log_age_efc_cumulative", checkup_k)
+        event_k = _as_int(label.get("threshold_event_checkup_k"))
+        rows.append(
+            {
+                "cell_id": cell_id,
+                "parameter_set": int(interval["parameter_set"]),
+                "replicate_id": int(interval["replicate_id"]),
+                "checkup_k": checkup_k,
+                "capacity_Ah_k": _as_float(interval.get("capacity_Ah_k")),
+                "soh_k": soh_k,
+                "calendar_day_k": calendar_day_k,
+                "cumulative_efc_k": cumulative_efc_k,
+                "nominal_temperature_C": _as_float(interval.get("nominal_temperature_C")),
+                "voltage_window_family": str(interval.get("voltage_window_family", "")),
+                "nominal_charge_C_rate": _as_float(interval.get("nominal_charge_C_rate")),
+                "nominal_discharge_C_rate": _as_float(interval.get("nominal_discharge_C_rate")),
+                "profile_label": str(interval.get("profile_label", "")),
+                "aging_mode": str(interval.get("aging_mode", "")),
+                "condition_fold": int(interval["condition_fold"]),
+                "temperature_holdout_fold": int(interval["temperature_holdout_fold"]),
+                "c_rate_holdout_fold": int(interval["c_rate_holdout_fold"]),
+                "profile_holdout_fold": int(interval["profile_holdout_fold"]),
+                "voltage_window_holdout_fold": int(interval["voltage_window_holdout_fold"]),
+                "threshold_name": threshold,
+                "event_checkup_k": event_k,
+                "time_to_event_checkups": _as_int(label.get("time_to_event_checkups")),
+                "event_within_1_checkup": bool(label.get("event_within_1_checkup")),
+                "event_within_2_checkups": bool(label.get("event_within_2_checkups")),
+                "event_within_3_checkups": bool(label.get("event_within_3_checkups")),
+                "event_observed": event_k is not None,
+                "label_quality": f"exploratory;{label.get('target_quality_flags', 'none')}",
+                "schema_version": WARNING_SCHEMA_VERSION,
+            }
+        )
+    table = pa.Table.from_pylist(rows, schema=THRESHOLD_WARNING_TABLE_V1_SCHEMA)
+    if not validate_table(table, THRESHOLD_WARNING_TABLE_V1_SCHEMA):
+        raise TypeError("Generated threshold warning table does not match THRESHOLD_WARNING_TABLE_V1_SCHEMA.")
+    table = table.replace_schema_metadata(
+        {
+            b"schema_version": WARNING_SCHEMA_VERSION.encode(),
+            b"threshold_labels_path": str(threshold_labels_path).encode(),
+            b"interval_table_path": str(interval_table_path).encode(),
+            b"threshold": threshold.encode(),
+            b"feature_policy": b"prior_state_nominal_only_no_future_interval_exposure",
+        }
+    )
+    pq.write_table(table, out_path)
+    return table
+
+
+def write_threshold_warning_qa(
+    warning_table_path: Path,
+    out_path: Path,
+    class_balance_out: Path,
+    split_coverage_out: Path,
+) -> dict[str, Any]:
+    """Write class balance and split coverage diagnostics for threshold-warning labels."""
+    rows = pq.read_table(warning_table_path).to_pylist()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    balance_rows = threshold_warning_class_balance_rows(rows)
+    split_rows = threshold_warning_split_coverage_rows(rows)
+    _write_csv(class_balance_out, balance_rows)
+    _write_csv(split_coverage_out, split_rows)
+    warnings = []
+    for row in balance_rows:
+        if int(row["positive_count"]) < 20:
+            warnings.append(f"sparse_positive_{row['target']}")
+    for row in split_rows:
+        if int(row["positive_count"]) == 0:
+            warnings.append(f"zero_positive_{row['target']}_{row['split_name']}_{row['heldout_fold']}")
+    report = {
+        "status": "warning" if warnings else "passed",
+        "schema_version": WARNING_SCHEMA_VERSION,
+        "generated_at_utc": datetime.now(UTC).isoformat(),
+        "row_counts": {
+            "rows": len(rows),
+            "cells": len({str(row["cell_id"]) for row in rows}),
+            "parameter_sets": len({int(row["parameter_set"]) for row in rows}),
+            "event_observed_rows": sum(bool(row["event_observed"]) for row in rows),
+            "censored_or_not_yet_reached_rows": sum(not bool(row["event_observed"]) for row in rows),
+        },
+        "warnings": sorted(set(warnings)),
+        "outputs": {
+            "report": str(out_path),
+            "class_balance": str(class_balance_out),
+            "split_coverage": str(split_coverage_out),
+        },
+    }
+    out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return report
+
+
+def threshold_warning_class_balance_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    output = []
+    for target in ("event_within_1_checkup", "event_within_2_checkups", "event_within_3_checkups"):
+        positives = sum(bool(row[target]) for row in rows)
+        output.append(
+            {
+                "target": target,
+                "row_count": len(rows),
+                "positive_count": positives,
+                "negative_count": len(rows) - positives,
+                "positive_rate": positives / len(rows) if rows else 0.0,
+                "cells": len({str(row["cell_id"]) for row in rows}),
+                "parameter_sets": len({int(row["parameter_set"]) for row in rows}),
+            }
+        )
+    return output
+
+
+def threshold_warning_split_coverage_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    output = []
+    split_columns = (
+        "condition_fold",
+        "temperature_holdout_fold",
+        "c_rate_holdout_fold",
+        "profile_holdout_fold",
+        "voltage_window_holdout_fold",
+    )
+    for target in ("event_within_1_checkup", "event_within_2_checkups", "event_within_3_checkups"):
+        for split_name in split_columns:
+            folds = sorted({int(row[split_name]) for row in rows})
+            heldout = folds if split_name == "condition_fold" else [fold for fold in folds if fold != 0]
+            for fold in heldout:
+                test_rows = [row for row in rows if int(row[split_name]) == fold]
+                positives = sum(bool(row[target]) for row in test_rows)
+                output.append(
+                    {
+                        "target": target,
+                        "split_name": split_name,
+                        "heldout_fold": fold,
+                        "row_count": len(test_rows),
+                        "positive_count": positives,
+                        "negative_count": len(test_rows) - positives,
+                        "positive_rate": positives / len(test_rows) if test_rows else 0.0,
+                        "parameter_sets": len({int(row["parameter_set"]) for row in test_rows}),
+                    }
+                )
+    return output
 
 
 def extract_capacity_trajectories(interval_rows: list[dict[str, Any]]) -> list[Trajectory]:
