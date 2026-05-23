@@ -1,0 +1,6 @@
+c_rate_holdout_rows,profile_holdout_rows,retained_cells,retained_parameter_sets,retained_spectra,soc_contexts,temperature_contexts,threshold_s
+471,2944,228,76,14829,10|30|50|70|90,OT|RT,21600.0
+768,3895,228,76,20166,10|30|50|70|90,OT|RT,43200.0
+1261,6821,228,76,34428,10|30|50|70|90,OT|RT,86400.0
+1664,7392,228,76,38071,10|30|50|70|90,OT|RT,129600.0
+1790,7616,228,76,39368,10|30|50|70|90,OT|RT,all

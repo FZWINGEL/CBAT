@@ -38,6 +38,10 @@ Schema version prefix: `gate1.audit.v1`
 | `pulse_capacity_coupling_robustness` | Implemented | `mbp.coupling.pulse_capacity` | canonical model/feature/target selection, interval-level aggregation, condition-level aggregation, parameter-set bootstrap, residualized confound-control diagnostics |
 | `prior_pulse_capacity_predictive_comparison` | Implemented | `mbp.baselines.capacity` | capacity baseline report, prior-PULSE capacity report, paired condition-level gains, parameter-set bootstrap, coverage effects, leakage audit |
 | `prior_pulse_vs_best_nonpulse_comparison` | Implemented | `mbp.baselines.capacity` | non-PULSE capacity reports, prior-PULSE capacity report, PULSE-covered interval restriction, strongest non-PULSE group selection, paired gains, bootstrap intervals |
+| `eis_qa_report` | Implemented | `mbp.data.products.eis_features` | EIS table path, spectrum-quality path, interval table path, coverage CSV, alignment report, valid-frequency mask audit |
+| `eis_feature_table_v1` | Implemented | `mbp.data.products.eis_features` | EIS table path, spectrum-quality path, interval table path, canonical SOC/temperature context, feature policy version, schema version |
+| `eis_feature_qa_report` | Implemented | `mbp.data.products.eis_features` | EIS feature table path, interval table path, selected-frequency completeness, feature NaN counts, split coverage |
+| `eis_claim_readiness` | Implemented | `mbp.data.products.eis_features` | EIS QA report, EIS feature QA report, feature policy status, blocked predictive claims |
 
 ## Gate 2/3 Schema Contracts
 
@@ -58,3 +62,6 @@ Schema version prefix: `gate1.audit.v1`
 - `pulse_capacity_coupling_robustness` filters to one canonical capacity model/feature/target, then reports interval-level and condition-level correlations, parameter-set bootstrap summaries, residualized confound-control correlations, subgroup summaries, and coupling claim-readiness.
 - `prior_pulse_capacity_predictive_comparison` compares F4 against the best prior-PULSE feature group on the same PULSE-covered interval population. It reports paired condition-level gains, split-level bootstrap intervals, coverage effects, and claim-readiness. Future PULSE state and PULSE deltas are forbidden as capacity inputs.
 - `prior_pulse_vs_best_nonpulse_comparison` compares the best prior-PULSE HGB group against the strongest supplied non-PULSE HGB group by target/split on the same PULSE-covered interval population. It reports paired condition-level gains, bootstrap intervals, and claim-readiness.
+- `EIS_FEATURE_TABLE_V1_SCHEMA` is one row per cell/check-up/SOC/temperature context for the canonical EIS feature policy. The v1 sidecar records selected-frequency E1 features, nullable R0/R1 placeholders with explicit provenance/leakage fields, E3 geometric Nyquist summaries, valid-frequency coverage, alignment delta, quality flags, schema version, and feature policy version.
+- `eis_qa_report` audits EIS coverage by SOC, RT/OT context, cell, check-up, and split metadata; reports valid modeling frequency/fraction distributions; writes alignment summaries; and verifies the charter mask excludes 100 Hz, 208.3 Hz, and 14.7 kHz while retaining finite valid 0.5-5000 Hz values.
+- `eis_feature_qa_report` checks the canonical RT/50% feature table for row/cell/condition coverage, selected-frequency completeness, feature NaN counts, valid modeling fraction, split coverage, and warnings. It does not authorize EIS predictive claims.

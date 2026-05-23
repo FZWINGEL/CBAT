@@ -1,0 +1,7 @@
+frequency_bucket,mask_mismatch_rows,policy_modeling_rows,row_count,stored_modeling_rows
+above_5kHz,0,0,81230,0
+below_0p5Hz,0,0,121845,0
+excluded_100Hz,0,0,40615,0
+excluded_14p7kHz,0,0,40615,0
+excluded_208p3Hz,0,0,40615,0
+modeling_band_other,0,851063,852915,851063

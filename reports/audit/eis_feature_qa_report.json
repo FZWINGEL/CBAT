@@ -1,0 +1,91 @@
+{
+  "feature_nan_counts": {
+    "R0_mOhm_k": 3983,
+    "R1_mOhm_k": 3983,
+    "alignment_delta_s": 0,
+    "freq_selected_0p5Hz": 15,
+    "freq_selected_10Hz": 5,
+    "freq_selected_1Hz": 5,
+    "freq_selected_1kHz": 5,
+    "freq_selected_5kHz": 5,
+    "nyquist_high_freq_re_intercept_proxy": 5,
+    "nyquist_im_min": 5,
+    "nyquist_im_peak_abs": 5,
+    "nyquist_low_freq_tail_slope_proxy": 5,
+    "nyquist_re_max": 5,
+    "nyquist_re_min": 5,
+    "nyquist_semicircle_width_proxy": 5,
+    "phase_0p5Hz": 15,
+    "phase_10Hz": 5,
+    "phase_1Hz": 5,
+    "phase_1kHz": 5,
+    "phase_5kHz": 5,
+    "valid_modeling_fraction": 0,
+    "z_abs_0p5Hz": 15,
+    "z_abs_10Hz": 5,
+    "z_abs_1Hz": 5,
+    "z_abs_1kHz": 5,
+    "z_abs_5kHz": 5,
+    "z_imag_0p5Hz": 15,
+    "z_imag_10Hz": 5,
+    "z_imag_1Hz": 5,
+    "z_imag_1kHz": 5,
+    "z_imag_5kHz": 5,
+    "z_real_0p5Hz": 15,
+    "z_real_10Hz": 5,
+    "z_real_1Hz": 5,
+    "z_real_1kHz": 5,
+    "z_real_5kHz": 5
+  },
+  "feature_policy_version": "eis_feature_policy.v1",
+  "generated_at_utc": "2026-05-23T12:58:38.270502+00:00",
+  "inputs": {
+    "eis_features": "data/interim/eis_feature_table_v1.parquet",
+    "interval_table": "data/interim/interval_table.parquet"
+  },
+  "missing_selected_frequencies": {
+    "0p5Hz": 15,
+    "10Hz": 5,
+    "1Hz": 5,
+    "1kHz": 5,
+    "5kHz": 5
+  },
+  "row_count": 3983,
+  "schema_version": "gate20.eis_features.v1",
+  "soc_context_counts": {
+    "50": 3983
+  },
+  "split_coverage": {
+    "c_rate_holdout_fold=0": 3804,
+    "c_rate_holdout_fold=1": 179,
+    "condition_fold=0": 876,
+    "condition_fold=1": 896,
+    "condition_fold=2": 930,
+    "condition_fold=3": 534,
+    "condition_fold=4": 747,
+    "profile_holdout_fold=0": 3213,
+    "profile_holdout_fold=1": 770,
+    "temperature_holdout_fold=0": 2110,
+    "temperature_holdout_fold=1": 787,
+    "temperature_holdout_fold=2": 1086,
+    "voltage_window_holdout_fold=1": 1177,
+    "voltage_window_holdout_fold=2": 1432,
+    "voltage_window_holdout_fold=3": 1374
+  },
+  "status": "warning",
+  "temperature_context_counts": {
+    "RT": 3983
+  },
+  "unique_cells": 228,
+  "unique_parameter_sets": 76,
+  "valid_modeling_fraction": {
+    "count": 3983,
+    "max": 0.7241379310344828,
+    "median": 0.7241379310344828,
+    "min": 0.0,
+    "p95": 0.7241379310344828
+  },
+  "warnings": [
+    "missing_selected_frequency_features"
+  ]
+}

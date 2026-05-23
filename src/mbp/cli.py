@@ -23,6 +23,7 @@ baseline_app = typer.Typer(help="Milestone 0.5 baseline commands.")
 features_app = typer.Typer(help="Milestone 0.6 scalar feature-engineering commands.")
 pulse_app = typer.Typer(help="Milestone 0.7 PULSE QA and target commands.")
 coupling_app = typer.Typer(help="Milestone 0.8 coupling diagnostics commands.")
+eis_app = typer.Typer(help="Milestone 2.0 EIS QA and feature-gate commands.")
 
 app.add_typer(audit_app, name="audit")
 app.add_typer(report_app, name="report")
@@ -32,6 +33,7 @@ app.add_typer(baseline_app, name="baseline")
 app.add_typer(features_app, name="features")
 app.add_typer(pulse_app, name="pulse")
 app.add_typer(coupling_app, name="coupling")
+app.add_typer(eis_app, name="eis")
 
 
 def _load_optional_json(path: Path) -> dict[str, object] | None:
@@ -1234,6 +1236,94 @@ def pulse_missingness(
         by_split_out,
     )
     typer.echo(f"PULSE missingness reports generated: {report['missing_rows']} missing rows")
+
+
+@eis_app.command("qa")
+def eis_qa(
+    eis_table: Path = typer.Option(..., "--eis-table", help="Path to modality_table_eis.parquet."),
+    eis_quality: Path = typer.Option(..., "--eis-quality", help="Path to eis_spectrum_quality.parquet."),
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output EIS QA JSON path."),
+    coverage_out: Path = typer.Option(..., "--coverage-out", help="Output EIS coverage CSV."),
+    alignment_out: Path = typer.Option(..., "--alignment-out", help="Output EIS alignment JSON report."),
+    frequency_out: Path = typer.Option(..., "--frequency-out", help="Output EIS valid-frequency audit CSV."),
+) -> None:
+    """Write EIS coverage, alignment, spectrum quality, and frequency-mask QA reports."""
+    from mbp.data.products.eis_features import write_eis_qa_report
+
+    report = write_eis_qa_report(
+        eis_table,
+        eis_quality,
+        interval_table,
+        out,
+        coverage_out,
+        alignment_out,
+        frequency_out,
+    )
+    typer.echo(f"EIS QA report generated: {report['row_count']} rows written to {out}")
+
+
+@eis_app.command("alignment-sensitivity")
+def eis_alignment_sensitivity(
+    eis_quality: Path = typer.Option(..., "--eis-quality", help="Path to eis_spectrum_quality.parquet."),
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output EIS alignment sensitivity JSON path."),
+    coverage_out: Path = typer.Option(..., "--coverage-out", help="Output EIS alignment sensitivity coverage CSV."),
+) -> None:
+    """Write EIS alignment-threshold sensitivity diagnostics."""
+    from mbp.data.products.eis_features import write_eis_alignment_sensitivity_report
+
+    report = write_eis_alignment_sensitivity_report(eis_quality, interval_table, out, coverage_out)
+    typer.echo(f"EIS alignment sensitivity report generated: {len(report['thresholds'])} thresholds written to {out}")
+
+
+@eis_app.command("build-features")
+def eis_build_features(
+    eis_table: Path = typer.Option(..., "--eis-table", help="Path to modality_table_eis.parquet."),
+    eis_quality: Path = typer.Option(..., "--eis-quality", help="Path to eis_spectrum_quality.parquet."),
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output EIS feature table Parquet path."),
+    soc_percent: float = typer.Option(50.0, "--soc-percent", help="Canonical EIS SOC percent."),
+    temperature_context: str = typer.Option("RT", "--temperature-context", help="Canonical EIS temperature context."),
+) -> None:
+    """Build an E1/E2/E3 scalar EIS feature sidecar table."""
+    from mbp.data.products.eis_features import build_eis_feature_table
+
+    table = build_eis_feature_table(
+        eis_table,
+        eis_quality,
+        interval_table,
+        out,
+        soc_percent=soc_percent,
+        temperature_context=temperature_context,
+    )
+    typer.echo(f"EIS feature table generated: {table.num_rows} rows written to {out}")
+
+
+@eis_app.command("feature-qa")
+def eis_feature_qa(
+    eis_features: Path = typer.Option(..., "--eis-features", help="Path to eis_feature_table_v1.parquet."),
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output EIS feature QA JSON path."),
+) -> None:
+    """Write EIS scalar feature-table QA report."""
+    from mbp.data.products.eis_features import write_eis_feature_qa_report
+
+    report = write_eis_feature_qa_report(eis_features, interval_table, out)
+    typer.echo(f"EIS feature QA report generated: {report['row_count']} rows written to {out}")
+
+
+@eis_app.command("claim-readiness")
+def eis_claim_readiness(
+    qa_report: Path = typer.Option(..., "--qa-report", help="Path to EIS QA JSON report."),
+    feature_qa_report: Path = typer.Option(..., "--feature-qa-report", help="Path to EIS feature QA JSON report."),
+    out: Path = typer.Option(..., "--out", help="Output EIS claim-readiness markdown path."),
+) -> None:
+    """Render the Milestone 2.0 EIS claim-readiness report."""
+    from mbp.data.products.eis_features import write_eis_claim_readiness_report
+
+    write_eis_claim_readiness_report(qa_report, feature_qa_report, out)
+    typer.echo(f"EIS claim-readiness report generated: {out}")
 
 
 @coupling_app.command("build-pulse-capacity-table")

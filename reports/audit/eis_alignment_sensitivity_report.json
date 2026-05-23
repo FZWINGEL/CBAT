@@ -1,0 +1,65 @@
+{
+  "generated_at_utc": "2026-05-23T12:58:11.520091+00:00",
+  "inputs": {
+    "eis_quality": "data/interim/eis_spectrum_quality.parquet",
+    "interval_table": "data/interim/interval_table.parquet"
+  },
+  "outputs": {
+    "coverage": "reports/audit/eis_alignment_sensitivity_coverage.csv"
+  },
+  "schema_version": "gate20.eis_features.v1",
+  "status": "passed",
+  "thresholds": [
+    {
+      "c_rate_holdout_rows": 471,
+      "profile_holdout_rows": 2944,
+      "retained_cells": 228,
+      "retained_parameter_sets": 76,
+      "retained_spectra": 14829,
+      "soc_contexts": "10|30|50|70|90",
+      "temperature_contexts": "OT|RT",
+      "threshold_s": 21600.0
+    },
+    {
+      "c_rate_holdout_rows": 768,
+      "profile_holdout_rows": 3895,
+      "retained_cells": 228,
+      "retained_parameter_sets": 76,
+      "retained_spectra": 20166,
+      "soc_contexts": "10|30|50|70|90",
+      "temperature_contexts": "OT|RT",
+      "threshold_s": 43200.0
+    },
+    {
+      "c_rate_holdout_rows": 1261,
+      "profile_holdout_rows": 6821,
+      "retained_cells": 228,
+      "retained_parameter_sets": 76,
+      "retained_spectra": 34428,
+      "soc_contexts": "10|30|50|70|90",
+      "temperature_contexts": "OT|RT",
+      "threshold_s": 86400.0
+    },
+    {
+      "c_rate_holdout_rows": 1664,
+      "profile_holdout_rows": 7392,
+      "retained_cells": 228,
+      "retained_parameter_sets": 76,
+      "retained_spectra": 38071,
+      "soc_contexts": "10|30|50|70|90",
+      "temperature_contexts": "OT|RT",
+      "threshold_s": 129600.0
+    },
+    {
+      "c_rate_holdout_rows": 1790,
+      "profile_holdout_rows": 7616,
+      "retained_cells": 228,
+      "retained_parameter_sets": 76,
+      "retained_spectra": 39368,
+      "soc_contexts": "10|30|50|70|90",
+      "temperature_contexts": "OT|RT",
+      "threshold_s": "all"
+    }
+  ],
+  "warnings": []
+}

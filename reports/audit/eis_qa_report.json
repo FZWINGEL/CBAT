@@ -1,0 +1,67 @@
+{
+  "alignment": {
+    "alignment_delta_s": {
+      "count": 39368,
+      "max": 192238.0,
+      "median": 40905.0,
+      "min": 1265.0,
+      "p95": 107879.50000000001
+    },
+    "alignment_method_counts": {
+      "nearest_eoc_timestamp": 39368
+    },
+    "generated_at_utc": "2026-05-23T12:58:16.676438+00:00",
+    "large_alignment_delta_rows": 4940,
+    "large_alignment_delta_s": 86400.0,
+    "schema_version": "gate20.eis_features.v1",
+    "status": "warning"
+  },
+  "feature_policy_version": "eis_feature_policy.v1",
+  "generated_at_utc": "2026-05-23T12:58:16.694049+00:00",
+  "inputs": {
+    "eis_quality": "data/interim/eis_spectrum_quality.parquet",
+    "eis_table": "data/interim/modality_table_eis.parquet",
+    "interval_table": "data/interim/interval_table.parquet"
+  },
+  "low_valid_fraction_spectra": 79,
+  "outputs": {
+    "alignment": "reports/audit/eis_alignment_report.json",
+    "coverage": "reports/audit/eis_coverage_report.csv",
+    "frequency": "reports/audit/eis_valid_frequency_report.csv"
+  },
+  "row_count": 1177835,
+  "schema_version": "gate20.eis_features.v1",
+  "soc_context_counts": {
+    "10": 7874,
+    "30": 7874,
+    "50": 7874,
+    "70": 7871,
+    "90": 7875
+  },
+  "spectrum_count": 39368,
+  "status": "warning",
+  "temperature_context_counts": {
+    "OT": 19457,
+    "RT": 19911
+  },
+  "unique_cells": 228,
+  "unique_checkups": 29,
+  "unique_parameter_sets": 76,
+  "valid_modeling_fraction": {
+    "count": 39368,
+    "max": 0.7241379310344828,
+    "median": 0.7241379310344828,
+    "min": 0.0,
+    "p95": 0.7241379310344828
+  },
+  "valid_modeling_frequencies": {
+    "count": 39368,
+    "max": 63.0,
+    "median": 21.0,
+    "min": 0.0,
+    "p95": 21.0
+  },
+  "warnings": [
+    "large_alignment_delta_rows=4940"
+  ]
+}

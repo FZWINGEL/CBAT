@@ -16,10 +16,10 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 1.4.1: Reader-facing cleanup and check hardening.
+Milestone 2.0: EIS QA and feature gate.
 
 Current state:
-- Gate 2b LOG_AGE integrity triage and Milestones 0.4-0.9.1 are implemented
+- Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
   and documented.
 - Milestone 1.0 produced a paper-facing claim ledger, figure plan, paper
   skeleton, evidence matrix, model ladder summary, split difficulty summary,
@@ -35,35 +35,38 @@ Current state:
   state improves `capacity_Ah_k1` over F4 in selected grouped splits, but it
   does not beat the strongest supplied non-PULSE HGB baselines and does not
   improve `delta_capacity_Ah`.
+- The current main-project track opens EIS as a gated QA and feature-readiness
+  modality only. No EIS predictive modeling or EIS improvement claim is
+  authorized until QA, feature completeness, and later grouped baseline
+  evidence support it.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
 Allowed work:
-- manuscript prose polish
-- reader-facing manuscript assembly
-- generated figure/table QA
-- publication-draft figure/caption polish from existing artifacts
-- reader-facing manuscript cleanup
-- reader-check hardening
-- caption drafting
-- source traceability hardening
-- no-overclaim checks across manuscript, captions, tables, and figure specs
-- manuscript draft formatting
-- figure/table source checks
+- EIS QA
+- EIS coverage diagnostics
+- EIS alignment diagnostics
+- EIS valid-frequency mask audits
+- EIS feature policy
+- E0/E1/E2/E3 scalar EIS feature table construction
+- EIS claim-readiness reporting
 - documentation/evidence memo updates
 - lightweight report formatting or consistency fixes
-- small tests only if manuscript reporting/checking code is added
+- small tests with synthetic EIS fixtures
 
 Forbidden work:
 - new model training
 - new capacity/PULSE feature engineering
-- EIS modeling
+- EIS predictive modeling
 - EIS embeddings
+- DRT features
 - knee prediction
 - sequence models
 - neural models
 - CBAT architecture
 - policy ranking
+- capacity+PULSE+EIS multimodal models
+- EIS improvement claims
 - capacity+PULSE multimodal claims
 - broad multimodal claims
 - PULSE scientific claims beyond the Milestone 1.0 claim ledger

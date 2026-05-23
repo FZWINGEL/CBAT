@@ -357,6 +357,61 @@ PULSE_TARGET_TABLE_SCHEMA = pa.schema(
     ]
 )
 
+# 14. EIS scalar feature table schema
+EIS_FEATURE_TABLE_V1_SCHEMA = pa.schema(
+    [
+        ("cell_id", pa.string(), False),
+        ("parameter_set", pa.int32(), True),
+        ("replicate_id", pa.int32(), True),
+        ("checkup_k", pa.int32(), False),
+        ("soc_percent", pa.float64(), False),
+        ("temperature_context", pa.string(), False),
+        ("temperature_C_mean", pa.float64(), True),
+        ("valid_modeling_fraction", pa.float64(), False),
+        ("valid_modeling_frequencies", pa.int32(), False),
+        ("alignment_delta_s", pa.float64(), True),
+        ("z_real_0p5Hz", pa.float64(), True),
+        ("z_imag_0p5Hz", pa.float64(), True),
+        ("z_abs_0p5Hz", pa.float64(), True),
+        ("phase_0p5Hz", pa.float64(), True),
+        ("freq_selected_0p5Hz", pa.float64(), True),
+        ("z_real_1Hz", pa.float64(), True),
+        ("z_imag_1Hz", pa.float64(), True),
+        ("z_abs_1Hz", pa.float64(), True),
+        ("phase_1Hz", pa.float64(), True),
+        ("freq_selected_1Hz", pa.float64(), True),
+        ("z_real_10Hz", pa.float64(), True),
+        ("z_imag_10Hz", pa.float64(), True),
+        ("z_abs_10Hz", pa.float64(), True),
+        ("phase_10Hz", pa.float64(), True),
+        ("freq_selected_10Hz", pa.float64(), True),
+        ("z_real_1kHz", pa.float64(), True),
+        ("z_imag_1kHz", pa.float64(), True),
+        ("z_abs_1kHz", pa.float64(), True),
+        ("phase_1kHz", pa.float64(), True),
+        ("freq_selected_1kHz", pa.float64(), True),
+        ("z_real_5kHz", pa.float64(), True),
+        ("z_imag_5kHz", pa.float64(), True),
+        ("z_abs_5kHz", pa.float64(), True),
+        ("phase_5kHz", pa.float64(), True),
+        ("freq_selected_5kHz", pa.float64(), True),
+        ("R0_mOhm_k", pa.float64(), True),
+        ("R1_mOhm_k", pa.float64(), True),
+        ("r0_r1_source", pa.string(), False),
+        ("r0_r1_leakage_safe", pa.bool_(), False),
+        ("nyquist_re_min", pa.float64(), True),
+        ("nyquist_re_max", pa.float64(), True),
+        ("nyquist_im_min", pa.float64(), True),
+        ("nyquist_im_peak_abs", pa.float64(), True),
+        ("nyquist_semicircle_width_proxy", pa.float64(), True),
+        ("nyquist_high_freq_re_intercept_proxy", pa.float64(), True),
+        ("nyquist_low_freq_tail_slope_proxy", pa.float64(), True),
+        ("quality_flags", pa.string(), False),
+        ("schema_version", pa.string(), False),
+        ("feature_policy_version", pa.string(), False),
+    ]
+)
+
 
 def validate_table(table: pa.Table, schema: pa.Schema, strict: bool = True) -> bool:
     """Validate that a pyarrow Table matches the expected schema.

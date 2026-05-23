@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 1.4.1: Reader-facing cleanup and check hardening**.
+The repository is in **Milestone 2.0: EIS QA and feature gate**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -46,10 +46,12 @@ Milestone 1.4 converts the internally traceable manuscript into a reader-facing
 v0.4 draft, preserving claim/source mapping in sidecar traceability files.
 Milestone 1.4.1 removes the last reader-facing scaffold block, hardens checks,
 and removes internal draft labels from v0.4 SVG figures.
+Milestone 2.0 opens EIS as a gated QA and scalar feature-readiness modality,
+not as a modeling or claim milestone.
 
-No EIS claims, PULSE scientific claims beyond scalar resistance baselines,
-sequence models, neural architecture, policy ranking, CBAT architecture, or EIS
-embedding work has been started.
+No EIS predictive modeling, EIS embeddings, DRT features, capacity+PULSE+EIS
+multimodal models, sequence models, neural architecture, policy ranking, CBAT
+architecture, or EIS improvement claims have been started.
 
 Current state:
 
@@ -121,13 +123,25 @@ Current state:
 - Milestone 1.0.1 is the active paper-artifact QA workstream. It does not add
   models or features; it prepares the synthesis artifacts for manuscript
   drafting.
-- Milestone 1.4.1 is now the active paper-first cleanup patch. It removes the
-  remaining `Forbidden wording:` scaffold from `manuscript/manuscript_v0_4.md`,
-  keeps that guardrail in the traceability sidecar, hardens
-  `check-reader-manuscript`, and removes internal draft labels from
-  `manuscript/figures/generated_v0_4/*.svg`. It keeps all new modeling, EIS
-  modeling, feature engineering, CBAT, neural/sequence models, policy ranking,
-  and broad multimodal claims blocked.
+- Milestone 1.4.1 completed the reader-facing manuscript cleanup patch.
+- Milestone 2.0 is now the active main-project gate. It adds the EIS feature
+  policy, QA/coverage/alignment/frequency-mask reports, alignment-threshold
+  sensitivity, an RT/50 scalar EIS feature sidecar, feature QA, and EIS
+  claim-readiness reporting. It keeps EIS predictive modeling, DRT, embeddings,
+  capacity+PULSE+EIS multimodal models, CBAT, neural/sequence models, policy
+  ranking, and EIS improvement claims blocked.
+- The real EIS QA run covers 1,177,835 EIS rows, 39,368 spectra, 228 cells,
+  76 parameter sets, and 29 check-up indices. The valid-frequency audit reports
+  zero stored-mask mismatches while confirming 100 Hz, 208.3 Hz, and 14.7 kHz
+  are excluded from the modeling mask.
+- EIS alignment remains a reporting sensitivity: median alignment delta is
+  40,905 s, p95 is 107,879.5 s, max is 192,238 s, and 4,940 spectra exceed
+  24 h. Alignment-threshold coverage retains all 228 cells and 76 parameter
+  sets at every threshold from 6 h through all rows.
+- The canonical RT/50 EIS feature sidecar contains 3,983 rows, 228 cells, and
+  76 parameter sets. Feature QA warns about a small number of missing selected
+  frequencies, so EIS is ready for QA/feature-readiness discussion only, not
+  predictive claims.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -158,6 +172,15 @@ Small audit sidecars that are referenced by documentation are tracked:
 - `reports/audit/log_age_monotonicity_summary.csv`
 - `reports/audit/split_registry_report.json`
 - `reports/audit/stress_feature_qa_report.json`
+- `reports/audit/eis_qa_report.json`
+- `reports/audit/eis_coverage_report.csv`
+- `reports/audit/eis_alignment_report.json`
+- `reports/audit/eis_alignment_sensitivity_report.json`
+- `reports/audit/eis_alignment_sensitivity_coverage.csv`
+- `reports/audit/eis_spectrum_quality_summary.csv`
+- `reports/audit/eis_valid_frequency_report.csv`
+- `reports/audit/eis_feature_qa_report.json`
+- `reports/audit/eis_claim_readiness.md`
 
 The large Parquet outputs remain local generated artifacts:
 
@@ -170,6 +193,7 @@ The large Parquet outputs remain local generated artifacts:
 | `data/splits/interval_subset_registry_v1.parquet` | 3,827 | ignored |
 | `data/interim/interval_stress_features_v1.parquet` | 3,827 | ignored |
 | `data/interim/interval_stress_features_v1_1.parquet` | 3,827 | ignored |
+| `data/interim/eis_feature_table_v1.parquet` | 3,983 | ignored |
 | `reports/audit/raw_log_archive_inventory.parquet` | 541 | ignored |
 
 Milestone 0.5 generated predictions are also ignored by default:
@@ -200,7 +224,7 @@ Result-package coverage is complete for the 228-cell cohort:
 
 - CFG: complete.
 - EOC: complete.
-- EIS: complete, but valid-frequency audit is still pending before EIS claims.
+- EIS: complete, with Milestone 2.0 QA and valid-frequency audit now run.
 - PULSE: complete, but pulse provenance/alignment hardening remains a known
   issue.
 

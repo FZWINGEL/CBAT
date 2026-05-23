@@ -67,6 +67,13 @@ only removal of remaining internal scaffold language, reader-check hardening,
 caption/figure wording cleanup, and no-overclaim checks. It still does not
 authorize new model training, new feature engineering, EIS modeling, neural
 models, sequence models, policy ranking, CBAT, or broad multimodal claims.
+Milestone 2.0 is EIS QA and feature gate. It authorizes EIS coverage
+diagnostics, spectrum-quality summaries, valid-frequency mask audits,
+alignment-threshold sensitivity, the EIS feature policy, E0/E1/E2/E3 scalar
+feature table construction, feature QA, and EIS claim-readiness reporting. It
+does not authorize EIS predictive modeling, EIS embeddings, DRT features,
+capacity+PULSE+EIS multimodal models, neural models, sequence models, policy
+ranking, CBAT, or any EIS improvement claim.
 
 Required split discipline:
 
@@ -156,6 +163,21 @@ Required Milestone 1.4.1 cleanup artifacts:
   labels
 - `docs/experiments/2026-05-23_manuscript_v0_4_1_reader_cleanup.md`
 
+Required Milestone 2.0 EIS QA artifacts:
+
+- `docs/EIS_FEATURE_POLICY.md`
+- `reports/audit/eis_qa_report.json`
+- `reports/audit/eis_coverage_report.csv`
+- `reports/audit/eis_alignment_report.json`
+- `reports/audit/eis_alignment_sensitivity_report.json`
+- `reports/audit/eis_alignment_sensitivity_coverage.csv`
+- `reports/audit/eis_spectrum_quality_summary.csv`
+- `reports/audit/eis_valid_frequency_report.csv`
+- `data/interim/eis_feature_table_v1.parquet` (ignored generated artifact)
+- `reports/audit/eis_feature_qa_report.json`
+- `reports/audit/eis_claim_readiness.md`
+- `docs/experiments/2026-05-23_eis_qa_feature_gate.md`
+
 Required Milestone 1.2 checks:
 
 - `mbp report build-manuscript-assets`
@@ -173,6 +195,17 @@ prose contains raw claim IDs, allowed/blocked claim blocks, source-artifact
 blocks, referenced-asset notes, or forbidden overclaim wording.
 Milestone 1.4.1 extends that rule to fail on `Forbidden wording:` in the
 reader-facing manuscript body.
+
+Milestone 2.0 EIS validation commands:
+
+- `mbp eis qa`
+- `mbp eis alignment-sensitivity`
+- `mbp eis build-features`
+- `mbp eis feature-qa`
+- `mbp eis claim-readiness`
+- `ruff check . --no-cache`
+- `pytest -p no:cacheprovider`
+- `git diff --check`
 
 Milestone 1.0 claim statuses must distinguish supported claims,
 partially-supported claims, not-supported claims, gated claims, and blocked

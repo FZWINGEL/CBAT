@@ -1,0 +1,17 @@
+{
+  "alignment_delta_s": {
+    "count": 39368,
+    "max": 192238.0,
+    "median": 40905.0,
+    "min": 1265.0,
+    "p95": 107879.50000000001
+  },
+  "alignment_method_counts": {
+    "nearest_eoc_timestamp": 39368
+  },
+  "generated_at_utc": "2026-05-23T12:58:16.676438+00:00",
+  "large_alignment_delta_rows": 4940,
+  "large_alignment_delta_s": 86400.0,
+  "schema_version": "gate20.eis_features.v1",
+  "status": "warning"
+}
