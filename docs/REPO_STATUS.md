@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 1.0.1: Paper Artifact QA and Manuscript Packaging**.
+The repository is in **Milestone 1.1: Manuscript Draft Package v0.1**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -34,6 +34,8 @@ PULSE resistance, coupling, and prior-PULSE evidence into a paper-facing claim
 ledger, synthesis report set, figure plan, and paper skeleton.
 Milestone 1.0.1 hardens those paper-facing artifacts with wording refinements,
 source-artifact checklists, reviewer-risk tracking, and manuscript packaging.
+Milestone 1.1 creates a manuscript-ready draft package with prose sections,
+figure/table specifications, source traceability, and reviewer response prep.
 
 No EIS claims, PULSE scientific claims beyond scalar resistance baselines,
 sequence models, neural architecture, policy ranking, CBAT architecture, or EIS
@@ -109,6 +111,10 @@ Current state:
 - Milestone 1.0.1 is the active paper-artifact QA workstream. It does not add
   models or features; it prepares the synthesis artifacts for manuscript
   drafting.
+- Milestone 1.1 is now the active paper-first workstream. It creates manuscript
+  draft files only and keeps all new modeling, EIS modeling, feature
+  engineering, CBAT, neural/sequence models, policy ranking, and broad
+  multimodal claims blocked.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -1160,6 +1166,47 @@ Consistency updates:
 - The evidence synthesis memo now explicitly states that descriptive prior-PULSE
   best-row delta results do not authorize a fade-rate claim.
 
+### Milestone 1.1
+
+Milestone 1.1 is manuscript draft package v0.1. It is writing and
+source-traceability work only. It does not add model training, feature
+engineering, EIS modeling, neural/sequence models, policy ranking, CBAT, or
+broad multimodal claims.
+
+Implemented manuscript package:
+
+- Package README: `manuscript/README.md`
+- Manuscript outline: `manuscript/outline.md`
+- Draft sections:
+  - `manuscript/abstract_v0.md`
+  - `manuscript/introduction_v0.md`
+  - `manuscript/methods_data_products_v0.md`
+  - `manuscript/methods_validation_v0.md`
+  - `manuscript/results_capacity_baselines_v0.md`
+  - `manuscript/results_stress_features_v0.md`
+  - `manuscript/results_pulse_resistance_v0.md`
+  - `manuscript/results_capacity_pulse_coupling_v0.md`
+  - `manuscript/discussion_negative_results_v0.md`
+  - `manuscript/limitations_v0.md`
+- Figure specs: `manuscript/figures/*.md`
+- Table specs: `manuscript/tables/*.md`
+- Source traceability: `manuscript/source_traceability.md`
+- Reviewer response prep: `manuscript/reviewer_response_prep.md`
+- Experiment note:
+  `docs/experiments/2026-05-23_manuscript_draft_package.md`
+
+The manuscript package uses the Milestone 1.0/1.0.1 claim posture:
+
+- supported: grouped validation benchmark, C-rate difficulty, RT/50 PULSE
+  scalar endpoint;
+- diagnostic: PULSE growth as residual explanatory signal;
+- partial: mixed LOG_AGE value and prior-PULSE-over-F4 level prediction;
+- not supported: stress features solving C-rate fade, prior PULSE beating
+  strongest non-PULSE, prior PULSE improving `delta_capacity_Ah`, calibrated
+  HGB uncertainty;
+- gated/blocked: EIS, CBAT, neural/sequence models, policy ranking, and broad
+  multimodal claims.
+
 ## Important Implementation Notes
 
 The interval builder preserves result-table timestamps in the public schema, but
@@ -1220,14 +1267,20 @@ Milestone 1.0 adds documentation and tracked synthesis CSV/Markdown artifacts
 only. No new code or generated Parquet data products are introduced by this
 synthesis step.
 
+Milestone 1.1 adds manuscript Markdown files only. No new code, model training,
+feature engineering, generated Parquet data products, or prediction artifacts
+are introduced by the manuscript draft package. Milestone 1.1 validation checks
+are limited to Markdown/CSV consistency, claim-ID mapping, source-artifact
+existence, and forbidden-wording scans.
+
 The previous `datetime.utcnow()` deprecation warning in
 `src/mbp/data/luh_blank/qa_result_data.py` has been fixed.
 
 ## Recommended Next Step
 
-Review the **Milestone 1.0 Evidence Synthesis and Paper-Claim Lock** artifacts
-before opening any new evidence stream. The preferred next branch is paper-first
-benchmark consolidation. If new data work is opened instead, the next gated
-technical path should be EIS QA and feature validation, not EIS modeling,
+Review the **Milestone 1.1 Manuscript Draft Package v0.1**. The preferred next
+branch is paper-first v0.2 drafting or figure-generation packaging, not new
+modeling. If a technical stream is needed afterward, open a separately gated
+EIS QA and feature-validation milestone; do not jump directly to EIS modeling,
 sequence models, neural models, policy ranking, CBAT, or broad multimodal
 claims.

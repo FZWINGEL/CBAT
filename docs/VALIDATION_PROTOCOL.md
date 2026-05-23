@@ -39,6 +39,11 @@ claim wording refinement, source-artifact checklists, figure/table packaging,
 manuscript outline tightening, and reviewer-risk registers. It still does not
 authorize new model training, feature engineering, EIS modeling, neural models,
 sequence models, policy ranking, CBAT, or broad multimodal claims.
+Milestone 1.1 is manuscript draft package v0.1. It authorizes draft prose,
+figure/table specifications, claim-to-section mapping, source traceability, and
+reviewer-risk mitigation prose. It is still paper-first work only and does not
+authorize new model training, feature engineering, EIS modeling, neural models,
+sequence models, policy ranking, CBAT, or broad multimodal claims.
 
 Required split discipline:
 
@@ -70,6 +75,25 @@ Required Milestone 1.0.1 paper-QA artifacts:
 - `docs/MANUSCRIPT_PACKAGE_PLAN.md`
 - `reports/synthesis/source_artifact_checklist.md`
 - `reports/synthesis/reviewer_risk_register.md`
+
+Required Milestone 1.1 manuscript package artifacts:
+
+- `manuscript/README.md`
+- `manuscript/outline.md`
+- `manuscript/abstract_v0.md`
+- `manuscript/introduction_v0.md`
+- `manuscript/methods_data_products_v0.md`
+- `manuscript/methods_validation_v0.md`
+- `manuscript/results_capacity_baselines_v0.md`
+- `manuscript/results_stress_features_v0.md`
+- `manuscript/results_pulse_resistance_v0.md`
+- `manuscript/results_capacity_pulse_coupling_v0.md`
+- `manuscript/discussion_negative_results_v0.md`
+- `manuscript/limitations_v0.md`
+- `manuscript/source_traceability.md`
+- `manuscript/reviewer_response_prep.md`
+- `manuscript/figures/*.md`
+- `manuscript/tables/*.md`
 
 Milestone 1.0 claim statuses must distinguish supported claims,
 partially-supported claims, not-supported claims, gated claims, and blocked

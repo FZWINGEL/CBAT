@@ -16,14 +16,15 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 1.0.1: Paper artifact QA and manuscript packaging.
+Milestone 1.1: Manuscript draft package v0.1.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-0.9.1 are implemented
   and documented.
 - Milestone 1.0 produced a paper-facing claim ledger, figure plan, paper
   skeleton, evidence matrix, model ladder summary, split difficulty summary,
-  and negative-result summary.
+  and negative-result summary. Milestone 1.0.1 hardened that package with
+  source-artifact checks, reviewer-risk tracking, and a manuscript package plan.
 - The strongest current prior-PULSE result is deliberately narrow: prior PULSE
   state improves `capacity_Ah_k1` over F4 in selected grouped splits, but it
   does not beat the strongest supplied non-PULSE HGB baselines and does not
@@ -37,6 +38,11 @@ Allowed work:
 - claim wording refinement
 - paper skeleton and figure/table planning
 - manuscript package planning
+- manuscript draft sections
+- figure/table specifications
+- claim-to-section mapping
+- source-artifact traceability
+- reviewer-risk mitigation prose
 - reviewer-risk register updates
 - negative-result summaries
 - source-artifact cross-checks
