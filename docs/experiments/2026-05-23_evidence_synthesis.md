@@ -142,6 +142,18 @@ Decision: prior PULSE improves `capacity_Ah_k1` over F4 in selected splits, but
 it does not beat the strongest supplied non-PULSE baselines and does not improve
 fade-rate prediction.
 
+## Best-Row Metric Caveat
+
+The synthesis tables include descriptive "best known row" metrics to orient
+readers across many reports. These rows are useful for split-difficulty
+summaries, but they do not override paired claim-readiness tests.
+
+In particular, the prior-PULSE report contains a descriptive best row for
+C-rate `delta_capacity_Ah`, but the paired F4 and strongest-non-PULSE
+comparisons still block any fade-rate claim. Paper-facing claims must follow
+`docs/PAPER_CLAIM_LEDGER.md` and `reports/synthesis/claim_matrix.csv`, not a
+single best-row table in isolation.
+
 ## Final Claim Status
 
 Supported:

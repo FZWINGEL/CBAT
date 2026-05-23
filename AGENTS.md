@@ -16,14 +16,14 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 1.0: Evidence synthesis and paper-claim lock.
+Milestone 1.0.1: Paper artifact QA and manuscript packaging.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-0.9.1 are implemented
   and documented.
-- Capacity, LOG_AGE stress-feature, PULSE resistance, capacity-PULSE coupling,
-  and prior-PULSE predictive diagnostics have produced enough evidence for a
-  paper-facing claim ledger.
+- Milestone 1.0 produced a paper-facing claim ledger, figure plan, paper
+  skeleton, evidence matrix, model ladder summary, split difficulty summary,
+  and negative-result summary.
 - The strongest current prior-PULSE result is deliberately narrow: prior PULSE
   state improves `capacity_Ah_k1` over F4 in selected grouped splits, but it
   does not beat the strongest supplied non-PULSE HGB baselines and does not
@@ -34,9 +34,13 @@ Current state:
 Allowed work:
 - evidence synthesis
 - claim ledger updates
+- claim wording refinement
 - paper skeleton and figure/table planning
+- manuscript package planning
+- reviewer-risk register updates
 - negative-result summaries
 - source-artifact cross-checks
+- negative-result consistency checks
 - documentation/evidence memo updates
 - lightweight report formatting or consistency fixes
 - small tests only if synthesis-generating code is added

@@ -29,6 +29,42 @@ weak validation would overclaim.
    over F4 in selected splits but not over strongest non-PULSE baselines.
 7. Close with negative results and gated future modalities.
 
+## Abstract Draft
+
+Battery degradation models are often evaluated under splits that are easier
+than the operating-regime shifts they are meant to support. We construct a
+reproducible grouped-validation benchmark for the Luh-Blank battery aging
+dataset, linking capacity check-ups, LOG_AGE operating histories, scalar stress
+features, and RT/50 PULSE resistance targets across 228 cells and 76
+parameter-set conditions. Under held-out condition, temperature, C-rate,
+profile, and voltage-window splits, HGB baselines show that C-rate transfer is
+the hardest capacity setting. Scalar LOG_AGE and stress features help some
+views but do not solve C-rate fade prediction. RT/50 PULSE is robust enough as a
+scalar resistance endpoint, and PULSE growth is associated with capacity-model
+residuals, especially under C-rate holdout. Prior PULSE state improves
+`capacity_Ah_k1` over an F4 LOG_AGE scalar baseline in selected grouped splits,
+but it does not beat the strongest supplied non-PULSE baselines and does not
+improve `delta_capacity_Ah`. The result is a claim-bounded benchmark and
+evidence ledger, not a neural architecture or broad multimodal claim.
+
+## Contributions
+
+- A reproducible interval-level data-product stack for grouped battery
+  degradation benchmarking.
+- A validation protocol that treats the 228 cells as 76 condition triplets and
+  rejects random row/cell splits as headline evidence.
+- A scalar capacity baseline ladder showing C-rate holdout as the dominant
+  unresolved generalization stressor.
+- LOG_AGE scalar and stress-feature ablations that document both useful gains
+  and negative C-rate fade results.
+- A PULSE RT/50 target policy, QA sequence, and scalar resistance baseline.
+- Capacity-PULSE coupling diagnostics showing that PULSE growth is associated
+  with capacity residual magnitude.
+- A prior-PULSE predictive boundary: improvement over F4 in selected
+  `capacity_Ah_k1` splits, but no superiority over strongest supplied
+  non-PULSE baselines and no `delta_capacity_Ah` claim.
+- A paper-facing claim ledger and negative-result matrix to prevent overclaiming.
+
 ## Sections
 
 ### 1. Motivation
@@ -125,6 +161,23 @@ mutations of the core interval spine.
 - Quantile HGB is not calibrated.
 - PULSE is not yet a broad predictive multimodal feature claim.
 - EIS and CBAT remain gated.
+
+Limitations paragraph:
+
+The current benchmark is intentionally conservative. C-rate conclusions depend
+on small held-out condition counts, PULSE RT/50 alignment remains a reported
+sensitivity, and the current PULSE direction policy is effectively charge-only
+for adjacent RT/50 deltas. LOG_AGE stress features and prior PULSE do not solve
+C-rate `delta_capacity_Ah`, quantile HGB outputs are not calibrated, and EIS has
+not passed a predictive QA gate. The study therefore supports grouped benchmark
+and scalar diagnostic claims, not causal, counterfactual, policy-ranking, neural
+architecture, or CBAT claims.
+
+No-overclaim language:
+
+> The benchmark identifies signals and limits under grouped validation. It does
+> not establish a general multimodal architecture, a calibrated uncertainty
+> model, or a same-cell counterfactual policy engine.
 
 ### 11. Claim Ladder
 

@@ -34,6 +34,11 @@ documentation, claim ledgers, figure/table planning, negative-result summaries,
 and source-artifact cross-checks. It does not authorize new model training, new
 feature engineering, EIS modeling, broad multimodal claims, sequence models,
 neural models, policy ranking, or CBAT.
+Milestone 1.0.1 is paper artifact QA and manuscript packaging. It authorizes
+claim wording refinement, source-artifact checklists, figure/table packaging,
+manuscript outline tightening, and reviewer-risk registers. It still does not
+authorize new model training, feature engineering, EIS modeling, neural models,
+sequence models, policy ranking, CBAT, or broad multimodal claims.
 
 Required split discipline:
 
@@ -59,6 +64,12 @@ Required Milestone 1.0 synthesis artifacts:
 - `reports/synthesis/model_ladder_summary.csv`
 - `reports/synthesis/split_difficulty_summary.csv`
 - `reports/synthesis/negative_results.md`
+
+Required Milestone 1.0.1 paper-QA artifacts:
+
+- `docs/MANUSCRIPT_PACKAGE_PLAN.md`
+- `reports/synthesis/source_artifact_checklist.md`
+- `reports/synthesis/reviewer_risk_register.md`
 
 Milestone 1.0 claim statuses must distinguish supported claims,
 partially-supported claims, not-supported claims, gated claims, and blocked

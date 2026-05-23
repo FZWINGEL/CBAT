@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 1.0: Evidence Synthesis and Paper-Claim Lock**.
+The repository is in **Milestone 1.0.1: Paper Artifact QA and Manuscript Packaging**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -32,6 +32,8 @@ non-PULSE HGB baselines on the same PULSE-covered interval population.
 Milestone 1.0 consolidates the completed capacity, LOG_AGE stress-feature,
 PULSE resistance, coupling, and prior-PULSE evidence into a paper-facing claim
 ledger, synthesis report set, figure plan, and paper skeleton.
+Milestone 1.0.1 hardens those paper-facing artifacts with wording refinements,
+source-artifact checklists, reviewer-risk tracking, and manuscript packaging.
 
 No EIS claims, PULSE scientific claims beyond scalar resistance baselines,
 sequence models, neural architecture, policy ranking, CBAT architecture, or EIS
@@ -104,6 +106,9 @@ Current state:
 - Milestone 1.0 evidence synthesis is now the active workstream. Its purpose is
   to lock supported, partially supported, not-supported, gated, and blocked
   claims before any EIS or new modeling path is opened.
+- Milestone 1.0.1 is the active paper-artifact QA workstream. It does not add
+  models or features; it prepares the synthesis artifacts for manuscript
+  drafting.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -1129,6 +1134,31 @@ Locked claim posture:
   improve `delta_capacity_Ah`.
 - Quantile HGB uncertainty is not calibrated.
 - EIS and CBAT remain gated/blocked.
+
+### Milestone 1.0.1
+
+Milestone 1.0.1 is paper artifact QA and manuscript packaging. It keeps the
+project documentation-only and does not authorize model training, new feature
+engineering, EIS modeling, neural/sequence models, policy ranking, CBAT, or
+broad multimodal claims.
+
+Implemented paper-QA artifacts:
+
+- Manuscript package plan: `docs/MANUSCRIPT_PACKAGE_PLAN.md`
+- Source artifact checklist:
+  `reports/synthesis/source_artifact_checklist.md`
+- Reviewer-risk register:
+  `reports/synthesis/reviewer_risk_register.md`
+
+Consistency updates:
+
+- Claim C01 is tightened to:
+  "Current scalar LOG_AGE summaries help nonlinear models in some grouped
+  views, but gains are mixed."
+- `reports/synthesis/split_difficulty_summary.csv` now states that best-known
+  rows are descriptive and do not override paired claim-readiness tests.
+- The evidence synthesis memo now explicitly states that descriptive prior-PULSE
+  best-row delta results do not authorize a fade-rate claim.
 
 ## Important Implementation Notes
 
