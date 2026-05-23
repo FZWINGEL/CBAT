@@ -435,7 +435,7 @@
       "spearman": 0.6083916083916084
     }
   ],
-  "generated_at_utc": "2026-05-23T09:50:33.033647+00:00",
+  "generated_at_utc": "2026-05-23T10:18:03.727546+00:00",
   "inputs": {
     "capacity_predictions": "data/processed/capacity_hgb50_focused_predictions.parquet",
     "capacity_report": "reports/baselines/capacity_hgb50_focused_report.json",

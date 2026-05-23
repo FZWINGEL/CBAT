@@ -22,9 +22,12 @@ capacity-PULSE scalar coupling diagnostics and prior-PULSE capacity baseline
 feature checks. Milestone 0.8.1 authorizes robustness checks for those coupling
 diagnostics: canonical-model selection, interval-level aggregation,
 condition-level aggregation, parameter-set bootstrap summaries, and simple
-confound-control residualization. It does not authorize EIS modeling,
-capacity+PULSE predictive or multimodal claims, sequence models, neural models,
-policy ranking, or CBAT.
+confound-control residualization. Milestone 0.9 authorizes only a narrow
+non-neural prior-PULSE predictive baseline for `capacity_Ah_k1`, using prior
+PULSE state at check-up `k` only and paired grouped comparisons. It does not
+authorize EIS modeling, future PULSE state, PULSE deltas as capacity inputs,
+broad capacity+PULSE multimodal claims, sequence models, neural models, policy
+ranking, or CBAT.
 
 Required split discipline:
 
@@ -349,6 +352,28 @@ Milestone 0.8.1 decision rule:
   survives canonical-model filtering and interval/condition aggregation.
 - Predictive capacity+PULSE claims remain blocked unless a later non-neural
   baseline demonstrates grouped predictive gains without future PULSE leakage.
+
+Required Milestone 0.9 prior-PULSE predictive artifacts:
+
+- `reports/baselines/capacity_prior_pulse_predictive/prior_pulse_predictive_report.json`
+- `reports/baselines/capacity_prior_pulse_predictive/paired_condition_gain.csv`
+- `reports/baselines/capacity_prior_pulse_predictive/split_level_gain_summary.csv`
+- `reports/baselines/capacity_prior_pulse_predictive/c_rate_gain_summary.csv`
+- `reports/baselines/capacity_prior_pulse_predictive/coverage_effect_summary.csv`
+- `reports/baselines/capacity_prior_pulse_predictive/prior_pulse_predictive_claim_readiness.md`
+- `docs/experiments/2026-05-23_prior_pulse_capacity_prediction.md`
+
+Milestone 0.9 claim rules:
+
+- Primary target: `capacity_Ah_k1`.
+- Secondary guardrail: `delta_capacity_Ah`.
+- If `capacity_Ah_k1` gains are positive and robust while
+  `delta_capacity_Ah` gains are not, only a narrow capacity-level prediction
+  claim is allowed.
+- Do not claim interval fade-rate improvement unless `delta_capacity_Ah`
+  improves under paired grouped validation.
+- Future PULSE state and PULSE deltas invalidate the result if they enter
+  capacity feature groups.
 
 Blocked until later milestones:
 

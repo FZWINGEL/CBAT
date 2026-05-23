@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 0.8.1: Coupling Robustness and Confound-Control Diagnostics**.
+The repository is in **Milestone 0.9: Non-Neural Capacity + Prior-PULSE Predictive Baseline**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -25,6 +25,8 @@ Milestone 0.8 opens controlled scalar capacity-PULSE coupling diagnostics.
 Milestone 0.8.1 hardens that evidence with canonical-model filtering,
 interval-level aggregation, condition-level aggregation, parameter-set bootstrap
 summaries, and simple confound-control residualization.
+Milestone 0.9 tests a narrow non-neural predictive claim using prior PULSE state
+at check-up `k` only.
 
 No EIS claims, PULSE scientific claims beyond scalar resistance baselines,
 sequence models, neural architecture, policy ranking, CBAT architecture, or EIS
@@ -88,6 +90,9 @@ Current state:
   predictions. The association survives interval- and condition-level
   aggregation, but remains explanatory and does not authorize a capacity+PULSE
   predictive claim.
+- Milestone 0.9 prior-PULSE predictive comparison is implemented and run. It
+  supports a narrow `capacity_Ah_k1` level-prediction claim for selected OOD
+  splits, while `delta_capacity_Ah` remains a negative guardrail.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -983,6 +988,58 @@ Decision:
   solve C-rate `delta_capacity_Ah`, and this milestone is diagnostic rather than
   a predictive benchmark.
 
+### Milestone 0.9
+
+Milestone 0.9 compares the F4 HGB capacity baseline against prior-PULSE feature
+groups on the same PULSE-covered interval population. The only allowed PULSE
+capacity input is `pulse_1s_resistance_k`. Future PULSE states and PULSE deltas
+remain forbidden.
+
+Implemented artifacts:
+
+- CLI: `mbp baseline compare-prior-pulse-capacity`
+- Report directory:
+  `reports/baselines/capacity_prior_pulse_predictive/`
+- Paired condition gains:
+  `reports/baselines/capacity_prior_pulse_predictive/paired_condition_gain.csv`
+- Split-level bootstrap summary:
+  `reports/baselines/capacity_prior_pulse_predictive/split_level_gain_summary.csv`
+- C-rate summary:
+  `reports/baselines/capacity_prior_pulse_predictive/c_rate_gain_summary.csv`
+- Coverage effects:
+  `reports/baselines/capacity_prior_pulse_predictive/coverage_effect_summary.csv`
+- Claim readiness:
+  `reports/baselines/capacity_prior_pulse_predictive/prior_pulse_predictive_claim_readiness.md`
+- Decision memo:
+  `docs/experiments/2026-05-23_prior_pulse_capacity_prediction.md`
+
+Paired condition-level gain summary:
+
+| Target | Split | Best prior-PULSE group | Conditions | Mean gain | p05 | p50 | p95 | Win rate |
+|---|---|---|---:|---:|---:|---:|---:|---:|
+| `capacity_Ah_k1` | C-rate | `C_P3_stress_pulse` | 12 | `0.00669208` | `0.000718651` | `0.00678842` | `0.0131255` | `0.666667` |
+| `capacity_Ah_k1` | temperature | `C_P3_stress_pulse` | 38 | `0.00509620` | `0.00103230` | `0.00493892` | `0.00974339` | `0.605263` |
+| `capacity_Ah_k1` | profile | `C_P0_state_time_pulse` | 12 | `0.0214905` | `0.0137834` | `0.0214668` | `0.0299696` | `0.916667` |
+| `delta_capacity_Ah` | C-rate | `C_P3_stress_pulse` | 12 | `-0.00574230` | `-0.0203466` | `-0.00552136` | `0.00835579` | `0.5` |
+
+Coverage effect:
+
+- Capacity-only selected rows: `3,827`
+- PULSE-covered selected rows: `3,826`
+- Dropped intervals from requiring prior PULSE: `1`
+- PULSE-covered parameter sets: `76`
+- C-rate interval coverage is unchanged for both capacity targets.
+
+Decision:
+
+- Prior PULSE state supports a narrow non-neural `capacity_Ah_k1`
+  level-prediction claim in C-rate, temperature, and profile split diagnostics.
+- Prior PULSE does not support a `delta_capacity_Ah` fade-rate claim; C-rate
+  delta gain remains negative.
+- Coverage loss is small and does not change parameter-set coverage.
+- Broad multimodal claims, future-PULSE inputs, EIS, sequence/neural models,
+  policy ranking, and CBAT remain blocked.
+
 ## Important Implementation Notes
 
 The interval builder preserves result-table timestamps in the public schema, but
@@ -1036,7 +1093,7 @@ PYTHONDONTWRITEBYTECODE=1 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/ruff check . --no
 All checks passed.
 
 PYTHONDONTWRITEBYTECODE=1 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/pytest -p no:cacheprovider
-104 passed.
+106 passed.
 ```
 
 The previous `datetime.utcnow()` deprecation warning in
@@ -1044,9 +1101,8 @@ The previous `datetime.utcnow()` deprecation warning in
 
 ## Recommended Next Step
 
-Review the **Milestone 0.8.1 Coupling Robustness and Confound-Control
-Diagnostics** before opening any capacity+PULSE prediction milestone. The
-current result supports PULSE as a scalar explanatory diagnostic, especially for
-C-rate residual analysis, but the C-rate `delta_capacity_Ah` forecast failure
-remains unresolved. EIS, sequence models, neural models, policy ranking, CBAT,
-and architecture work remain blocked.
+Review the **Milestone 0.9 Prior-PULSE Capacity Predictive Baseline** before
+opening any broader multimodal milestone. The current result supports only a
+narrow non-neural `capacity_Ah_k1` level-prediction claim. The C-rate
+`delta_capacity_Ah` forecast failure remains unresolved. EIS, sequence models,
+neural models, policy ranking, CBAT, and architecture work remain blocked.

@@ -435,7 +435,7 @@
       "spearman": NaN
     }
   ],
-  "generated_at_utc": "2026-05-23T09:51:10.762506+00:00",
+  "generated_at_utc": "2026-05-23T10:18:11.619194+00:00",
   "inputs": {
     "capacity_predictions": "data/processed/capacity_hgb50_focused_predictions.parquet",
     "capacity_report": "reports/baselines/capacity_hgb50_focused_report.json",

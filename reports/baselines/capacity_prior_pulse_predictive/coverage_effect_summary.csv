@@ -1,0 +1,12 @@
+scope,target,split_name,capacity_only_interval_count,pulse_covered_interval_count,rows_dropped_by_requiring_prior_pulse,capacity_only_parameter_sets,pulse_covered_parameter_sets
+report_row_counts,all,all,3827,3826,1,76,76
+prediction_interval_keys,capacity_Ah_k1,c_rate_holdout_fold,157,157,0,12,12
+prediction_interval_keys,capacity_Ah_k1,condition_fold,3827,3826,1,76,76
+prediction_interval_keys,capacity_Ah_k1,profile_holdout_fold,752,751,1,12,12
+prediction_interval_keys,capacity_Ah_k1,temperature_holdout_fold,1802,1802,0,38,38
+prediction_interval_keys,capacity_Ah_k1,voltage_window_holdout_fold,3827,3826,1,76,76
+prediction_interval_keys,delta_capacity_Ah,c_rate_holdout_fold,157,157,0,12,12
+prediction_interval_keys,delta_capacity_Ah,condition_fold,3827,3826,1,76,76
+prediction_interval_keys,delta_capacity_Ah,profile_holdout_fold,752,751,1,12,12
+prediction_interval_keys,delta_capacity_Ah,temperature_holdout_fold,1802,1802,0,38,38
+prediction_interval_keys,delta_capacity_Ah,voltage_window_holdout_fold,3827,3826,1,76,76

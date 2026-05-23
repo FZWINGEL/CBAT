@@ -252,14 +252,11 @@ def write_pulse_capacity_robustness_diagnostics(
         condition_corr,
         out_dir / "condition_level_correlation.md",
     )
-    _write_correlation_table_md(
-        "Bootstrap Correlation Summary",
-        [
-            "Bootstrap resampling is clustered by parameter_set.",
-            f"Resamples: `{bootstrap_resamples}`; seed: `{seed}`.",
-        ],
+    _write_bootstrap_summary_md(
         bootstrap_rows,
         out_dir / "bootstrap_correlation_summary.md",
+        resamples=bootstrap_resamples,
+        seed=seed,
     )
     _write_correlation_table_md(
         "Residualized Correlation",
@@ -744,6 +741,32 @@ def _write_correlation_table_md(
             f"`{row.get('pulse_column', '')}` | `{row.get('residual_column', '')}` | "
             f"{row.get('n', row.get('resamples', ''))} | {_fmt(row.get('pearson', row.get('mean')))} | "
             f"{_fmt(row.get('spearman', row.get('p50')))} |"
+        )
+    lines.append("")
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def _write_bootstrap_summary_md(
+    rows: list[dict[str, Any]],
+    path: Path,
+    *,
+    resamples: int,
+    seed: int,
+) -> None:
+    lines = [
+        "# Bootstrap Correlation Summary",
+        "",
+        "Bootstrap resampling is clustered by parameter_set.",
+        f"Requested resamples: `{resamples}`; seed: `{seed}`.",
+        "",
+        "| Level | Pulse | Residual | Correlation | Resamples | Mean | p05 | p50 | p95 |",
+        "|---|---|---|---|---:|---:|---:|---:|---:|",
+    ]
+    for row in rows:
+        lines.append(
+            f"| `{row['level']}` | `{row['pulse_column']}` | `{row['residual_column']}` | "
+            f"`{row['correlation']}` | {row['resamples']} | {_fmt(row['mean'])} | "
+            f"{_fmt(row['p05'])} | {_fmt(row['p50'])} | {_fmt(row['p95'])} |"
         )
     lines.append("")
     path.write_text("\n".join(lines), encoding="utf-8")

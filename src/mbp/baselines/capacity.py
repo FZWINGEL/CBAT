@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 import json
 import math
 from pathlib import Path
+import random
 from typing import Any
 
 import pyarrow as pa
@@ -961,6 +962,95 @@ def diagnose_target_consistency_report(
     _write_stress_ablation_summary_md(
         stress_gain_rows,
         out_dir / "stress_feature_ablation_summary.md",
+    )
+    return report
+
+
+def compare_prior_pulse_capacity_reports(
+    baseline_report_path: Path,
+    prior_pulse_report_path: Path,
+    out_dir: Path,
+    *,
+    seed: int = 42,
+    bootstrap_resamples: int = 1000,
+) -> dict[str, Any]:
+    """Compare F4 capacity baselines against prior-PULSE feature groups."""
+    _assert_pulse_feature_groups_are_leakage_safe()
+    baseline_report = json.loads(baseline_report_path.read_text(encoding="utf-8"))
+    prior_report = json.loads(prior_pulse_report_path.read_text(encoding="utf-8"))
+    out_dir.mkdir(parents=True, exist_ok=True)
+    plots_dir = out_dir / "plots"
+    plots_dir.mkdir(parents=True, exist_ok=True)
+
+    prior_predictions = _load_prediction_rows(prior_report)
+    baseline_predictions = _load_prediction_rows(baseline_report)
+    metadata = _condition_metadata_by_parameter_set(prior_report)
+    best_prior = _best_prior_pulse_groups(prior_report)
+    paired_rows = _paired_prior_pulse_condition_gain_rows(
+        prior_predictions,
+        best_prior,
+        metadata,
+    )
+    split_summary = _prior_pulse_split_gain_summary(paired_rows, bootstrap_resamples, seed)
+    c_rate_summary = [row for row in split_summary if row["split_name"] == "c_rate_holdout_fold"]
+    coverage_summary = _prior_pulse_coverage_summary(
+        baseline_report,
+        prior_report,
+        baseline_predictions,
+        prior_predictions,
+    )
+    claim_rows = _prior_pulse_predictive_claim_rows(split_summary, coverage_summary)
+
+    _write_csv(out_dir / "paired_condition_gain.csv", paired_rows)
+    _write_csv(out_dir / "split_level_gain_summary.csv", split_summary)
+    _write_csv(out_dir / "c_rate_gain_summary.csv", c_rate_summary)
+    _write_csv(out_dir / "coverage_effect_summary.csv", coverage_summary)
+    _write_csv(plots_dir / "paired_condition_gain.csv", paired_rows)
+    _write_csv(plots_dir / "split_level_gain_summary.csv", split_summary)
+    _write_csv(plots_dir / "c_rate_gain_summary.csv", c_rate_summary)
+    _write_csv(plots_dir / "coverage_effect_summary.csv", coverage_summary)
+    _write_prior_pulse_claim_readiness_md(
+        claim_rows,
+        split_summary,
+        coverage_summary,
+        out_dir / "prior_pulse_predictive_claim_readiness.md",
+    )
+
+    report = {
+        "status": "passed",
+        "schema_version": SCHEMA_VERSION,
+        "generated_at_utc": datetime.now(UTC).isoformat(),
+        "inputs": {
+            "baseline_report": str(baseline_report_path),
+            "prior_pulse_report": str(prior_pulse_report_path),
+        },
+        "outputs": {
+            "out_dir": str(out_dir),
+            "paired_condition_gain": str(out_dir / "paired_condition_gain.csv"),
+            "split_level_gain_summary": str(out_dir / "split_level_gain_summary.csv"),
+            "coverage_effect_summary": str(out_dir / "coverage_effect_summary.csv"),
+            "claim_readiness": str(out_dir / "prior_pulse_predictive_claim_readiness.md"),
+        },
+        "bootstrap_resamples": bootstrap_resamples,
+        "seed": seed,
+        "best_prior_pulse_groups": [
+            {
+                "target": target,
+                "split_name": split_name,
+                "feature_group": feature_group,
+            }
+            for (target, split_name), feature_group in sorted(best_prior.items())
+        ],
+        "row_counts": {
+            "paired_condition_gain_rows": len(paired_rows),
+            "split_summary_rows": len(split_summary),
+            "coverage_summary_rows": len(coverage_summary),
+        },
+        "claim_rows": claim_rows,
+    }
+    (out_dir / "prior_pulse_predictive_report.json").write_text(
+        json.dumps(report, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
     )
     return report
 
@@ -2889,6 +2979,370 @@ def _write_stress_feature_diagnostics_md(
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
+def _best_prior_pulse_groups(report: dict[str, Any]) -> dict[tuple[str, str], str]:
+    leaderboard = _leaderboard_rows(list(report["metrics"]))
+    grouped: dict[tuple[str, str, str], list[dict[str, Any]]] = defaultdict(list)
+    for row in leaderboard:
+        if row["run_scope"] != "primary" or row["feature_group"] not in PULSE_FEATURE_GROUPS:
+            continue
+        grouped[(str(row["target"]), str(row["split_name"]), str(row["feature_group"]))].append(row)
+    best: dict[tuple[str, str], tuple[str, float, float]] = {}
+    for (target, split_name, feature_group), rows in grouped.items():
+        condition_mean = _mean([float(row["condition_mean_mae"]) for row in rows])
+        worst = max(float(row["worst_condition_mae"]) for row in rows)
+        key = (target, split_name)
+        if key not in best or (condition_mean, worst) < (best[key][1], best[key][2]):
+            best[key] = (feature_group, condition_mean, worst)
+    return {key: value[0] for key, value in best.items()}
+
+
+def _paired_prior_pulse_condition_gain_rows(
+    prediction_rows: list[dict[str, Any]],
+    best_prior: dict[tuple[str, str], str],
+    metadata: dict[int, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    rows = []
+    for (target, split_name), prior_feature_group in sorted(best_prior.items()):
+        f4_errors = _condition_mae_by_fold_for_selection(
+            prediction_rows,
+            run_scope="primary",
+            model_level="L2_hist_gradient_boosting",
+            feature_group="F4_state_log_age_scalar",
+            target=target,
+            split_name=split_name,
+        )
+        pulse_errors = _condition_mae_by_fold_for_selection(
+            prediction_rows,
+            run_scope="primary",
+            model_level="L2_hist_gradient_boosting",
+            feature_group=prior_feature_group,
+            target=target,
+            split_name=split_name,
+        )
+        for key in sorted(set(f4_errors) & set(pulse_errors)):
+            heldout_fold, parameter_set = key
+            meta = metadata.get(parameter_set, {})
+            f4_error = f4_errors[key]["mae"]
+            pulse_error = pulse_errors[key]["mae"]
+            rows.append(
+                {
+                    "target": target,
+                    "split_name": split_name,
+                    "heldout_fold": heldout_fold,
+                    "parameter_set": parameter_set,
+                    "prior_pulse_feature_group": prior_feature_group,
+                    "f4_condition_mae": f4_error,
+                    "prior_pulse_condition_mae": pulse_error,
+                    "gain": f4_error - pulse_error,
+                    "n_intervals": pulse_errors[key]["n_intervals"],
+                    "nominal_temperature_C": meta.get("nominal_temperature_C"),
+                    "voltage_window_family": meta.get("voltage_window_family"),
+                    "nominal_charge_C_rate": meta.get("nominal_charge_C_rate"),
+                    "aging_mode": meta.get("aging_mode"),
+                }
+            )
+    return rows
+
+
+def _condition_mae_by_fold_for_selection(
+    prediction_rows: list[dict[str, Any]],
+    *,
+    run_scope: str,
+    model_level: str,
+    feature_group: str,
+    target: str,
+    split_name: str,
+) -> dict[tuple[int, int], dict[str, Any]]:
+    grouped: dict[tuple[int, int], list[float]] = defaultdict(list)
+    for row in prediction_rows:
+        if (
+            str(row["run_scope"]) != run_scope
+            or str(row["model_level"]) != model_level
+            or str(row["feature_group"]) != feature_group
+            or str(row["target"]) != target
+            or str(row["split_name"]) != split_name
+        ):
+            continue
+        y_true = _as_float(row.get("y_true"))
+        y_pred = _as_float(row.get("y_pred"))
+        if not math.isfinite(y_true) or not math.isfinite(y_pred):
+            continue
+        grouped[(int(row["heldout_fold"]), int(row["parameter_set"]))].append(abs(y_pred - y_true))
+    return {
+        key: {"mae": _mean(errors), "n_intervals": len(errors)}
+        for key, errors in grouped.items()
+        if errors
+    }
+
+
+def _prior_pulse_split_gain_summary(
+    paired_rows: list[dict[str, Any]],
+    bootstrap_resamples: int,
+    seed: int,
+) -> list[dict[str, Any]]:
+    summaries = []
+    grouped = _group_by(
+        paired_rows,
+        lambda row: (row["target"], row["split_name"], row["prior_pulse_feature_group"]),
+    )
+    for (target, split_name, feature_group), rows in sorted(grouped.items()):
+        gains = [float(row["gain"]) for row in rows]
+        boot = _bootstrap_gain_summary(rows, bootstrap_resamples, seed)
+        summaries.append(
+            {
+                "target": target,
+                "split_name": split_name,
+                "prior_pulse_feature_group": feature_group,
+                "n_conditions": len(rows),
+                "mean_gain": _mean(gains),
+                "median_gain": _median(gains),
+                "win_rate": sum(1 for gain in gains if gain > 0) / len(gains),
+                "worst_condition_gain": min(gains),
+                **boot,
+            }
+        )
+    return summaries
+
+
+def _bootstrap_gain_summary(
+    rows: list[dict[str, Any]],
+    resamples: int,
+    seed: int,
+) -> dict[str, float | int]:
+    by_condition = _group_by(rows, lambda row: int(row["parameter_set"]))
+    condition_ids = sorted(by_condition)
+    rng = random.Random(seed)
+    mean_gains = []
+    win_rates = []
+    for _ in range(max(1, resamples)):
+        sampled = [row for _cid in condition_ids for row in by_condition[rng.choice(condition_ids)]]
+        gains = [float(row["gain"]) for row in sampled]
+        mean_gains.append(_mean(gains))
+        win_rates.append(sum(1 for gain in gains if gain > 0) / len(gains))
+    return {
+        "bootstrap_resamples": resamples,
+        "gain_mean": _mean(mean_gains),
+        "gain_p05": _quantile(mean_gains, 0.05),
+        "gain_p50": _quantile(mean_gains, 0.50),
+        "gain_p95": _quantile(mean_gains, 0.95),
+        "win_rate_mean": _mean(win_rates),
+    }
+
+
+def _prior_pulse_coverage_summary(
+    baseline_report: dict[str, Any],
+    prior_report: dict[str, Any],
+    baseline_predictions: list[dict[str, Any]],
+    prior_predictions: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    rows = [
+        {
+            "scope": "report_row_counts",
+            "target": "all",
+            "split_name": "all",
+            "capacity_only_interval_count": baseline_report["row_counts"].get("selected_subset_rows"),
+            "pulse_covered_interval_count": prior_report["row_counts"].get("selected_subset_rows"),
+            "rows_dropped_by_requiring_prior_pulse": int(
+                baseline_report["row_counts"].get("selected_subset_rows", 0)
+            )
+            - int(prior_report["row_counts"].get("selected_subset_rows", 0)),
+            "capacity_only_parameter_sets": baseline_report["row_counts"].get("selected_parameter_sets"),
+            "pulse_covered_parameter_sets": prior_report["row_counts"].get("selected_parameter_sets"),
+        }
+    ]
+    baseline_keys = _prediction_interval_keys(
+        baseline_predictions,
+        feature_group="F4_state_log_age_scalar",
+    )
+    prior_keys = _prediction_interval_keys(
+        prior_predictions,
+        feature_group="F4_state_log_age_scalar",
+    )
+    for (target, split_name), base_keys in sorted(baseline_keys.items()):
+        pulse_keys = prior_keys.get((target, split_name), set())
+        dropped = base_keys - pulse_keys
+        rows.append(
+            {
+                "scope": "prediction_interval_keys",
+                "target": target,
+                "split_name": split_name,
+                "capacity_only_interval_count": len(base_keys),
+                "pulse_covered_interval_count": len(pulse_keys),
+                "rows_dropped_by_requiring_prior_pulse": len(dropped),
+                "capacity_only_parameter_sets": len({key[0] for key in base_keys}),
+                "pulse_covered_parameter_sets": len({key[0] for key in pulse_keys}),
+            }
+        )
+    return rows
+
+
+def _prediction_interval_keys(
+    rows: list[dict[str, Any]],
+    *,
+    feature_group: str,
+) -> dict[tuple[str, str], set[tuple[int, str, int, int]]]:
+    grouped: dict[tuple[str, str], set[tuple[int, str, int, int]]] = defaultdict(set)
+    for row in rows:
+        if (
+            str(row.get("run_scope")) != "primary"
+            or str(row.get("model_level")) != "L2_hist_gradient_boosting"
+            or str(row.get("feature_group")) != feature_group
+        ):
+            continue
+        key = (
+            str(row["target"]),
+            str(row["split_name"]),
+        )
+        grouped[key].add(
+            (
+                int(row["parameter_set"]),
+                str(row["cell_id"]),
+                int(row["checkup_k"]),
+                int(row["checkup_k_next"]),
+            )
+        )
+    return grouped
+
+
+def _prior_pulse_predictive_claim_rows(
+    split_summary: list[dict[str, Any]],
+    coverage_summary: list[dict[str, Any]],
+) -> list[dict[str, str]]:
+    capacity_c_rate = _summary_row(split_summary, "capacity_Ah_k1", "c_rate_holdout_fold")
+    capacity_temp = _summary_row(split_summary, "capacity_Ah_k1", "temperature_holdout_fold")
+    delta_c_rate = _summary_row(split_summary, "delta_capacity_Ah", "c_rate_holdout_fold")
+    coverage = coverage_summary[0] if coverage_summary else {}
+    capacity_supported = (
+        _as_float(capacity_c_rate.get("gain_p05")) > 0
+        and _as_float(capacity_temp.get("gain_p05")) > 0
+    )
+    delta_supported = _as_float(delta_c_rate.get("gain_p05")) > 0
+    return [
+        {
+            "claim": "Prior PULSE improves capacity_Ah_k1 under OOD splits",
+            "status": "supported" if capacity_supported else "partially_supported",
+            "evidence": (
+                f"C-rate gain mean {_format_diagnostic_value(capacity_c_rate.get('mean_gain'))}, "
+                f"bootstrap p05 {_format_diagnostic_value(capacity_c_rate.get('gain_p05'))}; "
+                f"temperature p05 {_format_diagnostic_value(capacity_temp.get('gain_p05'))}"
+            ),
+            "decision": "Allow a narrow level-prediction claim"
+            if capacity_supported
+            else "Keep as diagnostic until paired uncertainty is stronger",
+        },
+        {
+            "claim": "Prior PULSE improves delta_capacity_Ah",
+            "status": "supported" if delta_supported else "not_supported",
+            "evidence": (
+                f"C-rate delta gain mean {_format_diagnostic_value(delta_c_rate.get('mean_gain'))}, "
+                f"bootstrap p05 {_format_diagnostic_value(delta_c_rate.get('gain_p05'))}"
+            ),
+            "decision": "Do not claim fade-rate improvement" if not delta_supported else "Report cautiously",
+        },
+        {
+            "claim": "Coverage loss changes fold composition",
+            "status": "not_supported"
+            if int(coverage.get("rows_dropped_by_requiring_prior_pulse", 0)) <= 1
+            else "partially_supported",
+            "evidence": (
+                f"Dropped intervals: {coverage.get('rows_dropped_by_requiring_prior_pulse', 'NA')}; "
+                f"parameter sets: {coverage.get('pulse_covered_parameter_sets', 'NA')}"
+            ),
+            "decision": "Coverage loss is small but must be reported",
+        },
+        {
+            "claim": "Leakage safety",
+            "status": "supported",
+            "evidence": "Prior-PULSE groups include `pulse_1s_resistance_k` and forbid future PULSE targets.",
+            "decision": "Keep future PULSE state and deltas blocked.",
+        },
+    ]
+
+
+def _summary_row(
+    rows: list[dict[str, Any]],
+    target: str,
+    split_name: str,
+) -> dict[str, Any]:
+    return next(
+        (row for row in rows if row["target"] == target and row["split_name"] == split_name),
+        {},
+    )
+
+
+def _write_prior_pulse_claim_readiness_md(
+    claim_rows: list[dict[str, str]],
+    split_summary: list[dict[str, Any]],
+    coverage_summary: list[dict[str, Any]],
+    path: Path,
+) -> None:
+    lines = [
+        "# Prior-PULSE Capacity Predictive Claim Readiness",
+        "",
+        "This Milestone 0.9 report tests a narrow non-neural claim: prior PULSE",
+        "state at check-up `k` may improve `capacity_Ah_k1` prediction under",
+        "grouped validation. It does not authorize broad multimodal claims, future",
+        "PULSE leakage, EIS, sequence models, neural models, policy ranking, or CBAT.",
+        "",
+        "| Claim | Status | Evidence | Decision |",
+        "|---|---|---|---|",
+    ]
+    for row in claim_rows:
+        lines.append(
+            f"| {row['claim']} | `{row['status']}` | {row['evidence']} | {row['decision']} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Best Paired Gain Summary",
+            "",
+            "| Target | Split | Prior-PULSE group | Conditions | Mean gain | p05 | p50 | p95 | Win rate |",
+            "|---|---|---|---:|---:|---:|---:|---:|---:|",
+        ]
+    )
+    for row in split_summary:
+        lines.append(
+            f"| `{row['target']}` | `{row['split_name']}` | `{row['prior_pulse_feature_group']}` | "
+            f"{row['n_conditions']} | {_format_diagnostic_value(row['mean_gain'])} | "
+            f"{_format_diagnostic_value(row['gain_p05'])} | {_format_diagnostic_value(row['gain_p50'])} | "
+            f"{_format_diagnostic_value(row['gain_p95'])} | {_format_diagnostic_value(row['win_rate'])} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Coverage",
+            "",
+            "| Scope | Target | Split | Capacity-only intervals | PULSE-covered intervals | Dropped | Parameter sets |",
+            "|---|---|---|---:|---:|---:|---:|",
+        ]
+    )
+    for row in coverage_summary:
+        lines.append(
+            f"| `{row['scope']}` | `{row['target']}` | `{row['split_name']}` | "
+            f"{row['capacity_only_interval_count']} | {row['pulse_covered_interval_count']} | "
+            f"{row['rows_dropped_by_requiring_prior_pulse']} | {row['pulse_covered_parameter_sets']} |"
+        )
+    lines.append("")
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def _assert_pulse_feature_groups_are_leakage_safe() -> None:
+    for feature_group in PULSE_FEATURE_GROUPS:
+        fields = set(NUMERIC_FEATURES.get(feature_group, ()))
+        forbidden = fields & PULSE_FUTURE_LEAKAGE_FIELDS
+        if forbidden:
+            raise ValueError(
+                f"Feature group {feature_group} contains future PULSE leakage fields: {sorted(forbidden)}"
+            )
+
+
+def _group_by(rows: list[dict[str, Any]], key_fn: Any) -> dict[Any, list[dict[str, Any]]]:
+    grouped: dict[Any, list[dict[str, Any]]] = {}
+    for row in rows:
+        grouped.setdefault(key_fn(row), []).append(row)
+    return grouped
+
+
 def _format_gain_list(values: list[float | None]) -> str:
     return ", ".join(_format_diagnostic_value(value) for value in values)
 
@@ -3481,3 +3935,18 @@ def _median(values: list[float]) -> float:
     if len(ordered) % 2 == 1:
         return ordered[midpoint]
     return (ordered[midpoint - 1] + ordered[midpoint]) / 2.0
+
+
+def _quantile(values: list[float], q: float) -> float:
+    if not values:
+        raise ValueError("Cannot compute quantile of empty values.")
+    ordered = sorted(values)
+    if len(ordered) == 1:
+        return ordered[0]
+    pos = q * (len(ordered) - 1)
+    lo = int(math.floor(pos))
+    hi = int(math.ceil(pos))
+    if lo == hi:
+        return ordered[lo]
+    weight = pos - lo
+    return ordered[lo] * (1.0 - weight) + ordered[hi] * weight

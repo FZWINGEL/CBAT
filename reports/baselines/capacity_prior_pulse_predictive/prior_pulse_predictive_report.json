@@ -1,0 +1,101 @@
+{
+  "best_prior_pulse_groups": [
+    {
+      "feature_group": "C_P3_stress_pulse",
+      "split_name": "c_rate_holdout_fold",
+      "target": "capacity_Ah_k1"
+    },
+    {
+      "feature_group": "C_P2_log_age_pulse",
+      "split_name": "condition_fold",
+      "target": "capacity_Ah_k1"
+    },
+    {
+      "feature_group": "C_P0_state_time_pulse",
+      "split_name": "profile_holdout_fold",
+      "target": "capacity_Ah_k1"
+    },
+    {
+      "feature_group": "C_P3_stress_pulse",
+      "split_name": "temperature_holdout_fold",
+      "target": "capacity_Ah_k1"
+    },
+    {
+      "feature_group": "C_P2_log_age_pulse",
+      "split_name": "voltage_window_holdout_fold",
+      "target": "capacity_Ah_k1"
+    },
+    {
+      "feature_group": "C_P3_stress_pulse",
+      "split_name": "c_rate_holdout_fold",
+      "target": "delta_capacity_Ah"
+    },
+    {
+      "feature_group": "C_P3_stress_pulse",
+      "split_name": "condition_fold",
+      "target": "delta_capacity_Ah"
+    },
+    {
+      "feature_group": "C_P0_state_time_pulse",
+      "split_name": "profile_holdout_fold",
+      "target": "delta_capacity_Ah"
+    },
+    {
+      "feature_group": "C_P3_stress_pulse",
+      "split_name": "temperature_holdout_fold",
+      "target": "delta_capacity_Ah"
+    },
+    {
+      "feature_group": "C_P2_log_age_pulse",
+      "split_name": "voltage_window_holdout_fold",
+      "target": "delta_capacity_Ah"
+    }
+  ],
+  "bootstrap_resamples": 1000,
+  "claim_rows": [
+    {
+      "claim": "Prior PULSE improves capacity_Ah_k1 under OOD splits",
+      "decision": "Allow a narrow level-prediction claim",
+      "evidence": "C-rate gain mean 0.00669208, bootstrap p05 0.000718651; temperature p05 0.0010323",
+      "status": "supported"
+    },
+    {
+      "claim": "Prior PULSE improves delta_capacity_Ah",
+      "decision": "Do not claim fade-rate improvement",
+      "evidence": "C-rate delta gain mean -0.0057423, bootstrap p05 -0.0203466",
+      "status": "not_supported"
+    },
+    {
+      "claim": "Coverage loss changes fold composition",
+      "decision": "Coverage loss is small but must be reported",
+      "evidence": "Dropped intervals: 1; parameter sets: 76",
+      "status": "not_supported"
+    },
+    {
+      "claim": "Leakage safety",
+      "decision": "Keep future PULSE state and deltas blocked.",
+      "evidence": "Prior-PULSE groups include `pulse_1s_resistance_k` and forbid future PULSE targets.",
+      "status": "supported"
+    }
+  ],
+  "generated_at_utc": "2026-05-23T10:18:27.577832+00:00",
+  "inputs": {
+    "baseline_report": "reports/baselines/capacity_hgb50_focused_report.json",
+    "prior_pulse_report": "reports/baselines/capacity_with_prior_pulse_hgb50_report.json"
+  },
+  "outputs": {
+    "claim_readiness": "reports/baselines/capacity_prior_pulse_predictive/prior_pulse_predictive_claim_readiness.md",
+    "coverage_effect_summary": "reports/baselines/capacity_prior_pulse_predictive/coverage_effect_summary.csv",
+    "out_dir": "reports/baselines/capacity_prior_pulse_predictive",
+    "paired_condition_gain": "reports/baselines/capacity_prior_pulse_predictive/paired_condition_gain.csv",
+    "split_level_gain_summary": "reports/baselines/capacity_prior_pulse_predictive/split_level_gain_summary.csv"
+  },
+  "row_counts": {
+    "coverage_summary_rows": 11,
+    "paired_condition_gain_rows": 428,
+    "split_summary_rows": 10
+  },
+  "schema_version": "gate5.capacity_baseline.v1",
+  "seed": 42,
+  "status": "passed"
+}

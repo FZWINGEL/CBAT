@@ -886,6 +886,30 @@ def baseline_run_capacity(
     )
 
 
+@baseline_app.command("compare-prior-pulse-capacity")
+def baseline_compare_prior_pulse_capacity(
+    baseline_report: Path = typer.Option(..., "--baseline-report", help="Capacity baseline report without prior-PULSE feature groups."),
+    prior_pulse_report: Path = typer.Option(..., "--prior-pulse-report", help="Capacity baseline report with F4 and prior-PULSE feature groups."),
+    out_dir: Path = typer.Option(..., "--out-dir", help="Output directory for paired prior-PULSE predictive diagnostics."),
+    bootstrap_resamples: int = typer.Option(1000, "--bootstrap-resamples", help="Parameter-set bootstrap resamples."),
+    seed: int = typer.Option(42, "--seed", help="Bootstrap random seed."),
+) -> None:
+    """Compare F4 against prior-PULSE feature groups for capacity prediction."""
+    from mbp.baselines.capacity import compare_prior_pulse_capacity_reports
+
+    report = compare_prior_pulse_capacity_reports(
+        baseline_report,
+        prior_pulse_report,
+        out_dir,
+        bootstrap_resamples=bootstrap_resamples,
+        seed=seed,
+    )
+    typer.echo(
+        "Prior-PULSE capacity comparison generated: "
+        f"{report['row_counts']['paired_condition_gain_rows']} paired condition rows"
+    )
+
+
 @baseline_app.command("diagnose-capacity")
 def baseline_diagnose_capacity(
     report: Path = typer.Option(

@@ -36,6 +36,7 @@ Schema version prefix: `gate1.audit.v1`
 | `capacity_pulse_coupling_table` | Implemented | `mbp.coupling.pulse_capacity` | interval table path, PULSE target table path, canonical target policy, schema version |
 | `pulse_capacity_coupling_diagnostics` | Implemented | `mbp.coupling.pulse_capacity` | capacity report path, capacity prediction path, interval table path, PULSE target table path, residual/PULSE-growth correlation outputs |
 | `pulse_capacity_coupling_robustness` | Implemented | `mbp.coupling.pulse_capacity` | canonical model/feature/target selection, interval-level aggregation, condition-level aggregation, parameter-set bootstrap, residualized confound-control diagnostics |
+| `prior_pulse_capacity_predictive_comparison` | Implemented | `mbp.baselines.capacity` | capacity baseline report, prior-PULSE capacity report, paired condition-level gains, parameter-set bootstrap, coverage effects, leakage audit |
 
 ## Gate 2/3 Schema Contracts
 
@@ -54,3 +55,4 @@ Schema version prefix: `gate1.audit.v1`
 - `capacity_pulse_coupling_table` is one row per interval with finite capacity targets and canonical PULSE targets. It includes condition metadata, split labels, LOG_AGE EFC/calendar controls, quality flags, and schema version.
 - `pulse_capacity_coupling_diagnostics` joins capacity prediction residuals to canonical PULSE growth and reports Pearson/Spearman correlations plus grouped C-rate/cold-rate summaries. It is a prediction-row diagnostic only and does not authorize multimodal claims.
 - `pulse_capacity_coupling_robustness` filters to one canonical capacity model/feature/target, then reports interval-level and condition-level correlations, parameter-set bootstrap summaries, residualized confound-control correlations, subgroup summaries, and coupling claim-readiness.
+- `prior_pulse_capacity_predictive_comparison` compares F4 against the best prior-PULSE feature group on the same PULSE-covered interval population. It reports paired condition-level gains, split-level bootstrap intervals, coverage effects, and claim-readiness. Future PULSE state and PULSE deltas are forbidden as capacity inputs.

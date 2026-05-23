@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 0.8.1: Coupling robustness and confound-control diagnostics.
+Milestone 0.9: Non-neural capacity + prior-PULSE predictive baseline.
 
 Current state:
 - Gate 2b implementation and reports are committed.
@@ -37,6 +37,10 @@ Current state:
   Milestone 0.8.1 hardens those diagnostics with canonical-model selection,
   interval-level aggregation, condition-level aggregation, parameter-set
   bootstrap summaries, and simple confound-control residualization.
+  Milestone 0.9 tests a narrow non-neural predictive claim: prior PULSE state at
+  check-up `k` may improve `capacity_Ah_k1` under grouped validation. It keeps
+  `delta_capacity_Ah` as a secondary guardrail and does not authorize broad
+  multimodal claims.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 - LOG_AGE monotonicity has been triaged and propagated into interval quality
@@ -93,6 +97,11 @@ Allowed work:
 - condition-level residual correlation analysis
 - parameter-set bootstrap confidence intervals
 - simple non-neural confound-control diagnostics
+- non-neural capacity + prior-PULSE predictive baselines
+- prior PULSE state at check-up `k` only
+- grouped paired comparisons
+- bootstrap confidence intervals over parameter_set
+- coverage/missingness diagnostics
 
 Forbidden work:
 - EIS modeling
@@ -106,6 +115,8 @@ Forbidden work:
 - broad multimodal claims
 - capacity+PULSE predictive claims
 - PULSE scientific claims beyond scalar resistance baselines
+- future PULSE state as capacity input
+- PULSE deltas as capacity input features
 
 ## Coding Standards
 

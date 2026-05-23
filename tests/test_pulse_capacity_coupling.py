@@ -3,7 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 
 import pyarrow.parquet as pq
+import pytest
 
+import mbp.baselines.capacity as capacity_module
+from mbp.baselines.capacity import compare_prior_pulse_capacity_reports
 from mbp.baselines.capacity import run_capacity_baselines
 from mbp.coupling.pulse_capacity import (
     build_capacity_pulse_coupling_table,
@@ -119,3 +122,73 @@ def test_coupling_robustness_outputs_canonical_interval_condition_views(tmp_path
     assert (tmp_path / "robustness" / "bootstrap_correlation_summary.md").exists()
     assert (tmp_path / "robustness" / "residualized_correlation.md").exists()
     assert (tmp_path / "robustness" / "coupling_claim_readiness.md").exists()
+    bootstrap_md = (tmp_path / "robustness" / "bootstrap_correlation_summary.md").read_text(
+        encoding="utf-8"
+    )
+    assert "| Level | Pulse | Residual | Correlation | Resamples | Mean | p05 | p50 | p95 |" in bootstrap_md
+
+
+def test_prior_pulse_capacity_comparison_renders_paired_gains(tmp_path: Path) -> None:
+    pulse_summary, _, interval_path = _write_pulse_fixture(tmp_path)
+    subset_path = _write_subset_registry(interval_path, tmp_path)
+    pulse_targets = tmp_path / "pulse_targets.parquet"
+    build_pulse_target_table(pulse_summary, interval_path, pulse_targets)
+    baseline_report = tmp_path / "baseline_report.json"
+    baseline_predictions = tmp_path / "baseline_predictions.parquet"
+    prior_report = tmp_path / "prior_report.json"
+    prior_predictions = tmp_path / "prior_predictions.parquet"
+    run_capacity_baselines(
+        interval_path,
+        subset_path,
+        baseline_report,
+        baseline_predictions,
+        model_levels=["L2_hist_gradient_boosting"],
+        feature_groups=["F4_state_log_age_scalar"],
+        targets=["capacity_Ah_k1", "delta_capacity_Ah"],
+        split_views=["condition_fold"],
+        hgb_max_iter=2,
+    )
+    run_capacity_baselines(
+        interval_path,
+        subset_path,
+        prior_report,
+        prior_predictions,
+        pulse_targets_path=pulse_targets,
+        model_levels=["L2_hist_gradient_boosting"],
+        feature_groups=["F4_state_log_age_scalar", "C_P0_state_time_pulse"],
+        targets=["capacity_Ah_k1", "delta_capacity_Ah"],
+        split_views=["condition_fold"],
+        hgb_max_iter=2,
+    )
+
+    report = compare_prior_pulse_capacity_reports(
+        baseline_report,
+        prior_report,
+        tmp_path / "compare",
+        bootstrap_resamples=10,
+        seed=11,
+    )
+
+    assert report["row_counts"]["paired_condition_gain_rows"] > 0
+    assert (tmp_path / "compare" / "paired_condition_gain.csv").exists()
+    assert (tmp_path / "compare" / "split_level_gain_summary.csv").exists()
+    assert (tmp_path / "compare" / "coverage_effect_summary.csv").exists()
+    assert (tmp_path / "compare" / "prior_pulse_predictive_claim_readiness.md").exists()
+
+
+def test_prior_pulse_comparison_leakage_guard_catches_future_fields(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setitem(
+        capacity_module.NUMERIC_FEATURES,
+        "C_P0_state_time_pulse",
+        (*capacity_module.NUMERIC_FEATURES["C_P0_state_time_pulse"], "delta_pulse_1s_resistance"),
+    )
+
+    with pytest.raises(ValueError, match="future PULSE leakage"):
+        compare_prior_pulse_capacity_reports(
+            tmp_path / "missing_baseline.json",
+            tmp_path / "missing_prior.json",
+            tmp_path / "compare",
+        )
