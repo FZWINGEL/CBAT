@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 from pathlib import Path
 
 import pyarrow as pa
@@ -74,6 +75,9 @@ def test_pulse_baseline_l0_runs_grouped_splits(tmp_path: Path) -> None:
     assert (tmp_path / "pulse" / "leaderboard.csv").exists()
     assert (tmp_path / "pulse" / "pulse_diagnostics.md").exists()
     assert (tmp_path / "pulse" / "pulse_claim_readiness.md").exists()
+    assert (tmp_path / "pulse" / "plots" / "pulse_target_comparison.csv").exists()
+    assert (tmp_path / "pulse" / "plots" / "pulse_1s_vs_10ms_comparison.csv").exists()
+    assert (tmp_path / "pulse" / "plots" / "pulse_delta_vs_k1_comparison.csv").exists()
 
 
 def test_pulse_baseline_alignment_threshold_filters_rows(tmp_path: Path) -> None:
@@ -96,6 +100,43 @@ def test_pulse_baseline_alignment_threshold_filters_rows(tmp_path: Path) -> None
 
     assert report["max_alignment_delta_s"] == 12.0
     assert report["row_counts"]["selected_subset_rows"] == 12
+
+
+def test_pulse_baseline_renders_target_robustness_tables(tmp_path: Path) -> None:
+    pulse_summary, _, interval_path = _write_pulse_fixture(tmp_path)
+    subset_path = _write_subset_registry(interval_path, tmp_path)
+    targets_path = tmp_path / "pulse_targets.parquet"
+    build_pulse_target_table(pulse_summary, interval_path, targets_path)
+
+    run_pulse_baselines(
+        interval_path,
+        subset_path,
+        targets_path,
+        tmp_path / "pulse_multi_target_report.json",
+        tmp_path / "pulse_multi_target_predictions.parquet",
+        model_levels=["L0_persistence"],
+        feature_groups=["P0_persistence"],
+        targets=[
+            "delta_pulse_1s_resistance",
+            "pulse_1s_resistance_k1",
+            "delta_pulse_10ms_resistance",
+            "pulse_10ms_resistance_k1",
+        ],
+        split_views=["condition_fold"],
+    )
+
+    target_rows = list(csv.DictReader((tmp_path / "pulse_multi_target" / "plots" / "pulse_target_comparison.csv").open()))
+    pair_rows = list(csv.DictReader((tmp_path / "pulse_multi_target" / "plots" / "pulse_1s_vs_10ms_comparison.csv").open()))
+    delta_rows = list(csv.DictReader((tmp_path / "pulse_multi_target" / "plots" / "pulse_delta_vs_k1_comparison.csv").open()))
+
+    assert {row["target"] for row in target_rows} == {
+        "delta_pulse_1s_resistance",
+        "pulse_1s_resistance_k1",
+        "delta_pulse_10ms_resistance",
+        "pulse_10ms_resistance_k1",
+    }
+    assert pair_rows
+    assert delta_rows
 
 
 def test_pulse_feature_groups_exclude_eis_fields() -> None:

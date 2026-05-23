@@ -384,6 +384,9 @@ def render_pulse_artifacts(report: dict[str, Any], report_dir: Path) -> None:
     leaderboard = _leaderboard_rows(list(report["metrics"]))
     _write_csv(report_dir / "leaderboard.csv", leaderboard)
     _write_csv(plots_dir / "pulse_target_coverage_by_split.csv", _coverage_by_split_rows(report["metrics"]))
+    _write_csv(plots_dir / "pulse_target_comparison.csv", _target_comparison_rows(leaderboard))
+    _write_csv(plots_dir / "pulse_1s_vs_10ms_comparison.csv", _paired_target_rows(leaderboard, "1s", "10ms"))
+    _write_csv(plots_dir / "pulse_delta_vs_k1_comparison.csv", _paired_target_rows(leaderboard, "delta", "k1"))
     _write_summary(report, leaderboard, report_dir / "baseline_summary.md")
     _write_diagnostics(report, leaderboard, report_dir / "pulse_diagnostics.md")
     _write_claim_readiness(report, leaderboard, report_dir / "pulse_claim_readiness.md")
@@ -468,6 +471,69 @@ def _coverage_by_split_rows(metrics: list[dict[str, Any]]) -> list[dict[str, Any
         }
         for row in metrics
     ]
+
+
+def _target_comparison_rows(leaderboard: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    primary = [row for row in leaderboard if row["run_scope"] == "primary"]
+    grouped: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    for row in primary:
+        grouped[(row["target"], row["split_name"])].append(row)
+    for (target, split_name), group in sorted(grouped.items()):
+        best = min(group, key=lambda row: float(row["condition_mean_mae"]))
+        rows.append(
+            {
+                "target": target,
+                "split_name": split_name,
+                "best_model_level": best["model_level"],
+                "best_feature_group": best["feature_group"],
+                "condition_mean_mae": best["condition_mean_mae"],
+                "worst_condition_mae": best["worst_condition_mae"],
+                "test_rows": best["test_rows"],
+            }
+        )
+    return rows
+
+
+def _paired_target_rows(leaderboard: list[dict[str, Any]], left_label: str, right_label: str) -> list[dict[str, Any]]:
+    comparison = _target_comparison_rows(leaderboard)
+    by_split: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
+    for row in comparison:
+        target = str(row["target"])
+        if _target_pair_label(target, left_label):
+            by_split[row["split_name"]][left_label] = row
+        elif _target_pair_label(target, right_label):
+            by_split[row["split_name"]][right_label] = row
+    rows: list[dict[str, Any]] = []
+    for split_name, paired in sorted(by_split.items()):
+        left = paired.get(left_label)
+        right = paired.get(right_label)
+        rows.append(
+            {
+                "split_name": split_name,
+                f"{left_label}_target": left["target"] if left else "missing",
+                f"{left_label}_condition_mean_mae": left["condition_mean_mae"] if left else "missing",
+                f"{left_label}_best_model_level": left["best_model_level"] if left else "missing",
+                f"{left_label}_best_feature_group": left["best_feature_group"] if left else "missing",
+                f"{right_label}_target": right["target"] if right else "missing",
+                f"{right_label}_condition_mean_mae": right["condition_mean_mae"] if right else "missing",
+                f"{right_label}_best_model_level": right["best_model_level"] if right else "missing",
+                f"{right_label}_best_feature_group": right["best_feature_group"] if right else "missing",
+            }
+        )
+    return rows
+
+
+def _target_pair_label(target: str, label: str) -> bool:
+    if label == "1s":
+        return "1s" in target
+    if label == "10ms":
+        return "10ms" in target
+    if label == "delta":
+        return target.startswith("delta_")
+    if label == "k1":
+        return target.endswith("_k1")
+    return False
 
 
 def _prediction_rows(
@@ -560,6 +626,9 @@ def _passes_alignment_threshold(row: dict[str, Any], threshold_s: float) -> bool
 def _write_claim_readiness(report: dict[str, Any], leaderboard: list[dict[str, Any]], path: Path) -> None:
     c_rate = [row for row in leaderboard if row["run_scope"] == "primary" and row["split_name"] == "c_rate_holdout_fold"]
     best_c_rate = min(c_rate, key=lambda row: float(row["condition_mean_mae"])) if c_rate else None
+    stress_rows = [row for row in leaderboard if row["run_scope"] == "primary" and row["feature_group"] == "P5_stress_v1_1"]
+    state_rows = [row for row in leaderboard if row["run_scope"] == "primary" and row["feature_group"] == "P2_state_capacity"]
+    secondary_targets = sorted({row["target"] for row in leaderboard if row["target"] != "delta_pulse_1s_resistance"})
     lines = [
         "# PULSE Claim Readiness",
         "",
@@ -567,9 +636,10 @@ def _write_claim_readiness(report: dict[str, Any], leaderboard: list[dict[str, A
         "",
         "| Claim area | Status | Evidence | Decision |",
         "|---|---|---|---|",
-        "| Canonical RT/50 coverage | partially_supported | Target availability is recorded in `row_counts` and PULSE QA reports. | Keep reporting missingness. |",
-        "| Alignment robustness | diagnostic_only | Alignment-threshold sensitivity is required before a PULSE claim. | Do not claim yet. |",
-        "| Direction averaging robustness | diagnostic_only | Direction-specific tables are diagnostic until policy v2. | Compare charge/discharge. |",
+        "| Canonical RT/50 coverage | supported_for_scalar_diagnostics | Target availability is recorded in `row_counts` and PULSE QA reports. | Keep reporting missingness. |",
+        "| Alignment robustness | partially_supported | Alignment-threshold sensitivity is required before a PULSE claim. | Keep all/threshold comparisons visible. |",
+        "| Direction handling robustness | partially_supported | Direction-specific tables are diagnostic until policy v2. | Keep `mean` canonical. |",
+        "| Missingness limitations | partially_supported | Missing canonical endpoints are listed in audit reports. | Report with every claim-readiness memo. |",
         "| C-rate resistance prediction | diagnostic_only | "
         + (
             f"Best C-rate row `{best_c_rate['model_level']} + {best_c_rate['feature_group']}` has condition-mean MAE `{float(best_c_rate['condition_mean_mae']):.6g}`."
@@ -577,7 +647,18 @@ def _write_claim_readiness(report: dict[str, Any], leaderboard: list[dict[str, A
             else "No C-rate row."
         )
         + " | Harden before claim. |",
-        "| Scientific PULSE claim | blocked_by_alignment | Large alignment deltas remain visible warnings. | No claim yet. |",
+        "| Stress-feature contribution | diagnostic_only | "
+        + (f"`P5_stress_v1_1` appears in `{len(stress_rows)}` primary leaderboard rows." if stress_rows else "No P5 rows.")
+        + " | Compare against state/nominal rows. |",
+        "| Capacity-state contribution | diagnostic_only | "
+        + (f"`P2_state_capacity` appears in `{len(state_rows)}` primary leaderboard rows." if state_rows else "No P2 rows.")
+        + " | Keep as baseline component. |",
+        "| Secondary target readiness | "
+        + ("partially_supported" if secondary_targets else "diagnostic_only")
+        + " | "
+        + (f"Evaluated targets: `{', '.join(secondary_targets)}`." if secondary_targets else "Secondary targets not evaluated in this report.")
+        + " | Compare 1s/10ms and delta/k1 reports. |",
+        "| Claim status | diagnostic_only | Scalar PULSE reports are generated, but target robustness must be synthesized. | No capacity+PULSE multimodal claim. |",
         "",
     ]
     path.write_text("\n".join(lines), encoding="utf-8")
@@ -630,7 +711,7 @@ def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
         path.write_text("", encoding="utf-8")
         return
     with path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(rows[0].keys()))
+        writer = csv.DictWriter(handle, fieldnames=list(rows[0].keys()), lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
 

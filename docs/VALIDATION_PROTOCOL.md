@@ -16,8 +16,10 @@ authorizes PULSE QA, canonical PULSE target extraction, PULSE interval target
 tables, and scalar grouped PULSE resistance baselines. Milestone 0.7.1 hardens
 that endpoint with alignment-threshold sensitivity, direction-specific target
 tables, canonical-target missingness reports, and scalar resistance baseline
-sensitivity runs. It does not authorize EIS modeling, capacity+PULSE multimodal
-claims, sequence models, neural models, policy ranking, or CBAT.
+sensitivity runs. Milestone 0.7.2 evaluates secondary PULSE targets and
+claim-readiness for scalar resistance baselines. It does not authorize EIS
+modeling, capacity+PULSE multimodal claims, sequence models, neural models,
+policy ranking, or CBAT.
 
 Required split discipline:
 
@@ -265,6 +267,30 @@ Milestone 0.7.1 alignment policy:
   cell/parameter-set counts, and split coverage.
 - Large-alignment rows are still warnings, not silent exclusions, unless a
   later PULSE target policy changes the canonical target definition.
+
+Required Milestone 0.7.2 PULSE robustness artifacts:
+
+- `reports/baselines/pulse_resistance_l0_l3/pulse_claim_readiness.md`
+- `reports/baselines/pulse_resistance_target_robustness_report.json`
+- `reports/baselines/pulse_resistance_target_robustness/leaderboard.csv`
+- `reports/baselines/pulse_resistance_target_robustness/plots/pulse_target_comparison.csv`
+- `reports/baselines/pulse_resistance_target_robustness/plots/pulse_1s_vs_10ms_comparison.csv`
+- `reports/baselines/pulse_resistance_target_robustness/plots/pulse_delta_vs_k1_comparison.csv`
+- `reports/baselines/pulse_resistance_alignment_robustness.md`
+- `reports/baselines/pulse_resistance_l0_l3/pulse_direction_policy_summary.md`
+- `reports/audit/pulse_missingness_interpretation.md`
+- `docs/experiments/2026-05-23_pulse_target_robustness_decision.md`
+
+Milestone 0.7.2 target policy:
+
+- `delta_pulse_1s_resistance` remains the canonical first PULSE transition
+  target unless target robustness shows a clear replacement.
+- `delta_pulse_10ms_resistance`, `pulse_1s_resistance_k1`, and
+  `pulse_10ms_resistance_k1` may be evaluated as scalar diagnostic targets.
+- k1 resistance-level targets must be interpreted as state-tracking targets,
+  not direct transition prediction.
+- Direction-specific claims remain blocked; current RT/50 `mean` is documented
+  as effectively equivalent to `charge` in the available generated target table.
 
 Blocked until later milestones:
 

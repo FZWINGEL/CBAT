@@ -79,6 +79,12 @@ Milestone 0.7.1 alignment-threshold sensitivity may filter baselines with
 `--max-alignment-delta-s`. These filtered runs are diagnostics; they do not
 change the canonical target unless a later policy version adopts a threshold.
 
+Milestone 0.7.2 direction robustness found that, for the current RT/50 context,
+`direction=mean` and `direction=charge` are equivalent in the generated target
+tables because finite adjacent RT/50 discharge interval deltas are unavailable.
+This does not authorize direction-specific claims; it documents that the current
+canonical RT/50 mean target is effectively RT-charge in the available data.
+
 ## Missingness Policy
 
 The target table keeps one row per interval and records missing canonical

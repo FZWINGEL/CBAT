@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 0.7.1: PULSE alignment, direction, and target-coverage hardening.
+Milestone 0.7.2: PULSE target robustness and claim-readiness finalization.
 
 Current state:
 - Gate 2b implementation and reports are committed.
@@ -28,10 +28,12 @@ Current state:
   metrics are implemented.
 - Milestone 0.5c synthesis and claim-readiness artifacts are committed.
 - Milestone 0.7 opened a scoped PULSE evidence stream after the LOG_AGE-only
-  C-rate delta pass failed to beat the F4 threshold. Milestone 0.7.1 hardens
+  C-rate delta pass failed to beat the F4 threshold. Milestone 0.7.1 hardened
   that stream with alignment-threshold sensitivity, direction-specific target
   extraction, canonical-target missingness reports, and scalar resistance
-  baseline sensitivity runs.
+  baseline sensitivity runs. Milestone 0.7.2 finalizes target robustness and
+  claim-readiness for scalar PULSE resistance baselines before any coupling or
+  multimodal work.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 - LOG_AGE monotonicity has been triaged and propagated into interval quality
@@ -74,6 +76,9 @@ Allowed work:
 - PULSE alignment-threshold sensitivity
 - PULSE direction-specific QA
 - PULSE target coverage diagnostics
+- PULSE target robustness diagnostics
+- secondary PULSE target baselines
+- PULSE claim-readiness summaries
 - PULSE interval target table construction
 - PULSE resistance baselines
 

@@ -32,6 +32,7 @@ Schema version prefix: `gate1.audit.v1`
 | `pulse_alignment_sensitivity_report` | Implemented | `mbp.data.products.pulse_targets` | PULSE summary path, pulse target table path, interval table path, canonical context, alignment thresholds, retained coverage |
 | `pulse_missingness_reports` | Implemented | `mbp.data.products.pulse_targets` | PULSE target table path, interval table path, missing endpoint rows, condition groupings, split groupings |
 | `pulse_resistance_baseline_report` | Implemented | `mbp.baselines.pulse` | interval table path, interval subset registry path, PULSE target table path, optional stress-feature sidecar, grouped split view, target coverage |
+| `pulse_target_robustness_report` | Implemented | `mbp.baselines.pulse` | PULSE baseline report path, scalar target list, grouped split view, 1s/10ms comparisons, delta/k1 comparisons, claim-readiness memo |
 
 ## Gate 2/3 Schema Contracts
 
@@ -46,3 +47,4 @@ Schema version prefix: `gate1.audit.v1`
 - `pulse_alignment_sensitivity_report` records canonical alignment-delta summaries and retained interval/cell/parameter-set/split coverage under 6h, 12h, 24h, 36h, and all-row thresholds.
 - `pulse_missingness_reports` record missing canonical PULSE endpoints by interval, parameter-set condition, C-rate holdout fold, and profile holdout fold.
 - `PULSE_PREDICTION_SCHEMA` records row-level scalar PULSE resistance baseline predictions. Generated prediction Parquet remains ignored by default; JSON/CSV/markdown report artifacts are trackable.
+- `pulse_target_robustness_report` reuses the scalar PULSE baseline report schema and adds rendered comparison CSVs for target family, 1s-vs-10ms behavior, and delta-vs-k1 behavior.
