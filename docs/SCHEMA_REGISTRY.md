@@ -11,7 +11,7 @@ Schema version prefix: `gate1.audit.v1`
 | `known_issues.csv` | Placeholder implemented | `mbp.audit.known_issues` | issue ID, severity, status, evidence |
 | `cell_condition_table` | Implemented | `mbp.data.luh_blank.parse_cfg` | source files, parser version, schema version, voltage-window family |
 | `checkup_event_table` | Implemented | `mbp.data.luh_blank.parse_eoc` | source files, parser version, schema version |
-| `run_event_table` | Not implemented | `mbp.data.products.run_event_table` | source files, parser version, schema version |
+| `run_event_table_v1` | Implemented | `mbp.data.products.run_events` | interval table path, LOG_AGE path, current-sign policy, schema version |
 | `modality_table_eis` | Implemented | `mbp.data.luh_blank.parse_eis` | source files, parser version, EIS validity masks |
 | `modality_table_pulse` | Implemented | `mbp.data.luh_blank.parse_pulse` | source files, parser version, pulse provenance |
 | `modality_table_log_age` | Implemented | `mbp.data.luh_blank.parse_log` | source archive, source file, cohort exclusion report, diagnostic masking rules |
@@ -50,6 +50,8 @@ Schema version prefix: `gate1.audit.v1`
 | `semi_empirical_capacity_report` | Implemented | `mbp.baselines.semi_empirical` | interval table path, interval subset registry path, stress-feature sidecar path, SE0-SE4 feature policy, grouped split view |
 | `replicate_uncertainty_diagnostics` | Implemented | `mbp.analysis.replicate_uncertainty` | interval table path, capacity report path, capacity prediction path, condition-triplet spread, empirical tolerance intervals |
 | `capacity_calibration_diagnostics` | Implemented | `mbp.analysis.calibration` | capacity report path, capacity prediction path, replicate-spread table, grouped calibration method, no-test-leakage calibration source |
+| `interval_sequence_features_v1` | Implemented | `mbp.data.products.run_events` | run-event table path, interval table path, shuffle seed, feature policy version, schema version |
+| `sequence_value_diagnostics` | Implemented | `mbp.baselines.sequence_value` | sequence-value capacity report path, stress baseline report path, aggregate/order/shuffled comparisons, claim-readiness |
 
 ## Gate 2/3 Schema Contracts
 
@@ -81,3 +83,6 @@ Schema version prefix: `gate1.audit.v1`
 - `semi_empirical_capacity_report` records non-neural ridge-style semi-empirical stress comparators. Generated prediction Parquet remains ignored; JSON/CSV/Markdown reports are trackable.
 - `replicate_uncertainty_diagnostics` records condition-triplet spread, empirical min/max tolerance intervals, model error versus replicate spread, C-rate replicate uncertainty, and conservative uncertainty claim-readiness.
 - `capacity_calibration_diagnostics` records raw HGB quantile coverage, split-conformal coverage, stressor-family conformal coverage, replicate-hybrid interval diagnostics, coverage by split/condition, width summaries, C-rate calibration summaries, and conservative calibration claim-readiness.
+- `RUN_EVENT_TABLE_V1_SCHEMA` records LOG_AGE-derived contiguous charge/discharge/rest/unknown event segments for each interval. The builder streams the full LOG_AGE table by row group and writes events in Parquet batches to avoid materializing the source or event table in memory.
+- `INTERVAL_SEQUENCE_FEATURES_V1_SCHEMA` is one row per interval with aggregate event counts/durations, order-aware transition and stress-position summaries, and deterministic shuffled-order controls. It excludes target-derived capacity rates.
+- `sequence_value_diagnostics` compares aggregate event features, order-aware features, shuffled-order controls, and timestamp-weighted stress baselines under grouped non-neural capacity validation. It is a falsification gate and does not authorize sequence models unless order-aware features beat aggregate and shuffled controls.

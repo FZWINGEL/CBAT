@@ -95,6 +95,14 @@ does not authorize neural models, sequence models, CBAT, DRT, EIS embeddings,
 policy ranking, capacity+PULSE+EIS architecture work, causal/mechanistic
 claims, or calibrated uncertainty claims unless grouped coverage passes without
 test-residual leakage.
+Milestone 2.4 authorizes LOG_AGE-derived run-event data products,
+event-segmentation QA, interval sequence-feature sidecars, shuffled-order
+falsification controls, and aggregate-versus-order-aware non-neural grouped
+capacity baselines. It does not authorize neural sequence models,
+transformers, CBAT, DRT, EIS embeddings, policy ranking,
+capacity+PULSE+EIS architecture work, causal/mechanistic claims, or sequence
+model readiness claims unless order-aware features beat aggregate and shuffled
+controls under grouped validation.
 
 Required split discipline:
 
@@ -260,6 +268,19 @@ Required Milestone 2.3 grouped calibration artifacts:
 - `reports/analysis/calibration_capacity/calibration_claim_readiness.md`
 - `docs/experiments/2026-05-23_grouped_calibration_replicate_uncertainty.md`
 
+Required Milestone 2.4 temporal-history artifacts:
+
+- `reports/audit/run_event_qa_report.json`
+- `reports/audit/run_event_coverage.csv`
+- `reports/audit/sequence_feature_qa_report.json`
+- `reports/baselines/capacity_sequence_value_hgb50_report.json`
+- `reports/baselines/capacity_sequence_value_hgb50/sequence_value_diagnostics.md`
+- `reports/baselines/capacity_sequence_value_hgb50/sequence_value_claim_readiness.md`
+- `reports/baselines/capacity_sequence_value_hgb50/plots/aggregate_vs_order_gain.csv`
+- `reports/baselines/capacity_sequence_value_hgb50/plots/order_vs_shuffled_gain.csv`
+- `reports/baselines/capacity_sequence_value_hgb50/plots/c_rate_sequence_value.csv`
+- `docs/experiments/2026-05-23_temporal_history_value_gate.md`
+
 Required Milestone 1.2 checks:
 
 - `mbp report build-manuscript-assets`
@@ -311,6 +332,18 @@ Milestone 2.2 validation commands:
 Milestone 2.3 validation commands:
 
 - `mbp analysis calibrate-capacity`
+- `ruff check . --no-cache`
+- `pytest -p no:cacheprovider`
+- `git diff --check`
+
+Milestone 2.4 validation commands:
+
+- `mbp features build-run-events`
+- `mbp features run-events-qa`
+- `mbp features build-sequence-features`
+- `mbp features sequence-qa`
+- `mbp baseline run-capacity` with F14-F17 sequence-value feature groups
+- `mbp baseline diagnose-sequence-value`
 - `ruff check . --no-cache`
 - `pytest -p no:cacheprovider`
 - `git diff --check`

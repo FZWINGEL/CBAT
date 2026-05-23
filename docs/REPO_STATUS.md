@@ -11,8 +11,8 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 2.3: Grouped calibration and replicate-aware
-uncertainty gate**.
+The repository is in **Milestone 2.4: Temporal history value and run-event data
+product gate**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -61,6 +61,10 @@ work.
 Milestone 2.3 evaluates raw HGB quantile coverage, grouped conformal
 calibration, stressor-family conformal calibration, and replicate-aware hybrid
 interval diagnostics before any calibrated-uncertainty claim is allowed.
+Milestone 2.4 builds a LOG_AGE-derived run-event table and interval
+sequence-feature sidecar, then tests aggregate event summaries, order-aware
+features, and shuffled-order controls under grouped non-neural capacity
+baselines before any sequence-model work is allowed.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -191,6 +195,23 @@ Current state:
   undercovered. Conformal methods improve mean coverage, but C-rate coverage
   remains below target, so no global calibrated-uncertainty claim is
   authorized.
+- Milestone 2.4 is implemented and run. `mbp features build-run-events`
+  streams the full LOG_AGE Parquet row-group by row-group and writes
+  `run_event_table_v1.parquet` without materializing the 904M-row source table
+  or 79M-row event table in memory. The real run processed 899,831,845
+  interval-window LOG_AGE rows and wrote 79,328,229 run-event rows.
+- Run-event QA covers all 3,827 intervals but is in warning status because
+  751 intervals have event-duration sums more than 24 h from the interval
+  duration. This is reported as a real data-product limitation rather than
+  hidden or treated as a clean pass.
+- `interval_sequence_features_v1.parquet` contains 3,827 rows and passes
+  sequence-feature QA with no missing intervals, no NaN counts, and a
+  target-derived-rate leakage check marked passed.
+- The Milestone 2.4 non-neural HGB-50 sequence-value comparison does not
+  support temporal order value. Order-aware features do not beat aggregate
+  event features overall, do not beat shuffled-order controls overall, do not
+  beat the timestamp-weighted stress baseline overall, and do not improve the
+  C-rate view. Sequence models remain blocked.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -232,6 +253,9 @@ Small audit sidecars that are referenced by documentation are tracked:
 - `reports/audit/eis_claim_readiness.md`
 - `reports/audit/eis_target_qa_report.json`
 - `reports/audit/eis_target_coverage.csv`
+- `reports/audit/run_event_qa_report.json`
+- `reports/audit/run_event_coverage.csv`
+- `reports/audit/sequence_feature_qa_report.json`
 
 The large Parquet outputs remain local generated artifacts:
 
@@ -246,6 +270,8 @@ The large Parquet outputs remain local generated artifacts:
 | `data/interim/interval_stress_features_v1_1.parquet` | 3,827 | ignored |
 | `data/interim/eis_feature_table_v1.parquet` | 3,983 | ignored |
 | `data/interim/eis_target_table_v1.parquet` | 3,827 | ignored |
+| `data/interim/run_event_table_v1.parquet` | 79,328,229 | ignored |
+| `data/interim/interval_sequence_features_v1.parquet` | 3,827 | ignored |
 | `reports/audit/raw_log_archive_inventory.parquet` | 541 | ignored |
 
 Milestone 0.5 generated predictions are also ignored by default:
@@ -1445,7 +1471,7 @@ Latest validation run:
 All checks passed.
 
 .venv/bin/pytest -p no:cacheprovider
-128 passed.
+131 passed.
 
 git diff --check
 passed.
@@ -1469,6 +1495,28 @@ Milestone 2.3 report command was also run successfully:
 ```text
 mbp analysis calibrate-capacity
 Capacity calibration report generated: 96 split-level rows
+```
+
+Milestone 2.4 report commands were also run successfully:
+
+```text
+mbp features build-run-events
+Run-event table generated: 79328229 rows written to data/interim/run_event_table_v1.parquet
+
+mbp features run-events-qa
+Run-event QA warning: rows=79328229 covered=3827
+
+mbp features build-sequence-features
+Sequence-feature table generated: 3827 rows written to data/interim/interval_sequence_features_v1.parquet
+
+mbp features sequence-qa
+Sequence-feature QA passed: rows=3827
+
+mbp baseline run-capacity
+Capacity baseline report generated: 288 metric rows written to reports/baselines/capacity_sequence_value_hgb50_report.json
+
+mbp baseline diagnose-sequence-value
+Sequence-value diagnostics generated: 24 aggregate/order rows
 ```
 
 Milestone 2.1.1 report commands were also run successfully:
@@ -1518,13 +1566,15 @@ The previous `datetime.utcnow()` deprecation warning in
 
 ## Recommended Next Step
 
-Review the **Milestone 2.3 Grouped Calibration And Replicate-Aware Uncertainty
-Gate** outputs. Raw HGB quantiles remain undercovered, grouped conformal
-calibration improves mean coverage but does not solve C-rate coverage, and
-replicate-aware hybrid intervals remain diagnostic rather than a validated
-calibrated-uncertainty result.
+Review the **Milestone 2.4 Temporal History Value And Run-Event Data Product
+Gate** outputs. The real full-data run-event table and sequence-feature sidecar
+exist, but event-duration QA is warning-level and temporal order does not beat
+aggregate, shuffled, or stress baselines overall. Sequence models remain
+blocked.
 
-The next technical step should stay baseline-first and claim-gated. Do not jump
-directly to neural models, sequence models, CBAT, DRT, EIS embeddings, policy
-ranking, capacity+PULSE+EIS multimodal models, calibrated-uncertainty claims,
-or broad causal/mechanistic claims.
+The next technical step should stay baseline-first and claim-gated. A useful
+engineering follow-up is a LOG_AGE precompaction/indexing pass to accelerate
+future full-history scans without changing results. Do not jump directly to
+neural models, sequence models, CBAT, DRT, EIS embeddings, policy ranking,
+capacity+PULSE+EIS multimodal models, calibrated-uncertainty claims, or broad
+causal/mechanistic claims.

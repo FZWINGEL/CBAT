@@ -791,6 +791,71 @@ def features_stress_qa(
         raise typer.Exit(code=1)
 
 
+@features_app.command("build-run-events")
+def features_build_run_events(
+    log_age: Path = typer.Option(..., "--log-age", help="Path to modality_table_log_age.parquet."),
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output path for run_event_table_v1.parquet."),
+    progress_interval: int = typer.Option(
+        0,
+        "--progress-interval",
+        help="Print build progress every N cells; 0 disables progress.",
+    ),
+) -> None:
+    """Build LOG_AGE-derived run-event segments."""
+    import pyarrow.parquet as pq
+
+    from mbp.data.products.run_events import build_run_event_table
+
+    build_run_event_table(log_age, interval_table, out, progress_interval=progress_interval)
+    row_count = pq.ParquetFile(out).metadata.num_rows
+    typer.echo(f"Run-event table generated: {row_count} rows written to {out}")
+
+
+@features_app.command("run-events-qa")
+def features_run_events_qa(
+    run_events: Path = typer.Option(..., "--run-events", help="Path to run_event_table_v1.parquet."),
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output JSON path for run-event QA."),
+    coverage_out: Path = typer.Option(..., "--coverage-out", help="Output CSV path for run-event coverage."),
+) -> None:
+    """Run QA checks on LOG_AGE-derived run events."""
+    from mbp.data.products.run_events import write_run_event_qa
+
+    report = write_run_event_qa(run_events, interval_table, out, coverage_out)
+    typer.echo(
+        "Run-event QA "
+        f"{report['status']}: rows={report['row_count']} covered={report['intervals_covered']}"
+    )
+
+
+@features_app.command("build-sequence-features")
+def features_build_sequence_features(
+    run_events: Path = typer.Option(..., "--run-events", help="Path to run_event_table_v1.parquet."),
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output path for interval_sequence_features_v1.parquet."),
+    seed: int = typer.Option(42, "--seed", help="Deterministic event-order shuffle seed."),
+) -> None:
+    """Build non-neural event-order feature sidecar."""
+    from mbp.data.products.run_events import build_sequence_feature_table
+
+    table = build_sequence_feature_table(run_events, interval_table, out, seed=seed)
+    typer.echo(f"Sequence-feature table generated: {table.num_rows} rows written to {out}")
+
+
+@features_app.command("sequence-qa")
+def features_sequence_qa(
+    sequence_features: Path = typer.Option(..., "--sequence-features", help="Path to interval_sequence_features_v1.parquet."),
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output JSON path for sequence-feature QA."),
+) -> None:
+    """Run QA checks on interval sequence features."""
+    from mbp.data.products.run_events import write_sequence_feature_qa
+
+    report = write_sequence_feature_qa(sequence_features, interval_table, out)
+    typer.echo(f"Sequence-feature QA {report['status']}: rows={report['row_count']}")
+
+
 @features_app.command("current-sign-audit")
 def features_current_sign_audit(
     log_age: Path = typer.Option(
@@ -923,6 +988,11 @@ def baseline_run_capacity(
         "--eis-targets",
         help="Optional eis_target_table_v1.parquet sidecar for prior-EIS capacity feature groups.",
     ),
+    sequence_features: Path | None = typer.Option(
+        None,
+        "--sequence-features",
+        help="Optional interval_sequence_features_v1.parquet sidecar for event-order feature groups.",
+    ),
     report_dir: Path | None = typer.Option(
         None,
         "--report-dir",
@@ -978,6 +1048,7 @@ def baseline_run_capacity(
             stress_features_path=stress_features,
             pulse_targets_path=pulse_targets,
             eis_targets_path=eis_targets,
+            sequence_features_path=sequence_features,
             report_dir=report_dir,
             subset=subset,
             seed=seed,
@@ -1225,6 +1296,22 @@ def baseline_compare_semi_empirical(
     typer.echo(
         "Semi-empirical comparison generated: "
         f"{report['row_counts']['paired_vs_hgb_f4']} paired F4 rows"
+    )
+
+
+@baseline_app.command("diagnose-sequence-value")
+def baseline_diagnose_sequence_value(
+    report: Path = typer.Option(..., "--report", help="Capacity sequence-value baseline report."),
+    baseline_report: Path = typer.Option(..., "--baseline-report", help="Reference stress-feature baseline report."),
+    out_dir: Path = typer.Option(..., "--out-dir", help="Output directory for sequence-value diagnostics."),
+) -> None:
+    """Compare aggregate, order-aware, shuffled, and stress feature groups."""
+    from mbp.baselines.sequence_value import diagnose_sequence_value
+
+    result = diagnose_sequence_value(report, baseline_report, out_dir)
+    typer.echo(
+        "Sequence-value diagnostics generated: "
+        f"{result['row_counts']['aggregate_vs_order']} aggregate/order rows"
     )
 
 

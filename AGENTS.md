@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 2.3: Grouped calibration and replicate-aware uncertainty gate.
+Milestone 2.4: Temporal history value and run-event data product gate.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -35,18 +35,20 @@ Current state:
   state improves `capacity_Ah_k1` over F4 in selected grouped splits, but it
   does not beat the strongest supplied non-PULSE HGB baselines and does not
   improve `delta_capacity_Ah`.
-- The current main-project track evaluates grouped, replicate-aware calibration
-  diagnostics for capacity prediction intervals. This is an uncertainty gate,
-  not architecture work.
+- The current main-project track evaluates whether ordered LOG_AGE operational
+  event structure adds predictive value beyond scalar/histogram exposure
+  summaries. This is a falsification gate before any sequence model, not a
+  sequence-model or architecture milestone.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
 Allowed work:
-- grouped conformal calibration
-- condition-cluster calibration diagnostics
-- replicate-aware tolerance diagnostics
-- uncertainty interval comparison reports
-- capacity calibration claim-readiness updates
+- LOG_AGE-derived run-event tables
+- event segmentation QA
+- event-order scalar feature sidecars
+- shuffled-order falsification
+- aggregate-only versus order-aware non-neural baselines
+- grouped validation diagnostics
 - documentation/evidence memo updates
 - lightweight report formatting or consistency fixes
 - small tests with synthetic fixtures
@@ -54,6 +56,7 @@ Allowed work:
 Forbidden work:
 - neural models
 - sequence models
+- transformers
 - CBAT architecture
 - DRT features
 - EIS embeddings

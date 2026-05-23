@@ -1,0 +1,83 @@
+{
+  "feature_group": "F14_event_aggregate",
+  "fold_metrics": [
+    {
+      "condition_mean_mae": 0.10957071288525212,
+      "condition_median_mae": 0.1162217413707339,
+      "feature_group": "F14_event_aggregate",
+      "heldout_fold": 1,
+      "mae": 0.10318655587746096,
+      "model_level": "L2_hist_gradient_boosting",
+      "pinball_loss_q10": null,
+      "pinball_loss_q50": null,
+      "pinball_loss_q90": null,
+      "q10_q90_interval_coverage": null,
+      "q10_q90_interval_width_mean": null,
+      "rmse": 0.13358105691105326,
+      "run_scope": "primary",
+      "split_name": "profile_holdout_fold",
+      "subset_name": "baseline_clean_tolerant",
+      "target": "delta_capacity_Ah",
+      "test_cells": 36,
+      "test_parameter_sets": 12,
+      "test_rows": 752,
+      "train_parameter_sets": 64,
+      "train_rows": 3075,
+      "worst_condition_mae": 0.18166227334370885
+    },
+    {
+      "condition_mean_mae": 0.11091390072875516,
+      "condition_median_mae": 0.10313009082922961,
+      "feature_group": "F14_event_aggregate",
+      "heldout_fold": 1,
+      "mae": 0.09998389526662478,
+      "model_level": "L2_hist_gradient_boosting",
+      "pinball_loss_q10": null,
+      "pinball_loss_q50": null,
+      "pinball_loss_q90": null,
+      "q10_q90_interval_coverage": null,
+      "q10_q90_interval_width_mean": null,
+      "rmse": 0.1312786810701697,
+      "run_scope": "sensitivity_excluding_monotonicity",
+      "split_name": "profile_holdout_fold",
+      "subset_name": "baseline_clean_tolerant",
+      "target": "delta_capacity_Ah",
+      "test_cells": 36,
+      "test_parameter_sets": 12,
+      "test_rows": 524,
+      "train_parameter_sets": 64,
+      "train_rows": 2249,
+      "worst_condition_mae": 0.1737116690479523
+    }
+  ],
+  "model_level": "L2_hist_gradient_boosting",
+  "primary_summary": {
+    "condition_mean_mae": 0.10957071288525212,
+    "condition_median_mae": 0.1162217413707339,
+    "fold_count": 1,
+    "mean_mae": 0.10318655587746096,
+    "mean_rmse": 0.13358105691105326,
+    "worst_condition_mae": 0.18166227334370885
+  },
+  "row_counts": {
+    "baseline_clean_strict_rows": 2773,
+    "baseline_clean_tolerant_rows": 3827,
+    "full_interval_rows": 3827,
+    "selected_cells": 228,
+    "selected_parameter_sets": 76,
+    "selected_subset_rows": 3827,
+    "sensitivity_excluding_monotonicity_rows": 2773,
+    "sensitivity_flagged_monotonicity_rows": 1054
+  },
+  "schema_version": "gate5.capacity_baseline.v1",
+  "sensitivity_excluding_monotonicity_summary": {
+    "condition_mean_mae": 0.11091390072875516,
+    "condition_median_mae": 0.10313009082922961,
+    "fold_count": 1,
+    "mean_mae": 0.09998389526662478,
+    "mean_rmse": 0.1312786810701697,
+    "worst_condition_mae": 0.1737116690479523
+  },
+  "split_name": "profile_holdout_fold",
+  "target": "delta_capacity_Ah"
+}

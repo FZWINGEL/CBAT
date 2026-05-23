@@ -1,0 +1,20 @@
+{
+  "inputs": {
+    "baseline_report": "reports/baselines/capacity_stress_features_v1_1_hgb50_report.json",
+    "report": "reports/baselines/capacity_sequence_value_hgb50_report.json"
+  },
+  "outputs": {
+    "aggregate_vs_order_gain": "reports/baselines/capacity_sequence_value_hgb50/plots/aggregate_vs_order_gain.csv",
+    "c_rate_sequence_value": "reports/baselines/capacity_sequence_value_hgb50/plots/c_rate_sequence_value.csv",
+    "claim_readiness": "reports/baselines/capacity_sequence_value_hgb50/sequence_value_claim_readiness.md",
+    "order_vs_shuffled_gain": "reports/baselines/capacity_sequence_value_hgb50/plots/order_vs_shuffled_gain.csv",
+    "out_dir": "reports/baselines/capacity_sequence_value_hgb50"
+  },
+  "row_counts": {
+    "aggregate_vs_order": 24,
+    "order_vs_shuffled": 24,
+    "order_vs_stress": 24
+  },
+  "schema_version": "gate24.sequence_value_diagnostics.v1",
+  "status": "passed"
+}

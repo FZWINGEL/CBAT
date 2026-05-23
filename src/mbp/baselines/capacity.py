@@ -63,6 +63,10 @@ FEATURE_GROUPS = (
     "C_E1_nominal_eis",
     "C_E2_log_age_eis",
     "C_E3_stress_eis",
+    "F14_event_aggregate",
+    "F15_event_order_aware",
+    "F16_event_order_shuffled",
+    "F17_event_order_plus_stress",
 )
 DEFAULT_FEATURE_GROUPS = FEATURE_GROUPS[:5]
 
@@ -111,6 +115,7 @@ STRESS_FEATURE_GROUPS = {
     "F13_sparse_c_rate_context",
     "C_P3_stress_pulse",
     "C_E3_stress_eis",
+    "F17_event_order_plus_stress",
 }
 PULSE_FEATURE_GROUPS = {
     "C_P0_state_time_pulse",
@@ -123,6 +128,12 @@ EIS_FEATURE_GROUPS = {
     "C_E1_nominal_eis",
     "C_E2_log_age_eis",
     "C_E3_stress_eis",
+}
+SEQUENCE_FEATURE_GROUPS = {
+    "F14_event_aggregate",
+    "F15_event_order_aware",
+    "F16_event_order_shuffled",
+    "F17_event_order_plus_stress",
 }
 
 LOG_AGE_HISTOGRAM_FEATURES = (
@@ -235,6 +246,74 @@ C_RATE_V1_1_FEATURES = (
     "log_age_efc_per_day",
 )
 
+SEQUENCE_AGGREGATE_FEATURES = (
+    "sequence_event_count",
+    "sequence_total_event_duration_h",
+    "sequence_charge_event_count",
+    "sequence_discharge_event_count",
+    "sequence_rest_event_count",
+    "sequence_unknown_event_count",
+    "sequence_charge_duration_h",
+    "sequence_discharge_duration_h",
+    "sequence_rest_duration_h",
+    "sequence_max_charge_duration_h",
+    "sequence_max_discharge_duration_h",
+    "sequence_max_rest_duration_h",
+    "sequence_high_current_event_count",
+    "sequence_cold_high_current_event_count",
+    "sequence_high_voltage_high_current_event_count",
+)
+
+SEQUENCE_ORDER_FEATURES = (
+    "sequence_transition_charge_rest",
+    "sequence_transition_rest_charge",
+    "sequence_transition_discharge_rest",
+    "sequence_transition_rest_discharge",
+    "sequence_alternation_count",
+    "sequence_first_high_current_position",
+    "sequence_last_high_current_position",
+    "sequence_early_high_current_fraction",
+    "sequence_mid_high_current_fraction",
+    "sequence_late_high_current_fraction",
+    "sequence_longest_high_current_burst_h",
+    "sequence_longest_cold_high_current_burst_h",
+)
+
+SEQUENCE_SHUFFLED_FEATURES = (
+    "sequence_shuffled_transition_charge_rest",
+    "sequence_shuffled_transition_rest_charge",
+    "sequence_shuffled_transition_discharge_rest",
+    "sequence_shuffled_transition_rest_discharge",
+    "sequence_shuffled_alternation_count",
+    "sequence_shuffled_early_high_current_fraction",
+    "sequence_shuffled_mid_high_current_fraction",
+    "sequence_shuffled_late_high_current_fraction",
+)
+
+F4_LOG_AGE_SCALAR_FEATURES = (
+    "capacity_Ah_k",
+    "duration_h",
+    "calendar_days",
+    "checkup_k",
+    "log_age_efc_delta",
+    "log_age_delta_q_Ah",
+    "nominal_temperature_C",
+    "nominal_charge_C_rate",
+    "nominal_discharge_C_rate",
+    "log_age_mean_voltage_V",
+    "log_age_min_voltage_V",
+    "log_age_max_voltage_V",
+    "log_age_mean_temperature_C",
+    "log_age_min_temperature_C",
+    "log_age_max_temperature_C",
+    "log_age_mean_current_A",
+    "log_age_mean_abs_current_A",
+    "log_age_max_abs_current_A",
+    "log_age_mean_soc",
+    "log_age_min_soc",
+    "log_age_max_soc",
+)
+
 MINIMAL_COLD_CURRENT_FEATURES = (
     "capacity_Ah_k",
     "duration_h",
@@ -293,29 +372,7 @@ NUMERIC_FEATURES: dict[str, tuple[str, ...]] = {
         "nominal_charge_C_rate",
         "nominal_discharge_C_rate",
     ),
-    "F4_state_log_age_scalar": (
-        "capacity_Ah_k",
-        "duration_h",
-        "calendar_days",
-        "checkup_k",
-        "log_age_efc_delta",
-        "log_age_delta_q_Ah",
-        "nominal_temperature_C",
-        "nominal_charge_C_rate",
-        "nominal_discharge_C_rate",
-        "log_age_mean_voltage_V",
-        "log_age_min_voltage_V",
-        "log_age_max_voltage_V",
-        "log_age_mean_temperature_C",
-        "log_age_min_temperature_C",
-        "log_age_max_temperature_C",
-        "log_age_mean_current_A",
-        "log_age_mean_abs_current_A",
-        "log_age_max_abs_current_A",
-        "log_age_mean_soc",
-        "log_age_min_soc",
-        "log_age_max_soc",
-    ),
+    "F4_state_log_age_scalar": F4_LOG_AGE_SCALAR_FEATURES,
     "F5_log_age_histograms": (
         *(
             "capacity_Ah_k",
@@ -577,6 +634,26 @@ NUMERIC_FEATURES: dict[str, tuple[str, ...]] = {
         *TIMESTAMP_WEIGHTED_STRESS_FEATURES,
         *EIS_PRIOR_FEATURES,
     ),
+    "F14_event_aggregate": (
+        *F4_LOG_AGE_SCALAR_FEATURES,
+        *SEQUENCE_AGGREGATE_FEATURES,
+    ),
+    "F15_event_order_aware": (
+        *F4_LOG_AGE_SCALAR_FEATURES,
+        *SEQUENCE_AGGREGATE_FEATURES,
+        *SEQUENCE_ORDER_FEATURES,
+    ),
+    "F16_event_order_shuffled": (
+        *F4_LOG_AGE_SCALAR_FEATURES,
+        *SEQUENCE_AGGREGATE_FEATURES,
+        *SEQUENCE_SHUFFLED_FEATURES,
+    ),
+    "F17_event_order_plus_stress": (
+        *F4_LOG_AGE_SCALAR_FEATURES,
+        *TIMESTAMP_WEIGHTED_STRESS_FEATURES,
+        *SEQUENCE_AGGREGATE_FEATURES,
+        *SEQUENCE_ORDER_FEATURES,
+    ),
 }
 
 CATEGORICAL_FEATURES: dict[str, tuple[str, ...]] = {
@@ -605,6 +682,10 @@ CATEGORICAL_FEATURES: dict[str, tuple[str, ...]] = {
     "C_E1_nominal_eis": ("aging_mode", "voltage_window_family"),
     "C_E2_log_age_eis": ("aging_mode", "voltage_window_family"),
     "C_E3_stress_eis": ("aging_mode", "voltage_window_family"),
+    "F14_event_aggregate": ("aging_mode", "voltage_window_family"),
+    "F15_event_order_aware": ("aging_mode", "voltage_window_family"),
+    "F16_event_order_shuffled": ("aging_mode", "voltage_window_family"),
+    "F17_event_order_plus_stress": ("aging_mode", "voltage_window_family"),
 }
 
 BASELINE_PREDICTION_SCHEMA = pa.schema(
@@ -732,6 +813,7 @@ def run_capacity_baselines(
     stress_features_path: Path | None = None,
     pulse_targets_path: Path | None = None,
     eis_targets_path: Path | None = None,
+    sequence_features_path: Path | None = None,
     report_dir: Path | None = None,
     subset: str = "baseline_clean_tolerant",
     seed: int = 42,
@@ -769,6 +851,11 @@ def run_capacity_baselines(
             "EIS capacity feature groups require --eis-targets pointing to "
             "an EIS target table parquet."
         )
+    if SEQUENCE_FEATURE_GROUPS & set(selected_feature_groups) and sequence_features_path is None:
+        raise ValueError(
+            "Sequence-value feature groups F14-F17 require --sequence-features pointing "
+            "to an interval sequence-feature sidecar parquet."
+        )
     _preflight_model_dependencies(selected_models)
 
     all_rows, subset_rows = load_baseline_rows(
@@ -778,6 +865,7 @@ def run_capacity_baselines(
         stress_features_path=stress_features_path,
         pulse_targets_path=pulse_targets_path,
         eis_targets_path=eis_targets_path,
+        sequence_features_path=sequence_features_path,
     )
     sensitivity_rows = [
         row for row in subset_rows if not bool(row["sensitivity_flagged_monotonicity"])
@@ -1351,6 +1439,7 @@ def load_baseline_rows(
     stress_features_path: Path | None = None,
     pulse_targets_path: Path | None = None,
     eis_targets_path: Path | None = None,
+    sequence_features_path: Path | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Load and join interval rows with baseline subset flags."""
     if subset not in SUBSET_COLUMNS:
@@ -1397,6 +1486,16 @@ def load_baseline_rows(
             if key in eis_by_key:
                 raise ValueError(f"Duplicate EIS target interval key: {key}")
             eis_by_key[key] = row
+    sequence_by_key: dict[tuple[str, int, int], dict[str, Any]] = {}
+    if sequence_features_path is not None:
+        if not sequence_features_path.exists():
+            raise FileNotFoundError(f"Sequence-feature table not found: {sequence_features_path}")
+        sequence_rows = pq.read_table(sequence_features_path).to_pylist()
+        for row in sequence_rows:
+            key = _interval_key(row)
+            if key in sequence_by_key:
+                raise ValueError(f"Duplicate sequence-feature interval key: {key}")
+            sequence_by_key[key] = row
 
     subset_by_key: dict[tuple[str, int, int], dict[str, Any]] = {}
     for row in subset_rows:
@@ -1450,6 +1549,21 @@ def load_baseline_rows(
             if eis_row is None:
                 continue
             for column, value in eis_row.items():
+                if column in {
+                    "cell_id",
+                    "parameter_set",
+                    "replicate_id",
+                    "checkup_k",
+                    "checkup_k_next",
+                    "schema_version",
+                }:
+                    continue
+                merged[column] = value
+        if sequence_features_path is not None:
+            sequence_row = sequence_by_key.get(key)
+            if sequence_row is None:
+                raise ValueError(f"Sequence-feature table is missing interval key: {key}")
+            for column, value in sequence_row.items():
                 if column in {
                     "cell_id",
                     "parameter_set",

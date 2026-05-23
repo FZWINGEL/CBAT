@@ -1,0 +1,20 @@
+{
+  "event_count_summary": {
+    "count": 3827,
+    "max": 247393.0,
+    "median": 627.0,
+    "min": 13.0,
+    "p95": 125694.0
+  },
+  "interval_rows": 3827,
+  "leakage_check": {
+    "status": "passed",
+    "target_derived_capacity_rates_present": false
+  },
+  "missing_intervals": 0,
+  "nan_counts": {},
+  "row_count": 3827,
+  "schema_version": "gate24.interval_sequence_features.v1",
+  "shuffle_seed": 42,
+  "status": "passed"
+}

@@ -77,10 +77,32 @@ central 0.8 interval.
 
 Decision: quantile predictions remain diagnostics only; no uncertainty claim.
 
-## EIS Is Not Tested Yet
+## EIS Did Not Support Broad Improvement Claims
 
-EIS ingestion exists, but valid-frequency masks, spectrum QA, and predictive
-tests are still gated.
+Milestones 2.0, 2.1, and 2.1.1 opened and hardened EIS QA, scalar feature
+tables, scalar endpoint baselines, and prior-EIS comparisons. EIS is useful as
+a scalar diagnostic endpoint and shows narrow profile-split prior-feature
+signals, but C-rate capacity, C-rate PULSE, and `delta_capacity_Ah` remain
+unsupported.
 
-Decision: no EIS improvement claim and no EIS modeling until an EIS QA gate is
-opened and passed.
+Decision: no broad EIS improvement claim and no capacity+PULSE+EIS architecture
+work.
+
+## Grouped Calibration Did Not Validate Capacity Uncertainty
+
+Milestone 2.3 showed that conformal methods improve mean interval coverage, but
+C-rate coverage remains below target. Stressor-family conformal C-rate coverage
+is `0.719745` for `capacity_Ah_k1` and `0.726115` for
+`delta_capacity_Ah`.
+
+Decision: no global calibrated capacity-uncertainty claim.
+
+## Event Order Did Not Justify Sequence Models
+
+Milestone 2.4 built a full LOG_AGE-derived run-event table and sequence-feature
+sidecar, then compared aggregate event, order-aware, shuffled-order, and
+timestamp-weighted stress feature groups under grouped HGB-50 validation.
+Order-aware features did not beat aggregate features, shuffled controls, or the
+stress baseline overall. C-rate order-aware gain was negative on average.
+
+Decision: sequence models remain blocked.

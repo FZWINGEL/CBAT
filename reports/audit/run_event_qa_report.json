@@ -1,0 +1,39 @@
+{
+  "duration_delta_gt_24h_intervals": 751,
+  "duration_delta_h_summary": {
+    "count": 3827,
+    "max": 799.9016666671744,
+    "median": -3.4541666666667084,
+    "min": -25.04388888884887,
+    "p95": 298.7174999998276
+  },
+  "event_count_summary": {
+    "count": 3827,
+    "max": 247393.0,
+    "median": 627.0,
+    "min": 13.0,
+    "p95": 125694.0
+  },
+  "event_type_counts": {
+    "charge": 24892072,
+    "discharge": 31308489,
+    "rest": 23127668
+  },
+  "intervals": 3827,
+  "intervals_covered": 3827,
+  "max_gap_s_summary": {
+    "count": 3827,
+    "max": 30.0,
+    "median": 30.0,
+    "min": 30.0,
+    "p95": 30.0
+  },
+  "max_gap_s_summary_scope": "per_interval_max_gap",
+  "missing_intervals": 0,
+  "row_count": 79328229,
+  "schema_version": "gate24.run_events.v1",
+  "status": "warning",
+  "warnings": [
+    "duration_delta_gt_24h"
+  ]
+}
