@@ -42,6 +42,8 @@ Schema version prefix: `gate1.audit.v1`
 | `eis_feature_table_v1` | Implemented | `mbp.data.products.eis_features` | EIS table path, spectrum-quality path, interval table path, canonical SOC/temperature context, feature policy version, schema version |
 | `eis_feature_qa_report` | Implemented | `mbp.data.products.eis_features` | EIS feature table path, interval table path, selected-frequency completeness, feature NaN counts, split coverage |
 | `eis_claim_readiness` | Implemented | `mbp.data.products.eis_features` | EIS QA report, EIS feature QA report, feature policy status, blocked predictive claims |
+| `eis_target_table_v1` | Implemented | `mbp.data.products.eis_features` | EIS feature table path, interval table path, canonical SOC/temperature context, k/k1 feature availability, delta EIS targets, feature policy version |
+| `eis_scalar_baseline_report` | Implemented | `mbp.baselines.eis` | interval table path, interval subset registry path, EIS target table path, grouped split view, target coverage, leakage audit |
 
 ## Gate 2/3 Schema Contracts
 
@@ -65,3 +67,5 @@ Schema version prefix: `gate1.audit.v1`
 - `EIS_FEATURE_TABLE_V1_SCHEMA` is one row per cell/check-up/SOC/temperature context for the canonical EIS feature policy. The v1 sidecar records selected-frequency E1 features, nullable R0/R1 placeholders with explicit provenance/leakage fields, E3 geometric Nyquist summaries, valid-frequency coverage, alignment delta, quality flags, schema version, and feature policy version.
 - `eis_qa_report` audits EIS coverage by SOC, RT/OT context, cell, check-up, and split metadata; reports valid modeling frequency/fraction distributions; writes alignment summaries; and verifies the charter mask excludes 100 Hz, 208.3 Hz, and 14.7 kHz while retaining finite valid 0.5-5000 Hz values.
 - `eis_feature_qa_report` checks the canonical RT/50% feature table for row/cell/condition coverage, selected-frequency completeness, feature NaN counts, valid modeling fraction, split coverage, and warnings. It does not authorize EIS predictive claims.
+- `EIS_TARGET_TABLE_V1_SCHEMA` is one row per interval with canonical RT/50 EIS features at check-up `k` and `k+1`, EIS delta targets, valid modeling fractions, alignment deltas, split labels, quality flags, schema version, and feature policy version. Future EIS `k1` features and EIS deltas are forbidden as capacity/PULSE inputs.
+- `eis_scalar_baseline_report` records grouped scalar EIS endpoint baselines for selected-frequency and geometric Nyquist targets. It is an EIS self-diagnostic baseline and does not by itself authorize EIS improvement claims.

@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 2.0: EIS QA and feature gate.
+Milestone 2.1: EIS scalar diagnostic baselines.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -35,21 +35,19 @@ Current state:
   state improves `capacity_Ah_k1` over F4 in selected grouped splits, but it
   does not beat the strongest supplied non-PULSE HGB baselines and does not
   improve `delta_capacity_Ah`.
-- The current main-project track opens EIS as a gated QA and feature-readiness
-  modality only. No EIS predictive modeling or EIS improvement claim is
-  authorized until QA, feature completeness, and later grouped baseline
-  evidence support it.
+- The current main-project track evaluates EIS as a scalar diagnostic endpoint
+  and prior-state feature under grouped validation. EIS remains non-neural,
+  scalar, and gated; no broad EIS improvement claim is authorized.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
 Allowed work:
-- EIS QA
-- EIS coverage diagnostics
-- EIS alignment diagnostics
-- EIS valid-frequency mask audits
-- EIS feature policy
-- E0/E1/E2/E3 scalar EIS feature table construction
-- EIS claim-readiness reporting
+- EIS scalar target tables
+- EIS target QA
+- EIS scalar baselines
+- prior-EIS feature groups using check-up `k` features only
+- grouped baseline comparisons
+- EIS claim-readiness updates
 - documentation/evidence memo updates
 - lightweight report formatting or consistency fixes
 - small tests with synthetic EIS fixtures
@@ -57,9 +55,11 @@ Allowed work:
 Forbidden work:
 - new model training
 - new capacity/PULSE feature engineering
-- EIS predictive modeling
+- broad EIS predictive claims
 - EIS embeddings
 - DRT features
+- future EIS state as capacity/PULSE input
+- EIS deltas as capacity/PULSE input
 - knee prediction
 - sequence models
 - neural models

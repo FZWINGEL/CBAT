@@ -8,15 +8,27 @@ import pyarrow.parquet as pq
 import pytest
 
 from mbp.data.products.eis_features import (
+    build_eis_target_table,
     build_eis_feature_table,
     write_eis_alignment_sensitivity_report,
     write_eis_claim_readiness_report,
     write_eis_feature_qa_report,
     write_eis_qa_report,
+    write_eis_target_qa_report,
+)
+from mbp.baselines import capacity as capacity_baselines
+from mbp.baselines import pulse as pulse_baselines
+from mbp.baselines.eis import (
+    EIS_FORBIDDEN_FEATURES,
+    EIS_PREDICTION_SCHEMA,
+    load_eis_rows,
+    run_eis_baselines,
 )
 from mbp.data.schema_contracts import (
     EIS_FEATURE_TABLE_V1_SCHEMA,
+    EIS_TARGET_TABLE_V1_SCHEMA,
     EIS_SPECTRUM_QUALITY_SCHEMA,
+    INTERVAL_SUBSET_REGISTRY_SCHEMA,
     INTERVAL_TABLE_SCHEMA,
     MODALITY_TABLE_EIS_SCHEMA,
 )
@@ -151,6 +163,33 @@ def _write_fixture(tmp_path: Path) -> tuple[Path, Path, Path]:
     return eis_path, quality_path, interval_path
 
 
+def _write_subset_from_interval(interval_path: Path, subset_path: Path) -> Path:
+    interval_rows = pq.read_table(interval_path).to_pylist()
+    subset_rows = [
+        {
+            "cell_id": row["cell_id"],
+            "parameter_set": row["parameter_set"],
+            "replicate_id": row["replicate_id"],
+            "checkup_k": row["checkup_k"],
+            "checkup_k_next": row["checkup_k_next"],
+            "interval_id": f"{row['cell_id']}:{row['checkup_k']}:{row['checkup_k_next']}",
+            "baseline_clean_strict": True,
+            "baseline_clean_tolerant": True,
+            "sensitivity_flagged_monotonicity": False,
+            "small_efc_jitter": False,
+            "excluded_due_to_large_efc_drop": False,
+            "excluded_due_to_timestamp_drop": False,
+            "excluded_due_to_missing_log_age": False,
+            "excluded_due_to_duration_error": False,
+            "monotonicity_policy_version": "test",
+            "schema_version": "test",
+        }
+        for row in interval_rows
+    ]
+    pq.write_table(pa.Table.from_pylist(subset_rows, schema=INTERVAL_SUBSET_REGISTRY_SCHEMA), subset_path)
+    return subset_path
+
+
 def test_eis_qa_and_valid_frequency_audit(tmp_path: Path) -> None:
     eis_path, quality_path, interval_path = _write_fixture(tmp_path)
 
@@ -210,6 +249,31 @@ def test_eis_feature_table_selected_frequency_and_nyquist_features(tmp_path: Pat
     assert rows[0]["r0_r1_source"] == "unavailable"
 
 
+def test_eis_target_table_and_qa_build_adjacent_deltas(tmp_path: Path) -> None:
+    eis_path, quality_path, interval_path = _write_fixture(tmp_path)
+    feature_path = tmp_path / "eis_features.parquet"
+    target_path = tmp_path / "eis_targets.parquet"
+    build_eis_feature_table(eis_path, quality_path, interval_path, feature_path)
+
+    table = build_eis_target_table(feature_path, interval_path, target_path)
+    report = write_eis_target_qa_report(
+        target_path,
+        interval_path,
+        tmp_path / "target_qa.json",
+        tmp_path / "target_coverage.csv",
+    )
+
+    assert table.schema == EIS_TARGET_TABLE_V1_SCHEMA
+    rows = table.to_pylist()
+    assert len(rows) == 12
+    assert rows[0]["eis_z_abs_1kHz_k1"] is not None
+    assert rows[0]["delta_eis_z_abs_1kHz"] == pytest.approx(
+        rows[0]["eis_z_abs_1kHz_k1"] - rows[0]["eis_z_abs_1kHz_k"]
+    )
+    assert report["finite_delta_target_counts"]["delta_eis_z_abs_1kHz"] == 12
+    assert "c_rate_holdout_fold" in (tmp_path / "target_coverage.csv").read_text()
+
+
 def test_eis_feature_qa_and_claim_readiness(tmp_path: Path) -> None:
     eis_path, quality_path, interval_path = _write_fixture(tmp_path)
     feature_path = tmp_path / "eis_features.parquet"
@@ -240,3 +304,42 @@ def test_eis_feature_qa_and_claim_readiness(tmp_path: Path) -> None:
     assert feature_qa["row_count"] == 18
     assert "DRT remains blocked" in text
     assert "No EIS predictive claim is authorized" in text
+
+
+def test_eis_baseline_loader_persistence_and_leakage_guard(tmp_path: Path) -> None:
+    eis_path, quality_path, interval_path = _write_fixture(tmp_path)
+    feature_path = tmp_path / "eis_features.parquet"
+    target_path = tmp_path / "eis_targets.parquet"
+    subset_path = _write_subset_from_interval(interval_path, tmp_path / "subsets.parquet")
+    build_eis_feature_table(eis_path, quality_path, interval_path, feature_path)
+    build_eis_target_table(feature_path, interval_path, target_path)
+
+    _, selected = load_eis_rows(interval_path, subset_path, target_path, "baseline_clean_tolerant")
+    report = run_eis_baselines(
+        interval_path,
+        subset_path,
+        target_path,
+        tmp_path / "eis_report.json",
+        tmp_path / "eis_predictions.parquet",
+        model_levels=["L0_persistence"],
+        feature_groups=["E0_persistence"],
+        targets=["delta_eis_z_abs_1kHz"],
+        split_views=["condition_fold"],
+    )
+
+    assert len(selected) == 12
+    assert report["metrics"]
+    assert pq.read_table(tmp_path / "eis_predictions.parquet").schema == EIS_PREDICTION_SCHEMA
+    assert "delta_eis_z_abs_1kHz" in EIS_FORBIDDEN_FEATURES
+
+
+def test_prior_eis_feature_groups_use_only_k_features() -> None:
+    forbidden = set(EIS_FORBIDDEN_FEATURES)
+    for group in capacity_baselines.EIS_FEATURE_GROUPS:
+        fields = set(capacity_baselines.NUMERIC_FEATURES[group]) | set(capacity_baselines.CATEGORICAL_FEATURES[group])
+        assert not fields & forbidden
+        assert "eis_z_abs_1kHz_k" in fields
+    for group in pulse_baselines.EIS_FEATURE_GROUPS:
+        fields = set(pulse_baselines.NUMERIC_FEATURES[group]) | set(pulse_baselines.CATEGORICAL_FEATURES[group])
+        assert not fields & forbidden
+        assert "eis_z_abs_1kHz_k" in fields

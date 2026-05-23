@@ -412,6 +412,50 @@ EIS_FEATURE_TABLE_V1_SCHEMA = pa.schema(
     ]
 )
 
+# 15. EIS interval target table schema
+EIS_TARGET_TABLE_V1_SCHEMA = pa.schema(
+    [
+        ("cell_id", pa.string(), False),
+        ("parameter_set", pa.int32(), False),
+        ("replicate_id", pa.int32(), False),
+        ("checkup_k", pa.int32(), False),
+        ("checkup_k_next", pa.int32(), False),
+        ("soc_percent", pa.float64(), False),
+        ("temperature_context", pa.string(), False),
+        ("condition_fold", pa.int32(), False),
+        ("temperature_holdout_fold", pa.int32(), False),
+        ("c_rate_holdout_fold", pa.int32(), False),
+        ("profile_holdout_fold", pa.int32(), False),
+        ("voltage_window_holdout_fold", pa.int32(), False),
+        ("eis_z_real_1kHz_k", pa.float64(), True),
+        ("eis_z_imag_1kHz_k", pa.float64(), True),
+        ("eis_z_abs_1kHz_k", pa.float64(), True),
+        ("eis_phase_1kHz_k", pa.float64(), True),
+        ("eis_z_real_1kHz_k1", pa.float64(), True),
+        ("eis_z_imag_1kHz_k1", pa.float64(), True),
+        ("eis_z_abs_1kHz_k1", pa.float64(), True),
+        ("eis_phase_1kHz_k1", pa.float64(), True),
+        ("delta_eis_z_real_1kHz", pa.float64(), True),
+        ("delta_eis_z_abs_1kHz", pa.float64(), True),
+        ("nyquist_re_min_k", pa.float64(), True),
+        ("nyquist_re_max_k", pa.float64(), True),
+        ("nyquist_im_peak_abs_k", pa.float64(), True),
+        ("nyquist_semicircle_width_proxy_k", pa.float64(), True),
+        ("nyquist_re_min_k1", pa.float64(), True),
+        ("nyquist_re_max_k1", pa.float64(), True),
+        ("nyquist_im_peak_abs_k1", pa.float64(), True),
+        ("nyquist_semicircle_width_proxy_k1", pa.float64(), True),
+        ("delta_nyquist_semicircle_width_proxy", pa.float64(), True),
+        ("valid_modeling_fraction_k", pa.float64(), True),
+        ("valid_modeling_fraction_k1", pa.float64(), True),
+        ("alignment_delta_s_k", pa.float64(), True),
+        ("alignment_delta_s_k1", pa.float64(), True),
+        ("quality_flags", pa.string(), False),
+        ("schema_version", pa.string(), False),
+        ("feature_policy_version", pa.string(), False),
+    ]
+)
+
 
 def validate_table(table: pa.Table, schema: pa.Schema, strict: bool = True) -> bool:
     """Validate that a pyarrow Table matches the expected schema.

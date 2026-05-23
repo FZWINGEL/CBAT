@@ -59,6 +59,10 @@ FEATURE_GROUPS = (
     "C_P1_nominal_pulse",
     "C_P2_log_age_pulse",
     "C_P3_stress_pulse",
+    "C_E0_state_time_eis",
+    "C_E1_nominal_eis",
+    "C_E2_log_age_eis",
+    "C_E3_stress_eis",
 )
 DEFAULT_FEATURE_GROUPS = FEATURE_GROUPS[:5]
 
@@ -69,6 +73,32 @@ PULSE_FUTURE_LEAKAGE_FIELDS = {
     "pulse_10ms_resistance_k1",
     "delta_pulse_10ms_resistance",
 }
+EIS_FUTURE_LEAKAGE_FIELDS = {
+    "eis_z_real_1kHz_k1",
+    "eis_z_imag_1kHz_k1",
+    "eis_z_abs_1kHz_k1",
+    "eis_phase_1kHz_k1",
+    "nyquist_re_min_k1",
+    "nyquist_re_max_k1",
+    "nyquist_im_peak_abs_k1",
+    "nyquist_semicircle_width_proxy_k1",
+    "delta_eis_z_real_1kHz",
+    "delta_eis_z_abs_1kHz",
+    "delta_nyquist_semicircle_width_proxy",
+    "R0_mOhm_k",
+    "R1_mOhm_k",
+}
+EIS_PRIOR_FEATURES = (
+    "eis_z_real_1kHz_k",
+    "eis_z_imag_1kHz_k",
+    "eis_z_abs_1kHz_k",
+    "eis_phase_1kHz_k",
+    "nyquist_re_min_k",
+    "nyquist_re_max_k",
+    "nyquist_im_peak_abs_k",
+    "nyquist_semicircle_width_proxy_k",
+    "valid_modeling_fraction_k",
+)
 STRESS_FEATURE_GROUPS = {
     "F5_log_age_histograms",
     "F6_coupled_stress",
@@ -80,12 +110,19 @@ STRESS_FEATURE_GROUPS = {
     "F12_voltage_cold_current_interactions",
     "F13_sparse_c_rate_context",
     "C_P3_stress_pulse",
+    "C_E3_stress_eis",
 }
 PULSE_FEATURE_GROUPS = {
     "C_P0_state_time_pulse",
     "C_P1_nominal_pulse",
     "C_P2_log_age_pulse",
     "C_P3_stress_pulse",
+}
+EIS_FEATURE_GROUPS = {
+    "C_E0_state_time_eis",
+    "C_E1_nominal_eis",
+    "C_E2_log_age_eis",
+    "C_E3_stress_eis",
 }
 
 LOG_AGE_HISTOGRAM_FEATURES = (
@@ -472,6 +509,74 @@ NUMERIC_FEATURES: dict[str, tuple[str, ...]] = {
         *TIMESTAMP_WEIGHTED_STRESS_FEATURES,
         "pulse_1s_resistance_k",
     ),
+    "C_E0_state_time_eis": (
+        "capacity_Ah_k",
+        "duration_h",
+        "calendar_days",
+        "checkup_k",
+        *EIS_PRIOR_FEATURES,
+    ),
+    "C_E1_nominal_eis": (
+        "capacity_Ah_k",
+        "duration_h",
+        "calendar_days",
+        "checkup_k",
+        "log_age_efc_delta",
+        "log_age_delta_q_Ah",
+        "nominal_temperature_C",
+        "nominal_charge_C_rate",
+        "nominal_discharge_C_rate",
+        *EIS_PRIOR_FEATURES,
+    ),
+    "C_E2_log_age_eis": (
+        "capacity_Ah_k",
+        "duration_h",
+        "calendar_days",
+        "checkup_k",
+        "log_age_efc_delta",
+        "log_age_delta_q_Ah",
+        "nominal_temperature_C",
+        "nominal_charge_C_rate",
+        "nominal_discharge_C_rate",
+        "log_age_mean_voltage_V",
+        "log_age_min_voltage_V",
+        "log_age_max_voltage_V",
+        "log_age_mean_temperature_C",
+        "log_age_min_temperature_C",
+        "log_age_max_temperature_C",
+        "log_age_mean_current_A",
+        "log_age_mean_abs_current_A",
+        "log_age_max_abs_current_A",
+        "log_age_mean_soc",
+        "log_age_min_soc",
+        "log_age_max_soc",
+        *EIS_PRIOR_FEATURES,
+    ),
+    "C_E3_stress_eis": (
+        "capacity_Ah_k",
+        "duration_h",
+        "calendar_days",
+        "checkup_k",
+        "log_age_efc_delta",
+        "log_age_delta_q_Ah",
+        "nominal_temperature_C",
+        "nominal_charge_C_rate",
+        "nominal_discharge_C_rate",
+        "log_age_mean_voltage_V",
+        "log_age_min_voltage_V",
+        "log_age_max_voltage_V",
+        "log_age_mean_temperature_C",
+        "log_age_min_temperature_C",
+        "log_age_max_temperature_C",
+        "log_age_mean_current_A",
+        "log_age_mean_abs_current_A",
+        "log_age_max_abs_current_A",
+        "log_age_mean_soc",
+        "log_age_min_soc",
+        "log_age_max_soc",
+        *TIMESTAMP_WEIGHTED_STRESS_FEATURES,
+        *EIS_PRIOR_FEATURES,
+    ),
 }
 
 CATEGORICAL_FEATURES: dict[str, tuple[str, ...]] = {
@@ -496,6 +601,10 @@ CATEGORICAL_FEATURES: dict[str, tuple[str, ...]] = {
     "C_P1_nominal_pulse": ("aging_mode", "voltage_window_family"),
     "C_P2_log_age_pulse": ("aging_mode", "voltage_window_family"),
     "C_P3_stress_pulse": ("aging_mode", "voltage_window_family"),
+    "C_E0_state_time_eis": (),
+    "C_E1_nominal_eis": ("aging_mode", "voltage_window_family"),
+    "C_E2_log_age_eis": ("aging_mode", "voltage_window_family"),
+    "C_E3_stress_eis": ("aging_mode", "voltage_window_family"),
 }
 
 BASELINE_PREDICTION_SCHEMA = pa.schema(
@@ -549,6 +658,11 @@ class FeatureEncoder:
         if pulse_leakage:
             raise ValueError(
                 f"Feature group {feature_group} includes future PULSE fields: {sorted(pulse_leakage)}"
+            )
+        eis_leakage = (set(numeric_columns) | set(categorical_columns)) & EIS_FUTURE_LEAKAGE_FIELDS
+        if eis_leakage:
+            raise ValueError(
+                f"Feature group {feature_group} includes future EIS fields: {sorted(eis_leakage)}"
             )
 
         impute_values: dict[str, float] = {}
@@ -617,6 +731,7 @@ def run_capacity_baselines(
     predictions_out_path: Path,
     stress_features_path: Path | None = None,
     pulse_targets_path: Path | None = None,
+    eis_targets_path: Path | None = None,
     report_dir: Path | None = None,
     subset: str = "baseline_clean_tolerant",
     seed: int = 42,
@@ -649,6 +764,11 @@ def run_capacity_baselines(
             "PULSE capacity feature groups require --pulse-targets pointing to "
             "a pulse target table parquet."
         )
+    if EIS_FEATURE_GROUPS & set(selected_feature_groups) and eis_targets_path is None:
+        raise ValueError(
+            "EIS capacity feature groups require --eis-targets pointing to "
+            "an EIS target table parquet."
+        )
     _preflight_model_dependencies(selected_models)
 
     all_rows, subset_rows = load_baseline_rows(
@@ -657,6 +777,7 @@ def run_capacity_baselines(
         subset,
         stress_features_path=stress_features_path,
         pulse_targets_path=pulse_targets_path,
+        eis_targets_path=eis_targets_path,
     )
     sensitivity_rows = [
         row for row in subset_rows if not bool(row["sensitivity_flagged_monotonicity"])
@@ -782,6 +903,7 @@ def run_capacity_baselines(
             "interval_subsets": str(interval_subsets_path),
             "stress_features": str(stress_features_path) if stress_features_path else None,
             "pulse_targets": str(pulse_targets_path) if pulse_targets_path else None,
+            "eis_targets": str(eis_targets_path) if eis_targets_path else None,
         },
         "outputs": {
             "report": str(out_path),
@@ -1228,6 +1350,7 @@ def load_baseline_rows(
     subset: str,
     stress_features_path: Path | None = None,
     pulse_targets_path: Path | None = None,
+    eis_targets_path: Path | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Load and join interval rows with baseline subset flags."""
     if subset not in SUBSET_COLUMNS:
@@ -1264,6 +1387,16 @@ def load_baseline_rows(
             if key in pulse_by_key:
                 raise ValueError(f"Duplicate PULSE target interval key: {key}")
             pulse_by_key[key] = row
+    eis_by_key: dict[tuple[str, int, int], dict[str, Any]] = {}
+    if eis_targets_path is not None:
+        if not eis_targets_path.exists():
+            raise FileNotFoundError(f"EIS target table not found: {eis_targets_path}")
+        eis_rows = pq.read_table(eis_targets_path).to_pylist()
+        for row in eis_rows:
+            key = _interval_key(row)
+            if key in eis_by_key:
+                raise ValueError(f"Duplicate EIS target interval key: {key}")
+            eis_by_key[key] = row
 
     subset_by_key: dict[tuple[str, int, int], dict[str, Any]] = {}
     for row in subset_rows:
@@ -1312,6 +1445,21 @@ def load_baseline_rows(
                 }:
                     continue
                 merged[column] = value
+        if eis_targets_path is not None:
+            eis_row = eis_by_key.get(key)
+            if eis_row is None:
+                continue
+            for column, value in eis_row.items():
+                if column in {
+                    "cell_id",
+                    "parameter_set",
+                    "replicate_id",
+                    "checkup_k",
+                    "checkup_k_next",
+                    "schema_version",
+                }:
+                    continue
+                merged[column] = value
         merged_rows.append(merged)
 
     parameter_set_counts = Counter(int(row["parameter_set"]) for row in merged_rows)
@@ -1324,6 +1472,10 @@ def load_baseline_rows(
     if pulse_targets_path is not None:
         selected_rows = [
             row for row in selected_rows if math.isfinite(_as_float(row.get("pulse_1s_resistance_k")))
+        ]
+    if eis_targets_path is not None:
+        selected_rows = [
+            row for row in selected_rows if math.isfinite(_as_float(row.get("eis_z_abs_1kHz_k")))
         ]
     if not selected_rows:
         raise ValueError(f"Requested subset '{subset}' has zero rows.")

@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 2.0: EIS QA and feature gate**.
+The repository is in **Milestone 2.1: EIS scalar diagnostic baselines**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -48,10 +48,13 @@ Milestone 1.4.1 removes the last reader-facing scaffold block, hardens checks,
 and removes internal draft labels from v0.4 SVG figures.
 Milestone 2.0 opens EIS as a gated QA and scalar feature-readiness modality,
 not as a modeling or claim milestone.
+Milestone 2.1 evaluates RT/50 scalar EIS endpoints and prior-EIS feature groups
+under grouped validation while keeping broad EIS claims blocked.
 
-No EIS predictive modeling, EIS embeddings, DRT features, capacity+PULSE+EIS
-multimodal models, sequence models, neural architecture, policy ranking, CBAT
-architecture, or EIS improvement claims have been started.
+No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
+inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
+architecture, policy ranking, CBAT architecture, or broad EIS improvement
+claims have been started.
 
 Current state:
 
@@ -142,6 +145,18 @@ Current state:
   76 parameter sets. Feature QA warns about a small number of missing selected
   frequencies, so EIS is ready for QA/feature-readiness discussion only, not
   predictive claims.
+- Milestone 2.1 adds `eis_target_table_v1.parquet`, EIS target QA, scalar EIS
+  endpoint baselines, and focused prior-EIS HGB-50 PULSE/capacity reruns. The
+  EIS target table has 3,827 interval rows, 3,821 finite prior-EIS rows, 3,750
+  finite k1 rows, and 3,744 finite delta rows for the primary scalar EIS
+  targets.
+- Scalar EIS endpoints are predictable enough for diagnostics:
+  `delta_eis_z_abs_1kHz` best condition-fold condition-mean MAE is 0.000307288
+  and best C-rate condition-mean MAE is 0.000999892.
+- Prior EIS shows split-dependent signal. It wins some PULSE and capacity
+  level splits, but not PULSE C-rate, capacity C-rate level, or C-rate
+  `delta_capacity_Ah`. Broad EIS improvement claims remain blocked until paired
+  strongest-non-EIS and alignment-sensitivity claim-hardening is done.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -181,6 +196,8 @@ Small audit sidecars that are referenced by documentation are tracked:
 - `reports/audit/eis_valid_frequency_report.csv`
 - `reports/audit/eis_feature_qa_report.json`
 - `reports/audit/eis_claim_readiness.md`
+- `reports/audit/eis_target_qa_report.json`
+- `reports/audit/eis_target_coverage.csv`
 
 The large Parquet outputs remain local generated artifacts:
 
@@ -194,6 +211,7 @@ The large Parquet outputs remain local generated artifacts:
 | `data/interim/interval_stress_features_v1.parquet` | 3,827 | ignored |
 | `data/interim/interval_stress_features_v1_1.parquet` | 3,827 | ignored |
 | `data/interim/eis_feature_table_v1.parquet` | 3,983 | ignored |
+| `data/interim/eis_target_table_v1.parquet` | 3,827 | ignored |
 | `reports/audit/raw_log_archive_inventory.parquet` | 541 | ignored |
 
 Milestone 0.5 generated predictions are also ignored by default:

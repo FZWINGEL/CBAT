@@ -42,8 +42,44 @@ FEATURE_GROUPS = (
     "P3_state_nominal",
     "P4_state_log_age_scalar",
     "P5_stress_v1_1",
+    "P_E0_prior_eis",
+    "P_E1_nominal_eis",
+    "P_E2_log_age_eis",
+    "P_E3_stress_eis",
 )
-STRESS_GROUPS = {"P5_stress_v1_1"}
+STRESS_GROUPS = {"P5_stress_v1_1", "P_E3_stress_eis"}
+EIS_FEATURE_GROUPS = {
+    "P_E0_prior_eis",
+    "P_E1_nominal_eis",
+    "P_E2_log_age_eis",
+    "P_E3_stress_eis",
+}
+EIS_PRIOR_FEATURES = (
+    "eis_z_real_1kHz_k",
+    "eis_z_imag_1kHz_k",
+    "eis_z_abs_1kHz_k",
+    "eis_phase_1kHz_k",
+    "nyquist_re_min_k",
+    "nyquist_re_max_k",
+    "nyquist_im_peak_abs_k",
+    "nyquist_semicircle_width_proxy_k",
+    "valid_modeling_fraction_k",
+)
+EIS_FORBIDDEN_FEATURES = {
+    "eis_z_real_1kHz_k1",
+    "eis_z_imag_1kHz_k1",
+    "eis_z_abs_1kHz_k1",
+    "eis_phase_1kHz_k1",
+    "nyquist_re_min_k1",
+    "nyquist_re_max_k1",
+    "nyquist_im_peak_abs_k1",
+    "nyquist_semicircle_width_proxy_k1",
+    "delta_eis_z_real_1kHz",
+    "delta_eis_z_abs_1kHz",
+    "delta_nyquist_semicircle_width_proxy",
+    "R0_mOhm_k",
+    "R1_mOhm_k",
+}
 
 PULSE_PREDICTION_SCHEMA = pa.schema(
     [
@@ -125,6 +161,61 @@ NUMERIC_FEATURES: dict[str, tuple[str, ...]] = {
         "cold_high_abs_current_time_h",
         "max_cold_high_abs_current_event_h",
     ),
+    "P_E0_prior_eis": (
+        "pulse_1s_resistance_k",
+        *EIS_PRIOR_FEATURES,
+    ),
+    "P_E1_nominal_eis": (
+        "pulse_1s_resistance_k",
+        "duration_h",
+        "calendar_days",
+        "checkup_k",
+        "capacity_Ah_k",
+        "nominal_temperature_C",
+        "nominal_charge_C_rate",
+        "nominal_discharge_C_rate",
+        *EIS_PRIOR_FEATURES,
+    ),
+    "P_E2_log_age_eis": (
+        "pulse_1s_resistance_k",
+        "duration_h",
+        "calendar_days",
+        "checkup_k",
+        "capacity_Ah_k",
+        "nominal_temperature_C",
+        "nominal_charge_C_rate",
+        "nominal_discharge_C_rate",
+        "log_age_efc_delta",
+        "log_age_mean_voltage_V",
+        "log_age_mean_temperature_C",
+        "log_age_mean_abs_current_A",
+        "log_age_max_abs_current_A",
+        "log_age_mean_soc",
+        *EIS_PRIOR_FEATURES,
+    ),
+    "P_E3_stress_eis": (
+        "pulse_1s_resistance_k",
+        "duration_h",
+        "calendar_days",
+        "checkup_k",
+        "capacity_Ah_k",
+        "nominal_temperature_C",
+        "nominal_charge_C_rate",
+        "nominal_discharge_C_rate",
+        "log_age_efc_delta",
+        "log_age_mean_voltage_V",
+        "log_age_mean_temperature_C",
+        "log_age_mean_abs_current_A",
+        "log_age_max_abs_current_A",
+        "log_age_mean_soc",
+        "stress_coverage_fraction",
+        "max_log_age_gap_s",
+        "cold_time_h",
+        "high_voltage_time_h",
+        "abs_current_ge_1p5C_time_h",
+        "abs_current_ge_5over3C_time_h",
+        *EIS_PRIOR_FEATURES,
+    ),
 }
 
 CATEGORICAL_FEATURES: dict[str, tuple[str, ...]] = {
@@ -134,6 +225,10 @@ CATEGORICAL_FEATURES: dict[str, tuple[str, ...]] = {
     "P3_state_nominal": ("aging_mode", "voltage_window_family"),
     "P4_state_log_age_scalar": ("aging_mode", "voltage_window_family"),
     "P5_stress_v1_1": ("aging_mode", "voltage_window_family"),
+    "P_E0_prior_eis": (),
+    "P_E1_nominal_eis": ("aging_mode", "voltage_window_family"),
+    "P_E2_log_age_eis": ("aging_mode", "voltage_window_family"),
+    "P_E3_stress_eis": ("aging_mode", "voltage_window_family"),
 }
 
 
@@ -152,6 +247,9 @@ class PulseFeatureEncoder:
             raise ValueError(f"Unknown PULSE feature group: {feature_group}")
         numeric_columns = NUMERIC_FEATURES[feature_group]
         categorical_columns = CATEGORICAL_FEATURES[feature_group]
+        eis_leakage = (set(numeric_columns) | set(categorical_columns)) & EIS_FORBIDDEN_FEATURES
+        if eis_leakage:
+            raise ValueError(f"Feature group {feature_group} includes future EIS fields: {sorted(eis_leakage)}")
         impute_values: dict[str, float] = {}
         scale_values: dict[str, float] = {}
         for column in numeric_columns:
@@ -208,6 +306,7 @@ def run_pulse_baselines(
     targets: list[str] | None = None,
     split_views: list[str] | None = None,
     max_alignment_delta_s: float | None = None,
+    eis_targets_path: Path | None = None,
 ) -> dict[str, Any]:
     selected_models = _normalize(model_levels, MODEL_LEVELS, "model level")
     selected_features = _normalize(feature_groups, FEATURE_GROUPS, "feature group")
@@ -215,6 +314,8 @@ def run_pulse_baselines(
     selected_splits = _normalize(split_views, SPLIT_COLUMNS, "split view")
     if STRESS_GROUPS & set(selected_features) and stress_features_path is None:
         raise ValueError("P5_stress_v1_1 requires --stress-features.")
+    if EIS_FEATURE_GROUPS & set(selected_features) and eis_targets_path is None:
+        raise ValueError("Prior-EIS PULSE feature groups require --eis-targets.")
     _preflight(selected_models)
 
     all_rows, subset_rows = load_pulse_rows(
@@ -224,6 +325,7 @@ def run_pulse_baselines(
         subset,
         stress_features_path=stress_features_path,
         max_alignment_delta_s=max_alignment_delta_s,
+        eis_targets_path=eis_targets_path,
     )
     sensitivity_rows = [row for row in subset_rows if not bool(row["sensitivity_flagged_monotonicity"])]
 
@@ -288,6 +390,7 @@ def run_pulse_baselines(
             "interval_subsets": str(interval_subsets_path),
             "pulse_targets": str(pulse_targets_path),
             "stress_features": str(stress_features_path) if stress_features_path else None,
+            "eis_targets": str(eis_targets_path) if eis_targets_path else None,
         },
         "outputs": {
             "report": str(out_path),
@@ -320,12 +423,14 @@ def load_pulse_rows(
     *,
     stress_features_path: Path | None = None,
     max_alignment_delta_s: float | None = None,
+    eis_targets_path: Path | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     all_rows, selected_rows = load_baseline_rows(
         interval_table_path,
         interval_subsets_path,
         subset,
         stress_features_path=stress_features_path,
+        eis_targets_path=eis_targets_path,
     )
     pulse_rows = pq.read_table(pulse_targets_path).to_pylist()
     pulse_by_key = {_interval_key(row): row for row in pulse_rows}

@@ -74,6 +74,13 @@ feature table construction, feature QA, and EIS claim-readiness reporting. It
 does not authorize EIS predictive modeling, EIS embeddings, DRT features,
 capacity+PULSE+EIS multimodal models, neural models, sequence models, policy
 ranking, CBAT, or any EIS improvement claim.
+Milestone 2.1 is EIS scalar diagnostic baselines. It authorizes EIS interval
+target tables, EIS scalar target QA, non-neural scalar EIS baselines, and
+prior-EIS feature groups for PULSE/capacity baselines using check-up `k` EIS
+features only. It does not authorize DRT, EIS embeddings, future EIS state or
+EIS deltas as capacity/PULSE inputs, neural models, sequence models, CBAT,
+policy ranking, capacity+PULSE+EIS multimodal models, or broad EIS improvement
+claims.
 
 Required split discipline:
 
@@ -178,6 +185,20 @@ Required Milestone 2.0 EIS QA artifacts:
 - `reports/audit/eis_claim_readiness.md`
 - `docs/experiments/2026-05-23_eis_qa_feature_gate.md`
 
+Required Milestone 2.1 EIS scalar diagnostic artifacts:
+
+- `data/interim/eis_target_table_v1.parquet` (ignored generated artifact)
+- `reports/audit/eis_target_qa_report.json`
+- `reports/audit/eis_target_coverage.csv`
+- `reports/baselines/eis_scalar_l0_l3_report.json`
+- `reports/baselines/eis_scalar_l0_l3/leaderboard.csv`
+- `reports/baselines/eis_scalar_l0_l3/baseline_summary.md`
+- `reports/baselines/eis_scalar_l0_l3/eis_diagnostics.md`
+- `reports/baselines/pulse_with_prior_eis_hgb50_report.json`
+- `reports/baselines/capacity_with_prior_eis_hgb50_report.json`
+- `reports/baselines/eis_prior_feature_claim_readiness.md`
+- `docs/experiments/2026-05-23_eis_scalar_diagnostic_baselines.md`
+
 Required Milestone 1.2 checks:
 
 - `mbp report build-manuscript-assets`
@@ -203,6 +224,17 @@ Milestone 2.0 EIS validation commands:
 - `mbp eis build-features`
 - `mbp eis feature-qa`
 - `mbp eis claim-readiness`
+- `ruff check . --no-cache`
+- `pytest -p no:cacheprovider`
+- `git diff --check`
+
+Milestone 2.1 EIS validation commands:
+
+- `mbp eis build-targets`
+- `mbp eis target-qa`
+- `mbp baseline run-eis`
+- focused `mbp baseline run-pulse` with prior-EIS groups
+- focused `mbp baseline run-capacity` with prior-EIS groups
 - `ruff check . --no-cache`
 - `pytest -p no:cacheprovider`
 - `git diff --check`

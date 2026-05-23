@@ -916,6 +916,11 @@ def baseline_run_capacity(
         "--pulse-targets",
         help="Optional pulse_target_table.parquet sidecar for prior-PULSE capacity feature groups.",
     ),
+    eis_targets: Path | None = typer.Option(
+        None,
+        "--eis-targets",
+        help="Optional eis_target_table_v1.parquet sidecar for prior-EIS capacity feature groups.",
+    ),
     report_dir: Path | None = typer.Option(
         None,
         "--report-dir",
@@ -970,6 +975,7 @@ def baseline_run_capacity(
             predictions_out,
             stress_features_path=stress_features,
             pulse_targets_path=pulse_targets,
+            eis_targets_path=eis_targets,
             report_dir=report_dir,
             subset=subset,
             seed=seed,
@@ -1125,6 +1131,7 @@ def baseline_run_pulse(
     out: Path = typer.Option(..., "--out", help="Output JSON path for PULSE baseline metrics."),
     predictions_out: Path = typer.Option(..., "--predictions-out", help="Output Parquet path for row-level PULSE predictions."),
     stress_features: Path | None = typer.Option(None, "--stress-features", help="Optional interval_stress_features_v1_1.parquet sidecar."),
+    eis_targets: Path | None = typer.Option(None, "--eis-targets", help="Optional eis_target_table_v1.parquet sidecar for prior-EIS PULSE feature groups."),
     report_dir: Path | None = typer.Option(None, "--report-dir", help="Optional report artifact directory."),
     subset: str = typer.Option("baseline_clean_tolerant", "--subset", help="Interval subset flag to use."),
     seed: int = typer.Option(42, "--seed", help="Deterministic model seed."),
@@ -1154,8 +1161,48 @@ def baseline_run_pulse(
         targets=_comma_values(targets),
         split_views=_comma_values(split_views),
         max_alignment_delta_s=max_alignment_delta_s,
+        eis_targets_path=eis_targets,
     )
     typer.echo(f"PULSE baseline report generated: {len(report['metrics'])} metric rows written to {out}")
+
+
+@baseline_app.command("run-eis")
+def baseline_run_eis(
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    interval_subsets: Path = typer.Option(..., "--interval-subsets", help="Path to interval_subset_registry_v1.parquet."),
+    eis_targets: Path = typer.Option(..., "--eis-targets", help="Path to eis_target_table_v1.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output JSON path for EIS scalar baseline metrics."),
+    predictions_out: Path = typer.Option(..., "--predictions-out", help="Output Parquet path for row-level EIS predictions."),
+    stress_features: Path | None = typer.Option(None, "--stress-features", help="Optional interval_stress_features_v1_1.parquet sidecar."),
+    report_dir: Path | None = typer.Option(None, "--report-dir", help="Optional directory for EIS baseline artifacts."),
+    subset: str = typer.Option("baseline_clean_tolerant", "--subset", help="Interval subset flag to use."),
+    seed: int = typer.Option(42, "--seed", help="Deterministic model seed."),
+    hgb_max_iter: int = typer.Option(50, "--hgb-max-iter", min=1, help="Maximum iterations for HGB EIS baselines."),
+    model_levels: str = typer.Option("L0_persistence,L1_ridge,L2_hist_gradient_boosting", "--model-levels", help="Comma-separated EIS model levels."),
+    feature_groups: str = typer.Option("E0_persistence,E1_state_time,E2_state_capacity,E3_state_nominal,E4_log_age_scalar,E5_stress_v1_1", "--feature-groups", help="Comma-separated EIS feature groups."),
+    targets: str = typer.Option("delta_eis_z_abs_1kHz,eis_z_abs_1kHz_k1,delta_nyquist_semicircle_width_proxy,nyquist_semicircle_width_proxy_k1", "--targets", help="Comma-separated EIS targets."),
+    split_views: str = typer.Option("condition_fold,temperature_holdout_fold,c_rate_holdout_fold,profile_holdout_fold,voltage_window_holdout_fold", "--split-views", help="Comma-separated split views."),
+) -> None:
+    """Run grouped scalar EIS diagnostic baselines."""
+    from mbp.baselines.eis import run_eis_baselines
+
+    report = run_eis_baselines(
+        interval_table,
+        interval_subsets,
+        eis_targets,
+        out,
+        predictions_out,
+        stress_features_path=stress_features,
+        report_dir=report_dir,
+        subset=subset,
+        seed=seed,
+        hgb_max_iter=hgb_max_iter,
+        model_levels=_comma_values(model_levels),
+        feature_groups=_comma_values(feature_groups),
+        targets=_comma_values(targets),
+        split_views=_comma_values(split_views),
+    )
+    typer.echo(f"EIS baseline report generated: {len(report['metrics'])} metric rows written to {out}")
 
 
 @pulse_app.command("qa")
@@ -1311,6 +1358,41 @@ def eis_feature_qa(
 
     report = write_eis_feature_qa_report(eis_features, interval_table, out)
     typer.echo(f"EIS feature QA report generated: {report['row_count']} rows written to {out}")
+
+
+@eis_app.command("build-targets")
+def eis_build_targets(
+    eis_features: Path = typer.Option(..., "--eis-features", help="Path to eis_feature_table_v1.parquet."),
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output EIS target table Parquet path."),
+    soc_percent: float = typer.Option(50.0, "--soc-percent", help="Canonical EIS SOC percent."),
+    temperature_context: str = typer.Option("RT", "--temperature-context", help="Canonical EIS temperature context."),
+) -> None:
+    """Build one canonical EIS target row per interval."""
+    from mbp.data.products.eis_features import build_eis_target_table
+
+    table = build_eis_target_table(
+        eis_features,
+        interval_table,
+        out,
+        soc_percent=soc_percent,
+        temperature_context=temperature_context,
+    )
+    typer.echo(f"EIS target table generated: {table.num_rows} rows written to {out}")
+
+
+@eis_app.command("target-qa")
+def eis_target_qa(
+    eis_targets: Path = typer.Option(..., "--eis-targets", help="Path to eis_target_table_v1.parquet."),
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output EIS target QA JSON path."),
+    coverage_out: Path = typer.Option(..., "--coverage-out", help="Output EIS target coverage CSV."),
+) -> None:
+    """Write EIS interval target QA report."""
+    from mbp.data.products.eis_features import write_eis_target_qa_report
+
+    report = write_eis_target_qa_report(eis_targets, interval_table, out, coverage_out)
+    typer.echo(f"EIS target QA report generated: {report['row_count']} rows written to {out}")
 
 
 @eis_app.command("claim-readiness")

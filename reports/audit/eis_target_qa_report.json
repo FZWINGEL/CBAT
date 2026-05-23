@@ -1,0 +1,75 @@
+{
+  "alignment_delta_s_k": {
+    "count": 3821,
+    "max": 65618.0,
+    "median": 13116.0,
+    "min": 7778.0,
+    "p95": 50779.0
+  },
+  "alignment_delta_s_k1": {
+    "count": 3750,
+    "max": 126093.0,
+    "median": 12603.5,
+    "min": 7760.0,
+    "p95": 22699.1
+  },
+  "feature_policy_version": "eis_feature_policy.v1",
+  "finite_delta_target_counts": {
+    "delta_eis_z_abs_1kHz": 3744,
+    "delta_eis_z_real_1kHz": 3744,
+    "delta_nyquist_semicircle_width_proxy": 3744
+  },
+  "finite_k1_eis_rows": 3750,
+  "finite_prior_eis_rows": 3821,
+  "generated_at_utc": "2026-05-23T13:27:20.317137+00:00",
+  "inputs": {
+    "eis_targets": "data/interim/eis_target_table_v1.parquet",
+    "interval_table": "data/interim/interval_table.parquet"
+  },
+  "missing_k1_eis_rows": 77,
+  "missing_prior_eis_rows": 6,
+  "outputs": {
+    "coverage": "reports/audit/eis_target_coverage.csv"
+  },
+  "row_count": 3827,
+  "schema_version": "gate20.eis_features.v1",
+  "selected_frequency_missingness": {
+    "eis_z_abs_1kHz_k": 6,
+    "eis_z_abs_1kHz_k1": 77
+  },
+  "split_coverage": {
+    "c_rate_holdout_fold=0": 3665,
+    "c_rate_holdout_fold=1": 156,
+    "condition_fold=0": 842,
+    "condition_fold=1": 864,
+    "condition_fold=2": 890,
+    "condition_fold=3": 509,
+    "condition_fold=4": 716,
+    "profile_holdout_fold=0": 3071,
+    "profile_holdout_fold=1": 750,
+    "temperature_holdout_fold=0": 2022,
+    "temperature_holdout_fold=1": 742,
+    "temperature_holdout_fold=2": 1057,
+    "voltage_window_holdout_fold=1": 1128,
+    "voltage_window_holdout_fold=2": 1368,
+    "voltage_window_holdout_fold=3": 1325
+  },
+  "status": "passed",
+  "unique_cells_with_prior": 228,
+  "unique_parameter_sets_with_prior": 76,
+  "valid_modeling_fraction_k": {
+    "count": 3821,
+    "max": 0.7241379310344828,
+    "median": 0.7241379310344828,
+    "min": 0.6896551724137931,
+    "p95": 0.7241379310344828
+  },
+  "valid_modeling_fraction_k1": {
+    "count": 3750,
+    "max": 0.7241379310344828,
+    "median": 0.7241379310344828,
+    "min": 0.6896551724137931,
+    "p95": 0.7241379310344828
+  },
+  "warnings": []
+}

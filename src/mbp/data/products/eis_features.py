@@ -14,7 +14,11 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from mbp.data.luh_blank.parse_eis import compute_modeling_mask
-from mbp.data.schema_contracts import EIS_FEATURE_TABLE_V1_SCHEMA, validate_table
+from mbp.data.schema_contracts import (
+    EIS_FEATURE_TABLE_V1_SCHEMA,
+    EIS_TARGET_TABLE_V1_SCHEMA,
+    validate_table,
+)
 
 SCHEMA_VERSION = "gate20.eis_features.v1"
 FEATURE_POLICY_VERSION = "eis_feature_policy.v1"
@@ -326,6 +330,170 @@ def write_eis_feature_qa_report(
     return report
 
 
+def build_eis_target_table(
+    eis_features_path: Path,
+    interval_table_path: Path,
+    out_path: Path,
+    *,
+    soc_percent: float = 50.0,
+    temperature_context: str = "RT",
+) -> pa.Table:
+    """Build one canonical EIS target row per interval."""
+    feature_rows = _read_parquet_rows(eis_features_path)
+    interval_rows = _read_parquet_rows(interval_table_path)
+    temp = temperature_context.upper()
+    features_by_key = {
+        (str(row["cell_id"]), int(row["checkup_k"])): row
+        for row in feature_rows
+        if _same_soc(row.get("soc_percent"), soc_percent)
+        and str(row.get("temperature_context", "")).upper() == temp
+    }
+    output_rows: list[dict[str, Any]] = []
+    for interval in interval_rows:
+        feature_k = features_by_key.get((str(interval["cell_id"]), int(interval["checkup_k"])))
+        feature_k1 = features_by_key.get((str(interval["cell_id"]), int(interval["checkup_k_next"])))
+        flags: list[str] = []
+        if feature_k is None:
+            flags.append("missing_eis_k")
+        if feature_k1 is None:
+            flags.append("missing_eis_k1")
+        row = {
+            "cell_id": str(interval["cell_id"]),
+            "parameter_set": int(interval["parameter_set"]),
+            "replicate_id": int(interval["replicate_id"]),
+            "checkup_k": int(interval["checkup_k"]),
+            "checkup_k_next": int(interval["checkup_k_next"]),
+            "soc_percent": float(soc_percent),
+            "temperature_context": temp,
+            "condition_fold": int(interval["condition_fold"]),
+            "temperature_holdout_fold": int(interval["temperature_holdout_fold"]),
+            "c_rate_holdout_fold": int(interval["c_rate_holdout_fold"]),
+            "profile_holdout_fold": int(interval["profile_holdout_fold"]),
+            "voltage_window_holdout_fold": int(interval["voltage_window_holdout_fold"]),
+            "eis_z_real_1kHz_k": _maybe(feature_k, "z_real_1kHz"),
+            "eis_z_imag_1kHz_k": _maybe(feature_k, "z_imag_1kHz"),
+            "eis_z_abs_1kHz_k": _maybe(feature_k, "z_abs_1kHz"),
+            "eis_phase_1kHz_k": _maybe(feature_k, "phase_1kHz"),
+            "eis_z_real_1kHz_k1": _maybe(feature_k1, "z_real_1kHz"),
+            "eis_z_imag_1kHz_k1": _maybe(feature_k1, "z_imag_1kHz"),
+            "eis_z_abs_1kHz_k1": _maybe(feature_k1, "z_abs_1kHz"),
+            "eis_phase_1kHz_k1": _maybe(feature_k1, "phase_1kHz"),
+            "nyquist_re_min_k": _maybe(feature_k, "nyquist_re_min"),
+            "nyquist_re_max_k": _maybe(feature_k, "nyquist_re_max"),
+            "nyquist_im_peak_abs_k": _maybe(feature_k, "nyquist_im_peak_abs"),
+            "nyquist_semicircle_width_proxy_k": _maybe(
+                feature_k, "nyquist_semicircle_width_proxy"
+            ),
+            "nyquist_re_min_k1": _maybe(feature_k1, "nyquist_re_min"),
+            "nyquist_re_max_k1": _maybe(feature_k1, "nyquist_re_max"),
+            "nyquist_im_peak_abs_k1": _maybe(feature_k1, "nyquist_im_peak_abs"),
+            "nyquist_semicircle_width_proxy_k1": _maybe(
+                feature_k1, "nyquist_semicircle_width_proxy"
+            ),
+            "valid_modeling_fraction_k": _maybe(feature_k, "valid_modeling_fraction"),
+            "valid_modeling_fraction_k1": _maybe(feature_k1, "valid_modeling_fraction"),
+            "alignment_delta_s_k": _maybe(feature_k, "alignment_delta_s"),
+            "alignment_delta_s_k1": _maybe(feature_k1, "alignment_delta_s"),
+            "quality_flags": ";".join(flags) if flags else "OK",
+            "schema_version": SCHEMA_VERSION,
+            "feature_policy_version": FEATURE_POLICY_VERSION,
+        }
+        row["delta_eis_z_real_1kHz"] = _delta(
+            row["eis_z_real_1kHz_k"], row["eis_z_real_1kHz_k1"]
+        )
+        row["delta_eis_z_abs_1kHz"] = _delta(
+            row["eis_z_abs_1kHz_k"], row["eis_z_abs_1kHz_k1"]
+        )
+        row["delta_nyquist_semicircle_width_proxy"] = _delta(
+            row["nyquist_semicircle_width_proxy_k"],
+            row["nyquist_semicircle_width_proxy_k1"],
+        )
+        output_rows.append(row)
+    table = pa.Table.from_pylist(output_rows, schema=EIS_TARGET_TABLE_V1_SCHEMA)
+    if not validate_table(table, EIS_TARGET_TABLE_V1_SCHEMA):
+        raise ValueError("EIS target table schema validation failed.")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    pq.write_table(
+        table.replace_schema_metadata(
+            {
+                b"schema_version": SCHEMA_VERSION.encode(),
+                b"feature_policy_version": FEATURE_POLICY_VERSION.encode(),
+                b"eis_features_path": str(eis_features_path).encode(),
+                b"interval_table_path": str(interval_table_path).encode(),
+            }
+        ),
+        out_path,
+    )
+    return table
+
+
+def write_eis_target_qa_report(
+    eis_targets_path: Path,
+    interval_table_path: Path,
+    out_path: Path,
+    coverage_out_path: Path,
+) -> dict[str, Any]:
+    """Write QA diagnostics for EIS interval target availability."""
+    rows = _read_parquet_rows(eis_targets_path)
+    metadata_by_checkup = _metadata_by_cell_checkup(_read_parquet_rows(interval_table_path))
+    prior_rows = [row for row in rows if math.isfinite(_as_float(row.get("eis_z_abs_1kHz_k")))]
+    k1_rows = [row for row in rows if math.isfinite(_as_float(row.get("eis_z_abs_1kHz_k1")))]
+    delta_targets = (
+        "delta_eis_z_abs_1kHz",
+        "delta_eis_z_real_1kHz",
+        "delta_nyquist_semicircle_width_proxy",
+    )
+    coverage_rows = _target_coverage_rows(rows)
+    _write_csv(coverage_out_path, coverage_rows)
+    warnings: list[str] = []
+    split_counts = _split_counts(prior_rows, metadata_by_checkup)
+    if split_counts.get("c_rate_holdout_fold=1", 0) == 0:
+        warnings.append("no_c_rate_prior_eis_rows")
+    if split_counts.get("profile_holdout_fold=1", 0) == 0:
+        warnings.append("no_profile_prior_eis_rows")
+    report = {
+        "status": "warning" if warnings else "passed",
+        "schema_version": SCHEMA_VERSION,
+        "feature_policy_version": FEATURE_POLICY_VERSION,
+        "generated_at_utc": _now(),
+        "inputs": {"eis_targets": str(eis_targets_path), "interval_table": str(interval_table_path)},
+        "row_count": len(rows),
+        "finite_prior_eis_rows": len(prior_rows),
+        "finite_k1_eis_rows": len(k1_rows),
+        "missing_prior_eis_rows": len(rows) - len(prior_rows),
+        "missing_k1_eis_rows": len(rows) - len(k1_rows),
+        "finite_delta_target_counts": {
+            target: sum(math.isfinite(_as_float(row.get(target))) for row in rows)
+            for target in delta_targets
+        },
+        "unique_cells_with_prior": len({str(row.get("cell_id")) for row in prior_rows}),
+        "unique_parameter_sets_with_prior": len(
+            {int(row["parameter_set"]) for row in prior_rows if row.get("parameter_set") is not None}
+        ),
+        "alignment_delta_s_k": _numeric_summary(
+            [_as_float(row.get("alignment_delta_s_k")) for row in prior_rows]
+        ),
+        "alignment_delta_s_k1": _numeric_summary(
+            [_as_float(row.get("alignment_delta_s_k1")) for row in k1_rows]
+        ),
+        "valid_modeling_fraction_k": _numeric_summary(
+            [_as_float(row.get("valid_modeling_fraction_k")) for row in prior_rows]
+        ),
+        "valid_modeling_fraction_k1": _numeric_summary(
+            [_as_float(row.get("valid_modeling_fraction_k1")) for row in k1_rows]
+        ),
+        "selected_frequency_missingness": {
+            "eis_z_abs_1kHz_k": len(rows) - len(prior_rows),
+            "eis_z_abs_1kHz_k1": len(rows) - len(k1_rows),
+        },
+        "split_coverage": split_counts,
+        "warnings": warnings,
+        "outputs": {"coverage": str(coverage_out_path)},
+    }
+    _write_json(out_path, report)
+    return report
+
+
 def write_eis_claim_readiness_report(
     qa_report_path: Path,
     feature_qa_report_path: Path,
@@ -393,6 +561,32 @@ def _valid_frequency_audit_rows(rows: list[dict[str, Any]]) -> list[dict[str, An
         }
         for label, values in sorted(buckets.items())
     ]
+
+
+def _target_coverage_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    output: list[dict[str, Any]] = []
+    for grouping in ("cell_id", "parameter_set", "condition_fold", "c_rate_holdout_fold", "profile_holdout_fold"):
+        grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        for row in rows:
+            grouped[_group_value(row.get(grouping))].append(row)
+        for value, group in sorted(grouped.items()):
+            output.append(
+                {
+                    "grouping": grouping,
+                    "group_value": value,
+                    "interval_rows": len(group),
+                    "finite_prior_eis_rows": sum(
+                        math.isfinite(_as_float(row.get("eis_z_abs_1kHz_k"))) for row in group
+                    ),
+                    "finite_k1_eis_rows": sum(
+                        math.isfinite(_as_float(row.get("eis_z_abs_1kHz_k1"))) for row in group
+                    ),
+                    "finite_delta_rows": sum(
+                        math.isfinite(_as_float(row.get("delta_eis_z_abs_1kHz"))) for row in group
+                    ),
+                }
+            )
+    return output
 
 
 def _coverage_rows(
@@ -681,6 +875,18 @@ def _maybe_float(value: Any) -> float | None:
 def _maybe_int(value: Any) -> int | None:
     parsed = _as_float(value)
     return int(parsed) if math.isfinite(parsed) else None
+
+
+def _maybe(row: dict[str, Any] | None, column: str) -> float | None:
+    if row is None:
+        return None
+    return _maybe_float(row.get(column))
+
+
+def _delta(start: float | None, end: float | None) -> float | None:
+    if start is None or end is None:
+        return None
+    return end - start
 
 
 def _status(condition: bool) -> str:
