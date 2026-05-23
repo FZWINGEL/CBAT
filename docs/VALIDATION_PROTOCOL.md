@@ -131,6 +131,13 @@ authorize new model training, new feature engineering, neural models, sequence
 models, transformers, CBAT, DRT, EIS embeddings, policy ranking,
 causal/mechanistic claims, same-cell counterfactual claims, or broad multimodal
 claims.
+Milestone 3.2 authorizes executable benchmark release-candidate validation,
+artifact-manifest checks, command-DAG checks, release notes, tag-preparation
+docs, no-data-staged checks, and source-consistency checks. It does not
+authorize new model training, new feature engineering, neural models, sequence
+models, transformers, CBAT, DRT, EIS embeddings, policy ranking,
+detector-knee prediction, calibrated risk claims, causal/mechanistic claims,
+same-cell counterfactual claims, or broad multimodal claims.
 
 Required split discipline:
 
@@ -157,6 +164,15 @@ Required Milestone 3.1 release-hardening artifacts:
 - `reports/synthesis/reproducibility_gate_status.md`
 - `reports/synthesis/release_candidate_check.md`
 - `docs/experiments/2026-05-23_benchmark_release_reproducibility.md`
+
+Required Milestone 3.2 release-candidate validation artifacts:
+
+- `mbp report check-release-candidate`
+- `docs/RELEASE_NOTES_v0.1-rc1.md`
+- `docs/TAGGING_RELEASE_CANDIDATE.md`
+- updated `docs/BENCHMARK_RELEASE_CHECKLIST.md`
+- updated `reports/synthesis/release_candidate_check.md`
+- `docs/experiments/2026-05-23_benchmark_v0_1_rc_validation.md`
 
 Required Milestone 1.0 synthesis artifacts:
 

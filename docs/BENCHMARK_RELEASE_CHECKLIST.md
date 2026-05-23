@@ -4,7 +4,10 @@ Use this checklist before tagging or handing off a release candidate.
 
 - [ ] `ruff check . --no-cache` passes if code changed.
 - [ ] `pytest -p no:cacheprovider` passes if code changed.
+- [ ] `mbp report check-release-candidate` passes.
 - [ ] `git diff --check` passes.
+- [ ] `docs/RELEASE_NOTES_v0.1-rc1.md` exists.
+- [ ] `docs/TAGGING_RELEASE_CANDIDATE.md` exists.
 - [ ] No raw data files are staged.
 - [ ] No `data/interim`, `data/splits`, or `data/processed` Parquets are
       staged.

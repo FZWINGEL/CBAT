@@ -482,6 +482,71 @@ def report_check_reader_manuscript(
         raise typer.Exit(code=1)
 
 
+@report_app.command("check-release-candidate")
+def report_check_release_candidate(
+    claim_ledger: Path = typer.Option(
+        Path("docs/MAIN_PROJECT_CLAIM_LEDGER_V2.md"),
+        "--claim-ledger",
+        help="Main-project v2 claim ledger markdown file.",
+    ),
+    claim_matrix: Path = typer.Option(
+        Path("reports/synthesis/main_project_claim_matrix_v2.csv"),
+        "--claim-matrix",
+        help="Main-project v2 claim matrix CSV.",
+    ),
+    artifact_manifest: Path = typer.Option(
+        Path("reports/synthesis/artifact_manifest_v2.csv"),
+        "--artifact-manifest",
+        help="Benchmark release artifact manifest CSV.",
+    ),
+    repo_status: Path = typer.Option(
+        Path("docs/REPO_STATUS.md"),
+        "--repo-status",
+        help="Repository status markdown file.",
+    ),
+    agents: Path = typer.Option(
+        Path("AGENTS.md"),
+        "--agents",
+        help="AGENTS.md workflow file.",
+    ),
+    runbook: Path = typer.Option(
+        Path("docs/BENCHMARK_RUNBOOK.md"),
+        "--runbook",
+        help="Benchmark runbook markdown file.",
+    ),
+    command_dag: Path = typer.Option(
+        Path("docs/COMMAND_DAG.md"),
+        "--command-dag",
+        help="Benchmark command DAG markdown file.",
+    ),
+    out: Path = typer.Option(
+        Path("reports/synthesis/release_candidate_check.md"),
+        "--out",
+        help="Output Markdown release-candidate check report.",
+    ),
+) -> None:
+    """Check benchmark release-candidate artifacts, claims, and command coverage."""
+    from mbp.reporting import check_release_candidate, write_release_candidate_check
+
+    result = check_release_candidate(
+        claim_ledger=claim_ledger,
+        claim_matrix=claim_matrix,
+        artifact_manifest=artifact_manifest,
+        repo_status=repo_status,
+        agents=agents,
+        runbook=runbook,
+        command_dag=command_dag,
+    )
+    write_release_candidate_check(result, out)
+    typer.echo(f"Release candidate check {result['status']}: {out}")
+    for warning in result["warnings"]:
+        typer.echo(f"warning: {warning}")
+    for failure in result["errors"]:
+        typer.echo(f"failure: {failure}")
+    if result["status"] != "passed":
+        raise typer.Exit(code=1)
+
+
 @ingest_app.command("run-pipeline")
 def ingest_run_pipeline(
     data_root: Path = typer.Option(
