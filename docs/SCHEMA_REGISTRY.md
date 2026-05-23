@@ -49,6 +49,7 @@ Schema version prefix: `gate1.audit.v1`
 | `eis_leakage_audit` | Implemented | `mbp.baselines.eis_claims` | capacity/PULSE/EIS feature group definitions, prior-EIS allowlist, future EIS/R0R1/DRT/embedding blocklist |
 | `semi_empirical_capacity_report` | Implemented | `mbp.baselines.semi_empirical` | interval table path, interval subset registry path, stress-feature sidecar path, SE0-SE4 feature policy, grouped split view |
 | `replicate_uncertainty_diagnostics` | Implemented | `mbp.analysis.replicate_uncertainty` | interval table path, capacity report path, capacity prediction path, condition-triplet spread, empirical tolerance intervals |
+| `capacity_calibration_diagnostics` | Implemented | `mbp.analysis.calibration` | capacity report path, capacity prediction path, replicate-spread table, grouped calibration method, no-test-leakage calibration source |
 
 ## Gate 2/3 Schema Contracts
 
@@ -79,3 +80,4 @@ Schema version prefix: `gate1.audit.v1`
 - `eis_leakage_audit` confirms non-EIS target baselines use only prior EIS `k` scalar features and exclude EIS `k1`, EIS deltas, R0/R1 without leakage-safe provenance, DRT fields, and learned embeddings.
 - `semi_empirical_capacity_report` records non-neural ridge-style semi-empirical stress comparators. Generated prediction Parquet remains ignored; JSON/CSV/Markdown reports are trackable.
 - `replicate_uncertainty_diagnostics` records condition-triplet spread, empirical min/max tolerance intervals, model error versus replicate spread, C-rate replicate uncertainty, and conservative uncertainty claim-readiness.
+- `capacity_calibration_diagnostics` records raw HGB quantile coverage, split-conformal coverage, stressor-family conformal coverage, replicate-hybrid interval diagnostics, coverage by split/condition, width summaries, C-rate calibration summaries, and conservative calibration claim-readiness.

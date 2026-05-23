@@ -1250,6 +1250,39 @@ def analysis_replicate_uncertainty(
     )
 
 
+@analysis_app.command("calibrate-capacity")
+def analysis_calibrate_capacity(
+    capacity_report: Path = typer.Option(..., "--capacity-report", help="Capacity baseline JSON report."),
+    capacity_predictions: Path = typer.Option(..., "--capacity-predictions", help="Capacity prediction Parquet."),
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    replicate_spread: Path = typer.Option(..., "--replicate-spread", help="Replicate spread CSV from replicate-uncertainty."),
+    out_dir: Path = typer.Option(..., "--out-dir", help="Output directory for calibration diagnostics."),
+    nominal_coverage: float = typer.Option(0.9, "--nominal-coverage", help="Nominal conformal coverage."),
+    min_calibration_conditions: int = typer.Option(
+        5,
+        "--min-calibration-conditions",
+        min=1,
+        help="Minimum disjoint calibration parameter sets required.",
+    ),
+) -> None:
+    """Evaluate grouped capacity interval calibration diagnostics."""
+    from mbp.analysis.calibration import write_capacity_calibration_report
+
+    report = write_capacity_calibration_report(
+        capacity_report,
+        capacity_predictions,
+        interval_table,
+        replicate_spread,
+        out_dir,
+        nominal_coverage=nominal_coverage,
+        min_calibration_conditions=min_calibration_conditions,
+    )
+    typer.echo(
+        "Capacity calibration report generated: "
+        f"{report['row_counts']['coverage_rows']} split-level rows"
+    )
+
+
 @baseline_app.command("diagnose-capacity")
 def baseline_diagnose_capacity(
     report: Path = typer.Option(

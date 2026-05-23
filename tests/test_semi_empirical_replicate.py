@@ -9,6 +9,7 @@ from mbp.analysis.replicate_uncertainty import (
     model_error_vs_replicate_spread_rows,
     replicate_spread_rows,
 )
+from mbp.analysis.calibration import calibration_rows, interval_width_summary_rows
 from mbp.baselines.semi_empirical import (
     NUMERIC_FEATURES,
     TARGET_DERIVED_FORBIDDEN,
@@ -149,3 +150,84 @@ def test_replicate_spread_and_model_error_diagnostics() -> None:
     error_rows = model_error_vs_replicate_spread_rows(predictions, spread)
     assert error_rows
     assert {"model_mae", "mean_replicate_spread"} <= set(error_rows[0])
+
+
+def test_grouped_conformal_excludes_test_parameter_sets() -> None:
+    predictions: list[dict[str, object]] = []
+    for parameter_set, heldout_fold, error in (
+        (1, 0, 9.0),
+        (2, 1, 0.1),
+        (3, 2, 0.2),
+    ):
+        for checkup_k in (0, 1):
+            y_true = 1.0
+            predictions.append(
+                {
+                    "run_scope": "primary",
+                    "target": "capacity_Ah_k1",
+                    "split_name": "condition_fold",
+                    "heldout_fold": heldout_fold,
+                    "model_level": "L2_hist_gradient_boosting",
+                    "feature_group": "F4_state_log_age_scalar",
+                    "parameter_set": parameter_set,
+                    "checkup_k_next": checkup_k + 1,
+                    "y_true": y_true,
+                    "y_pred": y_true + error,
+                }
+            )
+    spread_lookup = {
+        (parameter_set, checkup_k, "capacity_Ah_k1"): 0.05
+        for parameter_set in (1, 2, 3)
+        for checkup_k in (1, 2)
+    }
+    split_rows, condition_rows = calibration_rows(
+        predictions,
+        spread_lookup,
+        nominal_coverage=0.9,
+        min_calibration_conditions=2,
+    )
+    q1 = [
+        row
+        for row in split_rows
+        if row["method"] == "Q1_split_conformal_abs_residual"
+        and row["target"] == "capacity_Ah_k1"
+        and row["heldout_fold"] == 0
+    ][0]
+    assert q1["n_calibration_conditions"] == 2
+    assert float(q1["conformal_radius"]) < 1.0
+    assert q1["calibration_source"] == "same_split_excluding_test_conditions"
+    assert condition_rows
+
+
+def test_interval_width_summary_and_hybrid_rows_render() -> None:
+    predictions: list[dict[str, object]] = []
+    for parameter_set, heldout_fold in ((1, 0), (2, 1), (3, 2)):
+        predictions.append(
+            {
+                "run_scope": "primary",
+                "target": "delta_capacity_Ah",
+                "split_name": "condition_fold",
+                "heldout_fold": heldout_fold,
+                "model_level": "L2_hist_gradient_boosting",
+                "feature_group": "F4_state_log_age_scalar",
+                "parameter_set": parameter_set,
+                "checkup_k_next": 1,
+                "y_true": -0.1,
+                "y_pred": -0.11,
+            }
+        )
+    spread_lookup = {
+        (parameter_set, 1, "delta_capacity_Ah"): 0.2 for parameter_set in (1, 2, 3)
+    }
+    split_rows, _ = calibration_rows(
+        predictions,
+        spread_lookup,
+        nominal_coverage=0.9,
+        min_calibration_conditions=2,
+    )
+    hybrid = [row for row in split_rows if row["method"] == "Q3_replicate_tolerance_hybrid"]
+    assert hybrid
+    assert all(float(row["replicate_radius"]) == 0.2 for row in hybrid)
+    width_rows = interval_width_summary_rows(split_rows)
+    assert width_rows
+    assert {"mean_interval_width", "interval_score"} <= set(width_rows[0])

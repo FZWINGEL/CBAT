@@ -11,8 +11,8 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 2.2: Semi-empirical and hierarchical baseline
-gate**.
+The repository is in **Milestone 2.3: Grouped calibration and replicate-aware
+uncertainty gate**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -58,6 +58,9 @@ strengthened.
 Milestone 2.2 adds charter-required semi-empirical stress comparators and
 condition-triplet replicate uncertainty diagnostics before any architecture
 work.
+Milestone 2.3 evaluates raw HGB quantile coverage, grouped conformal
+calibration, stressor-family conformal calibration, and replicate-aware hybrid
+interval diagnostics before any calibrated-uncertainty claim is allowed.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -181,6 +184,13 @@ Current state:
   baseline in C-rate capacity/fade views; they only show a limited profile
   holdout advantage against F4. Replicate diagnostics quantify spread but do
   not authorize calibrated-uncertainty claims.
+- Milestone 2.3 is implemented and run. `mbp analysis calibrate-capacity`
+  compares raw HGB q10/q90 intervals, split-conformal intervals,
+  stressor-family conformal intervals, and replicate-aware hybrid intervals
+  from existing grouped capacity predictions. Raw quantiles remain
+  undercovered. Conformal methods improve mean coverage, but C-rate coverage
+  remains below target, so no global calibrated-uncertainty claim is
+  authorized.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -1435,7 +1445,7 @@ Latest validation run:
 All checks passed.
 
 .venv/bin/pytest -p no:cacheprovider
-126 passed.
+128 passed.
 
 git diff --check
 passed.
@@ -1452,6 +1462,13 @@ Semi-empirical comparison generated: 428 paired F4 rows
 
 mbp analysis replicate-uncertainty
 Replicate uncertainty report generated: 3424 model-error rows
+```
+
+Milestone 2.3 report command was also run successfully:
+
+```text
+mbp analysis calibrate-capacity
+Capacity calibration report generated: 96 split-level rows
 ```
 
 Milestone 2.1.1 report commands were also run successfully:
@@ -1501,13 +1518,13 @@ The previous `datetime.utcnow()` deprecation warning in
 
 ## Recommended Next Step
 
-Review the **Milestone 2.2 Semi-Empirical And Hierarchical Baseline Gate**
-outputs. The current evidence supports the grouped HGB/stress baseline ladder
-over semi-empirical ridge comparators in C-rate capacity/fade views, while
-replicate diagnostics now contextualize condition-triplet variability without
-authorizing calibrated uncertainty.
+Review the **Milestone 2.3 Grouped Calibration And Replicate-Aware Uncertainty
+Gate** outputs. Raw HGB quantiles remain undercovered, grouped conformal
+calibration improves mean coverage but does not solve C-rate coverage, and
+replicate-aware hybrid intervals remain diagnostic rather than a validated
+calibrated-uncertainty result.
 
-The next technical step should be a conservative synthesis or uncertainty
-calibration decision pass, not architecture. Do not jump directly to neural
-models, sequence models, CBAT, DRT, EIS embeddings, policy ranking,
-capacity+PULSE+EIS multimodal models, or broad causal/mechanistic claims.
+The next technical step should stay baseline-first and claim-gated. Do not jump
+directly to neural models, sequence models, CBAT, DRT, EIS embeddings, policy
+ranking, capacity+PULSE+EIS multimodal models, calibrated-uncertainty claims,
+or broad causal/mechanistic claims.

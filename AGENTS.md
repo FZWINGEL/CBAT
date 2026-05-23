@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 2.2: Semi-empirical and hierarchical baseline gate.
+Milestone 2.3: Grouped calibration and replicate-aware uncertainty gate.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -35,20 +35,18 @@ Current state:
   state improves `capacity_Ah_k1` over F4 in selected grouped splits, but it
   does not beat the strongest supplied non-PULSE HGB baselines and does not
   improve `delta_capacity_Ah`.
-- The current main-project track adds charter-required domain and
-  replicate-aware comparators: semi-empirical stress baselines and
-  condition-triplet uncertainty diagnostics. These are baseline gates, not
-  architecture work.
+- The current main-project track evaluates grouped, replicate-aware calibration
+  diagnostics for capacity prediction intervals. This is an uncertainty gate,
+  not architecture work.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
 Allowed work:
-- semi-empirical capacity/resistance baselines
-- condition-triplet replicate diagnostics
-- hierarchical or mixed-effects-like baseline reports
-- replicate-aware tolerance intervals
-- comparisons against existing HGB/stress/PULSE/EIS baselines
-- uncertainty claim-readiness updates
+- grouped conformal calibration
+- condition-cluster calibration diagnostics
+- replicate-aware tolerance diagnostics
+- uncertainty interval comparison reports
+- capacity calibration claim-readiness updates
 - documentation/evidence memo updates
 - lightweight report formatting or consistency fixes
 - small tests with synthetic fixtures
@@ -62,6 +60,7 @@ Forbidden work:
 - policy ranking
 - capacity+PULSE+EIS architecture work
 - causal or mechanistic overclaims
+- calibrated uncertainty claims unless grouped coverage passes
 - broad EIS predictive claims
 - future EIS state as capacity/PULSE input
 - EIS deltas as capacity/PULSE input

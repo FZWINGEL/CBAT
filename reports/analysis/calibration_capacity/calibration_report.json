@@ -1,0 +1,26 @@
+{
+  "generated_at_utc": "2026-05-23T14:53:39.272592+00:00",
+  "inputs": {
+    "capacity_predictions": "data/processed/capacity_hgb50_focused_predictions.parquet",
+    "capacity_report": "reports/baselines/capacity_hgb50_focused_report.json",
+    "interval_table": "data/interim/interval_table.parquet",
+    "replicate_spread": "reports/analysis/replicate_uncertainty/replicate_spread_by_condition.csv"
+  },
+  "min_calibration_conditions": 5,
+  "nominal_coverage": 0.9,
+  "outputs": {
+    "c_rate_calibration_summary": "reports/analysis/calibration_capacity/c_rate_calibration_summary.md",
+    "calibration_claim_readiness": "reports/analysis/calibration_capacity/calibration_claim_readiness.md",
+    "coverage_by_condition": "reports/analysis/calibration_capacity/coverage_by_condition.csv",
+    "coverage_by_split": "reports/analysis/calibration_capacity/coverage_by_split.csv",
+    "interval_width_summary": "reports/analysis/calibration_capacity/interval_width_summary.csv"
+  },
+  "row_counts": {
+    "condition_rows": 1664,
+    "coverage_rows": 96,
+    "prediction_rows": 165840
+  },
+  "schema_version": "gate23.calibration_capacity.v1",
+  "source_capacity_report_schema": "gate5.capacity_baseline.v1",
+  "status": "passed"
+}

@@ -88,6 +88,13 @@ stress comparators and condition-triplet replicate uncertainty diagnostics. It
 does not authorize neural models, sequence models, CBAT, DRT, EIS embeddings,
 policy ranking, capacity+PULSE+EIS architecture work, or causal/mechanistic
 overclaims.
+Milestone 2.3 authorizes grouped capacity calibration diagnostics:
+split-conformal intervals, stressor-family conformal intervals, replicate-aware
+hybrid intervals, coverage/width reports, and calibration claim-readiness. It
+does not authorize neural models, sequence models, CBAT, DRT, EIS embeddings,
+policy ranking, capacity+PULSE+EIS architecture work, causal/mechanistic
+claims, or calibrated uncertainty claims unless grouped coverage passes without
+test-residual leakage.
 
 Required split discipline:
 
@@ -243,6 +250,16 @@ Required Milestone 2.2 semi-empirical and replicate-gate artifacts:
 - `reports/analysis/replicate_uncertainty/uncertainty_claim_readiness.md`
 - `docs/experiments/2026-05-23_semi_empirical_replicate_gate.md`
 
+Required Milestone 2.3 grouped calibration artifacts:
+
+- `reports/analysis/calibration_capacity/calibration_report.json`
+- `reports/analysis/calibration_capacity/coverage_by_split.csv`
+- `reports/analysis/calibration_capacity/coverage_by_condition.csv`
+- `reports/analysis/calibration_capacity/interval_width_summary.csv`
+- `reports/analysis/calibration_capacity/c_rate_calibration_summary.md`
+- `reports/analysis/calibration_capacity/calibration_claim_readiness.md`
+- `docs/experiments/2026-05-23_grouped_calibration_replicate_uncertainty.md`
+
 Required Milestone 1.2 checks:
 
 - `mbp report build-manuscript-assets`
@@ -287,6 +304,13 @@ Milestone 2.2 validation commands:
 - `mbp baseline run-semi-empirical`
 - `mbp baseline compare-semi-empirical`
 - `mbp analysis replicate-uncertainty`
+- `ruff check . --no-cache`
+- `pytest -p no:cacheprovider`
+- `git diff --check`
+
+Milestone 2.3 validation commands:
+
+- `mbp analysis calibrate-capacity`
 - `ruff check . --no-cache`
 - `pytest -p no:cacheprovider`
 - `git diff --check`
