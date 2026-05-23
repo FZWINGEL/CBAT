@@ -1,0 +1,21 @@
+{
+  "generated_at_utc": "2026-05-23T14:33:48.854397+00:00",
+  "inputs": {
+    "hgb_f4_report": "reports/baselines/capacity_hgb50_focused_report.json",
+    "semi_empirical_report": "reports/baselines/semi_empirical_capacity_report.json",
+    "stress_report": "reports/baselines/capacity_stress_features_v1_1_hgb50_report.json"
+  },
+  "outputs": {
+    "out_dir": "reports/baselines/semi_empirical_capacity/comparisons",
+    "paired_gain_vs_best_stress": "reports/baselines/semi_empirical_capacity/comparisons/paired_gain_vs_best_stress.csv",
+    "paired_gain_vs_hgb_f4": "reports/baselines/semi_empirical_capacity/comparisons/paired_gain_vs_hgb_f4.csv",
+    "summary": "reports/baselines/semi_empirical_capacity/comparisons/semi_empirical_comparison_summary.csv"
+  },
+  "row_counts": {
+    "paired_vs_best_stress": 404,
+    "paired_vs_hgb_f4": 428,
+    "semi_condition_rows": 2140
+  },
+  "schema_version": "gate22.semi_empirical_capacity.v1",
+  "status": "passed"
+}

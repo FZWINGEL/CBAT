@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 2.1.1: EIS claim hardening and alignment sensitivity.
+Milestone 2.2: Semi-empirical and hierarchical baseline gate.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -35,38 +35,37 @@ Current state:
   state improves `capacity_Ah_k1` over F4 in selected grouped splits, but it
   does not beat the strongest supplied non-PULSE HGB baselines and does not
   improve `delta_capacity_Ah`.
-- The current main-project track hardens the EIS scalar baseline results by
-  comparing prior-EIS groups against strongest supplied non-EIS baselines on
-  the same EIS-covered population, with bootstrap, alignment, feature
-  completeness, and leakage checks. EIS remains non-neural, scalar, and gated;
-  no broad EIS improvement claim is authorized.
+- The current main-project track adds charter-required domain and
+  replicate-aware comparators: semi-empirical stress baselines and
+  condition-triplet uncertainty diagnostics. These are baseline gates, not
+  architecture work.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
 Allowed work:
-- EIS scalar result hardening
-- prior-EIS vs strongest non-EIS paired comparisons
-- EIS alignment-threshold sensitivity
-- EIS feature-completeness sensitivity
-- parameter-set bootstrap intervals
-- EIS claim-readiness updates
+- semi-empirical capacity/resistance baselines
+- condition-triplet replicate diagnostics
+- hierarchical or mixed-effects-like baseline reports
+- replicate-aware tolerance intervals
+- comparisons against existing HGB/stress/PULSE/EIS baselines
+- uncertainty claim-readiness updates
 - documentation/evidence memo updates
 - lightweight report formatting or consistency fixes
-- small tests with synthetic EIS fixtures
+- small tests with synthetic fixtures
 
 Forbidden work:
-- new model training
-- new capacity/PULSE feature engineering
-- broad EIS predictive claims
-- EIS embeddings
+- neural models
+- sequence models
+- CBAT architecture
 - DRT features
+- EIS embeddings
+- policy ranking
+- capacity+PULSE+EIS architecture work
+- causal or mechanistic overclaims
+- broad EIS predictive claims
 - future EIS state as capacity/PULSE input
 - EIS deltas as capacity/PULSE input
 - knee prediction
-- sequence models
-- neural models
-- CBAT architecture
-- policy ranking
 - capacity+PULSE+EIS multimodal models
 - EIS improvement claims
 - capacity+PULSE multimodal claims

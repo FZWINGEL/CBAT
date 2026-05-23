@@ -81,6 +81,13 @@ features only. It does not authorize DRT, EIS embeddings, future EIS state or
 EIS deltas as capacity/PULSE inputs, neural models, sequence models, CBAT,
 policy ranking, capacity+PULSE+EIS multimodal models, or broad EIS improvement
 claims.
+Milestone 2.1.1 hardens scalar EIS claims with strongest non-EIS comparisons,
+parameter-set bootstrap intervals, alignment sensitivity, feature-completeness
+sensitivity, and leakage audits. Milestone 2.2 authorizes semi-empirical
+stress comparators and condition-triplet replicate uncertainty diagnostics. It
+does not authorize neural models, sequence models, CBAT, DRT, EIS embeddings,
+policy ranking, capacity+PULSE+EIS architecture work, or causal/mechanistic
+overclaims.
 
 Required split discipline:
 
@@ -218,6 +225,24 @@ Required Milestone 2.1.1 EIS claim-hardening artifacts:
 - `reports/baselines/eis_leakage_audit.md`
 - `docs/experiments/2026-05-23_eis_claim_hardening.md`
 
+Required Milestone 2.2 semi-empirical and replicate-gate artifacts:
+
+- `reports/baselines/semi_empirical_capacity_report.json`
+- `reports/baselines/semi_empirical_capacity/leaderboard.csv`
+- `reports/baselines/semi_empirical_capacity/baseline_summary.md`
+- `reports/baselines/semi_empirical_capacity/semi_empirical_claim_readiness.md`
+- `reports/baselines/semi_empirical_capacity/comparisons/paired_gain_vs_hgb_f4.csv`
+- `reports/baselines/semi_empirical_capacity/comparisons/paired_gain_vs_best_stress.csv`
+- `reports/baselines/semi_empirical_capacity/comparisons/semi_empirical_comparison_summary.csv`
+- `reports/baselines/semi_empirical_capacity/comparisons/semi_empirical_comparison.md`
+- `reports/analysis/replicate_uncertainty/replicate_spread_by_condition.csv`
+- `reports/analysis/replicate_uncertainty/model_error_vs_replicate_spread.csv`
+- `reports/analysis/replicate_uncertainty/condition_tolerance_intervals.csv`
+- `reports/analysis/replicate_uncertainty/c_rate_replicate_uncertainty.md`
+- `reports/analysis/replicate_uncertainty/replicate_uncertainty_summary.md`
+- `reports/analysis/replicate_uncertainty/uncertainty_claim_readiness.md`
+- `docs/experiments/2026-05-23_semi_empirical_replicate_gate.md`
+
 Required Milestone 1.2 checks:
 
 - `mbp report build-manuscript-assets`
@@ -253,6 +278,15 @@ Milestone 2.1.1 EIS validation commands:
 - `mbp baseline compare-prior-eis-capacity`
 - `mbp baseline eis-hardening-sensitivity`
 - `mbp baseline eis-claim-readiness`
+- `ruff check . --no-cache`
+- `pytest -p no:cacheprovider`
+- `git diff --check`
+
+Milestone 2.2 validation commands:
+
+- `mbp baseline run-semi-empirical`
+- `mbp baseline compare-semi-empirical`
+- `mbp analysis replicate-uncertainty`
 - `ruff check . --no-cache`
 - `pytest -p no:cacheprovider`
 - `git diff --check`

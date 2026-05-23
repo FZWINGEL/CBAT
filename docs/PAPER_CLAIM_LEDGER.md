@@ -28,6 +28,8 @@ Status values:
 | C10 | EIS improves anything. | `partially_supported` | EIS QA, valid-frequency masks, grouped predictive evidence, strongest non-EIS comparisons, alignment sensitivity, and leakage audit. | Milestone 2.1.1 supports EIS as a scalar diagnostic endpoint and shows narrow profile-split prior-EIS gains for PULSE and `capacity_Ah_k1`, but C-rate capacity, C-rate PULSE, and `delta_capacity_Ah` remain unsupported. | EIS is a scalar diagnostic endpoint with narrow split-specific prior-feature signals; broad EIS improvement claims remain blocked. | EIS broadly improves degradation prediction. | `docs/experiments/2026-05-23_eis_claim_hardening.md` |
 | C11 | CBAT architecture is justified. | `blocked` | Baselines, ablations, calibration, and simpler models must justify late-stage architecture work. | Current work is baseline-first evidence synthesis; architecture work remains blocked. | CBAT remains a reserved late-stage architecture label. | CBAT is justified by current evidence. | `docs/PROJECT_CHARTER.md` |
 | C12 | Grouped validation is required for publishable evidence. | `supported` | Replicate-aware parameter-set grouping and OOD split reports. | Headline reports use condition/stressor grouped splits; random row/cell splits remain non-publishable. | Claims must be grounded in grouped validation and condition-level summaries. | Random row or cell splits are publishable headline evidence. | `docs/VALIDATION_PROTOCOL.md` |
+| C13 | Semi-empirical stress baselines beat the strongest grouped HGB capacity baselines. | `not_supported` | Paired condition-level gains over HGB F4 and strongest stress-feature HGB baselines under grouped splits. | Milestone 2.2 semi-empirical ridge comparators are worse than HGB F4 and strongest stress-feature HGB in C-rate capacity/fade views; profile holdout shows only a limited gain against F4. | Semi-empirical stress comparators are useful domain baselines, but they do not beat the strongest supplied grouped HGB baselines in the current C-rate capacity/fade tests. | Semi-empirical stress models outperform the ML baselines. | `docs/experiments/2026-05-23_semi_empirical_replicate_gate.md` |
+| C14 | Replicate-aware diagnostics validate calibrated uncertainty. | `not_supported` | Prediction or tolerance intervals with demonstrated grouped coverage and calibration. | Milestone 2.2 quantifies condition-triplet spread and model error versus replicate spread, but the reports are diagnostic and do not validate calibrated uncertainty. | Replicate diagnostics quantify triplet variability and contextualize model error; calibrated uncertainty remains unproven. | Replicate-aware intervals are validated calibrated uncertainty estimates. | `reports/analysis/replicate_uncertainty/uncertainty_claim_readiness.md` |
 
 ## Locked Wording
 
@@ -39,6 +41,9 @@ Use:
 > is a usable scalar resistance endpoint, PULSE growth explains capacity-model
 > residuals, and prior PULSE state improves capacity-level prediction over F4 in
 > selected splits without beating the strongest supplied non-PULSE baseline.
+> EIS is a scalar diagnostic endpoint with narrow profile-split prior-feature
+> signals, and semi-empirical stress comparators do not beat the strongest
+> supplied grouped HGB baselines in the current C-rate capacity/fade tests.
 
 Do not use:
 

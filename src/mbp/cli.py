@@ -24,6 +24,7 @@ features_app = typer.Typer(help="Milestone 0.6 scalar feature-engineering comman
 pulse_app = typer.Typer(help="Milestone 0.7 PULSE QA and target commands.")
 coupling_app = typer.Typer(help="Milestone 0.8 coupling diagnostics commands.")
 eis_app = typer.Typer(help="Milestone 2.0 EIS QA and feature-gate commands.")
+analysis_app = typer.Typer(help="Analysis and uncertainty diagnostic commands.")
 
 app.add_typer(audit_app, name="audit")
 app.add_typer(report_app, name="report")
@@ -34,6 +35,7 @@ app.add_typer(features_app, name="features")
 app.add_typer(pulse_app, name="pulse")
 app.add_typer(coupling_app, name="coupling")
 app.add_typer(eis_app, name="eis")
+app.add_typer(analysis_app, name="analysis")
 
 
 def _load_optional_json(path: Path) -> dict[str, object] | None:
@@ -1157,6 +1159,94 @@ def baseline_eis_claim_readiness(
     typer.echo(
         "EIS claim-readiness reports written: "
         f"{self_report['supported_rows']} supported self-endpoint rows; leakage {leakage_report['status']}"
+    )
+
+
+@baseline_app.command("run-semi-empirical")
+def baseline_run_semi_empirical(
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    interval_subsets: Path = typer.Option(..., "--interval-subsets", help="Path to interval_subset_registry_v1.parquet."),
+    stress_features: Path = typer.Option(..., "--stress-features", help="Path to interval_stress_features_v1_1.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output JSON path for semi-empirical baseline metrics."),
+    predictions_out: Path = typer.Option(..., "--predictions-out", help="Output Parquet path for row-level semi-empirical predictions."),
+    report_dir: Path | None = typer.Option(None, "--report-dir", help="Optional directory for rendered semi-empirical artifacts."),
+    subset: str = typer.Option("baseline_clean_tolerant", "--subset", help="Interval subset flag to use."),
+    seed: int = typer.Option(42, "--seed", help="Deterministic seed recorded for provenance."),
+    feature_groups: str = typer.Option(
+        "SE0_time_efc,SE1_calendar_cycling,SE2_temperature_voltage,SE3_c_rate_interactions,SE4_coupled_stress",
+        "--feature-groups",
+        help="Comma-separated semi-empirical feature groups.",
+    ),
+    targets: str = typer.Option("capacity_Ah_k1,delta_capacity_Ah", "--targets", help="Comma-separated capacity targets."),
+    split_views: str = typer.Option(
+        "condition_fold,temperature_holdout_fold,c_rate_holdout_fold,profile_holdout_fold,voltage_window_holdout_fold",
+        "--split-views",
+        help="Comma-separated split columns to evaluate.",
+    ),
+) -> None:
+    """Run non-neural semi-empirical ridge capacity baselines."""
+    from mbp.baselines.semi_empirical import run_semi_empirical_baselines
+
+    report = run_semi_empirical_baselines(
+        interval_table,
+        interval_subsets,
+        stress_features,
+        out,
+        predictions_out,
+        report_dir=report_dir,
+        subset=subset,
+        seed=seed,
+        feature_groups=_comma_values(feature_groups),
+        targets=_comma_values(targets),
+        split_views=_comma_values(split_views),
+    )
+    typer.echo(
+        "Semi-empirical capacity report generated: "
+        f"{len(report['metrics'])} metric rows written to {out}"
+    )
+
+
+@baseline_app.command("compare-semi-empirical")
+def baseline_compare_semi_empirical(
+    semi_empirical_report: Path = typer.Option(..., "--semi-empirical-report", help="Semi-empirical baseline report."),
+    hgb_f4_report: Path = typer.Option(..., "--hgb-f4-report", help="Focused HGB F4 report."),
+    stress_report: Path = typer.Option(..., "--stress-report", help="Strong non-PULSE stress-feature report."),
+    out_dir: Path = typer.Option(..., "--out-dir", help="Output directory for semi-empirical comparisons."),
+) -> None:
+    """Compare semi-empirical baselines against HGB F4 and stress reports."""
+    from mbp.baselines.semi_empirical import compare_semi_empirical_reports
+
+    report = compare_semi_empirical_reports(
+        semi_empirical_report,
+        hgb_f4_report,
+        stress_report,
+        out_dir,
+    )
+    typer.echo(
+        "Semi-empirical comparison generated: "
+        f"{report['row_counts']['paired_vs_hgb_f4']} paired F4 rows"
+    )
+
+
+@analysis_app.command("replicate-uncertainty")
+def analysis_replicate_uncertainty(
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    capacity_report: Path = typer.Option(..., "--capacity-report", help="Capacity baseline JSON report."),
+    capacity_predictions: Path = typer.Option(..., "--capacity-predictions", help="Capacity prediction Parquet."),
+    out_dir: Path = typer.Option(..., "--out-dir", help="Output directory for replicate uncertainty diagnostics."),
+) -> None:
+    """Write condition-triplet replicate uncertainty diagnostics."""
+    from mbp.analysis.replicate_uncertainty import write_replicate_uncertainty_report
+
+    report = write_replicate_uncertainty_report(
+        interval_table,
+        capacity_report,
+        capacity_predictions,
+        out_dir,
+    )
+    typer.echo(
+        "Replicate uncertainty report generated: "
+        f"{report['row_counts']['model_error_rows']} model-error rows"
     )
 
 

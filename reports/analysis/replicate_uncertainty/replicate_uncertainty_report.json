@@ -1,0 +1,24 @@
+{
+  "generated_at_utc": "2026-05-23T14:31:47.198260+00:00",
+  "inputs": {
+    "capacity_predictions": "data/processed/capacity_hgb50_focused_predictions.parquet",
+    "capacity_report": "reports/baselines/capacity_hgb50_focused_report.json",
+    "interval_table": "data/interim/interval_table.parquet"
+  },
+  "outputs": {
+    "claim_readiness": "reports/analysis/replicate_uncertainty/uncertainty_claim_readiness.md",
+    "condition_tolerance_intervals": "reports/analysis/replicate_uncertainty/condition_tolerance_intervals.csv",
+    "model_error_vs_replicate_spread": "reports/analysis/replicate_uncertainty/model_error_vs_replicate_spread.csv",
+    "out_dir": "reports/analysis/replicate_uncertainty",
+    "replicate_spread_by_condition": "reports/analysis/replicate_uncertainty/replicate_spread_by_condition.csv",
+    "summary": "reports/analysis/replicate_uncertainty/replicate_uncertainty_summary.md"
+  },
+  "row_counts": {
+    "interval_rows": 3827,
+    "model_error_rows": 3424,
+    "spread_rows": 2638
+  },
+  "schema_version": "gate22.replicate_uncertainty.v1",
+  "source_capacity_report_schema": "gate5.capacity_baseline.v1",
+  "status": "passed"
+}

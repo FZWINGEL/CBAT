@@ -11,8 +11,8 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 2.1.1: EIS claim hardening and alignment
-sensitivity**.
+The repository is in **Milestone 2.2: Semi-empirical and hierarchical baseline
+gate**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -55,6 +55,9 @@ Milestone 2.1.1 hardens those results with strongest non-EIS paired
 comparisons, parameter-set bootstrap intervals, alignment sensitivity,
 feature-completeness sensitivity, and leakage audits before any EIS claim is
 strengthened.
+Milestone 2.2 adds charter-required semi-empirical stress comparators and
+condition-triplet replicate uncertainty diagnostics before any architecture
+work.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -125,19 +128,19 @@ Current state:
 - Milestone 0.9.1 strongest non-PULSE comparison is implemented and run. It
   does not support the stronger claim that prior PULSE beats the best supplied
   non-PULSE HGB baseline.
-- Milestone 1.0 evidence synthesis is now the active workstream. Its purpose is
-  to lock supported, partially supported, not-supported, gated, and blocked
-  claims before any EIS or new modeling path is opened.
+- Milestone 1.0 evidence synthesis locked supported, partially supported,
+  not-supported, gated, and blocked claims before EIS and later main-project
+  gates were opened.
 - Milestone 1.0.1 is the active paper-artifact QA workstream. It does not add
   models or features; it prepares the synthesis artifacts for manuscript
   drafting.
 - Milestone 1.4.1 completed the reader-facing manuscript cleanup patch.
-- Milestone 2.0 is now the active main-project gate. It adds the EIS feature
-  policy, QA/coverage/alignment/frequency-mask reports, alignment-threshold
-  sensitivity, an RT/50 scalar EIS feature sidecar, feature QA, and EIS
-  claim-readiness reporting. It keeps EIS predictive modeling, DRT, embeddings,
-  capacity+PULSE+EIS multimodal models, CBAT, neural/sequence models, policy
-  ranking, and EIS improvement claims blocked.
+- Milestone 2.0 opened EIS as a gated QA and feature-readiness modality. It
+  added the EIS feature policy, QA/coverage/alignment/frequency-mask reports,
+  alignment-threshold sensitivity, an RT/50 scalar EIS feature sidecar, feature
+  QA, and EIS claim-readiness reporting while keeping EIS predictive modeling,
+  DRT, embeddings, capacity+PULSE+EIS multimodal models, CBAT,
+  neural/sequence models, policy ranking, and EIS improvement claims blocked.
 - The real EIS QA run covers 1,177,835 EIS rows, 39,368 spectra, 228 cells,
   76 parameter sets, and 29 check-up indices. The valid-frequency audit reports
   zero stored-mask mismatches while confirming 100 Hz, 208.3 Hz, and 14.7 kHz
@@ -170,6 +173,14 @@ Current state:
   `delta_capacity_Ah`. Alignment and selected-frequency completeness
   sensitivities are quantified, leakage audit passes, and broad EIS improvement
   claims remain blocked.
+- Milestone 2.2 is implemented and run. `mbp baseline run-semi-empirical`
+  evaluates SE0-SE4 ridge-style domain comparators under grouped validation,
+  and `mbp analysis replicate-uncertainty` quantifies condition-triplet spread,
+  empirical tolerance intervals, and HGB model error versus replicate spread.
+  Semi-empirical baselines do not beat HGB F4 or the strongest stress-feature
+  baseline in C-rate capacity/fade views; they only show a limited profile
+  holdout advantage against F4. Replicate diagnostics quantify spread but do
+  not authorize calibrated-uncertainty claims.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -1424,19 +1435,23 @@ Latest validation run:
 All checks passed.
 
 .venv/bin/pytest -p no:cacheprovider
-123 passed.
-
-.venv/bin/python -m mbp.cli report build-manuscript-assets --out-dir manuscript --reports-dir reports --docs-dir docs
-Manuscript assets generated: 20 figures, 5 tables, status=passed.
-
-.venv/bin/python -m mbp.cli report check-manuscript --manuscript manuscript/manuscript_v0_4.md --claim-ledger docs/PAPER_CLAIM_LEDGER.md --traceability manuscript/manuscript_v0_4_traceability.md
-Manuscript check passed.
-
-.venv/bin/python -m mbp.cli report check-reader-manuscript --manuscript manuscript/manuscript_v0_4.md --claim-ledger docs/PAPER_CLAIM_LEDGER.md --traceability manuscript/manuscript_v0_4_traceability.md
-Reader manuscript check passed.
+126 passed.
 
 git diff --check
 passed.
+```
+
+Milestone 2.2 report commands were also run successfully:
+
+```text
+mbp baseline run-semi-empirical
+Semi-empirical capacity report generated: 240 metric rows written to reports/baselines/semi_empirical_capacity_report.json
+
+mbp baseline compare-semi-empirical
+Semi-empirical comparison generated: 428 paired F4 rows
+
+mbp analysis replicate-uncertainty
+Replicate uncertainty report generated: 3424 model-error rows
 ```
 
 Milestone 2.1.1 report commands were also run successfully:
@@ -1486,11 +1501,13 @@ The previous `datetime.utcnow()` deprecation warning in
 
 ## Recommended Next Step
 
-Review the **Milestone 2.1.1 EIS Claim Hardening** outputs. EIS is supported as
-a scalar diagnostic endpoint and has narrow profile-split prior-feature signals,
-but it does not support broad EIS improvement claims, C-rate capacity claims, or
-fade-rate claims. The next technical step, if continuing EIS, should be a narrow
-EIS claim-decision/synthesis pass or a separately scoped feature-quality
-extension; do not jump directly to DRT, embeddings, EIS neural models,
-capacity+PULSE+EIS multimodal models, sequence models, policy ranking, CBAT, or
-broad multimodal claims.
+Review the **Milestone 2.2 Semi-Empirical And Hierarchical Baseline Gate**
+outputs. The current evidence supports the grouped HGB/stress baseline ladder
+over semi-empirical ridge comparators in C-rate capacity/fade views, while
+replicate diagnostics now contextualize condition-triplet variability without
+authorizing calibrated uncertainty.
+
+The next technical step should be a conservative synthesis or uncertainty
+calibration decision pass, not architecture. Do not jump directly to neural
+models, sequence models, CBAT, DRT, EIS embeddings, policy ranking,
+capacity+PULSE+EIS multimodal models, or broad causal/mechanistic claims.
