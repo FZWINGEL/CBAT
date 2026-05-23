@@ -52,6 +52,9 @@ Schema version prefix: `gate1.audit.v1`
 | `capacity_calibration_diagnostics` | Implemented | `mbp.analysis.calibration` | capacity report path, capacity prediction path, replicate-spread table, grouped calibration method, no-test-leakage calibration source |
 | `interval_sequence_features_v1` | Implemented | `mbp.data.products.run_events` | run-event table path, interval table path, shuffle seed, feature policy version, schema version |
 | `sequence_value_diagnostics` | Implemented | `mbp.baselines.sequence_value` | sequence-value capacity report path, stress baseline report path, aggregate/order/shuffled comparisons, claim-readiness |
+| `knee_candidate_table_v1` | Implemented | `mbp.analysis.knee` | interval table path, detector policy, x-axis policy, smoothing policy, schema version |
+| `knee_risk_label_table_v1` | Implemented | `mbp.analysis.knee` | knee candidate table path, interval table path, primary detector policy, exploratory label status, schema version |
+| `knee_label_stability_diagnostics` | Implemented | `mbp.analysis.knee` | candidate knee table path, detector agreement, x-axis sensitivity, smoothing sensitivity, replicate consistency, claim-readiness |
 
 ## Gate 2/3 Schema Contracts
 
@@ -86,3 +89,6 @@ Schema version prefix: `gate1.audit.v1`
 - `RUN_EVENT_TABLE_V1_SCHEMA` records LOG_AGE-derived contiguous charge/discharge/rest/unknown event segments for each interval. The builder streams the full LOG_AGE table by row group and writes events in Parquet batches to avoid materializing the source or event table in memory.
 - `INTERVAL_SEQUENCE_FEATURES_V1_SCHEMA` is one row per interval with aggregate event counts/durations, order-aware transition and stress-position summaries, and deterministic shuffled-order controls. It excludes target-derived capacity rates.
 - `sequence_value_diagnostics` compares aggregate event features, order-aware features, shuffled-order controls, and timestamp-weighted stress baselines under grouped non-neural capacity validation. It is a falsification gate and does not authorize sequence models unless order-aware features beat aggregate and shuffled controls.
+- `KNEE_CANDIDATE_TABLE_V1_SCHEMA` records one candidate knee row per cell, detector, x-axis, and smoothing policy. It includes detector quality flags, slopes, slope-change ratio, SOH at knee, condition metadata, and schema version.
+- `KNEE_RISK_LABEL_TABLE_V1_SCHEMA` records exploratory interval-level knee-risk labels from the primary detector policy. It is a label-readiness sidecar only and does not authorize knee prediction.
+- `knee_label_stability_diagnostics` records detector pair agreement, x-axis sensitivity, smoothing sensitivity, replicate-triplet knee spread, condition-level knee summaries, and knee claim-readiness.

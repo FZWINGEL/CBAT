@@ -106,3 +106,15 @@ Order-aware features did not beat aggregate features, shuffled controls, or the
 stress baseline overall. C-rate order-aware gain was negative on average.
 
 Decision: sequence models remain blocked.
+
+## Knee Labels Did Not Authorize Prediction
+
+Milestone 2.5 generated knee candidates across seven detectors, three x-axis
+choices, and two smoothing policies. The primary piecewise-linear detector
+produced valid labels for 189 / 228 cells, and x-axis/smoothing median
+disagreement was 0 check-ups. However, replicate-triplet consistency did not
+pass: only 45 / 64 primary valid parameter-set conditions were consistent
+within 2 check-ups across replicates.
+
+Decision: knee-risk labels remain exploratory and knee prediction remains
+blocked.

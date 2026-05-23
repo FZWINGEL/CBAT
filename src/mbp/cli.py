@@ -1370,6 +1370,35 @@ def analysis_calibrate_capacity(
     )
 
 
+@analysis_app.command("knee-labels")
+def analysis_knee_labels(
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    out_dir: Path = typer.Option(..., "--out-dir", help="Output directory for knee label stability diagnostics."),
+    candidate_out: Path = typer.Option(..., "--candidate-out", help="Output path for knee_candidate_table_v1.parquet."),
+) -> None:
+    """Build knee candidate labels and detector-stability diagnostics."""
+    from mbp.analysis.knee import write_knee_label_report
+
+    report = write_knee_label_report(interval_table, out_dir, candidate_out)
+    typer.echo(
+        "Knee label stability report generated: "
+        f"{report['row_counts']['candidate_rows']} candidate rows"
+    )
+
+
+@analysis_app.command("build-knee-risk-labels")
+def analysis_build_knee_risk_labels(
+    knee_candidates: Path = typer.Option(..., "--knee-candidates", help="Path to knee_candidate_table_v1.parquet."),
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output path for exploratory knee_risk_label_table_v1.parquet."),
+) -> None:
+    """Build exploratory interval-level knee-risk labels. This does not train a model."""
+    from mbp.analysis.knee import build_knee_risk_label_table
+
+    table = build_knee_risk_label_table(knee_candidates, interval_table, out)
+    typer.echo(f"Knee risk label table generated: {table.num_rows} rows written to {out}")
+
+
 @baseline_app.command("diagnose-capacity")
 def baseline_diagnose_capacity(
     report: Path = typer.Option(

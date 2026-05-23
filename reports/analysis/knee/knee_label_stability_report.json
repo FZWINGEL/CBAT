@@ -1,0 +1,44 @@
+{
+  "generated_at_utc": "2026-05-23T17:26:16.316998+00:00",
+  "label_coverage": {
+    "cells_with_no_valid_detector_rows": 0,
+    "fraction_primary_valid": 0.8289473684210527,
+    "fraction_valid_candidate_rows": 0.7045739348370927
+  },
+  "outputs": {
+    "candidate_table": "data/interim/knee_candidate_table_v1.parquet",
+    "claim_readiness": "reports/analysis/knee/knee_claim_readiness.md",
+    "detector_agreement": "reports/analysis/knee/knee_detector_agreement.csv",
+    "knee_by_condition": "reports/analysis/knee/knee_by_condition.csv",
+    "replicate_consistency": "reports/analysis/knee/knee_replicate_consistency.csv"
+  },
+  "row_counts": {
+    "candidate_rows": 9576,
+    "cells": 228,
+    "primary_rows": 228,
+    "primary_valid_rows": 189,
+    "valid_candidate_rows": 6747
+  },
+  "schema_version": "gate25.knee_candidates.v1",
+  "smoothing_sensitivity": {
+    "agreement_within_2_checkups": 0.951067615658363,
+    "mean_abs_disagreement_checkups": 1.0008896797153024,
+    "median_abs_disagreement_checkups": 0.0,
+    "n_comparisons": 3372
+  },
+  "status": "warning",
+  "trajectory_qa": {
+    "capacity_increase_cells": 6,
+    "few_checkup_cells": 39
+  },
+  "warnings": [
+    "prediction_readiness_blocked",
+    "candidate_labels_exploratory_until_detector_and_replicate_stability_pass"
+  ],
+  "x_axis_sensitivity": {
+    "agreement_within_2_checkups": 0.8923966207203201,
+    "mean_abs_disagreement_checkups": 1.5664739884393064,
+    "median_abs_disagreement_checkups": 0.0,
+    "n_comparisons": 2249
+  }
+}

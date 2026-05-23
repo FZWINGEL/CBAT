@@ -422,6 +422,51 @@ INTERVAL_SEQUENCE_FEATURES_V1_SCHEMA = pa.schema(
     ]
 )
 
+KNEE_CANDIDATE_TABLE_V1_SCHEMA = pa.schema(
+    [
+        ("cell_id", pa.string(), False),
+        ("parameter_set", pa.int32(), False),
+        ("replicate_id", pa.int32(), False),
+        ("aging_mode", pa.string(), False),
+        ("nominal_temperature_C", pa.float64(), False),
+        ("voltage_window_family", pa.string(), False),
+        ("nominal_charge_C_rate", pa.float64(), False),
+        ("profile_label", pa.string(), False),
+        ("detector_name", pa.string(), False),
+        ("x_axis", pa.string(), False),
+        ("smoothing_policy", pa.string(), False),
+        ("knee_checkup_k", pa.int32(), True),
+        ("knee_x_value", pa.float64(), True),
+        ("knee_capacity_Ah", pa.float64(), True),
+        ("knee_soh", pa.float64(), True),
+        ("pre_knee_slope", pa.float64(), True),
+        ("post_knee_slope", pa.float64(), True),
+        ("slope_change_ratio", pa.float64(), True),
+        ("detector_quality_flags", pa.string(), False),
+        ("schema_version", pa.string(), False),
+    ]
+)
+
+KNEE_RISK_LABEL_TABLE_V1_SCHEMA = pa.schema(
+    [
+        ("cell_id", pa.string(), False),
+        ("parameter_set", pa.int32(), False),
+        ("replicate_id", pa.int32(), False),
+        ("checkup_k", pa.int32(), False),
+        ("checkup_k_next", pa.int32(), False),
+        ("detector_name", pa.string(), False),
+        ("x_axis", pa.string(), False),
+        ("smoothing_policy", pa.string(), False),
+        ("knee_within_1_checkup", pa.bool_(), True),
+        ("knee_within_2_checkups", pa.bool_(), True),
+        ("knee_within_3_checkups", pa.bool_(), True),
+        ("time_to_knee_checkups", pa.int32(), True),
+        ("time_to_knee_days", pa.float64(), True),
+        ("knee_label_quality", pa.string(), False),
+        ("schema_version", pa.string(), False),
+    ]
+)
+
 # 13. PULSE interval target table schema
 PULSE_TARGET_TABLE_SCHEMA = pa.schema(
     [

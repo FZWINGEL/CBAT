@@ -11,8 +11,8 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 2.4: Temporal history value and run-event data
-product gate**.
+The repository is in **Milestone 2.5: Knee-label stability and
+degradation-acceleration gate**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -65,11 +65,14 @@ Milestone 2.4 builds a LOG_AGE-derived run-event table and interval
 sequence-feature sidecar, then tests aggregate event summaries, order-aware
 features, and shuffled-order controls under grouped non-neural capacity
 baselines before any sequence-model work is allowed.
+Milestone 2.5 extracts capacity trajectories and evaluates degradation-knee
+candidate labels across detector, x-axis, smoothing, and replicate-triplet
+sensitivity before any knee-warning model is allowed.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
-architecture, policy ranking, CBAT architecture, or broad EIS improvement
-claims have been started.
+architecture, knee prediction, policy ranking, CBAT architecture, or broad EIS
+improvement claims have been started.
 
 Current state:
 
@@ -212,6 +215,20 @@ Current state:
   event features overall, do not beat shuffled-order controls overall, do not
   beat the timestamp-weighted stress baseline overall, and do not improve the
   C-rate view. Sequence models remain blocked.
+- Milestone 2.5 is implemented and run. `mbp analysis knee-labels` generates
+  9,576 candidate knee rows across 228 cells, seven detectors, three x-axis
+  choices, and two smoothing policies. The primary `piecewise_linear_bic`
+  check-up-index/no-smoothing detector produces valid labels for 189 / 228
+  cells.
+- Knee-label stability is mixed. X-axis and smoothing sensitivity are
+  partially supported diagnostically: median disagreement is 0 check-ups for
+  both, with agreement within 2 check-ups of 0.892 for x-axis sensitivity and
+  0.951 for smoothing sensitivity. Replicate consistency is not supported:
+  only 45 / 64 primary valid parameter-set conditions are consistent within
+  2 check-ups across replicates.
+- `mbp analysis build-knee-risk-labels` generates 3,827 exploratory interval
+  risk-label rows. The labels are explicitly exploratory; knee prediction
+  remains blocked.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -256,6 +273,11 @@ Small audit sidecars that are referenced by documentation are tracked:
 - `reports/audit/run_event_qa_report.json`
 - `reports/audit/run_event_coverage.csv`
 - `reports/audit/sequence_feature_qa_report.json`
+- `reports/analysis/knee/knee_detector_agreement.csv`
+- `reports/analysis/knee/knee_label_stability_report.json`
+- `reports/analysis/knee/knee_by_condition.csv`
+- `reports/analysis/knee/knee_replicate_consistency.csv`
+- `reports/analysis/knee/knee_claim_readiness.md`
 
 The large Parquet outputs remain local generated artifacts:
 
@@ -272,6 +294,8 @@ The large Parquet outputs remain local generated artifacts:
 | `data/interim/eis_target_table_v1.parquet` | 3,827 | ignored |
 | `data/interim/run_event_table_v1.parquet` | 79,328,229 | ignored |
 | `data/interim/interval_sequence_features_v1.parquet` | 3,827 | ignored |
+| `data/interim/knee_candidate_table_v1.parquet` | 9,576 | ignored |
+| `data/interim/knee_risk_label_table_v1.parquet` | 3,827 | ignored |
 | `reports/audit/raw_log_archive_inventory.parquet` | 541 | ignored |
 
 Milestone 0.5 generated predictions are also ignored by default:
@@ -1471,7 +1495,7 @@ Latest validation run:
 All checks passed.
 
 .venv/bin/pytest -p no:cacheprovider
-131 passed.
+134 passed.
 
 git diff --check
 passed.
@@ -1517,6 +1541,16 @@ Capacity baseline report generated: 288 metric rows written to reports/baselines
 
 mbp baseline diagnose-sequence-value
 Sequence-value diagnostics generated: 24 aggregate/order rows
+```
+
+Milestone 2.5 report commands were also run successfully:
+
+```text
+mbp analysis knee-labels
+Knee label stability report generated: 9576 candidate rows
+
+mbp analysis build-knee-risk-labels
+Knee risk label table generated: 3827 rows written to data/interim/knee_risk_label_table_v1.parquet
 ```
 
 Milestone 2.1.1 report commands were also run successfully:
@@ -1566,15 +1600,13 @@ The previous `datetime.utcnow()` deprecation warning in
 
 ## Recommended Next Step
 
-Review the **Milestone 2.4 Temporal History Value And Run-Event Data Product
-Gate** outputs. The real full-data run-event table and sequence-feature sidecar
-exist, but event-duration QA is warning-level and temporal order does not beat
-aggregate, shuffled, or stress baselines overall. Sequence models remain
-blocked.
+Review the **Milestone 2.5 Knee-Label Stability And
+Degradation-Acceleration Gate** outputs. Primary knee labels cover most cells,
+and x-axis/smoothing sensitivity is partially supported, but replicate-triplet
+consistency does not pass. Knee-risk labels remain exploratory and knee
+prediction remains blocked.
 
-The next technical step should stay baseline-first and claim-gated. A useful
-engineering follow-up is a LOG_AGE precompaction/indexing pass to accelerate
-future full-history scans without changing results. Do not jump directly to
-neural models, sequence models, CBAT, DRT, EIS embeddings, policy ranking,
-capacity+PULSE+EIS multimodal models, calibrated-uncertainty claims, or broad
-causal/mechanistic claims.
+The next technical step should stay baseline-first and claim-gated. Do not jump
+directly to knee prediction models, neural models, sequence models, CBAT, DRT,
+EIS embeddings, policy ranking, capacity+PULSE+EIS multimodal models,
+calibrated-uncertainty claims, or broad causal/mechanistic claims.

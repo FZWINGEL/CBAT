@@ -32,6 +32,7 @@ Status values:
 | C14 | Replicate-aware diagnostics validate calibrated uncertainty. | `not_supported` | Prediction or tolerance intervals with demonstrated grouped coverage and calibration. | Milestone 2.2 quantifies condition-triplet spread and model error versus replicate spread, but the reports are diagnostic and do not validate calibrated uncertainty. | Replicate diagnostics quantify triplet variability and contextualize model error; calibrated uncertainty remains unproven. | Replicate-aware intervals are validated calibrated uncertainty estimates. | `reports/analysis/replicate_uncertainty/uncertainty_claim_readiness.md` |
 | C15 | Grouped conformal calibration validates capacity uncertainty. | `not_supported` | Empirical coverage near nominal, acceptable condition-level coverage, and no C-rate collapse without test-residual leakage. | Milestone 2.3 conformal methods improve mean coverage, but C-rate coverage remains below target: stressor-family conformal C-rate coverage is `0.719745` for `capacity_Ah_k1` and `0.726115` for `delta_capacity_Ah`. | Grouped conformal calibration is partially useful diagnostically, but no global calibrated capacity-uncertainty claim is authorized. | Grouped conformal intervals validate calibrated capacity uncertainty across all stressor holdouts. | `docs/experiments/2026-05-23_grouped_calibration_replicate_uncertainty.md` |
 | C16 | Ordered LOG_AGE event structure justifies sequence models. | `not_supported` | Order-aware features beat aggregate event features, shuffled-order controls, and stress baselines under grouped validation. | Milestone 2.4 order-aware features have overall mean gain `-0.000575091` vs aggregate, `-0.000564409` vs shuffled controls, and `-0.000470028` vs timestamp-weighted stress; C-rate mean gain is `-0.00131991`. | Ordered event summaries are useful falsification diagnostics, but current evidence does not justify sequence models. | Temporal order adds robust predictive value and sequence models are justified. | `docs/experiments/2026-05-23_temporal_history_value_gate.md` |
+| C17 | Knee labels are stable enough for knee prediction. | `not_supported` | Detector, x-axis, smoothing, and replicate-triplet stability pass before prediction. | Milestone 2.5 primary labels are valid for 189 / 228 cells and x-axis/smoothing median disagreement is 0 check-ups, but only 45 / 64 primary valid conditions are replicate-consistent within 2 check-ups. | Knee labels are useful exploratory diagnostics, but knee prediction remains blocked until replicate consistency improves or claim scope is narrowed. | Knee-risk prediction is authorized by current labels. | `docs/experiments/2026-05-23_knee_label_stability_gate.md` |
 
 ## Locked Wording
 
@@ -49,7 +50,9 @@ Use:
 > Grouped conformal calibration improves mean interval coverage, but C-rate
 > coverage still fails, so calibrated uncertainty remains blocked. LOG_AGE
 > event-order summaries do not beat aggregate or shuffled controls overall, so
-> sequence models remain blocked.
+> sequence models remain blocked. Knee-label diagnostics are exploratory
+> because replicate consistency does not pass, so knee prediction remains
+> blocked.
 
 Do not use:
 
@@ -65,3 +68,5 @@ Do not use:
 > stressor holdouts.
 
 > Sequence models are justified by temporal-order value.
+
+> Knee-risk prediction is authorized by current labels.

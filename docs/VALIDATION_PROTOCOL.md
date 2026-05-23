@@ -103,6 +103,12 @@ transformers, CBAT, DRT, EIS embeddings, policy ranking,
 capacity+PULSE+EIS architecture work, causal/mechanistic claims, or sequence
 model readiness claims unless order-aware features beat aggregate and shuffled
 controls under grouped validation.
+Milestone 2.5 authorizes capacity trajectory extraction, knee detector
+implementation, detector agreement diagnostics, x-axis and smoothing
+sensitivity, replicate-triplet knee consistency, exploratory knee-risk labels,
+and knee claim-readiness reporting. It does not authorize knee prediction
+models, neural models, sequence models, transformers, CBAT, policy ranking,
+causal/mechanistic claims, or same-cell counterfactual claims.
 
 Required split discipline:
 
@@ -281,6 +287,15 @@ Required Milestone 2.4 temporal-history artifacts:
 - `reports/baselines/capacity_sequence_value_hgb50/plots/c_rate_sequence_value.csv`
 - `docs/experiments/2026-05-23_temporal_history_value_gate.md`
 
+Required Milestone 2.5 knee-label stability artifacts:
+
+- `reports/analysis/knee/knee_detector_agreement.csv`
+- `reports/analysis/knee/knee_label_stability_report.json`
+- `reports/analysis/knee/knee_by_condition.csv`
+- `reports/analysis/knee/knee_replicate_consistency.csv`
+- `reports/analysis/knee/knee_claim_readiness.md`
+- `docs/experiments/2026-05-23_knee_label_stability_gate.md`
+
 Required Milestone 1.2 checks:
 
 - `mbp report build-manuscript-assets`
@@ -344,6 +359,14 @@ Milestone 2.4 validation commands:
 - `mbp features sequence-qa`
 - `mbp baseline run-capacity` with F14-F17 sequence-value feature groups
 - `mbp baseline diagnose-sequence-value`
+- `ruff check . --no-cache`
+- `pytest -p no:cacheprovider`
+- `git diff --check`
+
+Milestone 2.5 validation commands:
+
+- `mbp analysis knee-labels`
+- `mbp analysis build-knee-risk-labels`
 - `ruff check . --no-cache`
 - `pytest -p no:cacheprovider`
 - `git diff --check`
