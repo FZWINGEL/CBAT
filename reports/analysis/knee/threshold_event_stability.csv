@@ -1,0 +1,7 @@
+cell_coverage_fraction,cells_reaching_threshold,condition_coverage_fraction,conditions_with_at_least_2_events,event_within_1_checkup_rows,event_within_2_checkup_rows,event_within_3_checkup_rows,median_event_checkup_k,median_spread_checkups,replicate_consistency_within_1_checkup,replicate_consistency_within_2_checkups,threshold_fraction,threshold_label,warnings
+0.39035087719298245,89,0.4342105263157895,33,89,178,267,13.0,1.0,0.6666666666666666,0.9090909090909091,0.6,capacity_below_60pct_initial,sparse_cell_coverage;sparse_condition_coverage
+0.5877192982456141,134,0.5921052631578947,45,134,268,386,10.0,1.0,0.6666666666666666,0.8666666666666667,0.7,capacity_below_70pct_initial,none
+0.7587719298245614,173,0.7631578947368421,58,173,346,494,8.0,1.0,0.8103448275862069,0.896551724137931,0.8,capacity_below_80pct_initial,none
+0.39035087719298245,89,0.4342105263157895,33,89,178,267,13.0,1.0,0.6666666666666666,0.9090909090909091,0.6,soh_below_60,sparse_cell_coverage;sparse_condition_coverage
+0.5877192982456141,134,0.5921052631578947,45,134,268,386,10.0,1.0,0.6666666666666666,0.8666666666666667,0.7,soh_below_70,none
+0.7587719298245614,173,0.7631578947368421,58,173,346,494,8.0,1.0,0.8103448275862069,0.896551724137931,0.8,soh_below_80,none

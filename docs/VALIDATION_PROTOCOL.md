@@ -109,6 +109,10 @@ sensitivity, replicate-triplet knee consistency, exploratory knee-risk labels,
 and knee claim-readiness reporting. It does not authorize knee prediction
 models, neural models, sequence models, transformers, CBAT, policy ranking,
 causal/mechanistic claims, or same-cell counterfactual claims.
+Milestone 2.5.1 authorizes knee-label forensics, stable-condition registry
+generation, threshold-event label stability diagnostics, and knee-vs-threshold
+target-readiness comparisons. It still does not authorize knee prediction
+models or any early-warning claim without a later grouped prediction gate.
 
 Required split discipline:
 
@@ -296,6 +300,18 @@ Required Milestone 2.5 knee-label stability artifacts:
 - `reports/analysis/knee/knee_claim_readiness.md`
 - `docs/experiments/2026-05-23_knee_label_stability_gate.md`
 
+Required Milestone 2.5.1 knee forensics and threshold-event artifacts:
+
+- `reports/analysis/knee/knee_inconsistent_conditions.csv`
+- `reports/analysis/knee/knee_inconsistency_forensics.md`
+- `reports/analysis/knee/knee_stable_condition_report.json`
+- `reports/analysis/knee/knee_stable_condition_coverage.csv`
+- `reports/analysis/knee/threshold_event_stability.csv`
+- `reports/analysis/knee/threshold_event_by_condition.csv`
+- `reports/analysis/knee/threshold_event_claim_readiness.md`
+- `reports/analysis/knee/knee_vs_threshold_decision.md`
+- `docs/experiments/2026-05-23_knee_threshold_label_forensics.md`
+
 Required Milestone 1.2 checks:
 
 - `mbp report build-manuscript-assets`
@@ -367,6 +383,16 @@ Milestone 2.5 validation commands:
 
 - `mbp analysis knee-labels`
 - `mbp analysis build-knee-risk-labels`
+- `ruff check . --no-cache`
+- `pytest -p no:cacheprovider`
+- `git diff --check`
+
+Milestone 2.5.1 validation commands:
+
+- `mbp analysis knee-forensics`
+- `mbp analysis knee-stable-registry`
+- `mbp analysis threshold-event-labels`
+- `mbp analysis knee-vs-threshold`
 - `ruff check . --no-cache`
 - `pytest -p no:cacheprovider`
 - `git diff --check`

@@ -10,10 +10,22 @@ from mbp.analysis.knee import (
     detector_agreement_rows,
     extract_capacity_trajectories,
     knee_candidate_rows,
+    knee_inconsistent_condition_rows,
     replicate_consistency_rows,
+    stable_condition_rows,
+    threshold_by_condition_rows,
+    threshold_event_label_rows,
+    threshold_stability_rows,
+    write_knee_forensics,
     write_knee_label_report,
+    write_knee_stable_registry,
+    write_threshold_event_labels,
 )
-from mbp.data.schema_contracts import KNEE_CANDIDATE_TABLE_V1_SCHEMA, validate_table
+from mbp.data.schema_contracts import (
+    KNEE_CANDIDATE_TABLE_V1_SCHEMA,
+    THRESHOLD_EVENT_LABEL_TABLE_V1_SCHEMA,
+    validate_table,
+)
 
 
 def _interval_rows() -> list[dict[str, object]]:
@@ -50,6 +62,23 @@ def _interval_rows() -> list[dict[str, object]]:
                 )
                 capacity = next_capacity
     return rows
+
+
+def _condition_metadata(rows: list[dict[str, object]]) -> dict[int, dict[str, object]]:
+    output: dict[int, dict[str, object]] = {}
+    for row in rows:
+        output.setdefault(
+            int(row["parameter_set"]),
+            {
+                "aging_mode": row["aging_mode"],
+                "nominal_temperature_C": row["nominal_temperature_C"],
+                "voltage_window_family": row["voltage_window_family"],
+                "nominal_charge_C_rate": row["nominal_charge_C_rate"],
+                "nominal_discharge_C_rate": row["nominal_discharge_C_rate"],
+                "profile_label": row["profile_label"],
+            },
+        )
+    return output
 
 
 def test_knee_candidate_generation_known_and_no_knee() -> None:
@@ -104,3 +133,63 @@ def test_knee_report_and_risk_labels(tmp_path: Path) -> None:
     row = risk.to_pylist()[0]
     assert risk.num_rows == len(_interval_rows())
     assert row["knee_label_quality"].startswith("exploratory")
+
+
+def test_forensics_and_stable_registry_classification() -> None:
+    rows = _interval_rows()
+    candidates = knee_candidate_rows(extract_capacity_trajectories(rows))
+    primary = [
+        row
+        for row in candidates
+        if row["parameter_set"] == 1
+        and row["detector_name"] == "piecewise_linear_bic"
+        and row["x_axis"] == "checkup_index"
+        and row["smoothing_policy"] == "none"
+    ]
+    primary[0]["knee_checkup_k"] = 1
+    primary[1]["knee_checkup_k"] = 6
+    primary[2]["knee_checkup_k"] = 6
+    lookup = {trajectory.cell_id: trajectory for trajectory in extract_capacity_trajectories(rows)}
+    inconsistent = knee_inconsistent_condition_rows(candidates, lookup, _condition_metadata(rows))
+    stable = stable_condition_rows(candidates, _condition_metadata(rows))
+    assert any(row["parameter_set"] == 1 and row["knee_spread_checkups"] == 5.0 for row in inconsistent)
+    assert any(row["parameter_set"] == 1 and row["stability_status"] == "unstable" for row in stable)
+
+
+def test_threshold_event_labels_and_stability() -> None:
+    rows = _interval_rows()
+    trajectories = extract_capacity_trajectories(rows)
+    labels = threshold_event_label_rows(rows, trajectories)
+    stability = threshold_stability_rows(rows, trajectories)
+    by_condition = threshold_by_condition_rows(trajectories)
+    assert validate_table(
+        pa.Table.from_pylist(labels, schema=THRESHOLD_EVENT_LABEL_TABLE_V1_SCHEMA),
+        THRESHOLD_EVENT_LABEL_TABLE_V1_SCHEMA,
+    )
+    assert any(row["threshold_label"] == "soh_below_80" for row in labels)
+    assert any(row["threshold_label"] == "soh_below_80" for row in stability)
+    assert any(row["threshold_label"] == "soh_below_80" for row in by_condition)
+
+
+def test_forensics_and_threshold_reports_render(tmp_path: Path) -> None:
+    interval_path = tmp_path / "interval.parquet"
+    candidate_path = tmp_path / "knee_candidates.parquet"
+    stable_path = tmp_path / "stable.parquet"
+    threshold_path = tmp_path / "threshold.parquet"
+    pq.write_table(pa.Table.from_pylist(_interval_rows()), interval_path)
+    write_knee_label_report(interval_path, tmp_path / "knee", candidate_path)
+
+    forensics = write_knee_forensics(candidate_path, interval_path, tmp_path / "knee")
+    stable = write_knee_stable_registry(
+        candidate_path,
+        interval_path,
+        stable_path,
+        tmp_path / "knee" / "stable.json",
+        tmp_path / "knee" / "stable.csv",
+    )
+    threshold = write_threshold_event_labels(interval_path, tmp_path / "knee", threshold_path)
+    assert (tmp_path / "knee" / "knee_inconsistency_forensics.md").exists()
+    assert (tmp_path / "knee" / "threshold_event_claim_readiness.md").exists()
+    assert forensics["row_counts"]["inconsistent_conditions"] >= 0
+    assert stable["row_counts"]["conditions"] == 2
+    assert threshold["row_counts"]["label_rows"] == len(_interval_rows()) * 6

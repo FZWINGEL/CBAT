@@ -1,0 +1,20 @@
+{
+  "generated_at_utc": "2026-05-23T17:42:00.310999+00:00",
+  "outputs": {
+    "coverage": "reports/analysis/knee/knee_stable_condition_coverage.csv",
+    "report": "reports/analysis/knee/knee_stable_condition_report.json",
+    "stable_registry": "data/interim/knee_stable_condition_registry_v1.parquet"
+  },
+  "row_counts": {
+    "conditions": 76,
+    "insufficient_label_conditions": 13,
+    "stable_conditions": 40,
+    "unstable_conditions": 23
+  },
+  "schema_version": "gate251.knee_stable_conditions.v1",
+  "stable_fraction": 0.5263157894736842,
+  "status": "warning",
+  "warnings": [
+    "stable_condition_fraction_below_0p8"
+  ]
+}

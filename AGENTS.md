@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 2.5: Knee-label stability and degradation-acceleration gate.
+Milestone 2.5.1: Knee label forensics and threshold-event alternative gate.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -35,10 +35,10 @@ Current state:
   state improves `capacity_Ah_k1` over F4 in selected grouped splits, but it
   does not beat the strongest supplied non-PULSE HGB baselines and does not
   improve `delta_capacity_Ah`.
-- The current main-project track evaluates whether degradation-knee labels are
-  stable enough to support a later probabilistic knee-warning task. This is a
-  label-stability and target-readiness milestone, not a knee-prediction
-  milestone.
+- The current main-project track explains why primary degradation-knee labels
+  fail replicate consistency, defines a stable-condition subset, and evaluates
+  threshold-event labels as a more stable alternative. This is still a
+  label/target-readiness milestone, not a knee-prediction milestone.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
@@ -48,6 +48,10 @@ Allowed work:
 - detector agreement diagnostics
 - x-axis and smoothing sensitivity
 - replicate-triplet knee consistency
+- knee-label forensics
+- stable-condition registry generation
+- threshold-event label stability diagnostics
+- knee-vs-threshold target-readiness comparisons
 - exploratory candidate knee label tables
 - knee claim-readiness reporting
 - documentation/evidence memo updates

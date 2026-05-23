@@ -118,3 +118,15 @@ within 2 check-ups across replicates.
 
 Decision: knee-risk labels remain exploratory and knee prediction remains
 blocked.
+
+## Detector knees remain weaker than threshold-event labels
+
+Milestone 2.5.1 diagnosed 19 inconsistent primary-valid knee conditions and
+found only 40 / 76 conditions pass the default stable-knee rule. The stable
+subset is useful for forensics but too narrow for a detector-knee prediction
+claim.
+
+Threshold-event labels are more promising: `capacity_below_80pct_initial`
+has replicate consistency within 2 check-ups of 0.897 and condition coverage
+of 0.763, with median event check-up 8. This supports a possible future
+threshold-event label gate, not a current prediction claim.

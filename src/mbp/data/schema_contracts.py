@@ -467,6 +467,48 @@ KNEE_RISK_LABEL_TABLE_V1_SCHEMA = pa.schema(
     ]
 )
 
+KNEE_STABLE_CONDITION_REGISTRY_V1_SCHEMA = pa.schema(
+    [
+        ("parameter_set", pa.int32(), False),
+        ("stability_status", pa.string(), False),
+        ("n_replicates", pa.int32(), False),
+        ("n_valid_knees", pa.int32(), False),
+        ("knee_spread_checkups", pa.float64(), True),
+        ("median_knee_checkup_k", pa.float64(), True),
+        ("aging_mode", pa.string(), False),
+        ("nominal_temperature_C", pa.float64(), False),
+        ("voltage_window_family", pa.string(), False),
+        ("nominal_charge_C_rate", pa.float64(), False),
+        ("nominal_discharge_C_rate", pa.float64(), True),
+        ("profile_label", pa.string(), False),
+        ("has_severe_qa_flags", pa.bool_(), False),
+        ("quality_flags", pa.string(), False),
+        ("schema_version", pa.string(), False),
+    ]
+)
+
+THRESHOLD_EVENT_LABEL_TABLE_V1_SCHEMA = pa.schema(
+    [
+        ("cell_id", pa.string(), False),
+        ("parameter_set", pa.int32(), False),
+        ("replicate_id", pa.int32(), False),
+        ("checkup_k", pa.int32(), False),
+        ("checkup_k_next", pa.int32(), False),
+        ("threshold_label", pa.string(), False),
+        ("threshold_fraction", pa.float64(), False),
+        ("threshold_event_checkup_k", pa.int32(), True),
+        ("threshold_event_days", pa.float64(), True),
+        ("threshold_event_efc", pa.float64(), True),
+        ("event_within_1_checkup", pa.bool_(), True),
+        ("event_within_2_checkups", pa.bool_(), True),
+        ("event_within_3_checkups", pa.bool_(), True),
+        ("time_to_event_checkups", pa.int32(), True),
+        ("time_to_event_days", pa.float64(), True),
+        ("target_quality_flags", pa.string(), False),
+        ("schema_version", pa.string(), False),
+    ]
+)
+
 # 13. PULSE interval target table schema
 PULSE_TARGET_TABLE_SCHEMA = pa.schema(
     [

@@ -55,6 +55,9 @@ Schema version prefix: `gate1.audit.v1`
 | `knee_candidate_table_v1` | Implemented | `mbp.analysis.knee` | interval table path, detector policy, x-axis policy, smoothing policy, schema version |
 | `knee_risk_label_table_v1` | Implemented | `mbp.analysis.knee` | knee candidate table path, interval table path, primary detector policy, exploratory label status, schema version |
 | `knee_label_stability_diagnostics` | Implemented | `mbp.analysis.knee` | candidate knee table path, detector agreement, x-axis sensitivity, smoothing sensitivity, replicate consistency, claim-readiness |
+| `knee_stable_condition_registry_v1` | Implemented | `mbp.analysis.knee` | candidate knee table path, interval table path, primary detector policy, stable-condition rule, schema version |
+| `threshold_event_label_table_v1` | Implemented | `mbp.analysis.knee` | interval table path, threshold fractions, SOH/capacity-relative threshold policy, exploratory label status, schema version |
+| `knee_threshold_label_forensics` | Implemented | `mbp.analysis.knee` | candidate knee table path, interval table path, inconsistent-condition rows, stable registry, threshold stability, knee-vs-threshold decision |
 
 ## Gate 2/3 Schema Contracts
 
@@ -92,3 +95,6 @@ Schema version prefix: `gate1.audit.v1`
 - `KNEE_CANDIDATE_TABLE_V1_SCHEMA` records one candidate knee row per cell, detector, x-axis, and smoothing policy. It includes detector quality flags, slopes, slope-change ratio, SOH at knee, condition metadata, and schema version.
 - `KNEE_RISK_LABEL_TABLE_V1_SCHEMA` records exploratory interval-level knee-risk labels from the primary detector policy. It is a label-readiness sidecar only and does not authorize knee prediction.
 - `knee_label_stability_diagnostics` records detector pair agreement, x-axis sensitivity, smoothing sensitivity, replicate-triplet knee spread, condition-level knee summaries, and knee claim-readiness.
+- `KNEE_STABLE_CONDITION_REGISTRY_V1_SCHEMA` records whether each parameter-set condition has stable, unstable, or insufficient primary detector knees. The default stable rule requires at least two valid replicate knees, spread no greater than two check-ups, and no severe trajectory QA flags.
+- `THRESHOLD_EVENT_LABEL_TABLE_V1_SCHEMA` records exploratory interval-level threshold-event labels for 80%, 70%, and 60% SOH/capacity-relative thresholds. These labels are target-readiness artifacts only and do not authorize prediction models.
+- `knee_threshold_label_forensics` records inconsistent primary-knee conditions, stable-condition coverage, threshold-event replicate consistency, and a knee-vs-threshold decision memo.

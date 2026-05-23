@@ -11,8 +11,8 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 2.5: Knee-label stability and
-degradation-acceleration gate**.
+The repository is in **Milestone 2.5.1: Knee label forensics and
+threshold-event alternative gate**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -68,6 +68,10 @@ baselines before any sequence-model work is allowed.
 Milestone 2.5 extracts capacity trajectories and evaluates degradation-knee
 candidate labels across detector, x-axis, smoothing, and replicate-triplet
 sensitivity before any knee-warning model is allowed.
+Milestone 2.5.1 diagnoses the primary knee replicate-consistency failures,
+builds a stable-condition registry, and evaluates threshold-event labels as a
+possible more stable early-warning target family before any prediction model is
+allowed.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -229,6 +233,16 @@ Current state:
 - `mbp analysis build-knee-risk-labels` generates 3,827 exploratory interval
   risk-label rows. The labels are explicitly exploratory; knee prediction
   remains blocked.
+- Milestone 2.5.1 is implemented and run. `mbp analysis knee-forensics` finds
+  19 inconsistent primary-valid conditions; `mbp analysis
+  knee-stable-registry` classifies 40 / 76 conditions as stable, 23 as
+  unstable, and 13 as insufficient-label under the default stable-knee rule.
+- `mbp analysis threshold-event-labels` generates 22,962 exploratory
+  threshold-event interval-label rows. The best target-readiness label by the
+  current policy is `capacity_below_80pct_initial`, with replicate consistency
+  within 2 check-ups of 0.897, condition coverage of 0.763, and median event
+  check-up 8. This is stronger than detector-knee replicate consistency, but
+  it authorizes only a possible next label gate, not a prediction model.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -278,6 +292,14 @@ Small audit sidecars that are referenced by documentation are tracked:
 - `reports/analysis/knee/knee_by_condition.csv`
 - `reports/analysis/knee/knee_replicate_consistency.csv`
 - `reports/analysis/knee/knee_claim_readiness.md`
+- `reports/analysis/knee/knee_inconsistent_conditions.csv`
+- `reports/analysis/knee/knee_inconsistency_forensics.md`
+- `reports/analysis/knee/knee_stable_condition_report.json`
+- `reports/analysis/knee/knee_stable_condition_coverage.csv`
+- `reports/analysis/knee/threshold_event_stability.csv`
+- `reports/analysis/knee/threshold_event_by_condition.csv`
+- `reports/analysis/knee/threshold_event_claim_readiness.md`
+- `reports/analysis/knee/knee_vs_threshold_decision.md`
 
 The large Parquet outputs remain local generated artifacts:
 
@@ -296,6 +318,8 @@ The large Parquet outputs remain local generated artifacts:
 | `data/interim/interval_sequence_features_v1.parquet` | 3,827 | ignored |
 | `data/interim/knee_candidate_table_v1.parquet` | 9,576 | ignored |
 | `data/interim/knee_risk_label_table_v1.parquet` | 3,827 | ignored |
+| `data/interim/knee_stable_condition_registry_v1.parquet` | 76 | ignored |
+| `data/interim/threshold_event_label_table_v1.parquet` | 22,962 | ignored |
 | `reports/audit/raw_log_archive_inventory.parquet` | 541 | ignored |
 
 Milestone 0.5 generated predictions are also ignored by default:
@@ -1495,7 +1519,7 @@ Latest validation run:
 All checks passed.
 
 .venv/bin/pytest -p no:cacheprovider
-134 passed.
+137 passed.
 
 git diff --check
 passed.
@@ -1553,6 +1577,22 @@ mbp analysis build-knee-risk-labels
 Knee risk label table generated: 3827 rows written to data/interim/knee_risk_label_table_v1.parquet
 ```
 
+Milestone 2.5.1 report commands were also run successfully:
+
+```text
+mbp analysis knee-forensics
+Knee inconsistency forensics generated: 19 inconsistent conditions
+
+mbp analysis knee-stable-registry
+Knee stable-condition registry generated: 40 stable conditions
+
+mbp analysis threshold-event-labels
+Threshold-event labels generated: 22962 interval-label rows
+
+mbp analysis knee-vs-threshold
+Knee-vs-threshold decision written to reports/analysis/knee/knee_vs_threshold_decision.md
+```
+
 Milestone 2.1.1 report commands were also run successfully:
 
 ```text
@@ -1600,11 +1640,11 @@ The previous `datetime.utcnow()` deprecation warning in
 
 ## Recommended Next Step
 
-Review the **Milestone 2.5 Knee-Label Stability And
-Degradation-Acceleration Gate** outputs. Primary knee labels cover most cells,
-and x-axis/smoothing sensitivity is partially supported, but replicate-triplet
-consistency does not pass. Knee-risk labels remain exploratory and knee
-prediction remains blocked.
+Review the **Milestone 2.5.1 Knee Label Forensics And Threshold-Event
+Alternative Gate** outputs. Primary detector-knee labels remain too
+replicate-inconsistent for prediction, but 80% threshold-event labels are more
+stable and may justify a later non-neural threshold-event baseline gate if the
+target timing and grouped prevalence are accepted.
 
 The next technical step should stay baseline-first and claim-gated. Do not jump
 directly to knee prediction models, neural models, sequence models, CBAT, DRT,

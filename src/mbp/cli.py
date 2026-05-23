@@ -1399,6 +1399,69 @@ def analysis_build_knee_risk_labels(
     typer.echo(f"Knee risk label table generated: {table.num_rows} rows written to {out}")
 
 
+@analysis_app.command("knee-forensics")
+def analysis_knee_forensics(
+    knee_candidates: Path = typer.Option(..., "--knee-candidates", help="Path to knee_candidate_table_v1.parquet."),
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    out_dir: Path = typer.Option(..., "--out-dir", help="Output directory for knee forensics reports."),
+) -> None:
+    """Diagnose primary knee replicate inconsistency. This does not train a model."""
+    from mbp.analysis.knee import write_knee_forensics
+
+    report = write_knee_forensics(knee_candidates, interval_table, out_dir)
+    typer.echo(
+        "Knee inconsistency forensics generated: "
+        f"{report['row_counts']['inconsistent_conditions']} inconsistent conditions"
+    )
+
+
+@analysis_app.command("knee-stable-registry")
+def analysis_knee_stable_registry(
+    knee_candidates: Path = typer.Option(..., "--knee-candidates", help="Path to knee_candidate_table_v1.parquet."),
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output path for knee_stable_condition_registry_v1.parquet."),
+    report: Path = typer.Option(..., "--report", help="Output JSON summary path."),
+    coverage_out: Path = typer.Option(..., "--coverage-out", help="Output CSV coverage summary path."),
+) -> None:
+    """Build a stable/unstable/insufficient knee-condition registry."""
+    from mbp.analysis.knee import write_knee_stable_registry
+
+    summary = write_knee_stable_registry(knee_candidates, interval_table, out, report, coverage_out)
+    typer.echo(
+        "Knee stable-condition registry generated: "
+        f"{summary['row_counts']['stable_conditions']} stable conditions"
+    )
+
+
+@analysis_app.command("threshold-event-labels")
+def analysis_threshold_event_labels(
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    out_dir: Path = typer.Option(..., "--out-dir", help="Output directory for threshold-event diagnostics."),
+    labels_out: Path = typer.Option(..., "--labels-out", help="Output path for threshold_event_label_table_v1.parquet."),
+) -> None:
+    """Build exploratory threshold-event labels and stability diagnostics."""
+    from mbp.analysis.knee import write_threshold_event_labels
+
+    report = write_threshold_event_labels(interval_table, out_dir, labels_out)
+    typer.echo(
+        "Threshold-event labels generated: "
+        f"{report['row_counts']['label_rows']} interval-label rows"
+    )
+
+
+@analysis_app.command("knee-vs-threshold")
+def analysis_knee_vs_threshold(
+    knee_candidates: Path = typer.Option(..., "--knee-candidates", help="Path to knee_candidate_table_v1.parquet."),
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output Markdown decision path."),
+) -> None:
+    """Compare primary knee labels with threshold-event alternatives."""
+    from mbp.analysis.knee import write_knee_vs_threshold_decision
+
+    write_knee_vs_threshold_decision(knee_candidates, interval_table, out)
+    typer.echo(f"Knee-vs-threshold decision written to {out}")
+
+
 @baseline_app.command("diagnose-capacity")
 def baseline_diagnose_capacity(
     report: Path = typer.Option(
