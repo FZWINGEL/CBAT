@@ -12,7 +12,12 @@ from mbp.analysis.knee import (
     write_threshold_warning_qa,
 )
 from mbp.baselines.threshold_warning import (
+    diagnose_threshold_warning,
+    distance_feature_matrix,
     leakage_audit,
+    label_status,
+    lead_time_bin,
+    reliability_bin_rows,
     run_threshold_warning_baselines,
 )
 
@@ -96,7 +101,7 @@ def test_threshold_warning_baseline_and_leakage_audit(tmp_path: Path) -> None:
         report_path,
         prediction_path,
         targets=["event_within_3_checkups"],
-        model_levels=["B0_event_rate_prior", "B1_logistic_regression"],
+        model_levels=["B0_event_rate_prior", "B1_distance_to_threshold_rule", "B4_logistic_regression"],
         feature_groups=["W0_capacity_state", "W2_nominal"],
         split_views=["condition_fold", "temperature_holdout_fold"],
     )
@@ -104,3 +109,60 @@ def test_threshold_warning_baseline_and_leakage_audit(tmp_path: Path) -> None:
     assert prediction_path.exists()
     assert (tmp_path / "warning" / "threshold_warning_claim_readiness.md").exists()
     assert leakage_audit(["W0_capacity_state", "W2_nominal"])["status"] == "passed"
+    diagnostics = diagnose_threshold_warning(report_path, prediction_path, warning_path, tmp_path / "warning")
+    assert diagnostics["row_counts"]["lead_time_rows"] > 0
+    assert (tmp_path / "warning" / "threshold_warning_reliability.csv").exists()
+
+
+def test_threshold_warning_hardening_helpers() -> None:
+    rows = [
+        {
+            "capacity_Ah_k": 2.6,
+            "soh_k": 0.82,
+            "checkup_k": 4,
+            "event_checkup_k": 7,
+            "time_to_event_checkups": 3,
+            "event_observed": True,
+            "event_within_3_checkups": True,
+        },
+        {
+            "capacity_Ah_k": 2.9,
+            "soh_k": 0.91,
+            "checkup_k": 4,
+            "event_checkup_k": None,
+            "time_to_event_checkups": None,
+            "event_observed": False,
+            "event_within_3_checkups": False,
+        },
+    ]
+
+    features = distance_feature_matrix(rows)
+    assert abs(features[0][1] - 0.02) < 1e-12
+    assert features[0][2] == 4.0
+    assert label_status(rows[0], "event_within_3_checkups") == "positive_observed"
+    assert label_status(rows[1], "event_within_3_checkups") == "right_censored_unknown"
+    assert lead_time_bin(rows[0]) == "event_within_3_checkups"
+    assert lead_time_bin(rows[1]) == "no_observed_event_censored"
+
+
+def test_threshold_warning_reliability_bins() -> None:
+    rows = [
+        {
+            "target": "event_within_3_checkups",
+            "model_level": "B6_hist_gradient_boosting_classifier",
+            "feature_group": "W2_nominal",
+            "y_true": False,
+            "y_prob": 0.05,
+        },
+        {
+            "target": "event_within_3_checkups",
+            "model_level": "B6_hist_gradient_boosting_classifier",
+            "feature_group": "W2_nominal",
+            "y_true": True,
+            "y_prob": 0.85,
+        },
+    ]
+
+    bins = reliability_bin_rows(rows, bins=10)
+    assert {row["bin"] for row in bins} == {0, 8}
+    assert all(row["row_count"] == 1 for row in bins)

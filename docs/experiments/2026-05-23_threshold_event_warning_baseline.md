@@ -86,12 +86,16 @@ be treated cautiously.
 
 ## Baseline Results
 
-Models:
+Models in the initial 2.6 run:
 
 - `B0_event_rate_prior`
 - `B1_logistic_regression`
 - `B2_ridge_logistic`
 - `B3_hist_gradient_boosting_classifier`
+
+Milestone 2.6.1 later renamed the HGB classifier to
+`B6_hist_gradient_boosting_classifier` after adding proximity baselines. The
+metric values below are unchanged for the HGB W2 rows.
 
 Feature groups:
 
@@ -104,14 +108,14 @@ Mean grouped leaderboard rows:
 | Target | Baseline | Mean AUROC | Mean AUPRC | Mean Brier |
 |---|---|---:|---:|---:|
 | `event_within_1_checkup` | B0 prior | 0.500000 | 0.073849 | 0.058275 |
-| `event_within_1_checkup` | B3 + W2 | 0.970152 | 0.804752 | 0.030353 |
+| `event_within_1_checkup` | HGB + W2 | 0.970152 | 0.804752 | 0.030353 |
 | `event_within_2_checkups` | B0 prior | 0.500000 | 0.145947 | 0.110646 |
-| `event_within_2_checkups` | B3 + W2 | 0.938468 | 0.792906 | 0.052574 |
+| `event_within_2_checkups` | HGB + W2 | 0.938468 | 0.792906 | 0.052574 |
 | `event_within_3_checkups` | B0 prior | 0.500000 | 0.181899 | 0.145791 |
-| `event_within_3_checkups` | B3 + W2 | 0.939121 | 0.791905 | 0.065575 |
+| `event_within_3_checkups` | HGB + W2 | 0.939121 | 0.791905 | 0.065575 |
 
 C-rate holdout also has enough positives for the primary 3-check-up horizon:
-80 positives and 77 negatives. For that fold, B3 + W2 improves Brier from
+80 positives and 77 negatives. For that fold, HGB + W2 improves Brier from
 0.407317 for the event-rate prior to 0.159930, with AUROC 0.940341 and AUPRC
 0.946054.
 

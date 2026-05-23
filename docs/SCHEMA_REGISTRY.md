@@ -59,7 +59,8 @@ Schema version prefix: `gate1.audit.v1`
 | `threshold_event_label_table_v1` | Implemented | `mbp.analysis.knee` | interval table path, threshold fractions, SOH/capacity-relative threshold policy, exploratory label status, schema version |
 | `knee_threshold_label_forensics` | Implemented | `mbp.analysis.knee` | candidate knee table path, interval table path, inconsistent-condition rows, stable registry, threshold stability, knee-vs-threshold decision |
 | `threshold_warning_table_v1` | Implemented | `mbp.analysis.knee` | threshold event label path, interval table path, selected threshold, prior-state feature policy, schema version |
-| `threshold_warning_baseline_report` | Implemented | `mbp.baselines.threshold_warning` | threshold warning table path, B0-B3 non-neural models, W0-W2 prospective feature groups, grouped split view, leakage audit |
+| `threshold_warning_baseline_report` | Implemented | `mbp.baselines.threshold_warning` | threshold warning table path, B0-B6 non-neural/proximity models, W0-W2 prospective feature groups, grouped split view, leakage audit |
+| `threshold_warning_hardening_diagnostics` | Implemented | `mbp.baselines.threshold_warning` | threshold warning report path, prediction path, warning table path, lead-time bins, proximity bins, censoring policy, reliability bins, calibration by split |
 
 ## Gate 2/3 Schema Contracts
 
@@ -101,4 +102,5 @@ Schema version prefix: `gate1.audit.v1`
 - `THRESHOLD_EVENT_LABEL_TABLE_V1_SCHEMA` records exploratory interval-level threshold-event labels for 80%, 70%, and 60% SOH/capacity-relative thresholds. These labels are target-readiness artifacts only and do not authorize prediction models.
 - `knee_threshold_label_forensics` records inconsistent primary-knee conditions, stable-condition coverage, threshold-event replicate consistency, and a knee-vs-threshold decision memo.
 - `THRESHOLD_WARNING_TABLE_V1_SCHEMA` records one prospective warning row per cell/check-up for the selected threshold label. It includes only state, time, cumulative exposure, nominal metadata, split labels, and event-horizon labels known from the target table; it excludes `capacity_Ah_k1`, capacity deltas, future interval exposure summaries, future PULSE/EIS state, and PULSE/EIS deltas as features.
-- `threshold_warning_baseline_report` records grouped non-neural classifier metrics for `capacity_below_80pct_initial` warning horizons. Generated prediction Parquet remains ignored by default; JSON/CSV/Markdown report artifacts are trackable.
+- `threshold_warning_baseline_report` records grouped non-neural classifier metrics for `capacity_below_80pct_initial` warning horizons, including event-rate, distance-to-threshold, prior-only extrapolation, logistic proximity, logistic/ridge, and HGB classifier rows. Generated prediction Parquet remains ignored by default; JSON/CSV/Markdown report artifacts are trackable.
+- `threshold_warning_hardening_diagnostics` records lead-time performance, proximity-bin performance, C-rate lead-time performance, censoring-policy counts, reliability bins, split-level calibration, and C-rate calibration summaries. These diagnostics harden the threshold-warning result but do not authorize calibrated risk.

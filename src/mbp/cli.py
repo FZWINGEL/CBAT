@@ -1547,6 +1547,23 @@ def baseline_run_threshold_warning(
     )
 
 
+@baseline_app.command("diagnose-threshold-warning")
+def baseline_diagnose_threshold_warning(
+    report: Path = typer.Option(..., "--report", help="Threshold-warning JSON report."),
+    predictions: Path = typer.Option(..., "--predictions", help="Threshold-warning prediction Parquet."),
+    warning_table: Path = typer.Option(..., "--warning-table", help="Threshold warning table Parquet."),
+    out_dir: Path = typer.Option(..., "--out-dir", help="Output directory for threshold-warning diagnostics."),
+) -> None:
+    """Write lead-time, proximity, censoring, and reliability diagnostics."""
+    from mbp.baselines.threshold_warning import diagnose_threshold_warning
+
+    result = diagnose_threshold_warning(report, predictions, warning_table, out_dir)
+    typer.echo(
+        "Threshold-warning diagnostics generated: "
+        f"{result['row_counts']['lead_time_rows']} lead-time rows"
+    )
+
+
 @baseline_app.command("diagnose-stress-features")
 def baseline_diagnose_stress_features(
     report: Path = typer.Option(

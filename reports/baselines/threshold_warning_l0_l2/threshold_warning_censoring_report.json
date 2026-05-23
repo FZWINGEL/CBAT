@@ -1,0 +1,26 @@
+{
+  "generated_at_utc": "2026-05-23T18:30:34.843403+00:00",
+  "policy": {
+    "all_current_rows": "Milestone 2.6 baseline treatment.",
+    "censored_as_negative": "Current Boolean horizon labels implicitly treat unknown future crossings as negative.",
+    "verified_only": "Exclude right_censored_unknown rows for sensitivity diagnostics."
+  },
+  "schema_version": "gate26.threshold_warning_baseline.v1",
+  "targets": {
+    "event_within_1_checkup": {
+      "negative_observed": 2260,
+      "positive_observed": 173,
+      "right_censored_unknown": 1394
+    },
+    "event_within_2_checkups": {
+      "negative_observed": 2087,
+      "positive_observed": 346,
+      "right_censored_unknown": 1394
+    },
+    "event_within_3_checkups": {
+      "negative_observed": 1939,
+      "positive_observed": 494,
+      "right_censored_unknown": 1394
+    }
+  }
+}

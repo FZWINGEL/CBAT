@@ -34,7 +34,7 @@ Status values:
 | C16 | Ordered LOG_AGE event structure justifies sequence models. | `not_supported` | Order-aware features beat aggregate event features, shuffled-order controls, and stress baselines under grouped validation. | Milestone 2.4 order-aware features have overall mean gain `-0.000575091` vs aggregate, `-0.000564409` vs shuffled controls, and `-0.000470028` vs timestamp-weighted stress; C-rate mean gain is `-0.00131991`. | Ordered event summaries are useful falsification diagnostics, but current evidence does not justify sequence models. | Temporal order adds robust predictive value and sequence models are justified. | `docs/experiments/2026-05-23_temporal_history_value_gate.md` |
 | C17 | Knee labels are stable enough for knee prediction. | `not_supported` | Detector, x-axis, smoothing, and replicate-triplet stability pass before prediction. | Milestone 2.5 primary labels are valid for 189 / 228 cells and x-axis/smoothing median disagreement is 0 check-ups, but only 45 / 64 primary valid conditions are replicate-consistent within 2 check-ups. | Knee labels are useful exploratory diagnostics, but knee prediction remains blocked until replicate consistency improves or claim scope is narrowed. | Knee-risk prediction is authorized by current labels. | `docs/experiments/2026-05-23_knee_label_stability_gate.md` |
 | C18 | Threshold-event labels are a more stable early-warning target family than detector knees. | `partially_supported` | Threshold events have better replicate consistency and usable condition coverage without being treated as prediction evidence. | Milestone 2.5.1 finds `capacity_below_80pct_initial` has replicate consistency within 2 check-ups of `0.897`, condition coverage `0.763`, and median event check-up `8`, compared with primary detector-knee consistency `0.703`. | Threshold-event labels are more stable than detector knees and may be considered for a later non-neural label baseline gate. | Threshold-event prediction is authorized, or threshold labels are validated early-warning targets. | `docs/experiments/2026-05-23_knee_threshold_label_forensics.md` |
-| C19 | Non-neural baselines can forecast the 80% threshold event under grouped validation. | `supported_for_diagnostics` | A leakage-safe prospective warning table and grouped non-neural baselines beat event-rate priors. | Milestone 2.6 uses only check-up-k state/nominal features. HGB W2 improves mean Brier versus event-rate prior on all horizons; `event_within_3_checkups` improves from `0.145791` to `0.0655751`, and C-rate fold Brier improves from `0.407317` to `0.159930`. | Non-neural baselines can forecast `capacity_below_80pct_initial` threshold events diagnostically under grouped validation. | Calibrated risk, policy ranking, detector-knee prediction, or causal early-warning claims are authorized. | `docs/experiments/2026-05-23_threshold_event_warning_baseline.md` |
+| C19 | Non-neural baselines can forecast the 80% threshold event under grouped validation. | `supported_for_diagnostics` | A leakage-safe prospective warning table and grouped non-neural baselines beat event-rate priors and simple proximity baselines. | Milestone 2.6.1 uses only check-up-k state/nominal features. For `event_within_3_checkups`, HGB W2 improves mean Brier from `0.145791` for the event-rate prior and `0.132711` for the best proximity baseline to `0.0655751`; C-rate Brier improves from `0.407317` for the prior and `0.355265` for the logistic distance baseline to `0.159930`. Calibration remains unsupported. | Non-neural baselines can forecast `capacity_below_80pct_initial` threshold events diagnostically under grouped validation, beyond simple proximity baselines. | Calibrated risk, policy ranking, detector-knee prediction, or causal early-warning claims are authorized. | `docs/experiments/2026-05-23_threshold_warning_hardening.md` |
 
 ## Locked Wording
 
@@ -55,10 +55,11 @@ Use:
 > sequence models remain blocked. Knee-label diagnostics are exploratory
 > because replicate consistency does not pass, so knee prediction remains
 > blocked. Threshold-event labels, especially 80% capacity-relative crossing,
-> are more replicate-consistent than detector knees, but they authorize only a
-> possible next label gate. A first non-neural threshold-event baseline can
-> forecast the 80% threshold event diagnostically, but calibrated risk and
-> policy ranking remain blocked.
+> are more replicate-consistent than detector knees. A non-neural
+> threshold-event baseline can forecast the 80% threshold event diagnostically,
+> including beyond simple proximity baselines, but calibrated risk,
+> detector-knee prediction, causal early-warning claims, and policy ranking
+> remain blocked.
 
 Do not use:
 

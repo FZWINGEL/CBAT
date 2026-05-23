@@ -11,8 +11,8 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 2.6: Non-neural threshold-event early-warning
-baseline gate**.
+The repository is in **Milestone 2.6.1: Threshold-warning hardening:
+proximity, lead-time, censoring, and calibration**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -75,6 +75,9 @@ allowed.
 Milestone 2.6 builds a prospective leakage-safe `capacity_below_80pct_initial`
 warning table and evaluates non-neural grouped classifier baselines before any
 threshold-event warning claim is strengthened.
+Milestone 2.6.1 hardens that result with distance-to-threshold and
+prior-only extrapolation baselines, lead-time/proximity diagnostics,
+censoring-policy sensitivity, and probability-calibration checks.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -254,13 +257,25 @@ Current state:
 - Threshold-warning QA passes. Positive rates are 0.045205 for
   `event_within_1_checkup`, 0.090410 for `event_within_2_checkups`, and
   0.129083 for `event_within_3_checkups`.
-- The non-neural threshold-warning baseline produces 360 grouped metric rows.
+- The non-neural threshold-warning hardening run produces 468 grouped metric rows.
   HGB with W2 nominal/state features beats the event-rate prior on all
   horizons. For `event_within_3_checkups`, mean Brier improves from 0.145791
   to 0.065575. C-rate holdout has 80 positives and 77 negatives for the
   3-check-up horizon, and Brier improves from 0.407317 to 0.159930. This
   supports diagnostic threshold-event forecasting, not calibrated risk or
   policy ranking.
+- Distance-to-threshold hardening shows the best HGB warning baseline is not
+  merely matching a simple proximity detector. For `event_within_3_checkups`,
+  the best proximity baseline (`B3_logistic_distance_baseline`) has mean Brier
+  0.132711, while HGB W2 has mean Brier 0.065575. In the C-rate holdout, HGB
+  W2 Brier is 0.159930 versus 0.355265 for the logistic distance baseline.
+- Lead-time/proximity diagnostics and censoring sensitivity are now reported
+  under `reports/baselines/threshold_warning_l0_l2/`. The censoring audit
+  records 1,394 right-censored unknown rows for each horizon; verified-only
+  sensitivity must be interpreted before any stronger early-warning claim.
+- Probability calibration remains not supported. For the C-rate
+  `event_within_3_checkups` HGB W2 row, ECE is 0.174673, so probabilities are
+  diagnostic scores, not calibrated risk estimates.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -327,6 +342,15 @@ Small audit sidecars that are referenced by documentation are tracked:
 - `reports/baselines/threshold_warning_l0_l2/threshold_warning_calibration.md`
 - `reports/baselines/threshold_warning_l0_l2/threshold_warning_leakage_audit.md`
 - `reports/baselines/threshold_warning_l0_l2/threshold_warning_claim_readiness.md`
+- `reports/baselines/threshold_warning_l0_l2/lead_time_diagnostics.md`
+- `reports/baselines/threshold_warning_l0_l2/threshold_warning_calibration_by_c_rate.md`
+- `reports/baselines/threshold_warning_l0_l2/threshold_warning_calibration_by_split.csv`
+- `reports/baselines/threshold_warning_l0_l2/threshold_warning_censoring_by_split.csv`
+- `reports/baselines/threshold_warning_l0_l2/threshold_warning_censoring_report.json`
+- `reports/baselines/threshold_warning_l0_l2/threshold_warning_reliability.csv`
+- `reports/baselines/threshold_warning_l0_l2/plots/lead_time_performance.csv`
+- `reports/baselines/threshold_warning_l0_l2/plots/proximity_bin_performance.csv`
+- `reports/baselines/threshold_warning_l0_l2/plots/c_rate_lead_time_performance.csv`
 
 The large Parquet outputs remain local generated artifacts:
 

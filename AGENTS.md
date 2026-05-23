@@ -16,7 +16,8 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 2.6: Non-neural threshold-event early-warning baseline gate.
+Milestone 2.6.1: Threshold-warning hardening: proximity, lead-time,
+censoring, and calibration.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -35,10 +36,11 @@ Current state:
   state improves `capacity_Ah_k1` over F4 in selected grouped splits, but it
   does not beat the strongest supplied non-PULSE HGB baselines and does not
   improve `delta_capacity_Ah`.
-- The current main-project track evaluates whether the more stable
-  `capacity_below_80pct_initial` threshold-event label can support a narrow
-  non-neural prospective warning baseline. This is threshold-event forecasting,
-  not detector-knee prediction.
+- The current main-project track hardens the promising
+  `capacity_below_80pct_initial` threshold-event warning result with
+  distance-to-threshold baselines, lead-time diagnostics, censoring-policy
+  sensitivity, and probability-calibration checks. This is threshold-event
+  forecasting, not detector-knee prediction or calibrated risk.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
@@ -56,6 +58,9 @@ Allowed work:
 - threshold-warning QA and class-balance diagnostics
 - non-neural threshold-warning classification baselines
 - grouped warning evaluation
+- distance-to-threshold and prior-only extrapolation baselines
+- lead-time and proximity-bin diagnostics
+- censoring-policy sensitivity
 - probability calibration diagnostics
 - exploratory candidate knee label tables
 - knee claim-readiness reporting
@@ -76,6 +81,7 @@ Forbidden work:
 - causal or mechanistic overclaims
 - same-cell counterfactual claims
 - future interval exposure leakage
+- calibrated risk claims unless grouped probability calibration passes
 - calibrated uncertainty claims unless grouped coverage passes
 - broad EIS predictive claims
 - future EIS state as capacity/PULSE input

@@ -25,11 +25,19 @@ SCHEMA_VERSION = "gate26.threshold_warning_baseline.v1"
 TARGETS = ("event_within_1_checkup", "event_within_2_checkups", "event_within_3_checkups")
 MODEL_LEVELS = (
     "B0_event_rate_prior",
-    "B1_logistic_regression",
-    "B2_ridge_logistic",
-    "B3_hist_gradient_boosting_classifier",
+    "B1_distance_to_threshold_rule",
+    "B2_linear_extrapolation_to_threshold",
+    "B3_logistic_distance_baseline",
+    "B4_logistic_regression",
+    "B5_ridge_logistic",
+    "B6_hist_gradient_boosting_classifier",
 )
 FEATURE_GROUPS = ("W0_capacity_state", "W1_state_time", "W2_nominal")
+PROXIMITY_MODEL_LEVELS = {
+    "B1_distance_to_threshold_rule",
+    "B2_linear_extrapolation_to_threshold",
+    "B3_logistic_distance_baseline",
+}
 DEFAULT_TARGETS = TARGETS
 DEFAULT_MODELS = MODEL_LEVELS
 DEFAULT_FEATURE_GROUPS = FEATURE_GROUPS
@@ -137,7 +145,12 @@ def run_threshold_warning_baselines(
     selected_splits = _normalize_selection(split_views, SPLIT_COLUMNS, SPLIT_COLUMNS, "split view")
     if hgb_max_iter <= 0:
         raise ValueError("hgb_max_iter must be positive.")
-    if any(model != "B0_event_rate_prior" for model in selected_models):
+    dependency_free_models = {
+        "B0_event_rate_prior",
+        "B1_distance_to_threshold_rule",
+        "B2_linear_extrapolation_to_threshold",
+    }
+    if any(model not in dependency_free_models for model in selected_models):
         _import_sklearn()
     rows = pq.read_table(warning_table_path).to_pylist()
     if not rows:
@@ -151,7 +164,13 @@ def run_threshold_warning_baselines(
             assert_no_parameter_set_leakage(train_rows, test_rows, split_name, heldout_fold)
             for target in selected_targets:
                 for model_level in selected_models:
-                    model_features = ("prior_rate",) if model_level == "B0_event_rate_prior" else tuple(selected_features)
+                    model_features = (
+                        ("prior_rate",)
+                        if model_level == "B0_event_rate_prior"
+                        else ("distance_to_threshold",)
+                        if model_level in PROXIMITY_MODEL_LEVELS
+                        else tuple(selected_features)
+                    )
                     for feature_group in model_features:
                         probs, train_one_class = predict_warning_probability(
                             model_level,
@@ -239,17 +258,28 @@ def predict_warning_probability(
     train_one_class = len(set(y_train.tolist())) < 2
     if model_level == "B0_event_rate_prior" or train_one_class:
         return [base_rate for _ in test_rows], train_one_class
+    if model_level == "B1_distance_to_threshold_rule":
+        return distance_rule_probabilities(train_rows, test_rows, target), False
+    if model_level == "B2_linear_extrapolation_to_threshold":
+        return extrapolation_probabilities(train_rows, test_rows, target), False
 
     LogisticRegression, HistGradientBoostingClassifier = _import_sklearn()
+    if model_level == "B3_logistic_distance_baseline":
+        feature_group = "W_distance_margin"
+        x_train = np.asarray(distance_feature_matrix(train_rows), dtype=float)
+        x_test = np.asarray(distance_feature_matrix(test_rows), dtype=float)
+        model = LogisticRegression(C=1.0, max_iter=1000, random_state=seed)
+        model.fit(x_train, y_train)
+        return [float(value) for value in model.predict_proba(x_test)[:, 1]], False
     encoder = WarningFeatureEncoder.fit(train_rows, feature_group)
-    standardize = model_level in {"B1_logistic_regression", "B2_ridge_logistic"}
+    standardize = model_level in {"B4_logistic_regression", "B5_ridge_logistic"}
     x_train = np.asarray(encoder.transform(train_rows, standardize_numeric=standardize), dtype=float)
     x_test = np.asarray(encoder.transform(test_rows, standardize_numeric=standardize), dtype=float)
-    if model_level == "B1_logistic_regression":
+    if model_level == "B4_logistic_regression":
         model = LogisticRegression(C=1e6, max_iter=1000, random_state=seed)
-    elif model_level == "B2_ridge_logistic":
+    elif model_level == "B5_ridge_logistic":
         model = LogisticRegression(C=1.0, max_iter=1000, random_state=seed)
-    elif model_level == "B3_hist_gradient_boosting_classifier":
+    elif model_level == "B6_hist_gradient_boosting_classifier":
         model = HistGradientBoostingClassifier(random_state=seed, max_iter=hgb_max_iter)
     else:
         raise ValueError(f"Unknown model level: {model_level}")
@@ -320,10 +350,143 @@ def prediction_rows(
                 "heldout_fold": heldout_fold,
                 "model_level": model_level,
                 "feature_group": feature_group,
+                "time_to_event_checkups": row.get("time_to_event_checkups"),
+                "event_observed": bool(row.get("event_observed")),
+                "capacity_margin_to_80": _capacity_margin_to_threshold(row),
+                "soh_margin_to_80": _soh_margin_to_threshold(row),
+                "lead_time_bin": lead_time_bin(row),
+                "proximity_bin": proximity_bin(row),
+                "label_status": label_status(row, target),
                 "schema_version": SCHEMA_VERSION,
             }
         )
     return rows
+
+
+def distance_feature_matrix(rows: list[dict[str, Any]]) -> list[list[float]]:
+    return [
+        [
+            _capacity_margin_to_threshold(row),
+            _soh_margin_to_threshold(row),
+            _as_float(row.get("checkup_k"), default=0.0),
+            _as_float(row.get("calendar_day_k"), default=0.0),
+            _prior_capacity_slope(row),
+        ]
+        for row in rows
+    ]
+
+
+def distance_rule_probabilities(
+    train_rows: list[dict[str, Any]],
+    test_rows: list[dict[str, Any]],
+    target: str,
+) -> list[float]:
+    margins = sorted(_soh_margin_to_threshold(row) for row in train_rows if row[target])
+    if not margins:
+        threshold = 0.0
+    else:
+        threshold = margins[min(max(int(0.9 * (len(margins) - 1)), 0), len(margins) - 1)]
+    train_positive_rate = sum(bool(row[target]) for row in train_rows) / len(train_rows)
+    return [
+        0.75 if _soh_margin_to_threshold(row) <= threshold else max(0.01, train_positive_rate * 0.25)
+        for row in test_rows
+    ]
+
+
+def extrapolation_probabilities(
+    train_rows: list[dict[str, Any]],
+    test_rows: list[dict[str, Any]],
+    target: str,
+) -> list[float]:
+    horizon = _target_horizon(target)
+    train_positive_rate = sum(bool(row[target]) for row in train_rows) / len(train_rows)
+    output = []
+    for row in test_rows:
+        slope = _prior_capacity_slope(row)
+        margin = _soh_margin_to_threshold(row)
+        if slope < 0:
+            estimated_checkups = margin / abs(slope)
+            output.append(0.8 if estimated_checkups <= horizon else max(0.01, train_positive_rate * 0.3))
+        else:
+            output.append(max(0.01, train_positive_rate * 0.2))
+    return output
+
+
+def label_status(row: dict[str, Any], target: str) -> str:
+    if bool(row[target]):
+        return "positive_observed"
+    remaining = _as_float(row.get("time_to_event_checkups"))
+    horizon = _target_horizon(target)
+    if math.isfinite(remaining) and remaining > horizon:
+        return "negative_observed"
+    if bool(row.get("event_observed")):
+        return "negative_observed"
+    return "right_censored_unknown"
+
+
+def lead_time_bin(row: dict[str, Any]) -> str:
+    value = _as_float(row.get("time_to_event_checkups"))
+    if not math.isfinite(value):
+        return "no_observed_event_censored"
+    if value <= 1:
+        return "event_at_next_checkup"
+    if value <= 2:
+        return "event_within_2_checkups"
+    if value <= 3:
+        return "event_within_3_checkups"
+    return "event_later_than_3_checkups"
+
+
+def proximity_bin(row: dict[str, Any]) -> str:
+    margin = _soh_margin_to_threshold(row)
+    if margin <= 0:
+        return "at_or_below_threshold"
+    if margin <= 0.02:
+        return "within_2pct_soh"
+    if margin <= 0.05:
+        return "within_5pct_soh"
+    if margin <= 0.10:
+        return "within_10pct_soh"
+    return "above_10pct_soh"
+
+
+def _soh_margin_to_threshold(row: dict[str, Any]) -> float:
+    return _as_float(row.get("soh_k"), default=math.nan) - 0.8
+
+
+def _capacity_margin_to_threshold(row: dict[str, Any]) -> float:
+    capacity = _as_float(row.get("capacity_Ah_k"))
+    initial = _estimated_initial_capacity(row)
+    if not math.isfinite(capacity) or not math.isfinite(initial):
+        return math.nan
+    return capacity - 0.8 * initial
+
+
+def _prior_capacity_slope(row: dict[str, Any]) -> float:
+    checkup = _as_float(row.get("checkup_k"), default=0.0)
+    capacity = _as_float(row.get("capacity_Ah_k"))
+    initial = _estimated_initial_capacity(row)
+    if not math.isfinite(checkup) or checkup <= 0 or not math.isfinite(capacity) or not math.isfinite(initial):
+        return 0.0
+    return (capacity - initial) / checkup
+
+
+def _estimated_initial_capacity(row: dict[str, Any]) -> float:
+    capacity = _as_float(row.get("capacity_Ah_k"))
+    soh = _as_float(row.get("soh_k"))
+    if not math.isfinite(capacity) or not math.isfinite(soh) or soh <= 0:
+        return math.nan
+    return capacity / soh
+
+
+def _target_horizon(target: str) -> int:
+    if target == "event_within_1_checkup":
+        return 1
+    if target == "event_within_2_checkups":
+        return 2
+    if target == "event_within_3_checkups":
+        return 3
+    raise ValueError(f"Unknown threshold-warning target: {target}")
 
 
 def render_threshold_warning_artifacts(report: dict[str, Any], report_dir: Path) -> None:
@@ -333,6 +496,54 @@ def render_threshold_warning_artifacts(report: dict[str, Any], report_dir: Path)
     _write_leakage_audit_md(report["leakage_audit"], report_dir / "threshold_warning_leakage_audit.md")
     _write_claim_readiness_md(report["metrics"], report["leakage_audit"], report_dir / "threshold_warning_claim_readiness.md")
     _write_summary_md(report, report_dir / "baseline_summary.md")
+
+
+def diagnose_threshold_warning(
+    report_path: Path,
+    predictions_path: Path,
+    warning_table_path: Path,
+    out_dir: Path,
+) -> dict[str, Any]:
+    """Write lead-time, proximity, censoring, and reliability diagnostics."""
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    predictions = pq.read_table(predictions_path).to_pylist()
+    warning_rows = pq.read_table(warning_table_path).to_pylist()
+    out_dir.mkdir(parents=True, exist_ok=True)
+    lead_rows = grouped_prediction_performance(predictions, "lead_time_bin")
+    proximity_rows = grouped_prediction_performance(predictions, "proximity_bin")
+    c_rate_rows = [
+        row for row in grouped_prediction_performance(predictions, "lead_time_bin", split_name="c_rate_holdout_fold")
+    ]
+    reliability_rows = reliability_bin_rows(predictions)
+    calibration_split_rows = calibration_by_split_rows(predictions)
+    censoring_report = censoring_policy_report(warning_rows)
+    censoring_rows = censoring_by_split_rows(warning_rows)
+    _write_csv(out_dir / "plots" / "lead_time_performance.csv", lead_rows)
+    _write_csv(out_dir / "plots" / "proximity_bin_performance.csv", proximity_rows)
+    _write_csv(out_dir / "plots" / "c_rate_lead_time_performance.csv", c_rate_rows)
+    _write_csv(out_dir / "threshold_warning_reliability.csv", reliability_rows)
+    _write_csv(out_dir / "threshold_warning_calibration_by_split.csv", calibration_split_rows)
+    _write_csv(out_dir / "threshold_warning_censoring_by_split.csv", censoring_rows)
+    (out_dir / "threshold_warning_censoring_report.json").write_text(
+        json.dumps(censoring_report, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    _write_lead_time_md(lead_rows, proximity_rows, out_dir / "lead_time_diagnostics.md")
+    _write_c_rate_calibration_md(calibration_split_rows, out_dir / "threshold_warning_calibration_by_c_rate.md")
+    _write_claim_readiness_md(report["metrics"], report["leakage_audit"], out_dir / "threshold_warning_claim_readiness.md")
+    return {
+        "row_counts": {
+            "predictions": len(predictions),
+            "lead_time_rows": len(lead_rows),
+            "proximity_rows": len(proximity_rows),
+            "reliability_rows": len(reliability_rows),
+        },
+        "outputs": {
+            "lead_time": str(out_dir / "lead_time_diagnostics.md"),
+            "censoring": str(out_dir / "threshold_warning_censoring_report.json"),
+            "reliability": str(out_dir / "threshold_warning_reliability.csv"),
+        },
+    }
 
 
 def leakage_audit(feature_groups: list[str]) -> dict[str, Any]:
@@ -350,6 +561,175 @@ def leakage_audit(feature_groups: list[str]) -> dict[str, Any]:
         "forbidden": sorted(LEAKAGE_FIELDS),
         "rows": rows,
     }
+
+
+def grouped_prediction_performance(
+    predictions: list[dict[str, Any]],
+    group_field: str,
+    *,
+    split_name: str | None = None,
+) -> list[dict[str, Any]]:
+    filtered = [
+        row
+        for row in predictions
+        if split_name is None or str(row["split_name"]) == split_name
+    ]
+    grouped: dict[tuple[str, str, str, str], list[dict[str, Any]]] = defaultdict(list)
+    for row in filtered:
+        grouped[
+            (
+                str(row["target"]),
+                str(row["model_level"]),
+                str(row["feature_group"]),
+                str(row.get(group_field, "<missing>")),
+            )
+        ].append(row)
+    output = []
+    for (target, model, feature, group_value), rows in sorted(grouped.items()):
+        y_true = [1 if row["y_true"] else 0 for row in rows]
+        probs = [_as_float(row["y_prob"]) for row in rows]
+        output.append(
+            {
+                "target": target,
+                "model_level": model,
+                "feature_group": feature,
+                "group_field": group_field,
+                "group_value": group_value,
+                "split_name": split_name or "all",
+                "row_count": len(rows),
+                "positive_count": sum(y_true),
+                "negative_count": len(y_true) - sum(y_true),
+                "auroc": auroc(y_true, probs),
+                "auprc": auprc(y_true, probs),
+                "brier": brier_score(y_true, probs),
+                "ece_10_bin": expected_calibration_error(y_true, probs, bins=10),
+            }
+        )
+    return output
+
+
+def reliability_bin_rows(predictions: list[dict[str, Any]], *, bins: int = 10) -> list[dict[str, Any]]:
+    grouped: dict[tuple[str, str, str, int], list[dict[str, Any]]] = defaultdict(list)
+    for row in predictions:
+        prob = _clip_probability(_as_float(row["y_prob"]))
+        bin_idx = min(int(prob * bins), bins - 1)
+        grouped[(str(row["target"]), str(row["model_level"]), str(row["feature_group"]), bin_idx)].append(row)
+    output = []
+    for (target, model, feature, bin_idx), rows in sorted(grouped.items()):
+        probs = [_clip_probability(_as_float(row["y_prob"])) for row in rows]
+        positives = sum(bool(row["y_true"]) for row in rows)
+        output.append(
+            {
+                "target": target,
+                "model_level": model,
+                "feature_group": feature,
+                "bin": bin_idx,
+                "bin_left": bin_idx / bins,
+                "bin_right": (bin_idx + 1) / bins,
+                "row_count": len(rows),
+                "mean_probability": sum(probs) / len(probs),
+                "observed_rate": positives / len(rows),
+            }
+        )
+    return output
+
+
+def calibration_by_split_rows(predictions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    grouped: dict[tuple[str, str, str, str, int], list[dict[str, Any]]] = defaultdict(list)
+    for row in predictions:
+        grouped[
+            (
+                str(row["target"]),
+                str(row["model_level"]),
+                str(row["feature_group"]),
+                str(row["split_name"]),
+                int(row["heldout_fold"]),
+            )
+        ].append(row)
+    output = []
+    for (target, model, feature, split, fold), rows in sorted(grouped.items()):
+        y_true = [1 if row["y_true"] else 0 for row in rows]
+        probs = [_clip_probability(_as_float(row["y_prob"])) for row in rows]
+        output.append(
+            {
+                "target": target,
+                "model_level": model,
+                "feature_group": feature,
+                "split_name": split,
+                "heldout_fold": fold,
+                "row_count": len(rows),
+                "positive_count": sum(y_true),
+                "brier": brier_score(y_true, probs),
+                "ece_10_bin": expected_calibration_error(y_true, probs, bins=10),
+                "calibration_slope": calibration_slope(y_true, probs),
+                "calibration_intercept": calibration_intercept(y_true, probs),
+            }
+        )
+    return output
+
+
+def censoring_policy_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    targets = {}
+    for target in TARGETS:
+        statuses = defaultdict(int)
+        for row in rows:
+            statuses[label_status(row, target)] += 1
+        targets[target] = dict(sorted(statuses.items()))
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "generated_at_utc": datetime.now(UTC).isoformat(),
+        "targets": targets,
+        "policy": {
+            "all_current_rows": "Milestone 2.6 baseline treatment.",
+            "verified_only": "Exclude right_censored_unknown rows for sensitivity diagnostics.",
+            "censored_as_negative": "Current Boolean horizon labels implicitly treat unknown future crossings as negative.",
+        },
+    }
+
+
+def censoring_by_split_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    output = []
+    for target in TARGETS:
+        for split_name in SPLIT_COLUMNS:
+            folds = sorted({int(row[split_name]) for row in rows})
+            heldout = folds if split_name == "condition_fold" else [fold for fold in folds if fold != 0]
+            for fold in heldout:
+                split_rows = [row for row in rows if int(row[split_name]) == fold]
+                statuses = defaultdict(int)
+                for row in split_rows:
+                    statuses[label_status(row, target)] += 1
+                output.append(
+                    {
+                        "target": target,
+                        "split_name": split_name,
+                        "heldout_fold": fold,
+                        "row_count": len(split_rows),
+                        "positive_observed": statuses["positive_observed"],
+                        "negative_observed": statuses["negative_observed"],
+                        "right_censored_unknown": statuses["right_censored_unknown"],
+                    }
+                )
+    return output
+
+
+def calibration_slope(y_true: list[int], probabilities: list[float]) -> float | None:
+    if len(set(y_true)) < 2:
+        return None
+    logits = [math.log(prob / (1 - prob)) for prob in probabilities]
+    x_mean = sum(logits) / len(logits)
+    y_mean = sum(y_true) / len(y_true)
+    denom = sum((value - x_mean) ** 2 for value in logits)
+    if denom <= 1e-12:
+        return None
+    return sum((x - x_mean) * (y - y_mean) for x, y in zip(logits, y_true)) / denom
+
+
+def calibration_intercept(y_true: list[int], probabilities: list[float]) -> float | None:
+    slope = calibration_slope(y_true, probabilities)
+    if slope is None:
+        return None
+    logits = [math.log(prob / (1 - prob)) for prob in probabilities]
+    return sum(y_true) / len(y_true) - slope * (sum(logits) / len(logits))
 
 
 def auroc(y_true: list[int], probabilities: list[float]) -> float | None:
@@ -499,10 +879,19 @@ def _write_claim_readiness_md(metrics: list[dict[str, Any]], audit: dict[str, An
     rows = _leaderboard_rows(metrics)
     prior_rows = [row for row in rows if row["model_level"] == "B0_event_rate_prior"]
     model_rows = [row for row in rows if row["model_level"] != "B0_event_rate_prior"]
+    distance_rows = [row for row in rows if row["model_level"] in PROXIMITY_MODEL_LEVELS]
+    hgb_rows = [row for row in rows if row["model_level"] == "B6_hist_gradient_boosting_classifier"]
     best_prior = min(prior_rows, key=lambda row: row["mean_brier"] if row["mean_brier"] is not None else math.inf)
     best_model = min(model_rows, key=lambda row: row["mean_brier"] if row["mean_brier"] is not None else math.inf)
+    best_distance = min(distance_rows, key=lambda row: row["mean_brier"] if row["mean_brier"] is not None else math.inf)
+    best_hgb = min(
+        hgb_rows or model_rows,
+        key=lambda row: row["mean_brier"] if row["mean_brier"] is not None else math.inf,
+    )
     gain = (best_prior["mean_brier"] or 0.0) - (best_model["mean_brier"] or 0.0)
+    hgb_distance_gain = (best_distance["mean_brier"] or 0.0) - (best_hgb["mean_brier"] or 0.0)
     feasibility = "partially_supported" if gain > 0 and audit["status"] == "passed" else "not_supported"
+    distance_status = "partially_supported" if hgb_distance_gain > 0 else "not_supported"
     lines = [
         "# Threshold-Warning Claim Readiness",
         "",
@@ -510,7 +899,10 @@ def _write_claim_readiness_md(metrics: list[dict[str, Any]], audit: dict[str, An
         "|---|---|---|",
         "| Threshold label stability | `partially_supported` | Milestone 2.5.1 selected `capacity_below_80pct_initial` as the strongest threshold target candidate. |",
         f"| Warning baseline feasibility | `{feasibility}` | Best model mean Brier gain versus event-rate prior is `{gain:.6g}`. |",
-        "| Grouped warning performance | `exploratory_only` | This first pass reports grouped metrics but does not authorize an early-warning claim. |",
+        f"| Beats distance-to-threshold baseline | `{distance_status}` | Best HGB mean Brier gain versus best proximity baseline is `{hgb_distance_gain:.6g}`. |",
+        "| Lead-time usefulness | `exploratory_only` | Lead-time stratified diagnostics are reported separately and do not yet authorize an early-warning claim. |",
+        "| Censoring robustness | `exploratory_only` | Censoring sensitivity is reported; verified-only conclusions require review. |",
+        "| Grouped warning performance | `supported_for_diagnostics` | Grouped metrics beat event-rate priors, but this remains threshold-event forecasting, not detector-knee prediction. |",
         "| C-rate warning performance | `exploratory_only` | C-rate rows require separate review for positive counts and performance. |",
         "| Calibration | `not_supported` | Probability outputs are diagnostic; no calibrated-risk claim is authorized. |",
         "| Detector-knee prediction | `blocked` | Detector-knee labels failed replicate consistency in Milestone 2.5. |",
@@ -544,6 +936,60 @@ def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
         writer = csv.DictWriter(handle, fieldnames=fieldnames, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
+
+
+def _write_lead_time_md(
+    lead_rows: list[dict[str, Any]],
+    proximity_rows: list[dict[str, Any]],
+    path: Path,
+) -> None:
+    best_lead = min(
+        [row for row in lead_rows if row["model_level"] == "B6_hist_gradient_boosting_classifier"],
+        key=lambda row: row["brier"] if row["brier"] is not None else math.inf,
+        default=None,
+    )
+    best_proximity = min(
+        [row for row in proximity_rows if row["model_level"] == "B6_hist_gradient_boosting_classifier"],
+        key=lambda row: row["brier"] if row["brier"] is not None else math.inf,
+        default=None,
+    )
+    lines = [
+        "# Threshold-Warning Lead-Time Diagnostics",
+        "",
+        "This report stratifies predictions by observed lead-time and proximity bins. It does not authorize policy ranking or calibrated risk.",
+        "",
+    ]
+    if best_lead:
+        lines.append(
+            f"Best HGB lead-time bin row: `{best_lead['target']}` / `{best_lead['feature_group']}` / `{best_lead['group_value']}` with Brier `{_fmt(best_lead['brier'])}`."
+        )
+    if best_proximity:
+        lines.append(
+            f"Best HGB proximity bin row: `{best_proximity['target']}` / `{best_proximity['feature_group']}` / `{best_proximity['group_value']}` with Brier `{_fmt(best_proximity['brier'])}`."
+        )
+    lines.append("")
+    lines.append("Near-threshold performance and longer-lead performance must be interpreted separately.")
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _write_c_rate_calibration_md(rows: list[dict[str, Any]], path: Path) -> None:
+    c_rate = [row for row in rows if row["split_name"] == "c_rate_holdout_fold"]
+    best = min(
+        [row for row in c_rate if row["model_level"] == "B6_hist_gradient_boosting_classifier"],
+        key=lambda row: row["brier"] if row["brier"] is not None else math.inf,
+        default=None,
+    )
+    lines = [
+        "# Threshold-Warning C-Rate Calibration Diagnostics",
+        "",
+        "This report summarizes C-rate probability diagnostics only. It does not authorize calibrated risk.",
+        "",
+    ]
+    if best:
+        lines.append(
+            f"Best C-rate HGB row: `{best['target']}` / `{best['feature_group']}` with Brier `{_fmt(best['brier'])}` and ECE `{_fmt(best['ece_10_bin'])}`."
+        )
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def _default_report_dir(out_path: Path) -> Path:

@@ -797,3 +797,38 @@ Blocked until later milestones:
 
 - EIS claims and PULSE scientific claims beyond scalar resistance baselines.
 - Sequence models, neural models, policy ranking, and CBAT architecture.
+
+## Milestone 2.6.1 Threshold-Warning Hardening
+
+Milestone 2.6.1 evaluates the `capacity_below_80pct_initial` threshold-warning
+baseline as a prospective grouped diagnostic. Inputs are restricted to
+check-up-`k` state/time/nominal metadata. The warning feature policy continues
+to exclude `capacity_Ah_k1`, `delta_capacity_Ah`, future interval exposure,
+future PULSE/EIS state, and PULSE/EIS deltas.
+
+Required hardening artifacts:
+
+- `reports/baselines/threshold_warning_l0_l2_report.json`
+- `reports/baselines/threshold_warning_l0_l2/leaderboard.csv`
+- `reports/baselines/threshold_warning_l0_l2/threshold_warning_claim_readiness.md`
+- `reports/baselines/threshold_warning_l0_l2/lead_time_diagnostics.md`
+- `reports/baselines/threshold_warning_l0_l2/threshold_warning_censoring_report.json`
+- `reports/baselines/threshold_warning_l0_l2/threshold_warning_censoring_by_split.csv`
+- `reports/baselines/threshold_warning_l0_l2/threshold_warning_reliability.csv`
+- `reports/baselines/threshold_warning_l0_l2/threshold_warning_calibration_by_split.csv`
+- `reports/baselines/threshold_warning_l0_l2/threshold_warning_calibration_by_c_rate.md`
+- `reports/baselines/threshold_warning_l0_l2/plots/lead_time_performance.csv`
+- `reports/baselines/threshold_warning_l0_l2/plots/proximity_bin_performance.csv`
+- `reports/baselines/threshold_warning_l0_l2/plots/c_rate_lead_time_performance.csv`
+- `docs/experiments/2026-05-23_threshold_warning_hardening.md`
+
+Claim rules:
+
+- If HGB beats event-rate and distance-to-threshold baselines, a narrow
+  threshold-event forecasting diagnostic claim is allowed.
+- If performance is mostly near-threshold or censoring-sensitive, do not call
+  the result early warning.
+- If calibration diagnostics fail, probabilities are diagnostic scores only,
+  not calibrated risk estimates.
+- Detector-knee prediction, policy ranking, causal warning claims, sequence
+  models, neural models, and CBAT remain blocked.
