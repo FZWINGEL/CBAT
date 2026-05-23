@@ -73,6 +73,29 @@ def test_pulse_baseline_l0_runs_grouped_splits(tmp_path: Path) -> None:
     assert report["metrics"]
     assert (tmp_path / "pulse" / "leaderboard.csv").exists()
     assert (tmp_path / "pulse" / "pulse_diagnostics.md").exists()
+    assert (tmp_path / "pulse" / "pulse_claim_readiness.md").exists()
+
+
+def test_pulse_baseline_alignment_threshold_filters_rows(tmp_path: Path) -> None:
+    pulse_summary, _, interval_path = _write_pulse_fixture(tmp_path)
+    subset_path = _write_subset_registry(interval_path, tmp_path)
+    targets_path = tmp_path / "pulse_targets.parquet"
+    build_pulse_target_table(pulse_summary, interval_path, targets_path)
+
+    report = run_pulse_baselines(
+        interval_path,
+        subset_path,
+        targets_path,
+        tmp_path / "pulse_threshold_report.json",
+        tmp_path / "pulse_threshold_predictions.parquet",
+        model_levels=["L0_persistence"],
+        feature_groups=["P0_persistence"],
+        split_views=["condition_fold"],
+        max_alignment_delta_s=12.0,
+    )
+
+    assert report["max_alignment_delta_s"] == 12.0
+    assert report["row_counts"]["selected_subset_rows"] == 12
 
 
 def test_pulse_feature_groups_exclude_eis_fields() -> None:

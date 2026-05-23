@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 0.7: PULSE QA and resistance baseline.
+Milestone 0.7.1: PULSE alignment, direction, and target-coverage hardening.
 
 Current state:
 - Gate 2b implementation and reports are committed.
@@ -27,10 +27,11 @@ Current state:
 - Milestone 0.5b diagnostics, Ridge scaling, HGB-50 robustness, and quantile
   metrics are implemented.
 - Milestone 0.5c synthesis and claim-readiness artifacts are committed.
-- Milestone 0.7 opens a scoped PULSE evidence stream after the LOG_AGE-only
-  C-rate delta pass failed to beat the F4 threshold. It is limited to PULSE QA,
-  PULSE target policy, PULSE interval target tables, and first scalar resistance
-  baselines under grouped validation.
+- Milestone 0.7 opened a scoped PULSE evidence stream after the LOG_AGE-only
+  C-rate delta pass failed to beat the F4 threshold. Milestone 0.7.1 hardens
+  that stream with alignment-threshold sensitivity, direction-specific target
+  extraction, canonical-target missingness reports, and scalar resistance
+  baseline sensitivity runs.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 - LOG_AGE monotonicity has been triaged and propagated into interval quality
@@ -70,11 +71,13 @@ Allowed work:
 - PULSE QA
 - PULSE target policy
 - PULSE alignment diagnostics
+- PULSE alignment-threshold sensitivity
+- PULSE direction-specific QA
+- PULSE target coverage diagnostics
 - PULSE interval target table construction
 - PULSE resistance baselines
 
 Forbidden work:
-- EIS/PULSE modeling
 - EIS modeling
 - EIS embeddings
 - knee prediction
@@ -83,6 +86,7 @@ Forbidden work:
 - CBAT architecture
 - policy ranking
 - capacity+PULSE multimodal claims
+- PULSE scientific claims beyond scalar resistance baselines
 
 ## Coding Standards
 

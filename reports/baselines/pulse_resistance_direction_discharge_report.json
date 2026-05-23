@@ -1,0 +1,54 @@
+{
+  "feature_groups": [
+    "P0_persistence",
+    "P1_state_time",
+    "P2_state_capacity",
+    "P3_state_nominal",
+    "P4_state_log_age_scalar",
+    "P5_stress_v1_1"
+  ],
+  "generated_at_utc": "2026-05-23T08:36:40.352180+00:00",
+  "hgb_max_iter": 50,
+  "inputs": {
+    "interval_subsets": "data/splits/interval_subset_registry_v1.parquet",
+    "interval_table": "data/interim/interval_table.parquet",
+    "pulse_targets": "data/interim/pulse_target_table_discharge.parquet",
+    "stress_features": "data/interim/interval_stress_features_v1_1.parquet"
+  },
+  "max_alignment_delta_s": null,
+  "metrics": [],
+  "model_levels": [
+    "L0_persistence",
+    "L1_ridge",
+    "L2_hist_gradient_boosting"
+  ],
+  "outputs": {
+    "predictions": "data/processed/pulse_resistance_direction_discharge_predictions.parquet",
+    "report": "reports/baselines/pulse_resistance_direction_discharge_report.json",
+    "report_dir": "reports/baselines/pulse_resistance_direction_discharge"
+  },
+  "row_counts": {
+    "joined_interval_rows": 3827,
+    "selected_cells": 228,
+    "selected_parameter_sets": 76,
+    "selected_subset_rows": 3827,
+    "sensitivity_excluding_monotonicity_rows": 2773
+  },
+  "schema_version": "gate7.pulse_baseline.v1",
+  "seed": 42,
+  "split_views": [
+    "condition_fold",
+    "temperature_holdout_fold",
+    "c_rate_holdout_fold",
+    "profile_holdout_fold",
+    "voltage_window_holdout_fold"
+  ],
+  "status": "warning",
+  "subset": "baseline_clean_tolerant",
+  "targets": [
+    "delta_pulse_1s_resistance"
+  ],
+  "warnings": [
+    "no_finite_target_rows_for_selected_configuration"
+  ]
+}

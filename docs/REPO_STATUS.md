@@ -11,17 +11,20 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 0.7: PULSE QA and Resistance Baseline**.
+The repository is in **Milestone 0.7.1: PULSE Alignment, Direction, and
+Target-Coverage Hardening**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
 complete. Milestone 0.6.1 stress-feature hardening and Milestone 0.6.2 target
 consistency diagnostics are complete. Milestone 0.6.3 closed the broad
 LOG_AGE-only scalar stress-feature path for the current C-rate delta problem.
-Milestone 0.7 opens a scoped PULSE QA-first resistance evidence stream.
+Milestone 0.7 opened a scoped PULSE QA-first resistance evidence stream.
+Milestone 0.7.1 hardens that stream before any PULSE scientific claim.
 
-No EIS/PULSE supervised claims, sequence models, neural architecture, policy
-ranking, CBAT architecture, or EIS embedding work has been started.
+No EIS claims, PULSE scientific claims beyond scalar resistance baselines,
+sequence models, neural architecture, policy ranking, CBAT architecture, or EIS
+embedding work has been started.
 
 Current state:
 
@@ -67,6 +70,9 @@ Current state:
 - Milestone 0.7 PULSE target policy, PULSE QA, canonical RT/50% SOC interval
   target table, and first grouped scalar PULSE resistance baseline are
   implemented and run.
+- Milestone 0.7.1 PULSE alignment-threshold sensitivity, direction-specific
+  target extraction, missing canonical endpoint reports, and scalar resistance
+  baseline sensitivity runs are implemented and run.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -715,6 +721,91 @@ Decision:
 - Next work should harden PULSE alignment/target coverage interpretation before
   considering broader PULSE target sets.
 
+### Milestone 0.7.1
+
+Milestone 0.7.1 hardens the canonical PULSE target before any resistance claim.
+It does not authorize EIS, sequence/neural models, policy ranking, CBAT,
+capacity+PULSE multimodal claims, or PULSE claims beyond scalar resistance
+baselines.
+
+Implemented artifacts:
+
+- CLI: `mbp pulse alignment-sensitivity`
+- CLI: `mbp pulse missingness`
+- CLI option: `mbp pulse build-targets --direction mean|charge|discharge`
+- CLI option: `mbp baseline run-pulse --max-alignment-delta-s`
+- Alignment sensitivity report:
+  `reports/audit/pulse_alignment_sensitivity_report.json`
+- Alignment sensitivity coverage:
+  `reports/audit/pulse_alignment_sensitivity_coverage.csv`
+- Missing endpoint reports:
+  `reports/audit/pulse_missing_canonical_targets.csv`,
+  `reports/audit/pulse_missingness_by_condition.csv`, and
+  `reports/audit/pulse_missingness_by_split.csv`
+- Direction-specific target tables:
+  `data/interim/pulse_target_table_mean.parquet`,
+  `data/interim/pulse_target_table_charge.parquet`, and
+  `data/interim/pulse_target_table_discharge.parquet` (ignored generated data)
+- Alignment-threshold baseline reports:
+  `reports/baselines/pulse_resistance_alignment_24h_report.json` and
+  `reports/baselines/pulse_resistance_alignment_36h_report.json`
+- Direction sensitivity reports:
+  `reports/baselines/pulse_resistance_direction_mean_report.json`,
+  `reports/baselines/pulse_resistance_direction_charge_report.json`, and
+  `reports/baselines/pulse_resistance_direction_discharge_report.json`
+- Combined summaries:
+  `reports/baselines/pulse_resistance_alignment_sensitivity/baseline_summary.md`
+  and
+  `reports/baselines/pulse_resistance_l0_l3/pulse_resistance_direction_comparison.md`
+
+Canonical RT/50 alignment-threshold coverage:
+
+| Threshold | Retained intervals | Missing intervals | Retained cells | C-rate rows | Profile rows |
+|---|---:|---:|---:|---:|---:|
+| `<=6h` | `3,131` | `696` | `220` | `90` | `605` |
+| `<=12h` | `3,529` | `298` | `225` | `109` | `697` |
+| `<=24h` | `3,748` | `79` | `228` | `143` | `733` |
+| `<=36h` | `3,751` | `76` | `228` | `143` | `733` |
+| `all` | `3,751` | `76` | `228` | `143` | `733` |
+
+Alignment-threshold baseline sensitivity:
+
+| Threshold | Split | Best feature group | Condition-mean MAE |
+|---|---|---|---:|
+| `all` | `condition_fold` | `P5_stress_v1_1` | `0.000960407` |
+| `all` | `c_rate_holdout_fold` | `P3_state_nominal` | `0.00185842` |
+| `<=24h` | `condition_fold` | `P5_stress_v1_1` | `0.000952007` |
+| `<=24h` | `c_rate_holdout_fold` | `P3_state_nominal` | `0.00194971` |
+| `<=36h` | `condition_fold` | `P5_stress_v1_1` | `0.000960407` |
+| `<=36h` | `c_rate_holdout_fold` | `P3_state_nominal` | `0.00185842` |
+
+Direction sensitivity:
+
+- `mean` remains the canonical PULSE target direction handling.
+- `charge` produced the same scalar baseline rows as `mean` for the current
+  canonical RT/50 target table.
+- `discharge` produced no finite adjacent RT/50 interval deltas and now emits
+  an explicit warning report: `no_finite_target_rows_for_selected_configuration`.
+
+Missing canonical endpoints:
+
+- Missing endpoint rows: `76`
+- Missing rows in C-rate holdout: `14`
+- Missing rows in profile holdout: `19`
+- Missingness spans `34` parameter-set condition groups and remains a reporting
+  limitation rather than a silent exclusion.
+
+Decision:
+
+- Alignment filtering at `<=24h` changes the C-rate condition-mean MAE slightly
+  and keeps all parameter sets represented; `<=36h` is identical to all rows for
+  the current finite target set.
+- Direction-specific discharge is not usable as a current canonical baseline
+  target because adjacent finite RT/50 discharge deltas are absent.
+- The canonical `mean` target remains acceptable for scalar resistance-baseline
+  diagnostics, but no PULSE scientific claim or capacity+PULSE multimodal claim
+  is authorized.
+
 ## Important Implementation Notes
 
 The interval builder preserves result-table timestamps in the public schema, but
@@ -752,12 +843,11 @@ exist. First baseline work must use:
 - targets: `capacity_Ah_k1` and `delta_capacity_Ah`
 - split views: condition, temperature, C-rate, profile, and corrected
   voltage-window holdouts
-- no EIS, PULSE, sequence models, neural models, policy ranking, or CBAT
-  architecture
+- no EIS, sequence models, neural models, policy ranking, CBAT architecture, or
+  capacity+PULSE multimodal claims
 
-EIS and PULSE scientific claims remain blocked by their known audit issues.
-The next authorized engineering direction is PULSE target/alignment hardening
-and resistance-baseline interpretation. EIS modeling, capacity+PULSE multimodal
+EIS claims and PULSE scientific claims beyond scalar resistance baselines remain
+blocked by their known audit issues. EIS modeling, capacity+PULSE multimodal
 claims, sequence/neural models, policy ranking, and CBAT remain blocked.
 
 ## Validation
@@ -769,7 +859,7 @@ PYTHONDONTWRITEBYTECODE=1 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/ruff check . --no
 All checks passed.
 
 PYTHONDONTWRITEBYTECODE=1 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/pytest -p no:cacheprovider
-96 passed.
+99 passed.
 ```
 
 The previous `datetime.utcnow()` deprecation warning in
@@ -777,7 +867,8 @@ The previous `datetime.utcnow()` deprecation warning in
 
 ## Recommended Next Step
 
-Review the **Milestone 0.7 PULSE QA and Resistance Baseline** before expanding
-PULSE targets or making PULSE claims. The next bounded step is PULSE alignment
-and target-coverage hardening, not EIS, sequence models, neural models, policy
-ranking, CBAT, or capacity+PULSE multimodal claims.
+Review the **Milestone 0.7.1 PULSE Alignment, Direction, and Target-Coverage
+Hardening** results before expanding PULSE targets or making PULSE claims. The
+next bounded step is a decision on whether the canonical RT/50 mean target is
+robust enough for a scalar resistance-baseline claim, not EIS, sequence models,
+neural models, policy ranking, CBAT, or capacity+PULSE multimodal claims.

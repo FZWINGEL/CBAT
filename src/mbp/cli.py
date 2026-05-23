@@ -974,6 +974,7 @@ def baseline_run_pulse(
     feature_groups: str = typer.Option("P0_persistence,P1_state_time,P2_state_capacity,P3_state_nominal,P4_state_log_age_scalar", "--feature-groups", help="Comma-separated PULSE feature groups."),
     targets: str = typer.Option("delta_pulse_1s_resistance", "--targets", help="Comma-separated PULSE targets."),
     split_views: str = typer.Option("condition_fold,temperature_holdout_fold,c_rate_holdout_fold,profile_holdout_fold,voltage_window_holdout_fold", "--split-views", help="Comma-separated split views."),
+    max_alignment_delta_s: float | None = typer.Option(None, "--max-alignment-delta-s", help="Optional maximum PULSE alignment delta at k and k+1."),
 ) -> None:
     """Run grouped scalar PULSE resistance baselines."""
     from mbp.baselines.pulse import run_pulse_baselines
@@ -993,6 +994,7 @@ def baseline_run_pulse(
         feature_groups=_comma_values(feature_groups),
         targets=_comma_values(targets),
         split_views=_comma_values(split_views),
+        max_alignment_delta_s=max_alignment_delta_s,
     )
     typer.echo(f"PULSE baseline report generated: {len(report['metrics'])} metric rows written to {out}")
 
@@ -1019,6 +1021,7 @@ def pulse_build_targets(
     out: Path = typer.Option(..., "--out", help="Output pulse_target_table.parquet path."),
     soc_percent: float = typer.Option(50.0, "--soc-percent", help="Canonical SOC percent."),
     temperature_context: str = typer.Option("RT", "--temperature-context", help="Canonical temperature context."),
+    direction: str = typer.Option("mean", "--direction", help="Direction handling: mean, charge, or discharge."),
 ) -> None:
     """Build canonical PULSE interval target table."""
     from mbp.data.products.pulse_targets import build_pulse_target_table
@@ -1029,8 +1032,51 @@ def pulse_build_targets(
         out,
         soc_percent=soc_percent,
         temperature_context=temperature_context,
+        direction=direction,
     )
     typer.echo(f"PULSE target table generated: {table.num_rows} rows written to {out}")
+
+
+@pulse_app.command("alignment-sensitivity")
+def pulse_alignment_sensitivity(
+    pulse_summary: Path = typer.Option(..., "--pulse-summary", help="Path to modality_table_pulse_summary.parquet."),
+    pulse_targets: Path = typer.Option(..., "--pulse-targets", help="Path to pulse_target_table.parquet."),
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output alignment sensitivity JSON report."),
+    coverage_out: Path = typer.Option(..., "--coverage-out", help="Output alignment sensitivity coverage CSV."),
+) -> None:
+    """Write PULSE alignment-threshold sensitivity diagnostics."""
+    from mbp.data.products.pulse_targets import write_pulse_alignment_sensitivity_report
+
+    report = write_pulse_alignment_sensitivity_report(
+        pulse_summary,
+        pulse_targets,
+        interval_table,
+        out,
+        coverage_out,
+    )
+    typer.echo(f"PULSE alignment sensitivity report generated: {len(report['thresholds'])} thresholds written to {out}")
+
+
+@pulse_app.command("missingness")
+def pulse_missingness(
+    pulse_targets: Path = typer.Option(..., "--pulse-targets", help="Path to pulse_target_table.parquet."),
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    missing_out: Path = typer.Option(..., "--missing-out", help="Output missing canonical endpoint CSV."),
+    by_condition_out: Path = typer.Option(..., "--by-condition-out", help="Output missingness by condition CSV."),
+    by_split_out: Path = typer.Option(..., "--by-split-out", help="Output missingness by split CSV."),
+) -> None:
+    """Write missing canonical PULSE endpoint diagnostics."""
+    from mbp.data.products.pulse_targets import write_pulse_missingness_reports
+
+    report = write_pulse_missingness_reports(
+        pulse_targets,
+        interval_table,
+        missing_out,
+        by_condition_out,
+        by_split_out,
+    )
+    typer.echo(f"PULSE missingness reports generated: {report['missing_rows']} missing rows")
 
 
 def _comma_values(value: str) -> list[str]:

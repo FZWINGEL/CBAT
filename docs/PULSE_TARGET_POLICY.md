@@ -60,9 +60,12 @@ canonical context is `RT`. `OT` remains a coverage/audit context until a later
 policy expands targets.
 
 Both charge and discharge pulse directions may be present. The canonical target
-aggregates duplicate rows for the same `(cell_id, checkup_k, SOC, temperature)`
-context by arithmetic mean across represented directions/duplicates. Directional
-claims require a later direction-specific policy.
+uses `direction=mean`, which aggregates duplicate rows for the same
+`(cell_id, checkup_k, SOC, temperature)` context by arithmetic mean across
+represented directions/duplicates. `direction=charge` and
+`direction=discharge` target tables are diagnostic only until a later
+direction-specific policy is accepted. Directional claims require that later
+policy.
 
 ## Alignment Policy
 
@@ -71,6 +74,10 @@ PULSE rows are aligned to check-ups by the parser-reported `checkup_k` and
 min, median, p95, and max. Rows with large alignment deltas are warnings, not
 silent exclusions, until the PULSE QA report defines whether they affect the
 canonical target.
+
+Milestone 0.7.1 alignment-threshold sensitivity may filter baselines with
+`--max-alignment-delta-s`. These filtered runs are diagnostics; they do not
+change the canonical target unless a later policy version adopts a threshold.
 
 ## Missingness Policy
 

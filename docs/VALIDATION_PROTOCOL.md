@@ -13,9 +13,11 @@ These milestones are not modality or architecture expansions.
 
 Milestone 0.7 opens PULSE as a separate QA-first resistance endpoint. It
 authorizes PULSE QA, canonical PULSE target extraction, PULSE interval target
-tables, and scalar grouped PULSE resistance baselines. It does not authorize
-EIS modeling, capacity+PULSE multimodal claims, sequence models, neural models,
-policy ranking, or CBAT.
+tables, and scalar grouped PULSE resistance baselines. Milestone 0.7.1 hardens
+that endpoint with alignment-threshold sensitivity, direction-specific target
+tables, canonical-target missingness reports, and scalar resistance baseline
+sensitivity runs. It does not authorize EIS modeling, capacity+PULSE multimodal
+claims, sequence models, neural models, policy ranking, or CBAT.
 
 Required split discipline:
 
@@ -227,7 +229,44 @@ Milestone 0.7 reports must use grouped split views and report target coverage.
 PULSE results are resistance-baseline diagnostics only; they are not evidence
 for a capacity+PULSE multimodal claim.
 
+Required Milestone 0.7.1 PULSE hardening artifacts:
+
+- `reports/audit/pulse_alignment_sensitivity_report.json`
+- `reports/audit/pulse_alignment_sensitivity_coverage.csv`
+- `reports/audit/pulse_missing_canonical_targets.csv`
+- `reports/audit/pulse_missingness_by_condition.csv`
+- `reports/audit/pulse_missingness_by_split.csv`
+- `data/interim/pulse_target_table_mean.parquet` (ignored generated data)
+- `data/interim/pulse_target_table_charge.parquet` (ignored generated data)
+- `data/interim/pulse_target_table_discharge.parquet` (ignored generated data)
+- `reports/baselines/pulse_resistance_alignment_24h_report.json`
+- `reports/baselines/pulse_resistance_alignment_36h_report.json`
+- `reports/baselines/pulse_resistance_alignment_sensitivity/baseline_summary.md`
+- `reports/baselines/pulse_resistance_alignment_sensitivity/plots/pulse_alignment_threshold_comparison.csv`
+- `reports/baselines/pulse_resistance_direction_mean_report.json`
+- `reports/baselines/pulse_resistance_direction_charge_report.json`
+- `reports/baselines/pulse_resistance_direction_discharge_report.json`
+- `reports/baselines/pulse_resistance_l0_l3/pulse_resistance_direction_comparison.md`
+- `reports/baselines/pulse_resistance_l0_l3/plots/pulse_direction_comparison.csv`
+
+Milestone 0.7.1 direction policy:
+
+- `mean` remains the canonical PULSE target direction handling.
+- `charge` and `discharge` target tables are diagnostic until a later policy
+  accepts direction-specific targets.
+- If a direction-specific table has no finite adjacent interval targets, the
+  baseline report must emit an explicit warning rather than silently passing.
+
+Milestone 0.7.1 alignment policy:
+
+- Baselines may use `--max-alignment-delta-s` to filter intervals where either
+  endpoint exceeds the threshold.
+- Alignment-threshold reports must include retained interval counts, retained
+  cell/parameter-set counts, and split coverage.
+- Large-alignment rows are still warnings, not silent exclusions, unless a
+  later PULSE target policy changes the canonical target definition.
+
 Blocked until later milestones:
 
-- EIS and PULSE scientific claims.
+- EIS claims and PULSE scientific claims beyond scalar resistance baselines.
 - Sequence models, neural models, policy ranking, and CBAT architecture.

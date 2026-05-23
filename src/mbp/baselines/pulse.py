@@ -207,6 +207,7 @@ def run_pulse_baselines(
     feature_groups: list[str] | None = None,
     targets: list[str] | None = None,
     split_views: list[str] | None = None,
+    max_alignment_delta_s: float | None = None,
 ) -> dict[str, Any]:
     selected_models = _normalize(model_levels, MODEL_LEVELS, "model level")
     selected_features = _normalize(feature_groups, FEATURE_GROUPS, "feature group")
@@ -222,6 +223,7 @@ def run_pulse_baselines(
         pulse_targets_path,
         subset,
         stress_features_path=stress_features_path,
+        max_alignment_delta_s=max_alignment_delta_s,
     )
     sensitivity_rows = [row for row in subset_rows if not bool(row["sensitivity_flagged_monotonicity"])]
 
@@ -274,14 +276,11 @@ def run_pulse_baselines(
                                     target=target,
                                 )
                             )
-    if not metrics:
-        raise ValueError("No PULSE baseline metrics were generated.")
-
     resolved_report_dir = report_dir or _default_report_dir(out_path)
     predictions_out_path.parent.mkdir(parents=True, exist_ok=True)
     pq.write_table(pa.Table.from_pylist(predictions, schema=PULSE_PREDICTION_SCHEMA), predictions_out_path)
     report = {
-        "status": "passed",
+        "status": "passed" if metrics else "warning",
         "schema_version": SCHEMA_VERSION,
         "generated_at_utc": datetime.now(UTC).isoformat(),
         "inputs": {
@@ -302,8 +301,10 @@ def run_pulse_baselines(
         "model_levels": selected_models,
         "feature_groups": selected_features,
         "split_views": selected_splits,
+        "max_alignment_delta_s": max_alignment_delta_s,
         "row_counts": _row_counts(all_rows, subset_rows, sensitivity_rows),
         "metrics": metrics,
+        "warnings": [] if metrics else ["no_finite_target_rows_for_selected_configuration"],
     }
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -318,6 +319,7 @@ def load_pulse_rows(
     subset: str,
     *,
     stress_features_path: Path | None = None,
+    max_alignment_delta_s: float | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     all_rows, selected_rows = load_baseline_rows(
         interval_table_path,
@@ -339,6 +341,10 @@ def load_pulse_rows(
         merged.append(combined)
     selected_keys = {_interval_key(row) for row in selected_rows}
     selected = [row for row in merged if _interval_key(row) in selected_keys]
+    if max_alignment_delta_s is not None:
+        selected = [
+            row for row in selected if _passes_alignment_threshold(row, max_alignment_delta_s)
+        ]
     if not selected:
         raise ValueError("No PULSE target rows joined to the selected interval subset.")
     return merged, selected
@@ -380,6 +386,7 @@ def render_pulse_artifacts(report: dict[str, Any], report_dir: Path) -> None:
     _write_csv(plots_dir / "pulse_target_coverage_by_split.csv", _coverage_by_split_rows(report["metrics"]))
     _write_summary(report, leaderboard, report_dir / "baseline_summary.md")
     _write_diagnostics(report, leaderboard, report_dir / "pulse_diagnostics.md")
+    _write_claim_readiness(report, leaderboard, report_dir / "pulse_claim_readiness.md")
 
 
 def _metrics(
@@ -540,6 +547,40 @@ def _row_counts(all_rows: list[dict[str, Any]], subset_rows: list[dict[str, Any]
         "selected_cells": len({str(row["cell_id"]) for row in subset_rows}),
         "selected_parameter_sets": len({int(row["parameter_set"]) for row in subset_rows}),
     }
+
+
+def _passes_alignment_threshold(row: dict[str, Any], threshold_s: float) -> bool:
+    for column in ("alignment_delta_s_k", "alignment_delta_s_k1"):
+        value = _as_float(row.get(column))
+        if not math.isfinite(value) or value > threshold_s:
+            return False
+    return True
+
+
+def _write_claim_readiness(report: dict[str, Any], leaderboard: list[dict[str, Any]], path: Path) -> None:
+    c_rate = [row for row in leaderboard if row["run_scope"] == "primary" and row["split_name"] == "c_rate_holdout_fold"]
+    best_c_rate = min(c_rate, key=lambda row: float(row["condition_mean_mae"])) if c_rate else None
+    lines = [
+        "# PULSE Claim Readiness",
+        "",
+        "This memo is a diagnostic gate. It does not authorize capacity+PULSE multimodal claims.",
+        "",
+        "| Claim area | Status | Evidence | Decision |",
+        "|---|---|---|---|",
+        "| Canonical RT/50 coverage | partially_supported | Target availability is recorded in `row_counts` and PULSE QA reports. | Keep reporting missingness. |",
+        "| Alignment robustness | diagnostic_only | Alignment-threshold sensitivity is required before a PULSE claim. | Do not claim yet. |",
+        "| Direction averaging robustness | diagnostic_only | Direction-specific tables are diagnostic until policy v2. | Compare charge/discharge. |",
+        "| C-rate resistance prediction | diagnostic_only | "
+        + (
+            f"Best C-rate row `{best_c_rate['model_level']} + {best_c_rate['feature_group']}` has condition-mean MAE `{float(best_c_rate['condition_mean_mae']):.6g}`."
+            if best_c_rate
+            else "No C-rate row."
+        )
+        + " | Harden before claim. |",
+        "| Scientific PULSE claim | blocked_by_alignment | Large alignment deltas remain visible warnings. | No claim yet. |",
+        "",
+    ]
+    path.write_text("\n".join(lines), encoding="utf-8")
 
 
 def _target_value(row: dict[str, Any], target: str) -> float:

@@ -1,0 +1,68 @@
+{
+  "canonical_alignment_delta_s": {
+    "count": 3980,
+    "max": 126990.0,
+    "median": 13455.5,
+    "min": 8272.0,
+    "p95": 51412.99999999998
+  },
+  "generated_at_utc": "2026-05-23T08:34:41.978694+00:00",
+  "inputs": {
+    "interval_table": "data/interim/interval_table.parquet",
+    "pulse_summary": "data/interim/modality_table_pulse_summary.parquet",
+    "pulse_targets": "data/interim/pulse_target_table.parquet"
+  },
+  "outputs": {
+    "coverage": "reports/audit/pulse_alignment_sensitivity_coverage.csv"
+  },
+  "schema_version": "gate7.pulse_targets.v1",
+  "status": "passed",
+  "thresholds": [
+    {
+      "c_rate_holdout_rows": 90,
+      "missing_intervals": 696,
+      "profile_holdout_rows": 605,
+      "retained_cells": 220,
+      "retained_intervals": 3131,
+      "retained_parameter_sets": 76,
+      "threshold_s": 21600.0
+    },
+    {
+      "c_rate_holdout_rows": 109,
+      "missing_intervals": 298,
+      "profile_holdout_rows": 697,
+      "retained_cells": 225,
+      "retained_intervals": 3529,
+      "retained_parameter_sets": 76,
+      "threshold_s": 43200.0
+    },
+    {
+      "c_rate_holdout_rows": 143,
+      "missing_intervals": 79,
+      "profile_holdout_rows": 733,
+      "retained_cells": 228,
+      "retained_intervals": 3748,
+      "retained_parameter_sets": 76,
+      "threshold_s": 86400.0
+    },
+    {
+      "c_rate_holdout_rows": 143,
+      "missing_intervals": 76,
+      "profile_holdout_rows": 733,
+      "retained_cells": 228,
+      "retained_intervals": 3751,
+      "retained_parameter_sets": 76,
+      "threshold_s": 129600.0
+    },
+    {
+      "c_rate_holdout_rows": 143,
+      "missing_intervals": 76,
+      "profile_holdout_rows": 733,
+      "retained_cells": 228,
+      "retained_intervals": 3751,
+      "retained_parameter_sets": 76,
+      "threshold_s": "all"
+    }
+  ],
+  "warnings": []
+}

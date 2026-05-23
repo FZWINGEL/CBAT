@@ -7,7 +7,12 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
-from mbp.data.products.pulse_targets import build_pulse_target_table, write_pulse_qa_report
+from mbp.data.products.pulse_targets import (
+    build_pulse_target_table,
+    write_pulse_alignment_sensitivity_report,
+    write_pulse_missingness_reports,
+    write_pulse_qa_report,
+)
 from mbp.data.schema_contracts import (
     CHECKUP_EVENT_TABLE_SCHEMA,
     INTERVAL_TABLE_SCHEMA,
@@ -165,3 +170,49 @@ def test_pulse_target_table_builds_adjacent_deltas(tmp_path: Path) -> None:
     assert rows[0]["pulse_1s_resistance_k1"] == 0.022
     assert rows[0]["delta_pulse_1s_resistance"] == pytest.approx(0.002)
     assert rows[0]["quality_flags"] == "OK"
+
+
+def test_direction_specific_target_extraction(tmp_path: Path) -> None:
+    pulse_path, _, interval_path = _write_pulse_fixture(tmp_path)
+    charge_table = build_pulse_target_table(
+        pulse_path,
+        interval_path,
+        tmp_path / "pulse_charge.parquet",
+        direction="charge",
+    )
+    mean_table = build_pulse_target_table(
+        pulse_path,
+        interval_path,
+        tmp_path / "pulse_mean.parquet",
+        direction="mean",
+    )
+
+    assert charge_table.num_rows == mean_table.num_rows
+    assert charge_table.to_pylist()[0]["delta_pulse_1s_resistance"] == pytest.approx(0.002)
+
+
+def test_alignment_sensitivity_and_missingness_reports(tmp_path: Path) -> None:
+    pulse_path, _, interval_path = _write_pulse_fixture(tmp_path)
+    targets_path = tmp_path / "pulse_targets.parquet"
+    build_pulse_target_table(pulse_path, interval_path, targets_path)
+
+    sensitivity = write_pulse_alignment_sensitivity_report(
+        pulse_path,
+        targets_path,
+        interval_path,
+        tmp_path / "alignment_sensitivity.json",
+        tmp_path / "alignment_sensitivity.csv",
+        thresholds_s=(11.0, 12.0),
+    )
+    missing = write_pulse_missingness_reports(
+        targets_path,
+        interval_path,
+        tmp_path / "missing.csv",
+        tmp_path / "missing_by_condition.csv",
+        tmp_path / "missing_by_split.csv",
+    )
+
+    assert sensitivity["thresholds"][0]["retained_intervals"] == 6
+    assert sensitivity["thresholds"][1]["retained_intervals"] == 12
+    assert "threshold_s" in (tmp_path / "alignment_sensitivity.csv").read_text()
+    assert missing["missing_rows"] == 0
