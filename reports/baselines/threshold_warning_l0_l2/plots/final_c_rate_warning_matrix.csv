@@ -1,0 +1,4 @@
+auprc,auroc,brier,ece_10_bin,feature_group,heldout_fold,model_level,n_test,split_name,target,test_negative_count,test_positive_count
+0.7173592521379494,0.5,0.4073173770024486,0.39674760061785175,prior_rate,1,B0_event_rate_prior,157,c_rate_holdout_fold,event_within_3_checkups,77,80
+0.5190349033816015,0.523538961038961,0.3552645400233023,0.3435764204656478,distance_to_threshold,1,B3_logistic_distance_baseline,157,c_rate_holdout_fold,event_within_3_checkups,77,80
+0.9460535206166958,0.9403409090909091,0.15992985455197112,0.1746733041772239,W2_nominal,1,B6_hist_gradient_boosting_classifier,157,c_rate_holdout_fold,event_within_3_checkups,77,80

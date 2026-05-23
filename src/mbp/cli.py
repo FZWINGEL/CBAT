@@ -1526,6 +1526,11 @@ def baseline_run_threshold_warning(
     model_levels: str | None = typer.Option(None, "--model-levels", help="Comma-separated model levels."),
     feature_groups: str | None = typer.Option(None, "--feature-groups", help="Comma-separated feature groups."),
     split_views: str | None = typer.Option(None, "--split-views", help="Comma-separated split views."),
+    label_policy: str = typer.Option(
+        "all_rows",
+        "--label-policy",
+        help="Threshold-label policy: all_rows, verified_only, or censored_as_negative.",
+    ),
 ) -> None:
     """Run non-neural grouped threshold-event warning baselines."""
     from mbp.baselines.threshold_warning import run_threshold_warning_baselines
@@ -1540,10 +1545,53 @@ def baseline_run_threshold_warning(
         model_levels=_comma_values(model_levels) if model_levels else None,
         feature_groups=_comma_values(feature_groups) if feature_groups else None,
         split_views=_comma_values(split_views) if split_views else None,
+        label_policy=label_policy,
     )
     typer.echo(
         "Threshold-warning baseline report generated: "
         f"{report['row_counts']['metrics']} metric rows written to {out}"
+    )
+
+
+@baseline_app.command("compare-threshold-warning-censoring")
+def baseline_compare_threshold_warning_censoring(
+    all_rows_report: Path = typer.Option(..., "--all-rows-report", help="All-row threshold-warning JSON report."),
+    verified_only_report: Path = typer.Option(
+        ...,
+        "--verified-only-report",
+        help="Verified-only threshold-warning JSON report.",
+    ),
+    out_dir: Path = typer.Option(..., "--out-dir", help="Output directory for censoring sensitivity comparison."),
+) -> None:
+    """Compare threshold-warning results across censoring label policies."""
+    from mbp.baselines.threshold_warning import compare_threshold_warning_censoring
+
+    result = compare_threshold_warning_censoring(all_rows_report, verified_only_report, out_dir)
+    typer.echo(
+        "Threshold-warning censoring comparison generated: "
+        f"{result['row_counts']['metric_rows']} metric rows"
+    )
+
+
+@baseline_app.command("finalize-threshold-warning-claim")
+def baseline_finalize_threshold_warning_claim(
+    report: Path = typer.Option(..., "--report", help="Threshold-warning JSON report."),
+    predictions: Path = typer.Option(..., "--predictions", help="Threshold-warning prediction Parquet."),
+    warning_table: Path = typer.Option(..., "--warning-table", help="Threshold warning table Parquet."),
+    censoring_sensitivity: Path = typer.Option(
+        ...,
+        "--censoring-sensitivity",
+        help="Censoring sensitivity summary markdown.",
+    ),
+    out_dir: Path = typer.Option(..., "--out-dir", help="Output directory for final claim artifacts."),
+) -> None:
+    """Finalize threshold-warning claim-readiness reports."""
+    from mbp.baselines.threshold_warning import finalize_threshold_warning_claim
+
+    result = finalize_threshold_warning_claim(report, predictions, warning_table, censoring_sensitivity, out_dir)
+    typer.echo(
+        "Threshold-warning final claim readiness generated: "
+        f"{result['outputs']['claim_readiness']}"
     )
 
 

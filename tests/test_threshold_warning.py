@@ -12,12 +12,15 @@ from mbp.analysis.knee import (
     write_threshold_warning_qa,
 )
 from mbp.baselines.threshold_warning import (
+    compare_threshold_warning_censoring,
     diagnose_threshold_warning,
     distance_feature_matrix,
+    finalize_threshold_warning_claim,
     leakage_audit,
     label_status,
     lead_time_bin,
     reliability_bin_rows,
+    filter_rows_by_label_policy,
     run_threshold_warning_baselines,
 )
 
@@ -113,6 +116,34 @@ def test_threshold_warning_baseline_and_leakage_audit(tmp_path: Path) -> None:
     assert diagnostics["row_counts"]["lead_time_rows"] > 0
     assert (tmp_path / "warning" / "threshold_warning_reliability.csv").exists()
 
+    verified_report = run_threshold_warning_baselines(
+        warning_path,
+        tmp_path / "warning_verified_report.json",
+        tmp_path / "verified_predictions.parquet",
+        targets=["event_within_3_checkups"],
+        model_levels=["B0_event_rate_prior", "B1_distance_to_threshold_rule"],
+        split_views=["condition_fold"],
+        label_policy="verified_only",
+    )
+    assert verified_report["label_policy"] == "verified_only"
+    comparison = compare_threshold_warning_censoring(
+        report_path,
+        tmp_path / "warning_verified_report.json",
+        tmp_path / "censoring",
+    )
+    assert comparison["row_counts"]["metric_rows"] > 0
+    assert (tmp_path / "censoring" / "censoring_sensitivity_summary.md").exists()
+    assert (tmp_path / "censoring" / "threshold_warning_censoring_sensitivity_report.json").exists()
+    final = finalize_threshold_warning_claim(
+        report_path,
+        prediction_path,
+        warning_path,
+        tmp_path / "censoring" / "censoring_sensitivity_summary.md",
+        tmp_path / "warning",
+    )
+    assert final["readiness"]["detector_knee_prediction"] == "blocked"
+    assert (tmp_path / "warning" / "threshold_warning_final_claim_readiness.md").exists()
+
 
 def test_threshold_warning_hardening_helpers() -> None:
     rows = [
@@ -141,8 +172,10 @@ def test_threshold_warning_hardening_helpers() -> None:
     assert features[0][2] == 4.0
     assert label_status(rows[0], "event_within_3_checkups") == "positive_observed"
     assert label_status(rows[1], "event_within_3_checkups") == "right_censored_unknown"
-    assert lead_time_bin(rows[0]) == "event_within_3_checkups"
-    assert lead_time_bin(rows[1]) == "no_observed_event_censored"
+    assert lead_time_bin(rows[0]) == "event_within_3_checkups_not_1_or_2"
+    assert lead_time_bin(rows[1]) == "right_censored_unknown"
+    assert filter_rows_by_label_policy(rows, "event_within_3_checkups", "verified_only") == [rows[0]]
+    assert filter_rows_by_label_policy(rows, "event_within_3_checkups", "censored_as_negative") == rows
 
 
 def test_threshold_warning_reliability_bins() -> None:

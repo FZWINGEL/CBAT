@@ -41,6 +41,8 @@ PROXIMITY_MODEL_LEVELS = {
 DEFAULT_TARGETS = TARGETS
 DEFAULT_MODELS = MODEL_LEVELS
 DEFAULT_FEATURE_GROUPS = FEATURE_GROUPS
+LABEL_POLICIES = ("all_rows", "verified_only", "censored_as_negative")
+DEFAULT_LABEL_POLICY = "all_rows"
 LEAKAGE_FIELDS = {
     "capacity_Ah_k1",
     "delta_capacity_Ah",
@@ -137,12 +139,15 @@ def run_threshold_warning_baselines(
     model_levels: list[str] | None = None,
     feature_groups: list[str] | None = None,
     split_views: list[str] | None = None,
+    label_policy: str = DEFAULT_LABEL_POLICY,
 ) -> dict[str, Any]:
     """Run non-neural grouped threshold-event warning baselines."""
     selected_targets = _normalize_selection(targets, TARGETS, DEFAULT_TARGETS, "target")
     selected_models = _normalize_selection(model_levels, MODEL_LEVELS, DEFAULT_MODELS, "model")
     selected_features = _normalize_selection(feature_groups, FEATURE_GROUPS, DEFAULT_FEATURE_GROUPS, "feature group")
     selected_splits = _normalize_selection(split_views, SPLIT_COLUMNS, SPLIT_COLUMNS, "split view")
+    if label_policy not in LABEL_POLICIES:
+        raise ValueError(f"Unknown label policy: {label_policy}")
     if hgb_max_iter <= 0:
         raise ValueError("hgb_max_iter must be positive.")
     dependency_free_models = {
@@ -163,6 +168,10 @@ def run_threshold_warning_baselines(
         for heldout_fold, train_rows, test_rows in iter_split_instances(rows, split_name):
             assert_no_parameter_set_leakage(train_rows, test_rows, split_name, heldout_fold)
             for target in selected_targets:
+                policy_train_rows = filter_rows_by_label_policy(train_rows, target, label_policy)
+                policy_test_rows = filter_rows_by_label_policy(test_rows, target, label_policy)
+                if not policy_train_rows or not policy_test_rows:
+                    continue
                 for model_level in selected_models:
                     model_features = (
                         ("prior_rate",)
@@ -175,28 +184,28 @@ def run_threshold_warning_baselines(
                         probs, train_one_class = predict_warning_probability(
                             model_level,
                             feature_group,
-                            train_rows,
-                            test_rows,
+                            policy_train_rows,
+                            policy_test_rows,
                             target,
                             seed=seed,
                             hgb_max_iter=hgb_max_iter,
                         )
                         metrics.append(
                             warning_metrics(
-                                test_rows,
+                                policy_test_rows,
                                 probs,
                                 target=target,
                                 split_name=split_name,
                                 heldout_fold=heldout_fold,
                                 model_level=model_level,
                                 feature_group=feature_group,
-                                train_rows=train_rows,
+                                train_rows=policy_train_rows,
                                 train_one_class=train_one_class,
                             )
                         )
                         predictions.extend(
                             prediction_rows(
-                                test_rows,
+                                policy_test_rows,
                                 probs,
                                 target=target,
                                 split_name=split_name,
@@ -225,12 +234,14 @@ def run_threshold_warning_baselines(
         "model_levels": selected_models,
         "feature_groups": selected_features,
         "split_views": selected_splits,
+        "label_policy": label_policy,
         "row_counts": {
             "rows": len(rows),
             "cells": len({str(row["cell_id"]) for row in rows}),
             "parameter_sets": len({int(row["parameter_set"]) for row in rows}),
             "metrics": len(metrics),
             "predictions": len(predictions),
+            "target_label_policy_rows": target_label_policy_counts(rows, selected_targets, label_policy),
         },
         "leakage_audit": leakage_audit(selected_features),
         "metrics": metrics,
@@ -239,6 +250,30 @@ def run_threshold_warning_baselines(
     out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     render_threshold_warning_artifacts(report, report_dir)
     return report
+
+
+def filter_rows_by_label_policy(rows: list[dict[str, Any]], target: str, label_policy: str) -> list[dict[str, Any]]:
+    if label_policy not in LABEL_POLICIES:
+        raise ValueError(f"Unknown label policy: {label_policy}")
+    if label_policy in {"all_rows", "censored_as_negative"}:
+        return rows
+    return [row for row in rows if label_status(row, target) != "right_censored_unknown"]
+
+
+def target_label_policy_counts(
+    rows: list[dict[str, Any]],
+    targets: list[str],
+    label_policy: str,
+) -> dict[str, dict[str, int]]:
+    return {
+        target: {
+            "rows": len(filtered := filter_rows_by_label_policy(rows, target, label_policy)),
+            "positive_count": sum(1 for row in filtered if row[target]),
+            "negative_count": sum(1 for row in filtered if not row[target]),
+            "right_censored_unknown": sum(1 for row in rows if label_status(row, target) == "right_censored_unknown"),
+        }
+        for target in targets
+    }
 
 
 def predict_warning_probability(
@@ -425,15 +460,17 @@ def label_status(row: dict[str, Any], target: str) -> str:
 
 
 def lead_time_bin(row: dict[str, Any]) -> str:
+    if _soh_margin_to_threshold(row) <= 0:
+        return "at_or_below_threshold_at_k"
     value = _as_float(row.get("time_to_event_checkups"))
     if not math.isfinite(value):
-        return "no_observed_event_censored"
+        return "right_censored_unknown"
     if value <= 1:
-        return "event_at_next_checkup"
+        return "event_next_checkup"
     if value <= 2:
-        return "event_within_2_checkups"
+        return "event_within_2_checkups_not_next"
     if value <= 3:
-        return "event_within_3_checkups"
+        return "event_within_3_checkups_not_1_or_2"
     return "event_later_than_3_checkups"
 
 
@@ -546,6 +583,118 @@ def diagnose_threshold_warning(
     }
 
 
+def compare_threshold_warning_censoring(
+    all_rows_report_path: Path,
+    verified_only_report_path: Path,
+    out_dir: Path,
+) -> dict[str, Any]:
+    """Compare all-row and verified-only threshold-warning reports."""
+    all_report = json.loads(all_rows_report_path.read_text(encoding="utf-8"))
+    verified_report = json.loads(verified_only_report_path.read_text(encoding="utf-8"))
+    out_dir.mkdir(parents=True, exist_ok=True)
+    policy_reports = [
+        ("all_rows", all_report),
+        ("verified_only", verified_report),
+    ]
+    metric_rows = censoring_policy_metric_rows(policy_reports)
+    split_rows = censoring_policy_split_rows(policy_reports)
+    c_rate_rows = [row for row in split_rows if row["split_name"] == "c_rate_holdout_fold"]
+    _write_csv(out_dir / "plots" / "censoring_policy_metric_comparison.csv", metric_rows)
+    _write_csv(out_dir / "plots" / "censoring_policy_split_comparison.csv", split_rows)
+    _write_csv(out_dir / "plots" / "censoring_policy_c_rate_comparison.csv", c_rate_rows)
+    summary = censoring_sensitivity_summary(policy_reports)
+    (out_dir / "threshold_warning_censoring_sensitivity_report.json").write_text(
+        json.dumps(
+            {
+                "schema_version": SCHEMA_VERSION,
+                "generated_at_utc": datetime.now(UTC).isoformat(),
+                "summary": summary,
+                "policy_note": "all_rows is equivalent to censored_as_negative for the current Boolean horizon labels.",
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    _write_censoring_sensitivity_md(summary, out_dir / "censoring_sensitivity_summary.md")
+    return {
+        "status": "passed",
+        "summary": summary,
+        "row_counts": {
+            "metric_rows": len(metric_rows),
+            "split_rows": len(split_rows),
+            "c_rate_rows": len(c_rate_rows),
+        },
+        "outputs": {
+            "summary": str(out_dir / "censoring_sensitivity_summary.md"),
+            "json_report": str(out_dir / "threshold_warning_censoring_sensitivity_report.json"),
+            "metric_comparison": str(out_dir / "plots" / "censoring_policy_metric_comparison.csv"),
+            "split_comparison": str(out_dir / "plots" / "censoring_policy_split_comparison.csv"),
+            "c_rate_comparison": str(out_dir / "plots" / "censoring_policy_c_rate_comparison.csv"),
+        },
+    }
+
+
+def finalize_threshold_warning_claim(
+    report_path: Path,
+    predictions_path: Path,
+    warning_table_path: Path,
+    censoring_sensitivity_path: Path,
+    out_dir: Path,
+) -> dict[str, Any]:
+    """Write final threshold-warning claim matrices and readiness report."""
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    predictions = pq.read_table(predictions_path).to_pylist()
+    warning_rows = pq.read_table(warning_table_path).to_pylist()
+    sensitivity_text = censoring_sensitivity_path.read_text(encoding="utf-8")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    lead_rows = grouped_prediction_performance(predictions, "lead_time_bin")
+    final_lead_rows = [
+        row
+        for row in lead_rows
+        if row["model_level"] in {"B0_event_rate_prior", "B3_logistic_distance_baseline", "B6_hist_gradient_boosting_classifier"}
+        and row["target"] == "event_within_3_checkups"
+    ]
+    final_c_rate_rows = [
+        {
+            "target": row["target"],
+            "model_level": row["model_level"],
+            "feature_group": row["feature_group"],
+            "split_name": row["split_name"],
+            "heldout_fold": row["heldout_fold"],
+            "n_test": row["n_test"],
+            "test_positive_count": row["test_positive_count"],
+            "test_negative_count": row["test_negative_count"],
+            "brier": row["brier"],
+            "auroc": row["auroc"],
+            "auprc": row["auprc"],
+            "ece_10_bin": row["ece_10_bin"],
+        }
+        for row in report["metrics"]
+        if row["split_name"] == "c_rate_holdout_fold"
+        and row["target"] == "event_within_3_checkups"
+        and (
+            row["model_level"] in {"B0_event_rate_prior", "B3_logistic_distance_baseline"}
+            or (row["model_level"] == "B6_hist_gradient_boosting_classifier" and row["feature_group"] == "W2_nominal")
+        )
+    ]
+    _write_csv(out_dir / "plots" / "final_lead_time_claim_matrix.csv", final_lead_rows)
+    _write_csv(out_dir / "plots" / "final_c_rate_warning_matrix.csv", final_c_rate_rows)
+    readiness = final_claim_readiness(report, warning_rows, sensitivity_text)
+    _write_final_claim_readiness_md(readiness, out_dir / "threshold_warning_final_claim_readiness.md")
+    _write_final_claim_readiness_md(readiness, out_dir / "threshold_warning_claim_readiness.md")
+    return {
+        "status": "passed",
+        "readiness": readiness,
+        "outputs": {
+            "claim_readiness": str(out_dir / "threshold_warning_final_claim_readiness.md"),
+            "lead_time_matrix": str(out_dir / "plots" / "final_lead_time_claim_matrix.csv"),
+            "c_rate_matrix": str(out_dir / "plots" / "final_c_rate_warning_matrix.csv"),
+        },
+    }
+
+
 def leakage_audit(feature_groups: list[str]) -> dict[str, Any]:
     rows = []
     status = "passed"
@@ -606,6 +755,160 @@ def grouped_prediction_performance(
             }
         )
     return output
+
+
+def censoring_policy_metric_rows(policy_reports: list[tuple[str, dict[str, Any]]]) -> list[dict[str, Any]]:
+    output = []
+    for policy, report in policy_reports:
+        for row in _leaderboard_rows(report["metrics"]):
+            if row["model_level"] not in {
+                "B0_event_rate_prior",
+                "B3_logistic_distance_baseline",
+                "B6_hist_gradient_boosting_classifier",
+            }:
+                continue
+            if row["model_level"] == "B6_hist_gradient_boosting_classifier" and row["feature_group"] != "W2_nominal":
+                continue
+            output.append({"label_policy": policy, **row})
+    return output
+
+
+def censoring_policy_split_rows(policy_reports: list[tuple[str, dict[str, Any]]]) -> list[dict[str, Any]]:
+    output = []
+    for policy, report in policy_reports:
+        for row in report["metrics"]:
+            if row["model_level"] not in {
+                "B0_event_rate_prior",
+                "B3_logistic_distance_baseline",
+                "B6_hist_gradient_boosting_classifier",
+            }:
+                continue
+            if row["model_level"] == "B6_hist_gradient_boosting_classifier" and row["feature_group"] != "W2_nominal":
+                continue
+            output.append(
+                {
+                    "label_policy": policy,
+                    "target": row["target"],
+                    "model_level": row["model_level"],
+                    "feature_group": row["feature_group"],
+                    "split_name": row["split_name"],
+                    "heldout_fold": row["heldout_fold"],
+                    "n_train": row["n_train"],
+                    "n_test": row["n_test"],
+                    "test_positive_count": row["test_positive_count"],
+                    "test_negative_count": row["test_negative_count"],
+                    "brier": row["brier"],
+                    "auroc": row["auroc"],
+                    "auprc": row["auprc"],
+                    "ece_10_bin": row["ece_10_bin"],
+                }
+            )
+    return output
+
+
+def censoring_sensitivity_summary(policy_reports: list[tuple[str, dict[str, Any]]]) -> dict[str, Any]:
+    by_policy = {policy: report for policy, report in policy_reports}
+    output: dict[str, Any] = {"policies": {}, "event_within_3_checkups": {}}
+    for policy, report in by_policy.items():
+        rows = _leaderboard_rows(report["metrics"])
+        target_rows = [row for row in rows if row["target"] == "event_within_3_checkups"]
+        prior = _find_leaderboard_row(target_rows, "B0_event_rate_prior")
+        distance = _find_leaderboard_row(target_rows, "B3_logistic_distance_baseline")
+        hgb = _find_leaderboard_row(target_rows, "B6_hist_gradient_boosting_classifier", "W2_nominal")
+        beats_prior = _brier_gain(prior, hgb)
+        beats_distance = _brier_gain(distance, hgb)
+        output["policies"][policy] = {
+            "rows": report["row_counts"]["rows"],
+            "target_rows": report["row_counts"].get("target_label_policy_rows", {}).get(
+                "event_within_3_checkups", {}
+            ),
+            "metrics": report["row_counts"]["metrics"],
+            "hgb_brier": hgb["mean_brier"] if hgb else None,
+            "event_rate_prior_brier": prior["mean_brier"] if prior else None,
+            "proximity_brier": distance["mean_brier"] if distance else None,
+            "hgb_gain_vs_prior": beats_prior,
+            "hgb_gain_vs_proximity": beats_distance,
+            "passes": beats_prior is not None and beats_prior > 0 and beats_distance is not None and beats_distance > 0,
+        }
+    output["event_within_3_checkups"]["both_policies_pass"] = all(
+        value["passes"] for value in output["policies"].values()
+    )
+    return output
+
+
+def final_claim_readiness(report: dict[str, Any], warning_rows: list[dict[str, Any]], sensitivity_text: str) -> dict[str, Any]:
+    rows = _leaderboard_rows(report["metrics"])
+    target_rows = [row for row in rows if row["target"] == "event_within_3_checkups"]
+    prior = _find_leaderboard_row(target_rows, "B0_event_rate_prior")
+    distance = _find_leaderboard_row(target_rows, "B3_logistic_distance_baseline")
+    hgb = _find_leaderboard_row(target_rows, "B6_hist_gradient_boosting_classifier", "W2_nominal")
+    hgb_gain_vs_prior = _brier_gain(prior, hgb)
+    hgb_gain_vs_distance = _brier_gain(distance, hgb)
+    c_rate_rows = [
+        row
+        for row in report["metrics"]
+        if row["target"] == "event_within_3_checkups"
+        and row["split_name"] == "c_rate_holdout_fold"
+        and (
+            row["model_level"] in {"B0_event_rate_prior", "B3_logistic_distance_baseline"}
+            or (row["model_level"] == "B6_hist_gradient_boosting_classifier" and row["feature_group"] == "W2_nominal")
+        )
+    ]
+    c_prior = _find_metric_row(c_rate_rows, "B0_event_rate_prior")
+    c_distance = _find_metric_row(c_rate_rows, "B3_logistic_distance_baseline")
+    c_hgb = _find_metric_row(c_rate_rows, "B6_hist_gradient_boosting_classifier", "W2_nominal")
+    censoring = censoring_policy_report(warning_rows)["targets"]["event_within_3_checkups"]
+    both_policies_pass = "both_policies_pass: true" in sensitivity_text
+    return {
+        "threshold_event_forecasting": "supported_for_diagnostics" if both_policies_pass else "exploratory_only",
+        "threshold_detection_only": "not_supported" if hgb_gain_vs_distance and hgb_gain_vs_distance > 0 else "partially_supported",
+        "early_warning_diagnostic": "exploratory_only",
+        "c_rate_warning": "supported_for_diagnostics"
+        if _brier_gain(c_prior, c_hgb) and _brier_gain(c_distance, c_hgb) and int(c_hgb.get("test_positive_count", 0)) > 0
+        else "exploratory_only",
+        "calibrated_risk": "not_supported",
+        "detector_knee_prediction": "blocked",
+        "policy_ranking": "blocked",
+        "hgb_gain_vs_prior": hgb_gain_vs_prior,
+        "hgb_gain_vs_proximity": hgb_gain_vs_distance,
+        "c_rate_hgb_gain_vs_prior": _brier_gain(c_prior, c_hgb),
+        "c_rate_hgb_gain_vs_proximity": _brier_gain(c_distance, c_hgb),
+        "c_rate_ece": c_hgb.get("ece_10_bin") if c_hgb else None,
+        "censoring_counts": censoring,
+        "both_policies_pass": both_policies_pass,
+    }
+
+
+def _find_leaderboard_row(
+    rows: list[dict[str, Any]],
+    model_level: str,
+    feature_group: str | None = None,
+) -> dict[str, Any] | None:
+    for row in rows:
+        if row["model_level"] == model_level and (feature_group is None or row["feature_group"] == feature_group):
+            return row
+    return None
+
+
+def _find_metric_row(
+    rows: list[dict[str, Any]],
+    model_level: str,
+    feature_group: str | None = None,
+) -> dict[str, Any] | None:
+    for row in rows:
+        if row["model_level"] == model_level and (feature_group is None or row["feature_group"] == feature_group):
+            return row
+    return None
+
+
+def _brier_gain(reference: dict[str, Any] | None, candidate: dict[str, Any] | None) -> float | None:
+    if not reference or not candidate:
+        return None
+    ref = reference.get("mean_brier", reference.get("brier"))
+    cand = candidate.get("mean_brier", candidate.get("brier"))
+    if ref is None or cand is None:
+        return None
+    return float(ref) - float(cand)
 
 
 def reliability_bin_rows(predictions: list[dict[str, Any]], *, bins: int = 10) -> list[dict[str, Any]]:
@@ -989,6 +1292,72 @@ def _write_c_rate_calibration_md(rows: list[dict[str, Any]], path: Path) -> None
         lines.append(
             f"Best C-rate HGB row: `{best['target']}` / `{best['feature_group']}` with Brier `{_fmt(best['brier'])}` and ECE `{_fmt(best['ece_10_bin'])}`."
         )
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _write_censoring_sensitivity_md(summary: dict[str, Any], path: Path) -> None:
+    lines = [
+        "# Threshold-Warning Censoring Sensitivity",
+        "",
+        "This report compares all-row and verified-only threshold-warning evaluation. It does not authorize calibrated risk or detector-knee prediction.",
+        "",
+        f"both_policies_pass: {str(summary['event_within_3_checkups']['both_policies_pass']).lower()}",
+        "",
+        "| Label policy | Target rows | Positives | Negatives | HGB Brier | Prior Brier | Proximity Brier | Gain vs prior | Gain vs proximity | Passes |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---|",
+    ]
+    for policy, row in summary["policies"].items():
+        target_rows = row.get("target_rows", {})
+        lines.append(
+            "| "
+            f"`{policy}` | "
+            f"`{target_rows.get('rows', 'NA')}` | "
+            f"`{target_rows.get('positive_count', 'NA')}` | "
+            f"`{target_rows.get('negative_count', 'NA')}` | "
+            f"`{_fmt(row['hgb_brier'])}` | "
+            f"`{_fmt(row['event_rate_prior_brier'])}` | "
+            f"`{_fmt(row['proximity_brier'])}` | "
+            f"`{_fmt(row['hgb_gain_vs_prior'])}` | "
+            f"`{_fmt(row['hgb_gain_vs_proximity'])}` | "
+            f"`{row['passes']}` |"
+        )
+    lines.extend(
+        [
+            "",
+            "If verified-only performance collapses, threshold-warning claims remain exploratory. If both policies pass, a narrow diagnostic threshold-event forecasting claim is allowed.",
+        ]
+    )
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _write_final_claim_readiness_md(readiness: dict[str, Any], path: Path) -> None:
+    lines = [
+        "# Threshold-Warning Final Claim Readiness",
+        "",
+        "| Claim area | Status | Evidence |",
+        "|---|---|---|",
+        f"| Threshold-event forecasting diagnostic | `{readiness['threshold_event_forecasting']}` | HGB W2 gain vs prior `{_fmt(readiness['hgb_gain_vs_prior'])}` and vs proximity `{_fmt(readiness['hgb_gain_vs_proximity'])}`; all-row and verified-only policies pass: `{readiness['both_policies_pass']}`. |",
+        f"| Threshold detection only | `{readiness['threshold_detection_only']}` | HGB W2 beats the proximity baseline, so the result is not only a current-threshold detector. |",
+        f"| Early-warning diagnostic | `{readiness['early_warning_diagnostic']}` | Lead-time bins are reported separately; this wording remains exploratory. |",
+        f"| C-rate threshold warning | `{readiness['c_rate_warning']}` | C-rate HGB W2 gain vs prior `{_fmt(readiness['c_rate_hgb_gain_vs_prior'])}` and vs proximity `{_fmt(readiness['c_rate_hgb_gain_vs_proximity'])}`. |",
+        f"| Calibrated risk | `{readiness['calibrated_risk']}` | C-rate ECE is `{_fmt(readiness['c_rate_ece'])}` and grouped calibration remains claim-gated. |",
+        f"| Detector-knee prediction | `{readiness['detector_knee_prediction']}` | Detector-knee replicate consistency failed in Milestone 2.5. |",
+        f"| Policy ranking | `{readiness['policy_ranking']}` | No intervention or ranking task is tested. |",
+        "",
+        "Censoring counts for `event_within_3_checkups`:",
+        "",
+        "| Label status | Count |",
+        "|---|---:|",
+    ]
+    for status, count in sorted(readiness["censoring_counts"].items()):
+        lines.append(f"| `{status}` | `{count}` |")
+    lines.append("")
+    lines.append(
+        "Allowed wording: non-neural baselines can forecast the 80% capacity-relative threshold event diagnostically under grouped validation, including under verified-only sensitivity."
+    )
+    lines.append(
+        "Forbidden wording: calibrated risk, detector-knee prediction, causal early-warning claims, policy ranking, or CBAT validation."
+    )
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 

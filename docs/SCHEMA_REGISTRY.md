@@ -61,6 +61,8 @@ Schema version prefix: `gate1.audit.v1`
 | `threshold_warning_table_v1` | Implemented | `mbp.analysis.knee` | threshold event label path, interval table path, selected threshold, prior-state feature policy, schema version |
 | `threshold_warning_baseline_report` | Implemented | `mbp.baselines.threshold_warning` | threshold warning table path, B0-B6 non-neural/proximity models, W0-W2 prospective feature groups, grouped split view, leakage audit |
 | `threshold_warning_hardening_diagnostics` | Implemented | `mbp.baselines.threshold_warning` | threshold warning report path, prediction path, warning table path, lead-time bins, proximity bins, censoring policy, reliability bins, calibration by split |
+| `threshold_warning_censoring_sensitivity` | Implemented | `mbp.baselines.threshold_warning` | all-row report path, verified-only report path, label-policy definitions, metric comparison, split comparison, C-rate comparison |
+| `threshold_warning_final_claim_readiness` | Implemented | `mbp.baselines.threshold_warning` | threshold warning report path, prediction path, warning table path, censoring sensitivity summary, final lead-time and C-rate claim matrices |
 
 ## Gate 2/3 Schema Contracts
 
@@ -104,3 +106,5 @@ Schema version prefix: `gate1.audit.v1`
 - `THRESHOLD_WARNING_TABLE_V1_SCHEMA` records one prospective warning row per cell/check-up for the selected threshold label. It includes only state, time, cumulative exposure, nominal metadata, split labels, and event-horizon labels known from the target table; it excludes `capacity_Ah_k1`, capacity deltas, future interval exposure summaries, future PULSE/EIS state, and PULSE/EIS deltas as features.
 - `threshold_warning_baseline_report` records grouped non-neural classifier metrics for `capacity_below_80pct_initial` warning horizons, including event-rate, distance-to-threshold, prior-only extrapolation, logistic proximity, logistic/ridge, and HGB classifier rows. Generated prediction Parquet remains ignored by default; JSON/CSV/Markdown report artifacts are trackable.
 - `threshold_warning_hardening_diagnostics` records lead-time performance, proximity-bin performance, C-rate lead-time performance, censoring-policy counts, reliability bins, split-level calibration, and C-rate calibration summaries. These diagnostics harden the threshold-warning result but do not authorize calibrated risk.
+- `threshold_warning_censoring_sensitivity` compares all-row and verified-only label policies for event-rate, logistic proximity, and HGB W2 rows. It records target row counts, positive/negative counts, grouped metrics, C-rate metrics, and whether both policies pass the diagnostic claim rule.
+- `threshold_warning_final_claim_readiness` records the final threshold-warning decision. It can support a narrow diagnostic threshold-event forecasting claim while keeping calibrated risk, detector-knee prediction, causal early-warning claims, policy ranking, and CBAT blocked.

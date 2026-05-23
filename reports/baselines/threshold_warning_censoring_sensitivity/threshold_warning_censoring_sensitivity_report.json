@@ -1,0 +1,44 @@
+{
+  "generated_at_utc": "2026-05-23T18:47:19.053315+00:00",
+  "policy_note": "all_rows is equivalent to censored_as_negative for the current Boolean horizon labels.",
+  "schema_version": "gate26.threshold_warning_baseline.v1",
+  "summary": {
+    "event_within_3_checkups": {
+      "both_policies_pass": true
+    },
+    "policies": {
+      "all_rows": {
+        "event_rate_prior_brier": 0.1457910418404461,
+        "hgb_brier": 0.06557507192595002,
+        "hgb_gain_vs_prior": 0.08021596991449609,
+        "hgb_gain_vs_proximity": 0.06713597387587464,
+        "metrics": 468,
+        "passes": true,
+        "proximity_brier": 0.13271104580182466,
+        "rows": 3827,
+        "target_rows": {
+          "negative_count": 3333,
+          "positive_count": 494,
+          "right_censored_unknown": 1394,
+          "rows": 3827
+        }
+      },
+      "verified_only": {
+        "event_rate_prior_brier": 0.17865530818336808,
+        "hgb_brier": 0.09011601732726354,
+        "hgb_gain_vs_prior": 0.08853929085610454,
+        "hgb_gain_vs_proximity": 0.07837608081491124,
+        "metrics": 468,
+        "passes": true,
+        "proximity_brier": 0.16849209814217478,
+        "rows": 3827,
+        "target_rows": {
+          "negative_count": 1939,
+          "positive_count": 494,
+          "right_censored_unknown": 1394,
+          "rows": 2433
+        }
+      }
+    }
+  }
+}

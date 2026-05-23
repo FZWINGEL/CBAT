@@ -11,8 +11,8 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 2.6.1: Threshold-warning hardening:
-proximity, lead-time, censoring, and calibration**.
+The repository is in **Milestone 2.6.2: Censoring-aware threshold warning and
+claim finalization**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -78,6 +78,8 @@ threshold-event warning claim is strengthened.
 Milestone 2.6.1 hardens that result with distance-to-threshold and
 prior-only extrapolation baselines, lead-time/proximity diagnostics,
 censoring-policy sensitivity, and probability-calibration checks.
+Milestone 2.6.2 adds verified-only censoring sensitivity and final
+claim-readiness matrices before locking any threshold-warning wording.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -276,6 +278,17 @@ Current state:
 - Probability calibration remains not supported. For the C-rate
   `event_within_3_checkups` HGB W2 row, ECE is 0.174673, so probabilities are
   diagnostic scores, not calibrated risk estimates.
+- Milestone 2.6.2 is implemented and run. Verified-only evaluation excludes
+  the 1,394 right-censored unknown rows for `event_within_3_checkups`, leaving
+  2,433 verified rows with 494 positives and 1,939 negatives. HGB W2 remains
+  better than both the event-rate prior and the logistic distance baseline:
+  verified-only mean Brier is 0.090116 versus 0.178655 for the prior and
+  0.168492 for the proximity baseline.
+- The C-rate verified-only row also remains positive: HGB W2 Brier is
+  0.153370 versus 0.377495 for the prior and 0.327879 for the logistic
+  distance baseline. The final claim readiness supports a narrow diagnostic
+  threshold-event forecasting claim, including C-rate diagnostic wording, while
+  keeping early-warning wording exploratory and calibrated-risk claims blocked.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -351,6 +364,20 @@ Small audit sidecars that are referenced by documentation are tracked:
 - `reports/baselines/threshold_warning_l0_l2/plots/lead_time_performance.csv`
 - `reports/baselines/threshold_warning_l0_l2/plots/proximity_bin_performance.csv`
 - `reports/baselines/threshold_warning_l0_l2/plots/c_rate_lead_time_performance.csv`
+- `reports/baselines/threshold_warning_verified_only_report.json`
+- `reports/baselines/threshold_warning_verified_only/leaderboard.csv`
+- `reports/baselines/threshold_warning_verified_only/baseline_summary.md`
+- `reports/baselines/threshold_warning_verified_only/threshold_warning_calibration.md`
+- `reports/baselines/threshold_warning_verified_only/threshold_warning_leakage_audit.md`
+- `reports/baselines/threshold_warning_verified_only/threshold_warning_claim_readiness.md`
+- `reports/baselines/threshold_warning_censoring_sensitivity/censoring_sensitivity_summary.md`
+- `reports/baselines/threshold_warning_censoring_sensitivity/threshold_warning_censoring_sensitivity_report.json`
+- `reports/baselines/threshold_warning_censoring_sensitivity/plots/censoring_policy_metric_comparison.csv`
+- `reports/baselines/threshold_warning_censoring_sensitivity/plots/censoring_policy_split_comparison.csv`
+- `reports/baselines/threshold_warning_censoring_sensitivity/plots/censoring_policy_c_rate_comparison.csv`
+- `reports/baselines/threshold_warning_l0_l2/threshold_warning_final_claim_readiness.md`
+- `reports/baselines/threshold_warning_l0_l2/plots/final_lead_time_claim_matrix.csv`
+- `reports/baselines/threshold_warning_l0_l2/plots/final_c_rate_warning_matrix.csv`
 
 The large Parquet outputs remain local generated artifacts:
 
@@ -1645,7 +1672,7 @@ mbp analysis knee-vs-threshold
 Knee-vs-threshold decision written to reports/analysis/knee/knee_vs_threshold_decision.md
 ```
 
-Milestone 2.6 report commands were also run successfully:
+Milestone 2.6 and 2.6.1 report commands were run successfully:
 
 ```text
 mbp analysis build-threshold-warning-table
@@ -1655,7 +1682,20 @@ mbp analysis threshold-warning-qa
 Threshold-warning QA passed: rows=3827
 
 mbp baseline run-threshold-warning
-Threshold-warning baseline report generated: 360 metric rows written to reports/baselines/threshold_warning_l0_l2_report.json
+Threshold-warning baseline report generated: 468 metric rows written to reports/baselines/threshold_warning_l0_l2_report.json
+```
+
+Milestone 2.6.2 report commands were also run successfully:
+
+```text
+mbp baseline run-threshold-warning --label-policy verified_only
+Threshold-warning baseline report generated: 468 metric rows written to reports/baselines/threshold_warning_verified_only_report.json
+
+mbp baseline compare-threshold-warning-censoring
+Threshold-warning censoring comparison generated: 18 metric rows
+
+mbp baseline finalize-threshold-warning-claim
+Threshold-warning final claim readiness generated: reports/baselines/threshold_warning_l0_l2/threshold_warning_final_claim_readiness.md
 ```
 
 Milestone 2.1.1 report commands were also run successfully:

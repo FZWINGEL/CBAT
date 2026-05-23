@@ -832,3 +832,42 @@ Claim rules:
   not calibrated risk estimates.
 - Detector-knee prediction, policy ranking, causal warning claims, sequence
   models, neural models, and CBAT remain blocked.
+
+## Milestone 2.6.2 Censoring-Aware Finalization
+
+Milestone 2.6.2 evaluates the threshold-warning result under both all-row and
+verified-only censoring policies before final claim wording is locked.
+
+Label policies:
+
+- `all_rows`: current Boolean horizon labels, equivalent to treating
+  right-censored unknown rows as negative.
+- `verified_only`: excludes `right_censored_unknown` rows for each horizon.
+- `censored_as_negative`: explicit sensitivity alias for the current Boolean
+  behavior.
+
+Required artifacts:
+
+- `reports/baselines/threshold_warning_verified_only_report.json`
+- `reports/baselines/threshold_warning_verified_only/leaderboard.csv`
+- `reports/baselines/threshold_warning_censoring_sensitivity/censoring_sensitivity_summary.md`
+- `reports/baselines/threshold_warning_censoring_sensitivity/threshold_warning_censoring_sensitivity_report.json`
+- `reports/baselines/threshold_warning_censoring_sensitivity/plots/censoring_policy_metric_comparison.csv`
+- `reports/baselines/threshold_warning_censoring_sensitivity/plots/censoring_policy_split_comparison.csv`
+- `reports/baselines/threshold_warning_censoring_sensitivity/plots/censoring_policy_c_rate_comparison.csv`
+- `reports/baselines/threshold_warning_l0_l2/threshold_warning_final_claim_readiness.md`
+- `reports/baselines/threshold_warning_l0_l2/plots/final_lead_time_claim_matrix.csv`
+- `reports/baselines/threshold_warning_l0_l2/plots/final_c_rate_warning_matrix.csv`
+- `docs/experiments/2026-05-23_threshold_warning_censoring_finalization.md`
+
+Claim rules:
+
+- If all-row and verified-only policies both show HGB W2 beating event-rate and
+  proximity baselines, allow a narrow threshold-event forecasting diagnostic
+  claim.
+- If C-rate also beats both references with adequate class support, allow
+  C-rate threshold-warning diagnostic wording.
+- If verified-only performance collapses, keep warning claims exploratory.
+- Calibration remains separate; poor ECE blocks calibrated-risk wording.
+- Detector-knee prediction, causal early-warning claims, policy ranking,
+  neural/sequence models, and CBAT remain blocked.

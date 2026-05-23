@@ -133,17 +133,20 @@ threshold-event label gate, not a current prediction claim.
 
 ## Threshold-event warning does not authorize calibrated risk or policy ranking
 
-Milestones 2.6 and 2.6.1 show a leakage-safe non-neural HGB baseline can
+Milestones 2.6 through 2.6.2 show a leakage-safe non-neural HGB baseline can
 forecast the 80% threshold event diagnostically, including beyond simple
-distance-to-threshold baselines. For `event_within_3_checkups`, mean Brier is
-`0.145791` for the event-rate prior, `0.132711` for the best proximity
-baseline, and `0.0655751` for HGB W2. In the C-rate holdout, Brier is
-`0.407317` for the prior, `0.355265` for the logistic distance baseline, and
-`0.159930` for HGB W2.
+distance-to-threshold baselines and under verified-only censoring sensitivity.
+For `event_within_3_checkups`, all-row mean Brier is `0.145791` for the
+event-rate prior, `0.132711` for the best proximity baseline, and `0.0655751`
+for HGB W2. Verified-only mean Brier is `0.178655` for the prior, `0.168492`
+for proximity, and `0.090116` for HGB W2. In the verified-only C-rate holdout,
+Brier is `0.377495` for the prior, `0.327879` for the logistic distance
+baseline, and `0.153370` for HGB W2.
 
 The hardening pass does not authorize calibrated risk or causal early-warning
-wording. The C-rate `event_within_3_checkups` HGB W2 ECE is `0.174673`, and
-the censoring audit records 1,394 right-censored unknown rows for each horizon.
+wording. The all-row C-rate `event_within_3_checkups` HGB W2 ECE is
+`0.174673`, verified-only C-rate ECE is `0.194633`, and the censoring audit
+records 1,394 right-censored unknown rows for each horizon.
 Future interval exposure, future capacity, PULSE/EIS deltas, and detector knees
 remain excluded from the warning feature set.
 

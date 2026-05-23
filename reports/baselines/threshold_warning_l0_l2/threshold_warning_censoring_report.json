@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-05-23T18:30:34.843403+00:00",
+  "generated_at_utc": "2026-05-23T18:46:29.251145+00:00",
   "policy": {
     "all_current_rows": "Milestone 2.6 baseline treatment.",
     "censored_as_negative": "Current Boolean horizon labels implicitly treat unknown future crossings as negative.",
