@@ -443,6 +443,41 @@ def report_check_manuscript(
         raise typer.Exit(code=1)
 
 
+@report_app.command("check-reader-manuscript")
+def report_check_reader_manuscript(
+    manuscript: Path = typer.Option(
+        ...,
+        "--manuscript",
+        help="Reader-facing manuscript markdown file to check.",
+    ),
+    claim_ledger: Path = typer.Option(
+        ...,
+        "--claim-ledger",
+        help="Paper claim ledger markdown file.",
+    ),
+    traceability: Path = typer.Option(
+        ...,
+        "--traceability",
+        help="Reader manuscript source traceability markdown file.",
+    ),
+) -> None:
+    """Check a reader-facing manuscript for internal scaffolding and blocked wording."""
+    from mbp.reporting import check_reader_manuscript
+
+    result = check_reader_manuscript(
+        manuscript=manuscript,
+        claim_ledger=claim_ledger,
+        traceability=traceability,
+    )
+    typer.echo(f"Reader manuscript check {result['status']}: {manuscript}")
+    for warning in result["warnings"]:
+        typer.echo(f"warning: {warning}")
+    for failure in result["failures"]:
+        typer.echo(f"failure: {failure}")
+    if result["status"] != "passed":
+        raise typer.Exit(code=1)
+
+
 @ingest_app.command("run-pipeline")
 def ingest_run_pipeline(
     data_root: Path = typer.Option(

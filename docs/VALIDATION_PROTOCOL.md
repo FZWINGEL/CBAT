@@ -56,6 +56,12 @@ caption/table wording cleanup, and expanded no-overclaim checks across
 paper-facing manuscript files. It still does not authorize new model training,
 new feature engineering, EIS modeling, neural models, sequence models, policy
 ranking, CBAT, or broad multimodal claims.
+Milestone 1.4 is reader-facing manuscript v0.4 and publication figure pass. It
+authorizes reader-facing manuscript assembly, figure/caption polish from
+existing artifacts, traceability sidecar updates, and reader-facing
+no-overclaim checks. It still does not authorize new model training, new
+feature engineering, EIS modeling, neural models, sequence models, policy
+ranking, CBAT, or broad multimodal claims.
 
 Required split discipline:
 
@@ -126,6 +132,17 @@ Required Milestone 1.3 manuscript polish artifacts:
 - updated caption files with "what not to infer" notes
 - `docs/experiments/2026-05-23_manuscript_v0_3_polish.md`
 
+Required Milestone 1.4 reader-facing artifacts:
+
+- `manuscript/manuscript_v0_4.md`
+- `manuscript/manuscript_v0_4_traceability.md`
+- `manuscript/captions/figure_captions_v0_4.md`
+- `manuscript/captions/table_captions_v0_4.md`
+- `manuscript/checks/manuscript_v0_4_claim_check.md`
+- `manuscript/checks/manuscript_v0_4_reader_check.md`
+- `manuscript/figures/generated_v0_4/*.svg`
+- `docs/experiments/2026-05-23_manuscript_v0_4_reader_polish.md`
+
 Required Milestone 1.2 checks:
 
 - `mbp report build-manuscript-assets`
@@ -137,6 +154,10 @@ Required Milestone 1.2 checks:
 Milestone 1.3 `mbp report check-manuscript` must scan the continuous
 manuscript, captions, generated tables, figure specifications, and source
 traceability file.
+
+Milestone 1.4 `mbp report check-reader-manuscript` must fail if reader-facing
+prose contains raw claim IDs, allowed/blocked claim blocks, source-artifact
+blocks, referenced-asset notes, or forbidden overclaim wording.
 
 Milestone 1.0 claim statuses must distinguish supported claims,
 partially-supported claims, not-supported claims, gated claims, and blocked

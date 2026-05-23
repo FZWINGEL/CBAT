@@ -33,9 +33,6 @@ The SVG generator remains dependency-free because plotting packages are not core
 ## Validation Summary
 
 - `mbp report check-manuscript`: `passed`
-- `ruff check . --no-cache`: `passed`
-- `pytest -p no:cacheprovider`: `112 passed`
-- `git diff --check`: `passed`
 - Figure 6 reads canonical RT/50 counts from `canonical_target`.
 - Duplicate source-section headings are stripped during v0.3 assembly.
 - Generated assets consume tracked Markdown/CSV/JSON synthesis artifacts only.

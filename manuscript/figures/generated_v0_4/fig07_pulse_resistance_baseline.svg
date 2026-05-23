@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="500" viewBox="0 0 980 500" role="img">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="30" y="92" font-family="Arial, sans-serif" font-size="11" fill="#6b7280">Reader-facing draft asset; see captions for limits.</text>
+<text x="30.0" y="38.0" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#1f2937">PULSE Resistance Baseline</text>
+<text x="30.0" y="62.0" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#1f2937">Best target rows by split; condition-mean MAE, lower is better.</text>
+<line x1="280" y1="74" x2="910" y2="74" stroke="#d1d5db"/>
+<line x1="280.0" y1="64" x2="280.0" y2="424" stroke="#6b7280" stroke-dasharray="4 4"/>
+<text x="30.0" y="113.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">pulse 10ms delta c_rate</text>
+<rect x="280.0" y="92.0" width="612.4" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="860.0" y="109.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">0.001806</text>
+<text x="30.0" y="145.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">pulse 10ms delta condit.</text>
+<rect x="280.0" y="124.0" width="308.7" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="596.7" y="141.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">0.0009107</text>
+<text x="30.0" y="177.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">pulse 10ms delta profile</text>
+<rect x="280.0" y="156.0" width="299.2" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="587.2" y="173.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">0.0008827</text>
+<text x="30.0" y="209.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">pulse 10ms delta temper.</text>
+<rect x="280.0" y="188.0" width="350.7" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="638.7" y="205.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">0.001034</text>
+<text x="30.0" y="241.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">pulse 10ms delta voltag.</text>
+<rect x="280.0" y="220.0" width="376.9" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="664.9" y="237.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">0.001112</text>
+<text x="30.0" y="273.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">pulse 1s delta c_rate</text>
+<rect x="280.0" y="252.0" width="630.0" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="860.0" y="269.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">0.001858</text>
+<text x="30.0" y="305.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">pulse 1s delta condition</text>
+<rect x="280.0" y="284.0" width="325.6" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="613.6" y="301.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">0.0009604</text>
+<text x="30.0" y="337.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">pulse 1s delta profile</text>
+<rect x="280.0" y="316.0" width="323.2" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="611.2" y="333.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">0.0009534</text>
+<text x="30.0" y="369.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">pulse 1s delta temperat.</text>
+<rect x="280.0" y="348.0" width="371.6" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="659.6" y="365.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">0.001096</text>
+<text x="30.0" y="401.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">pulse 1s delta voltage_.</text>
+<rect x="280.0" y="380.0" width="399.1" height="22" rx="3" fill="#2563eb" opacity="0.86"/>
+<text x="687.1" y="397.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">0.001177</text>
+<text x="280.0" y="472.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" fill="#1f2937">Condition-mean MAE</text>
+</svg>

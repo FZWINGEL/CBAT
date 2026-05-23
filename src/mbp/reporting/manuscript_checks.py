@@ -26,14 +26,16 @@ def _ledger_claim_ids(text: str) -> set[str]:
 
 
 def _callout_numbers(text: str, kind: str) -> set[int]:
-    return {int(value) for value in re.findall(rf"\[{kind}\s+(\d+)\]", text)}
+    return {int(value) for value in re.findall(rf"(?:\[|\b){kind}\s+(\d+)(?:\]|\b)", text)}
 
 
 def _has_generated_asset(root: Path, kind: str, number: int) -> bool:
     if kind == "Figure":
         pattern = f"fig{number:02d}_*.svg"
-        return any((root / "figures" / "generated").glob(pattern)) or any(
-            (root / "figures").glob(f"figure_{number:02d}_*.md")
+        return (
+            any((root / "figures" / "generated").glob(pattern))
+            or any((root / "figures" / "generated_v0_4").glob(pattern))
+            or any((root / "figures").glob(f"figure_{number:02d}_*.md"))
         )
     pattern = f"table{number:02d}_*.md"
     return any((root / "tables" / "generated").glob(pattern)) or any(
@@ -160,6 +162,67 @@ def check_manuscript(
     }
 
 
+def check_reader_manuscript(
+    *,
+    manuscript: Path,
+    claim_ledger: Path,
+    traceability: Path,
+) -> dict[str, object]:
+    """Check a reader-facing manuscript for internal scaffolding and overclaims."""
+
+    base = check_manuscript(
+        manuscript=manuscript,
+        claim_ledger=claim_ledger,
+        traceability=traceability,
+    )
+    failures = [str(value) for value in base.get("failures", [])]
+    warnings = [
+        str(value)
+        for value in base.get("warnings", [])
+        if str(value) != "No explicit claim IDs found in manuscript text."
+    ]
+    manuscript_text = manuscript.read_text(encoding="utf-8") if manuscript.exists() else ""
+    lower = manuscript_text.lower()
+    blocked_blocks = [
+        "allowed claims:",
+        "blocked claims:",
+        "source artifacts:",
+        "source artifact:",
+        "referenced assets:",
+        "claim ids:",
+    ]
+    for marker in blocked_blocks:
+        if marker in lower:
+            failures.append(f"Internal scaffolding remains in reader manuscript: {marker}")
+    if _claim_ids(manuscript_text):
+        failures.append("Reader-facing manuscript contains raw claim IDs.")
+
+    root = manuscript.parent
+    for number in sorted(_callout_numbers(manuscript_text, "Figure")):
+        if not (
+            any((root / "figures" / "generated_v0_4").glob(f"fig{number:02d}_*.svg"))
+            or any((root / "figures" / "generated").glob(f"fig{number:02d}_*.svg"))
+        ):
+            failures.append(f"Missing generated artifact for reader Figure {number}")
+    for number in sorted(_callout_numbers(manuscript_text, "Table")):
+        if not any((root / "tables" / "generated").glob(f"table{number:02d}_*.md")):
+            failures.append(f"Missing generated artifact for reader Table {number}")
+
+    v04_figure_captions = root / "captions" / "figure_captions_v0_4.md"
+    v04_table_captions = root / "captions" / "table_captions_v0_4.md"
+    if not v04_figure_captions.exists():
+        failures.append(f"Missing reader figure captions: {v04_figure_captions}")
+    if not v04_table_captions.exists():
+        failures.append(f"Missing reader table captions: {v04_table_captions}")
+
+    return {
+        **base,
+        "status": "failed" if failures else "passed",
+        "warnings": warnings,
+        "failures": failures,
+    }
+
+
 def _markdown_list(items: Iterable[str]) -> str:
     items = list(items)
     if not items:
@@ -247,3 +310,68 @@ def write_check_reports(
         encoding="utf-8",
     )
     return [claim_check, source_check]
+
+
+def write_reader_check_reports(
+    *,
+    out_dir: Path,
+    check_result: dict[str, object],
+    reader_result: dict[str, object],
+) -> list[Path]:
+    checks_dir = out_dir / "checks"
+    checks_dir.mkdir(parents=True, exist_ok=True)
+
+    claim_check = checks_dir / "manuscript_v0_4_claim_check.md"
+    claim_check.write_text(
+        "\n".join(
+            [
+                "# Manuscript v0.4 Claim Check",
+                "",
+                f"Status: `{check_result['status']}`",
+                "",
+                "## Checked Files",
+                "",
+                _markdown_list(str(path) for path in check_result["checked_files"]),
+                "## Claim IDs In Sidecars",
+                "",
+                _markdown_list(str(value) for value in check_result.get("claim_ids", [])),
+                "## Warnings",
+                "",
+                _markdown_list(str(value) for value in check_result.get("warnings", [])),
+                "## Failures",
+                "",
+                _markdown_list(str(value) for value in check_result.get("failures", [])),
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    reader_check = checks_dir / "manuscript_v0_4_reader_check.md"
+    reader_check.write_text(
+        "\n".join(
+            [
+                "# Manuscript v0.4 Reader Check",
+                "",
+                f"Status: `{reader_result['status']}`",
+                "",
+                "## Checked Files",
+                "",
+                _markdown_list(str(path) for path in reader_result["checked_files"]),
+                "## Warnings",
+                "",
+                _markdown_list(str(value) for value in reader_result.get("warnings", [])),
+                "## Failures",
+                "",
+                _markdown_list(str(value) for value in reader_result.get("failures", [])),
+                "## Remaining Publication Risks",
+                "",
+                "- v0.4 is venue-neutral and still needs target venue formatting.",
+                "- Figures are improved draft assets but not final production artwork.",
+                "- Supplementary traceability should remain available during review.",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return [claim_check, reader_check]

@@ -346,6 +346,28 @@ def build_manuscript_figures(out_dir: Path, reports_dir: Path, docs_dir: Path) -
     return paths
 
 
+def build_reader_figures(out_dir: Path) -> list[Path]:
+    """Create v0.4 figure assets from the current generated SVGs."""
+
+    source_dir = out_dir / "figures" / "generated"
+    target_dir = out_dir / "figures" / "generated_v0_4"
+    target_dir.mkdir(parents=True, exist_ok=True)
+    paths: list[Path] = []
+    for source in sorted(source_dir.glob("fig*.svg")):
+        target = target_dir / source.name
+        text = source.read_text(encoding="utf-8")
+        text = text.replace(
+            '<rect width="100%" height="100%" fill="#ffffff"/>',
+            '<rect width="100%" height="100%" fill="#ffffff"/>\n'
+            '<text x="30" y="92" font-family="Arial, sans-serif" '
+            'font-size="11" fill="#6b7280">Reader-facing draft asset; see captions for limits.</text>',
+            1,
+        )
+        target.write_text(text, encoding="utf-8")
+        paths.append(target)
+    return paths
+
+
 def figure_data_checks(reports_dir: Path) -> list[dict[str, object]]:
     """Return data-source metadata for generated manuscript figures."""
 

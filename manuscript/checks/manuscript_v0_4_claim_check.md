@@ -1,4 +1,4 @@
-# Manuscript Claim Check
+# Manuscript v0.4 Claim Check
 
 Status: `passed`
 
@@ -27,7 +27,7 @@ Status: `passed`
 - manuscript/figures/figure_10_claim_ladder.md
 - docs/PAPER_CLAIM_LEDGER.md
 
-## Claim IDs
+## Claim IDs In Sidecars
 
 - C01
 - C02
@@ -50,8 +50,3 @@ Status: `passed`
 
 - none
 
-## Remaining Manuscript Risks
-
-- First-pass figures are schematic and should be redesigned before submission.
-- Descriptive best-row metrics must remain separated from claim-readiness tests.
-- EIS and CBAT remain gated or blocked.

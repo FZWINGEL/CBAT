@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 1.3: Manuscript v0.3 polish and figure QA**.
+The repository is in **Milestone 1.4: Reader-facing manuscript v0.4 and publication figure pass**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -42,6 +42,8 @@ artifacts.
 Milestone 1.3 polishes the manuscript assembly, fixes Figure 6 PULSE QA
 extraction, adds figure data checks, and expands no-overclaim checks across
 paper-facing manuscript files.
+Milestone 1.4 converts the internally traceable manuscript into a reader-facing
+v0.4 draft, preserving claim/source mapping in sidecar traceability files.
 
 No EIS claims, PULSE scientific claims beyond scalar resistance baselines,
 sequence models, neural architecture, policy ranking, CBAT architecture, or EIS
@@ -117,11 +119,12 @@ Current state:
 - Milestone 1.0.1 is the active paper-artifact QA workstream. It does not add
   models or features; it prepares the synthesis artifacts for manuscript
   drafting.
-- Milestone 1.3 is now the active paper-first workstream. It cleans manuscript
-  assembly into `manuscript/manuscript_v0_3.md`, validates generated figure data
-  sources, and scans paper-facing files for unsupported wording. It keeps all
-  new modeling, EIS modeling, feature engineering, CBAT, neural/sequence
-  models, policy ranking, and broad multimodal claims blocked.
+- Milestone 1.4 is now the active paper-first workstream. It removes internal
+  claim-control scaffolding from the main manuscript body, creates
+  `manuscript/manuscript_v0_4.md`, keeps traceability in
+  `manuscript/manuscript_v0_4_traceability.md`, and adds reader-facing checks.
+  It keeps all new modeling, EIS modeling, feature engineering, CBAT,
+  neural/sequence models, policy ranking, and broad multimodal claims blocked.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -1269,6 +1272,30 @@ Implemented polish updates:
 - Experiment note:
   `docs/experiments/2026-05-23_manuscript_v0_3_polish.md`
 
+### Milestone 1.4
+
+Milestone 1.4 is reader-facing manuscript v0.4 and publication figure pass. It
+remains paper-first and uses existing tracked reports only.
+
+Implemented reader-facing updates:
+
+- Generated `manuscript/manuscript_v0_4.md` with raw claim IDs, allowed/blocked
+  claim blocks, source-artifact blocks, and referenced-asset notes removed from
+  the main body.
+- Added `manuscript/manuscript_v0_4_traceability.md` to preserve section,
+  claim, figure/table, source artifact, allowed wording, and forbidden wording
+  mappings.
+- Added reader-facing captions:
+  - `manuscript/captions/figure_captions_v0_4.md`
+  - `manuscript/captions/table_captions_v0_4.md`
+- Added draft v0.4 figure assets under `manuscript/figures/generated_v0_4/`.
+- Added reader-facing checks:
+  - `mbp report check-reader-manuscript`
+  - `manuscript/checks/manuscript_v0_4_claim_check.md`
+  - `manuscript/checks/manuscript_v0_4_reader_check.md`
+- Experiment note:
+  `docs/experiments/2026-05-23_manuscript_v0_4_reader_polish.md`
+
 ## Important Implementation Notes
 
 The interval builder preserves result-table timestamps in the public schema, but
@@ -1322,13 +1349,16 @@ Latest validation run:
 All checks passed.
 
 .venv/bin/pytest -p no:cacheprovider
-112 passed.
+114 passed.
 
 .venv/bin/python -m mbp.cli report build-manuscript-assets --out-dir manuscript --reports-dir reports --docs-dir docs
-Manuscript assets generated: 10 figures, 5 tables, status=passed.
+Manuscript assets generated: 20 figures, 5 tables, status=passed.
 
-.venv/bin/python -m mbp.cli report check-manuscript --manuscript manuscript/manuscript_v0_3.md --claim-ledger docs/PAPER_CLAIM_LEDGER.md --traceability manuscript/source_traceability.md
+.venv/bin/python -m mbp.cli report check-manuscript --manuscript manuscript/manuscript_v0_4.md --claim-ledger docs/PAPER_CLAIM_LEDGER.md --traceability manuscript/manuscript_v0_4_traceability.md
 Manuscript check passed.
+
+.venv/bin/python -m mbp.cli report check-reader-manuscript --manuscript manuscript/manuscript_v0_4.md --claim-ledger docs/PAPER_CLAIM_LEDGER.md --traceability manuscript/manuscript_v0_4_traceability.md
+Reader manuscript check passed.
 
 git diff --check
 passed.
@@ -1352,14 +1382,18 @@ Milestone 1.3 updates that reporting code and generated manuscript package only.
 It does not add model training, feature engineering, generated Parquet data
 products, prediction artifacts, EIS modeling, or architecture work.
 
+Milestone 1.4 updates reader-facing manuscript/caption/check generation only.
+It does not add model training, feature engineering, generated Parquet data
+products, prediction artifacts, EIS modeling, or architecture work.
+
 The previous `datetime.utcnow()` deprecation warning in
 `src/mbp/data/luh_blank/qa_result_data.py` has been fixed.
 
 ## Recommended Next Step
 
-Review the **Milestone 1.3 Manuscript v0.3 Polish and Figure QA** outputs. The
-preferred next branch is publication-quality figure refinement or venue-targeted
-manuscript formatting, still using the locked claim ledger. If a technical
-stream is needed afterward, open a separately gated EIS QA milestone; do not
-jump directly to EIS modeling, sequence models, neural models, policy ranking,
-CBAT, or broad multimodal claims.
+Review the **Milestone 1.4 Reader-Facing Manuscript v0.4** outputs. The
+preferred next branch is venue-targeted manuscript formatting or a final
+publication-quality figure pass, still using the locked claim ledger. If a
+technical stream is needed afterward, open a separately gated EIS QA milestone;
+do not jump directly to EIS modeling, sequence models, neural models, policy
+ranking, CBAT, or broad multimodal claims.

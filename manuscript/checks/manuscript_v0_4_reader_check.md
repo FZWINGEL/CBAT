@@ -1,11 +1,11 @@
-# Manuscript Claim Check
+# Manuscript v0.4 Reader Check
 
 Status: `passed`
 
 ## Checked Files
 
-- manuscript/manuscript_v0_3.md
-- manuscript/source_traceability.md
+- manuscript/manuscript_v0_4.md
+- manuscript/manuscript_v0_4_traceability.md
 - manuscript/captions/figure_captions.md
 - manuscript/captions/figure_captions_v0_4.md
 - manuscript/captions/table_captions.md
@@ -27,21 +27,6 @@ Status: `passed`
 - manuscript/figures/figure_10_claim_ladder.md
 - docs/PAPER_CLAIM_LEDGER.md
 
-## Claim IDs
-
-- C01
-- C02
-- C03
-- C04
-- C05
-- C06
-- C07
-- C08
-- C09
-- C10
-- C11
-- C12
-
 ## Warnings
 
 - none
@@ -50,8 +35,8 @@ Status: `passed`
 
 - none
 
-## Remaining Manuscript Risks
+## Remaining Publication Risks
 
-- First-pass figures are schematic and should be redesigned before submission.
-- Descriptive best-row metrics must remain separated from claim-readiness tests.
-- EIS and CBAT remain gated or blocked.
+- v0.4 is venue-neutral and still needs target venue formatting.
+- Figures are improved draft assets but not final production artwork.
+- Supplementary traceability should remain available during review.
