@@ -1,0 +1,149 @@
+{
+  "best_noneis_groups": [
+    {
+      "condition_mean_mae": 0.0018683519154988036,
+      "feature_group": "P3_state_nominal",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 12,
+      "source_report": "pulse_resistance_l0_l3_report.json",
+      "split_name": "c_rate_holdout_fold",
+      "target": "delta_pulse_1s_resistance"
+    },
+    {
+      "condition_mean_mae": 0.000962767080405909,
+      "feature_group": "P5_stress_v1_1",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 76,
+      "source_report": "pulse_resistance_l0_l3_report.json",
+      "split_name": "condition_fold",
+      "target": "delta_pulse_1s_resistance"
+    },
+    {
+      "condition_mean_mae": 0.000952814694098579,
+      "feature_group": "P3_state_nominal",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 12,
+      "source_report": "pulse_resistance_l0_l3_report.json",
+      "split_name": "profile_holdout_fold",
+      "target": "delta_pulse_1s_resistance"
+    },
+    {
+      "condition_mean_mae": 0.0010979051659197737,
+      "feature_group": "P5_stress_v1_1",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 38,
+      "source_report": "pulse_resistance_l0_l3_report.json",
+      "split_name": "temperature_holdout_fold",
+      "target": "delta_pulse_1s_resistance"
+    },
+    {
+      "condition_mean_mae": 0.0012774889922474574,
+      "feature_group": "P1_state_time",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 76,
+      "source_report": "pulse_resistance_l0_l3_report.json",
+      "split_name": "voltage_window_holdout_fold",
+      "target": "delta_pulse_1s_resistance"
+    }
+  ],
+  "best_prior_eis_groups": [
+    {
+      "condition_mean_mae": 0.0019622578246386944,
+      "feature_group": "P_E1_nominal_eis",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 12,
+      "source_report": "pulse_with_prior_eis_hgb50_report.json",
+      "split_name": "c_rate_holdout_fold",
+      "target": "delta_pulse_1s_resistance"
+    },
+    {
+      "condition_mean_mae": 0.0009497380667995524,
+      "feature_group": "P_E3_stress_eis",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 76,
+      "source_report": "pulse_with_prior_eis_hgb50_report.json",
+      "split_name": "condition_fold",
+      "target": "delta_pulse_1s_resistance"
+    },
+    {
+      "condition_mean_mae": 0.0009221341523680654,
+      "feature_group": "P_E1_nominal_eis",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 12,
+      "source_report": "pulse_with_prior_eis_hgb50_report.json",
+      "split_name": "profile_holdout_fold",
+      "target": "delta_pulse_1s_resistance"
+    },
+    {
+      "condition_mean_mae": 0.0010731973495550092,
+      "feature_group": "P_E3_stress_eis",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 38,
+      "source_report": "pulse_with_prior_eis_hgb50_report.json",
+      "split_name": "temperature_holdout_fold",
+      "target": "delta_pulse_1s_resistance"
+    },
+    {
+      "condition_mean_mae": 0.0013549377343195002,
+      "feature_group": "P_E1_nominal_eis",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 76,
+      "source_report": "pulse_with_prior_eis_hgb50_report.json",
+      "split_name": "voltage_window_holdout_fold",
+      "target": "delta_pulse_1s_resistance"
+    }
+  ],
+  "bootstrap_resamples": 1000,
+  "claim_rows": [
+    {
+      "claim": "Prior EIS beats strongest non-EIS for pulse primary target",
+      "decision": "Allow only narrow split-specific EIS claim",
+      "evidence": "1 split rows have bootstrap p05 > 0; C-rate mean -9.39059e-05, p05 -0.000185681",
+      "status": "supported"
+    },
+    {
+      "claim": "Leakage safety",
+      "decision": "Future EIS state, EIS deltas, R0/R1, DRT, and embeddings remain blocked.",
+      "evidence": "Only prior EIS `k` scalar features are allowed for non-EIS targets.",
+      "status": "supported"
+    }
+  ],
+  "filters": {
+    "max_eis_alignment_delta_s": null,
+    "min_valid_modeling_fraction": null,
+    "require_complete_selected_frequencies": false
+  },
+  "generated_at_utc": "2026-05-23T13:58:19.462576+00:00",
+  "inputs": {
+    "eis_targets": "data/interim/eis_target_table_v1.parquet",
+    "non_eis_reports": [
+      "reports/baselines/pulse_resistance_l0_l3_report.json",
+      "reports/baselines/pulse_resistance_target_robustness_report.json"
+    ],
+    "prior_eis_report": "reports/baselines/pulse_with_prior_eis_hgb50_report.json"
+  },
+  "outputs": {
+    "claim_readiness": "reports/baselines/pulse_prior_eis_vs_best_noneis/prior_eis_pulse_claim_readiness.md",
+    "out_dir": "reports/baselines/pulse_prior_eis_vs_best_noneis",
+    "paired_gain_vs_best_noneis": "reports/baselines/pulse_prior_eis_vs_best_noneis/paired_gain_vs_best_noneis.csv",
+    "split_level_gain_vs_best_noneis": "reports/baselines/pulse_prior_eis_vs_best_noneis/split_level_gain_vs_best_noneis.csv"
+  },
+  "row_counts": {
+    "covered_c_rate_prediction_keys": 142,
+    "covered_prediction_keys": 10119,
+    "covered_profile_prediction_keys": 732,
+    "eligible_c_rate_rows": 157,
+    "eligible_cells": 228,
+    "eligible_interval_keys": 3827,
+    "eligible_parameter_sets": 76,
+    "eligible_profile_rows": 752,
+    "non_eis_condition_rows": 2568,
+    "paired_gain_rows": 214,
+    "prior_eis_condition_rows": 856,
+    "split_summary_rows": 5
+  },
+  "schema_version": "gate211.eis_claim_hardening.v1",
+  "seed": 42,
+  "status": "passed",
+  "target_family": "pulse"
+}

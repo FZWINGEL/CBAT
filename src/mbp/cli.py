@@ -1043,6 +1043,123 @@ def baseline_compare_prior_pulse_vs_best_nonpulse(
     )
 
 
+@baseline_app.command("compare-prior-eis-pulse")
+def baseline_compare_prior_eis_pulse(
+    non_eis_report: Path = typer.Option(..., "--non-eis-report", help="PULSE report without prior-EIS feature groups."),
+    prior_eis_report: Path = typer.Option(..., "--prior-eis-report", help="PULSE report with prior-EIS feature groups."),
+    out_dir: Path = typer.Option(..., "--out-dir", help="Output directory for prior-EIS PULSE hardening diagnostics."),
+    stress_report: Path | None = typer.Option(None, "--stress-report", help="Optional additional non-EIS PULSE report."),
+    eis_targets: Path | None = typer.Option(None, "--eis-targets", help="Optional EIS target table for filtering."),
+    max_eis_alignment_delta_s: float | None = typer.Option(None, "--max-eis-alignment-delta-s", help="Optional max EIS alignment delta filter."),
+    require_complete_selected_frequencies: bool = typer.Option(False, "--complete-selected-frequencies", help="Require complete prior selected-frequency EIS features."),
+    min_valid_modeling_fraction: float | None = typer.Option(None, "--min-valid-modeling-fraction", help="Optional minimum prior valid modeling fraction."),
+    bootstrap_resamples: int = typer.Option(1000, "--bootstrap-resamples", help="Parameter-set bootstrap resamples."),
+    seed: int = typer.Option(42, "--seed", help="Bootstrap random seed."),
+) -> None:
+    """Compare prior-EIS PULSE groups against strongest supplied non-EIS groups."""
+    from mbp.baselines.eis_claims import compare_prior_eis_pulse_reports
+
+    report = compare_prior_eis_pulse_reports(
+        non_eis_report,
+        prior_eis_report,
+        out_dir,
+        stress_report_path=stress_report,
+        eis_targets_path=eis_targets,
+        max_eis_alignment_delta_s=max_eis_alignment_delta_s,
+        require_complete_selected_frequencies=require_complete_selected_frequencies,
+        min_valid_modeling_fraction=min_valid_modeling_fraction,
+        bootstrap_resamples=bootstrap_resamples,
+        seed=seed,
+    )
+    typer.echo(
+        "Prior-EIS PULSE comparison generated: "
+        f"{report['row_counts']['paired_gain_rows']} paired condition rows"
+    )
+
+
+@baseline_app.command("compare-prior-eis-capacity")
+def baseline_compare_prior_eis_capacity(
+    non_eis_reports: str = typer.Option(..., "--non-eis-reports", help="Comma-separated capacity reports without prior-EIS feature groups."),
+    prior_eis_report: Path = typer.Option(..., "--prior-eis-report", help="Capacity report with prior-EIS feature groups."),
+    out_dir: Path = typer.Option(..., "--out-dir", help="Output directory for prior-EIS capacity hardening diagnostics."),
+    eis_targets: Path | None = typer.Option(None, "--eis-targets", help="Optional EIS target table for filtering."),
+    max_eis_alignment_delta_s: float | None = typer.Option(None, "--max-eis-alignment-delta-s", help="Optional max EIS alignment delta filter."),
+    require_complete_selected_frequencies: bool = typer.Option(False, "--complete-selected-frequencies", help="Require complete prior selected-frequency EIS features."),
+    min_valid_modeling_fraction: float | None = typer.Option(None, "--min-valid-modeling-fraction", help="Optional minimum prior valid modeling fraction."),
+    bootstrap_resamples: int = typer.Option(1000, "--bootstrap-resamples", help="Parameter-set bootstrap resamples."),
+    seed: int = typer.Option(42, "--seed", help="Bootstrap random seed."),
+) -> None:
+    """Compare prior-EIS capacity groups against strongest supplied non-EIS groups."""
+    from mbp.baselines.eis_claims import compare_prior_eis_capacity_reports
+
+    report = compare_prior_eis_capacity_reports(
+        [Path(value) for value in _comma_values(non_eis_reports)],
+        prior_eis_report,
+        out_dir,
+        eis_targets_path=eis_targets,
+        max_eis_alignment_delta_s=max_eis_alignment_delta_s,
+        require_complete_selected_frequencies=require_complete_selected_frequencies,
+        min_valid_modeling_fraction=min_valid_modeling_fraction,
+        bootstrap_resamples=bootstrap_resamples,
+        seed=seed,
+    )
+    typer.echo(
+        "Prior-EIS capacity comparison generated: "
+        f"{report['row_counts']['paired_gain_rows']} paired condition rows"
+    )
+
+
+@baseline_app.command("eis-hardening-sensitivity")
+def baseline_eis_hardening_sensitivity(
+    pulse_non_eis_report: Path = typer.Option(..., "--pulse-non-eis-report", help="PULSE report without prior-EIS feature groups."),
+    pulse_prior_eis_report: Path = typer.Option(..., "--pulse-prior-eis-report", help="PULSE report with prior-EIS feature groups."),
+    capacity_non_eis_reports: str = typer.Option(..., "--capacity-non-eis-reports", help="Comma-separated capacity reports without prior-EIS feature groups."),
+    capacity_prior_eis_report: Path = typer.Option(..., "--capacity-prior-eis-report", help="Capacity report with prior-EIS feature groups."),
+    eis_targets: Path = typer.Option(..., "--eis-targets", help="EIS target table for sensitivity filters."),
+    alignment_out_dir: Path = typer.Option(..., "--alignment-out-dir", help="Output directory for alignment sensitivity summaries."),
+    feature_completeness_out: Path = typer.Option(..., "--feature-completeness-out", help="Feature-completeness sensitivity CSV."),
+    feature_completeness_md: Path = typer.Option(..., "--feature-completeness-md", help="Feature-completeness claim-readiness Markdown."),
+    bootstrap_resamples: int = typer.Option(1000, "--bootstrap-resamples", help="Parameter-set bootstrap resamples."),
+    seed: int = typer.Option(42, "--seed", help="Bootstrap random seed."),
+) -> None:
+    """Write EIS alignment and feature-completeness sensitivity summaries."""
+    from mbp.baselines.eis_claims import write_eis_hardening_sensitivity_reports
+
+    report = write_eis_hardening_sensitivity_reports(
+        pulse_non_eis_report=pulse_non_eis_report,
+        pulse_prior_eis_report=pulse_prior_eis_report,
+        capacity_non_eis_reports=[Path(value) for value in _comma_values(capacity_non_eis_reports)],
+        capacity_prior_eis_report=capacity_prior_eis_report,
+        eis_targets_path=eis_targets,
+        alignment_out_dir=alignment_out_dir,
+        feature_completeness_out=feature_completeness_out,
+        feature_completeness_md=feature_completeness_md,
+        bootstrap_resamples=bootstrap_resamples,
+        seed=seed,
+    )
+    typer.echo(f"EIS hardening sensitivity written: {report['status']}")
+
+
+@baseline_app.command("eis-claim-readiness")
+def baseline_eis_claim_readiness(
+    eis_report: Path = typer.Option(..., "--eis-report", help="EIS scalar baseline report."),
+    self_endpoint_out: Path = typer.Option(..., "--self-endpoint-out", help="EIS self-endpoint claim-readiness Markdown."),
+    leakage_out: Path = typer.Option(..., "--leakage-out", help="EIS leakage audit Markdown."),
+) -> None:
+    """Write EIS self-endpoint and leakage claim-readiness reports."""
+    from mbp.baselines.eis_claims import (
+        write_eis_leakage_audit,
+        write_eis_self_endpoint_claim_readiness,
+    )
+
+    self_report = write_eis_self_endpoint_claim_readiness(eis_report, self_endpoint_out)
+    leakage_report = write_eis_leakage_audit(leakage_out)
+    typer.echo(
+        "EIS claim-readiness reports written: "
+        f"{self_report['supported_rows']} supported self-endpoint rows; leakage {leakage_report['status']}"
+    )
+
+
 @baseline_app.command("diagnose-capacity")
 def baseline_diagnose_capacity(
     report: Path = typer.Option(

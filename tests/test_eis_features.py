@@ -24,6 +24,10 @@ from mbp.baselines.eis import (
     load_eis_rows,
     run_eis_baselines,
 )
+from mbp.baselines.eis_claims import (
+    compare_prior_eis_capacity_reports,
+    write_eis_leakage_audit,
+)
 from mbp.data.schema_contracts import (
     EIS_FEATURE_TABLE_V1_SCHEMA,
     EIS_TARGET_TABLE_V1_SCHEMA,
@@ -211,6 +215,164 @@ def test_eis_qa_and_valid_frequency_audit(tmp_path: Path) -> None:
     assert "excluded_14p7kHz" in frequency_text
     assert "modeling_band_other" in frequency_text
     assert json.loads((tmp_path / "alignment.json").read_text())["alignment_delta_s"]["max"] > 0
+
+
+def _write_prediction_report(
+    tmp_path: Path,
+    name: str,
+    rows: list[dict[str, object]],
+    *,
+    feature_groups: list[str],
+) -> Path:
+    predictions_path = tmp_path / f"{name}_predictions.parquet"
+    report_path = tmp_path / f"{name}_report.json"
+    pq.write_table(pa.Table.from_pylist(rows), predictions_path)
+    report = {
+        "inputs": {
+            "interval_table": str(tmp_path / "missing_interval.parquet"),
+            "eis_targets": str(tmp_path / "eis_targets.parquet"),
+        },
+        "outputs": {
+            "predictions": str(predictions_path),
+            "report": str(report_path),
+        },
+        "feature_groups": feature_groups,
+    }
+    report_path.write_text(json.dumps(report), encoding="utf-8")
+    return report_path
+
+
+def _prediction_row(
+    *,
+    feature_group: str,
+    parameter_set: int,
+    y_true: float,
+    y_pred: float,
+) -> dict[str, object]:
+    return {
+        "schema_version": "test",
+        "subset_name": "baseline_clean_tolerant",
+        "run_scope": "primary",
+        "split_name": "c_rate_holdout_fold",
+        "heldout_fold": 0,
+        "model_level": "L2_hist_gradient_boosting",
+        "feature_group": feature_group,
+        "target": "capacity_Ah_k1",
+        "cell_id": f"P{parameter_set:03d}_1",
+        "parameter_set": parameter_set,
+        "replicate_id": 1,
+        "checkup_k": 0,
+        "checkup_k_next": 1,
+        "y_true": y_true,
+        "y_pred": y_pred,
+    }
+
+
+def test_prior_eis_vs_noneis_paired_gain_and_filters(tmp_path: Path) -> None:
+    eis_targets = tmp_path / "eis_targets.parquet"
+    target_rows = [
+        {
+            "cell_id": "P001_1",
+            "parameter_set": 1,
+            "replicate_id": 1,
+            "checkup_k": 0,
+            "checkup_k_next": 1,
+            "soc_percent": 50.0,
+            "temperature_context": "RT",
+            "condition_fold": 0,
+            "temperature_holdout_fold": 0,
+            "c_rate_holdout_fold": 1,
+            "profile_holdout_fold": 0,
+            "voltage_window_holdout_fold": 0,
+            "eis_z_real_1kHz_k": 1.0,
+            "eis_z_imag_1kHz_k": 1.0,
+            "eis_z_abs_1kHz_k": 1.0,
+            "eis_phase_1kHz_k": 1.0,
+            "nyquist_semicircle_width_proxy_k": 1.0,
+            "valid_modeling_fraction_k": 0.8,
+            "alignment_delta_s_k": 100.0,
+            "alignment_delta_s_k1": 100.0,
+        },
+        {
+            "cell_id": "P002_1",
+            "parameter_set": 2,
+            "replicate_id": 1,
+            "checkup_k": 0,
+            "checkup_k_next": 1,
+            "soc_percent": 50.0,
+            "temperature_context": "RT",
+            "condition_fold": 0,
+            "temperature_holdout_fold": 0,
+            "c_rate_holdout_fold": 1,
+            "profile_holdout_fold": 0,
+            "voltage_window_holdout_fold": 0,
+            "eis_z_real_1kHz_k": None,
+            "eis_z_imag_1kHz_k": 1.0,
+            "eis_z_abs_1kHz_k": 1.0,
+            "eis_phase_1kHz_k": 1.0,
+            "nyquist_semicircle_width_proxy_k": 1.0,
+            "valid_modeling_fraction_k": 0.6,
+            "alignment_delta_s_k": 200000.0,
+            "alignment_delta_s_k1": 100.0,
+        },
+    ]
+    pq.write_table(pa.Table.from_pylist(target_rows), eis_targets)
+    prior_rows = [
+        _prediction_row(feature_group="C_E0_state_time_eis", parameter_set=1, y_true=1.0, y_pred=1.0),
+        _prediction_row(feature_group="C_E0_state_time_eis", parameter_set=2, y_true=1.0, y_pred=1.1),
+    ]
+    noneis_rows = [
+        _prediction_row(feature_group="F4_state_log_age_scalar", parameter_set=1, y_true=1.0, y_pred=1.2),
+        _prediction_row(feature_group="F4_state_log_age_scalar", parameter_set=2, y_true=1.0, y_pred=1.2),
+    ]
+    prior_report = _write_prediction_report(
+        tmp_path,
+        "prior",
+        prior_rows,
+        feature_groups=["C_E0_state_time_eis"],
+    )
+    noneis_report = _write_prediction_report(
+        tmp_path,
+        "noneis",
+        noneis_rows,
+        feature_groups=["F4_state_log_age_scalar"],
+    )
+
+    report = compare_prior_eis_capacity_reports(
+        [noneis_report],
+        prior_report,
+        tmp_path / "out",
+        eis_targets_path=eis_targets,
+        bootstrap_resamples=5,
+        seed=7,
+    )
+    assert report["row_counts"]["paired_gain_rows"] == 2
+    assert report["row_counts"]["eligible_parameter_sets"] == 2
+
+    filtered = compare_prior_eis_capacity_reports(
+        [noneis_report],
+        prior_report,
+        tmp_path / "out_filtered",
+        eis_targets_path=eis_targets,
+        max_eis_alignment_delta_s=86400.0,
+        require_complete_selected_frequencies=True,
+        min_valid_modeling_fraction=0.7,
+        bootstrap_resamples=5,
+        seed=7,
+    )
+    assert filtered["row_counts"]["paired_gain_rows"] == 1
+    assert filtered["row_counts"]["eligible_parameter_sets"] == 1
+
+
+def test_eis_leakage_audit_catches_future_fields(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    original = capacity_baselines.NUMERIC_FEATURES["C_E0_state_time_eis"]
+    monkeypatch.setitem(
+        capacity_baselines.NUMERIC_FEATURES,
+        "C_E0_state_time_eis",
+        (*original, "delta_eis_z_abs_1kHz"),
+    )
+    with pytest.raises(ValueError, match="EIS leakage audit failed"):
+        write_eis_leakage_audit(tmp_path / "audit.md")
 
 
 def test_eis_alignment_sensitivity(tmp_path: Path) -> None:

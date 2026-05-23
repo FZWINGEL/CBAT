@@ -199,6 +199,25 @@ Required Milestone 2.1 EIS scalar diagnostic artifacts:
 - `reports/baselines/eis_prior_feature_claim_readiness.md`
 - `docs/experiments/2026-05-23_eis_scalar_diagnostic_baselines.md`
 
+Required Milestone 2.1.1 EIS claim-hardening artifacts:
+
+- `reports/baselines/pulse_prior_eis_vs_best_noneis/paired_gain_vs_best_noneis.csv`
+- `reports/baselines/pulse_prior_eis_vs_best_noneis/split_level_gain_vs_best_noneis.csv`
+- `reports/baselines/pulse_prior_eis_vs_best_noneis/bootstrap_gain_vs_best_noneis.csv`
+- `reports/baselines/pulse_prior_eis_vs_best_noneis/prior_eis_pulse_claim_readiness.md`
+- `reports/baselines/capacity_prior_eis_vs_best_noneis/paired_gain_vs_best_noneis.csv`
+- `reports/baselines/capacity_prior_eis_vs_best_noneis/split_level_gain_vs_best_noneis.csv`
+- `reports/baselines/capacity_prior_eis_vs_best_noneis/bootstrap_gain_vs_best_noneis.csv`
+- `reports/baselines/capacity_prior_eis_vs_best_noneis/prior_eis_capacity_claim_readiness.md`
+- `reports/baselines/eis_alignment_sensitivity/pulse_prior_eis_alignment_summary.csv`
+- `reports/baselines/eis_alignment_sensitivity/capacity_prior_eis_alignment_summary.csv`
+- `reports/baselines/eis_alignment_sensitivity/eis_alignment_claim_readiness.md`
+- `reports/baselines/eis_feature_completeness_sensitivity.csv`
+- `reports/baselines/eis_feature_completeness_claim_readiness.md`
+- `reports/baselines/eis_scalar_l0_l3/eis_self_endpoint_claim_readiness.md`
+- `reports/baselines/eis_leakage_audit.md`
+- `docs/experiments/2026-05-23_eis_claim_hardening.md`
+
 Required Milestone 1.2 checks:
 
 - `mbp report build-manuscript-assets`
@@ -224,6 +243,16 @@ Milestone 2.0 EIS validation commands:
 - `mbp eis build-features`
 - `mbp eis feature-qa`
 - `mbp eis claim-readiness`
+- `ruff check . --no-cache`
+- `pytest -p no:cacheprovider`
+- `git diff --check`
+
+Milestone 2.1.1 EIS validation commands:
+
+- `mbp baseline compare-prior-eis-pulse`
+- `mbp baseline compare-prior-eis-capacity`
+- `mbp baseline eis-hardening-sensitivity`
+- `mbp baseline eis-claim-readiness`
 - `ruff check . --no-cache`
 - `pytest -p no:cacheprovider`
 - `git diff --check`

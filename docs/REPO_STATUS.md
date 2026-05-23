@@ -11,7 +11,8 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 2.1: EIS scalar diagnostic baselines**.
+The repository is in **Milestone 2.1.1: EIS claim hardening and alignment
+sensitivity**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -50,6 +51,10 @@ Milestone 2.0 opens EIS as a gated QA and scalar feature-readiness modality,
 not as a modeling or claim milestone.
 Milestone 2.1 evaluates RT/50 scalar EIS endpoints and prior-EIS feature groups
 under grouped validation while keeping broad EIS claims blocked.
+Milestone 2.1.1 hardens those results with strongest non-EIS paired
+comparisons, parameter-set bootstrap intervals, alignment sensitivity,
+feature-completeness sensitivity, and leakage audits before any EIS claim is
+strengthened.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -157,6 +162,14 @@ Current state:
   level splits, but not PULSE C-rate, capacity C-rate level, or C-rate
   `delta_capacity_Ah`. Broad EIS improvement claims remain blocked until paired
   strongest-non-EIS and alignment-sensitivity claim-hardening is done.
+- Milestone 2.1.1 is implemented and run. Prior-EIS PULSE comparisons produce
+  214 paired condition rows and show one profile-holdout split with bootstrap
+  p05 above zero, while C-rate remains negative. Prior-EIS capacity comparisons
+  produce 428 paired condition rows and show profile-holdout support for
+  `capacity_Ah_k1`, but not C-rate level prediction and not C-rate
+  `delta_capacity_Ah`. Alignment and selected-frequency completeness
+  sensitivities are quantified, leakage audit passes, and broad EIS improvement
+  claims remain blocked.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -1411,7 +1424,7 @@ Latest validation run:
 All checks passed.
 
 .venv/bin/pytest -p no:cacheprovider
-114 passed.
+123 passed.
 
 .venv/bin/python -m mbp.cli report build-manuscript-assets --out-dir manuscript --reports-dir reports --docs-dir docs
 Manuscript assets generated: 20 figures, 5 tables, status=passed.
@@ -1424,6 +1437,22 @@ Reader manuscript check passed.
 
 git diff --check
 passed.
+```
+
+Milestone 2.1.1 report commands were also run successfully:
+
+```text
+mbp baseline compare-prior-eis-pulse
+Prior-EIS PULSE comparison generated: 214 paired condition rows
+
+mbp baseline compare-prior-eis-capacity
+Prior-EIS capacity comparison generated: 428 paired condition rows
+
+mbp baseline eis-hardening-sensitivity
+EIS hardening sensitivity written: passed
+
+mbp baseline eis-claim-readiness
+EIS claim-readiness reports written: 12 supported self-endpoint rows; leakage passed
 ```
 
 Milestone 1.0 adds documentation and tracked synthesis CSV/Markdown artifacts
@@ -1457,9 +1486,11 @@ The previous `datetime.utcnow()` deprecation warning in
 
 ## Recommended Next Step
 
-Review the **Milestone 1.4.1 Reader-Facing Cleanup** outputs. The preferred
-next branch is Milestone 1.5 venue-targeted manuscript formatting and submission
-skeleton, still using the locked claim ledger. If a technical stream is needed
-afterward, open a separately gated EIS QA milestone; do not jump directly to
-EIS modeling, sequence models, neural models, policy ranking, CBAT, or broad
-multimodal claims.
+Review the **Milestone 2.1.1 EIS Claim Hardening** outputs. EIS is supported as
+a scalar diagnostic endpoint and has narrow profile-split prior-feature signals,
+but it does not support broad EIS improvement claims, C-rate capacity claims, or
+fade-rate claims. The next technical step, if continuing EIS, should be a narrow
+EIS claim-decision/synthesis pass or a separately scoped feature-quality
+extension; do not jump directly to DRT, embeddings, EIS neural models,
+capacity+PULSE+EIS multimodal models, sequence models, policy ranking, CBAT, or
+broad multimodal claims.

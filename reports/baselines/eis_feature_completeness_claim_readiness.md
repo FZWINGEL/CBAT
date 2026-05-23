@@ -1,0 +1,66 @@
+# EIS Feature-Completeness Sensitivity
+
+This report checks whether selected-frequency completeness or valid modeling fraction filters alter prior-EIS comparison conclusions.
+
+| Filter | Target family | Target | Split | Mean gain | p05 | Covered keys |
+|---|---|---|---|---:|---:|---:|
+| `all_rt50` | `pulse` | `delta_pulse_1s_resistance` | `c_rate_holdout_fold` | -9.390590913989042e-05 | -0.00018568147554845436 | 3827 |
+| `all_rt50` | `pulse` | `delta_pulse_1s_resistance` | `condition_fold` | 1.3029013606356756e-05 | -2.7637722923185615e-05 | 3827 |
+| `all_rt50` | `pulse` | `delta_pulse_1s_resistance` | `profile_holdout_fold` | 3.0680541730513534e-05 | 1.275315623935839e-06 | 3827 |
+| `all_rt50` | `pulse` | `delta_pulse_1s_resistance` | `temperature_holdout_fold` | 2.47078163647647e-05 | -1.4655421653364533e-05 | 3827 |
+| `all_rt50` | `pulse` | `delta_pulse_1s_resistance` | `voltage_window_holdout_fold` | -7.744874207204302e-05 | -0.00023314400746138122 | 3827 |
+| `all_rt50` | `capacity` | `capacity_Ah_k1` | `c_rate_holdout_fold` | -0.005279204538350871 | -0.013944372826768745 | 3827 |
+| `all_rt50` | `capacity` | `capacity_Ah_k1` | `condition_fold` | -0.0004945740783821386 | -0.0032304768057170477 | 3827 |
+| `all_rt50` | `capacity` | `capacity_Ah_k1` | `profile_holdout_fold` | 0.006765480045867679 | 0.0038406236811399626 | 3827 |
+| `all_rt50` | `capacity` | `capacity_Ah_k1` | `temperature_holdout_fold` | -0.00041749565791934 | -0.003335619585274966 | 3827 |
+| `all_rt50` | `capacity` | `capacity_Ah_k1` | `voltage_window_holdout_fold` | 5.1061093909377756e-05 | -0.0025125623640410324 | 3827 |
+| `all_rt50` | `capacity` | `delta_capacity_Ah` | `c_rate_holdout_fold` | 0.003392623301369179 | -0.008943787326343218 | 3827 |
+| `all_rt50` | `capacity` | `delta_capacity_Ah` | `condition_fold` | -0.0015255354233879542 | -0.002687509968456958 | 3827 |
+| `all_rt50` | `capacity` | `delta_capacity_Ah` | `profile_holdout_fold` | 0.0076397990132853295 | 0.004284723344092816 | 3827 |
+| `all_rt50` | `capacity` | `delta_capacity_Ah` | `temperature_holdout_fold` | -0.002598369742762812 | -0.0076144936781574225 | 3827 |
+| `all_rt50` | `capacity` | `delta_capacity_Ah` | `voltage_window_holdout_fold` | 0.0007340932397699554 | -0.0018162539450221925 | 3827 |
+| `complete_selected_frequencies` | `pulse` | `delta_pulse_1s_resistance` | `c_rate_holdout_fold` | -9.390590913989042e-05 | -0.00018568147554845436 | 3821 |
+| `complete_selected_frequencies` | `pulse` | `delta_pulse_1s_resistance` | `condition_fold` | 1.3029013606356756e-05 | -2.7637722923185615e-05 | 3821 |
+| `complete_selected_frequencies` | `pulse` | `delta_pulse_1s_resistance` | `profile_holdout_fold` | 3.0680541730513534e-05 | 1.275315623935839e-06 | 3821 |
+| `complete_selected_frequencies` | `pulse` | `delta_pulse_1s_resistance` | `temperature_holdout_fold` | 2.47078163647647e-05 | -1.4655421653364533e-05 | 3821 |
+| `complete_selected_frequencies` | `pulse` | `delta_pulse_1s_resistance` | `voltage_window_holdout_fold` | -7.744874207204302e-05 | -0.00023314400746138122 | 3821 |
+| `complete_selected_frequencies` | `capacity` | `capacity_Ah_k1` | `c_rate_holdout_fold` | -0.005279204538350871 | -0.013944372826768745 | 3821 |
+| `complete_selected_frequencies` | `capacity` | `capacity_Ah_k1` | `condition_fold` | -0.0004945740783821386 | -0.0032304768057170477 | 3821 |
+| `complete_selected_frequencies` | `capacity` | `capacity_Ah_k1` | `profile_holdout_fold` | 0.006765480045867679 | 0.0038406236811399626 | 3821 |
+| `complete_selected_frequencies` | `capacity` | `capacity_Ah_k1` | `temperature_holdout_fold` | -0.00041749565791934 | -0.003335619585274966 | 3821 |
+| `complete_selected_frequencies` | `capacity` | `capacity_Ah_k1` | `voltage_window_holdout_fold` | 5.1061093909377756e-05 | -0.0025125623640410324 | 3821 |
+| `complete_selected_frequencies` | `capacity` | `delta_capacity_Ah` | `c_rate_holdout_fold` | 0.003392623301369179 | -0.008943787326343218 | 3821 |
+| `complete_selected_frequencies` | `capacity` | `delta_capacity_Ah` | `condition_fold` | -0.0015255354233879542 | -0.002687509968456958 | 3821 |
+| `complete_selected_frequencies` | `capacity` | `delta_capacity_Ah` | `profile_holdout_fold` | 0.0076397990132853295 | 0.004284723344092816 | 3821 |
+| `complete_selected_frequencies` | `capacity` | `delta_capacity_Ah` | `temperature_holdout_fold` | -0.002598369742762812 | -0.0076144936781574225 | 3821 |
+| `complete_selected_frequencies` | `capacity` | `delta_capacity_Ah` | `voltage_window_holdout_fold` | 0.0007340932397699554 | -0.0018162539450221925 | 3821 |
+| `valid_fraction_gt_0` | `pulse` | `delta_pulse_1s_resistance` | `c_rate_holdout_fold` | -9.390590913989042e-05 | -0.00018568147554845436 | 3821 |
+| `valid_fraction_gt_0` | `pulse` | `delta_pulse_1s_resistance` | `condition_fold` | 1.3029013606356756e-05 | -2.7637722923185615e-05 | 3821 |
+| `valid_fraction_gt_0` | `pulse` | `delta_pulse_1s_resistance` | `profile_holdout_fold` | 3.0680541730513534e-05 | 1.275315623935839e-06 | 3821 |
+| `valid_fraction_gt_0` | `pulse` | `delta_pulse_1s_resistance` | `temperature_holdout_fold` | 2.47078163647647e-05 | -1.4655421653364533e-05 | 3821 |
+| `valid_fraction_gt_0` | `pulse` | `delta_pulse_1s_resistance` | `voltage_window_holdout_fold` | -7.744874207204302e-05 | -0.00023314400746138122 | 3821 |
+| `valid_fraction_gt_0` | `capacity` | `capacity_Ah_k1` | `c_rate_holdout_fold` | -0.005279204538350871 | -0.013944372826768745 | 3821 |
+| `valid_fraction_gt_0` | `capacity` | `capacity_Ah_k1` | `condition_fold` | -0.0004945740783821386 | -0.0032304768057170477 | 3821 |
+| `valid_fraction_gt_0` | `capacity` | `capacity_Ah_k1` | `profile_holdout_fold` | 0.006765480045867679 | 0.0038406236811399626 | 3821 |
+| `valid_fraction_gt_0` | `capacity` | `capacity_Ah_k1` | `temperature_holdout_fold` | -0.00041749565791934 | -0.003335619585274966 | 3821 |
+| `valid_fraction_gt_0` | `capacity` | `capacity_Ah_k1` | `voltage_window_holdout_fold` | 5.1061093909377756e-05 | -0.0025125623640410324 | 3821 |
+| `valid_fraction_gt_0` | `capacity` | `delta_capacity_Ah` | `c_rate_holdout_fold` | 0.003392623301369179 | -0.008943787326343218 | 3821 |
+| `valid_fraction_gt_0` | `capacity` | `delta_capacity_Ah` | `condition_fold` | -0.0015255354233879542 | -0.002687509968456958 | 3821 |
+| `valid_fraction_gt_0` | `capacity` | `delta_capacity_Ah` | `profile_holdout_fold` | 0.0076397990132853295 | 0.004284723344092816 | 3821 |
+| `valid_fraction_gt_0` | `capacity` | `delta_capacity_Ah` | `temperature_holdout_fold` | -0.002598369742762812 | -0.0076144936781574225 | 3821 |
+| `valid_fraction_gt_0` | `capacity` | `delta_capacity_Ah` | `voltage_window_holdout_fold` | 0.0007340932397699554 | -0.0018162539450221925 | 3821 |
+| `valid_fraction_ge_0p7` | `pulse` | `delta_pulse_1s_resistance` | `c_rate_holdout_fold` | -9.390590913989042e-05 | -0.00018568147554845436 | 3811 |
+| `valid_fraction_ge_0p7` | `pulse` | `delta_pulse_1s_resistance` | `condition_fold` | 1.4042378520632978e-05 | -2.6140951379774874e-05 | 3811 |
+| `valid_fraction_ge_0p7` | `pulse` | `delta_pulse_1s_resistance` | `profile_holdout_fold` | 2.9966052141476525e-05 | 4.756094591627493e-07 | 3811 |
+| `valid_fraction_ge_0p7` | `pulse` | `delta_pulse_1s_resistance` | `temperature_holdout_fold` | 1.9551420775417154e-05 | -1.9763810489237732e-05 | 3811 |
+| `valid_fraction_ge_0p7` | `pulse` | `delta_pulse_1s_resistance` | `voltage_window_holdout_fold` | -8.056695025800744e-05 | -0.0002375922466800993 | 3811 |
+| `valid_fraction_ge_0p7` | `capacity` | `capacity_Ah_k1` | `c_rate_holdout_fold` | -0.005279204538350871 | -0.013944372826768745 | 3811 |
+| `valid_fraction_ge_0p7` | `capacity` | `capacity_Ah_k1` | `condition_fold` | -0.0005408900775662322 | -0.003292676035612025 | 3811 |
+| `valid_fraction_ge_0p7` | `capacity` | `capacity_Ah_k1` | `profile_holdout_fold` | 0.006697984466857917 | 0.0038048083307902635 | 3811 |
+| `valid_fraction_ge_0p7` | `capacity` | `capacity_Ah_k1` | `temperature_holdout_fold` | -0.00040966497304471844 | -0.003341213545926703 | 3811 |
+| `valid_fraction_ge_0p7` | `capacity` | `capacity_Ah_k1` | `voltage_window_holdout_fold` | -1.1045548430612288e-05 | -0.002571587160574813 | 3811 |
+| `valid_fraction_ge_0p7` | `capacity` | `delta_capacity_Ah` | `c_rate_holdout_fold` | 0.003392623301369179 | -0.008943787326343218 | 3811 |
+| `valid_fraction_ge_0p7` | `capacity` | `delta_capacity_Ah` | `condition_fold` | -0.0014956350916300396 | -0.0026204626486367546 | 3811 |
+| `valid_fraction_ge_0p7` | `capacity` | `delta_capacity_Ah` | `profile_holdout_fold` | 0.007591759470964497 | 0.0042908437589953075 | 3811 |
+| `valid_fraction_ge_0p7` | `capacity` | `delta_capacity_Ah` | `temperature_holdout_fold` | -0.002660535341400936 | -0.007643390147441597 | 3811 |
+| `valid_fraction_ge_0p7` | `capacity` | `delta_capacity_Ah` | `voltage_window_holdout_fold` | 0.0007195980339935135 | -0.0017878743420692187 | 3811 |

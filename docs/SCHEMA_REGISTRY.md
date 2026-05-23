@@ -44,6 +44,9 @@ Schema version prefix: `gate1.audit.v1`
 | `eis_claim_readiness` | Implemented | `mbp.data.products.eis_features` | EIS QA report, EIS feature QA report, feature policy status, blocked predictive claims |
 | `eis_target_table_v1` | Implemented | `mbp.data.products.eis_features` | EIS feature table path, interval table path, canonical SOC/temperature context, k/k1 feature availability, delta EIS targets, feature policy version |
 | `eis_scalar_baseline_report` | Implemented | `mbp.baselines.eis` | interval table path, interval subset registry path, EIS target table path, grouped split view, target coverage, leakage audit |
+| `prior_eis_vs_best_noneis_comparison` | Implemented | `mbp.baselines.eis_claims` | non-EIS report paths, prior-EIS report path, EIS target table path, same-population filters, paired condition gains, parameter-set bootstrap intervals |
+| `eis_alignment_feature_sensitivity` | Implemented | `mbp.baselines.eis_claims` | EIS target table path, prior-EIS/non-EIS report paths, alignment thresholds, feature-completeness filters, retained coverage counts |
+| `eis_leakage_audit` | Implemented | `mbp.baselines.eis_claims` | capacity/PULSE/EIS feature group definitions, prior-EIS allowlist, future EIS/R0R1/DRT/embedding blocklist |
 
 ## Gate 2/3 Schema Contracts
 
@@ -69,3 +72,6 @@ Schema version prefix: `gate1.audit.v1`
 - `eis_feature_qa_report` checks the canonical RT/50% feature table for row/cell/condition coverage, selected-frequency completeness, feature NaN counts, valid modeling fraction, split coverage, and warnings. It does not authorize EIS predictive claims.
 - `EIS_TARGET_TABLE_V1_SCHEMA` is one row per interval with canonical RT/50 EIS features at check-up `k` and `k+1`, EIS delta targets, valid modeling fractions, alignment deltas, split labels, quality flags, schema version, and feature policy version. Future EIS `k1` features and EIS deltas are forbidden as capacity/PULSE inputs.
 - `eis_scalar_baseline_report` records grouped scalar EIS endpoint baselines for selected-frequency and geometric Nyquist targets. It is an EIS self-diagnostic baseline and does not by itself authorize EIS improvement claims.
+- `prior_eis_vs_best_noneis_comparison` compares best prior-EIS PULSE/capacity HGB groups against strongest supplied non-EIS HGB groups on the same EIS-covered prediction population. It reports paired condition-level gains, parameter-set bootstrap intervals, C-rate summaries, and conservative claim-readiness.
+- `eis_alignment_feature_sensitivity` records whether 24 h/36 h EIS alignment thresholds and selected-frequency/valid-fraction filters change prior-EIS comparison conclusions.
+- `eis_leakage_audit` confirms non-EIS target baselines use only prior EIS `k` scalar features and exclude EIS `k1`, EIS deltas, R0/R1 without leakage-safe provenance, DRT fields, and learned embeddings.

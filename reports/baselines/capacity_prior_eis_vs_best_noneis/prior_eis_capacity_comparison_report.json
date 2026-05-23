@@ -1,0 +1,245 @@
+{
+  "best_noneis_groups": [
+    {
+      "condition_mean_mae": 0.12136206802993948,
+      "feature_group": "F5_log_age_histograms",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 12,
+      "source_report": "capacity_stress_features_v1_1_hgb50_report.json",
+      "split_name": "c_rate_holdout_fold",
+      "target": "capacity_Ah_k1"
+    },
+    {
+      "condition_mean_mae": 0.052772398090115,
+      "feature_group": "F6_coupled_stress",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 76,
+      "source_report": "capacity_stress_features_v1_1_hgb50_report.json",
+      "split_name": "condition_fold",
+      "target": "capacity_Ah_k1"
+    },
+    {
+      "condition_mean_mae": 0.06112992348847219,
+      "feature_group": "F1_state_time",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 12,
+      "source_report": "capacity_hgb50_focused_report.json",
+      "split_name": "profile_holdout_fold",
+      "target": "capacity_Ah_k1"
+    },
+    {
+      "condition_mean_mae": 0.06435465431239662,
+      "feature_group": "F6_coupled_stress",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 38,
+      "source_report": "capacity_stress_features_v1_1_hgb50_report.json",
+      "split_name": "temperature_holdout_fold",
+      "target": "capacity_Ah_k1"
+    },
+    {
+      "condition_mean_mae": 0.09157894750372196,
+      "feature_group": "F4_state_log_age_scalar",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 76,
+      "source_report": "capacity_hgb50_focused_report.json",
+      "split_name": "voltage_window_holdout_fold",
+      "target": "capacity_Ah_k1"
+    },
+    {
+      "condition_mean_mae": 0.10162794498797607,
+      "feature_group": "F4_state_log_age_scalar",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 12,
+      "source_report": "capacity_hgb50_focused_report.json",
+      "split_name": "c_rate_holdout_fold",
+      "target": "delta_capacity_Ah"
+    },
+    {
+      "condition_mean_mae": 0.04170425339115569,
+      "feature_group": "F8_timestamp_weighted_stress",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 76,
+      "source_report": "capacity_stress_features_v1_1_hgb50_report.json",
+      "split_name": "condition_fold",
+      "target": "delta_capacity_Ah"
+    },
+    {
+      "condition_mean_mae": 0.06548355042895222,
+      "feature_group": "F1_state_time",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 12,
+      "source_report": "capacity_hgb50_focused_report.json",
+      "split_name": "profile_holdout_fold",
+      "target": "delta_capacity_Ah"
+    },
+    {
+      "condition_mean_mae": 0.0482817958875836,
+      "feature_group": "F6_coupled_stress",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 38,
+      "source_report": "capacity_stress_features_v1_1_hgb50_report.json",
+      "split_name": "temperature_holdout_fold",
+      "target": "delta_capacity_Ah"
+    },
+    {
+      "condition_mean_mae": 0.08171618004353891,
+      "feature_group": "F4_state_log_age_scalar",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 76,
+      "source_report": "capacity_hgb50_focused_report.json",
+      "split_name": "voltage_window_holdout_fold",
+      "target": "delta_capacity_Ah"
+    }
+  ],
+  "best_prior_eis_groups": [
+    {
+      "condition_mean_mae": 0.12664127256829036,
+      "feature_group": "C_E2_log_age_eis",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 12,
+      "source_report": "capacity_with_prior_eis_hgb50_report.json",
+      "split_name": "c_rate_holdout_fold",
+      "target": "capacity_Ah_k1"
+    },
+    {
+      "condition_mean_mae": 0.05326697216849713,
+      "feature_group": "C_E2_log_age_eis",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 76,
+      "source_report": "capacity_with_prior_eis_hgb50_report.json",
+      "split_name": "condition_fold",
+      "target": "capacity_Ah_k1"
+    },
+    {
+      "condition_mean_mae": 0.054364443442604514,
+      "feature_group": "C_E0_state_time_eis",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 12,
+      "source_report": "capacity_with_prior_eis_hgb50_report.json",
+      "split_name": "profile_holdout_fold",
+      "target": "capacity_Ah_k1"
+    },
+    {
+      "condition_mean_mae": 0.06477214997031595,
+      "feature_group": "C_E3_stress_eis",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 38,
+      "source_report": "capacity_with_prior_eis_hgb50_report.json",
+      "split_name": "temperature_holdout_fold",
+      "target": "capacity_Ah_k1"
+    },
+    {
+      "condition_mean_mae": 0.09152788640981258,
+      "feature_group": "C_E2_log_age_eis",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 76,
+      "source_report": "capacity_with_prior_eis_hgb50_report.json",
+      "split_name": "voltage_window_holdout_fold",
+      "target": "capacity_Ah_k1"
+    },
+    {
+      "condition_mean_mae": 0.09823532168660691,
+      "feature_group": "C_E3_stress_eis",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 12,
+      "source_report": "capacity_with_prior_eis_hgb50_report.json",
+      "split_name": "c_rate_holdout_fold",
+      "target": "delta_capacity_Ah"
+    },
+    {
+      "condition_mean_mae": 0.043229788814543646,
+      "feature_group": "C_E3_stress_eis",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 76,
+      "source_report": "capacity_with_prior_eis_hgb50_report.json",
+      "split_name": "condition_fold",
+      "target": "delta_capacity_Ah"
+    },
+    {
+      "condition_mean_mae": 0.05784375141566689,
+      "feature_group": "C_E0_state_time_eis",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 12,
+      "source_report": "capacity_with_prior_eis_hgb50_report.json",
+      "split_name": "profile_holdout_fold",
+      "target": "delta_capacity_Ah"
+    },
+    {
+      "condition_mean_mae": 0.05088016563034641,
+      "feature_group": "C_E2_log_age_eis",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 38,
+      "source_report": "capacity_with_prior_eis_hgb50_report.json",
+      "split_name": "temperature_holdout_fold",
+      "target": "delta_capacity_Ah"
+    },
+    {
+      "condition_mean_mae": 0.08098208680376895,
+      "feature_group": "C_E2_log_age_eis",
+      "model_level": "L2_hist_gradient_boosting",
+      "n_conditions": 76,
+      "source_report": "capacity_with_prior_eis_hgb50_report.json",
+      "split_name": "voltage_window_holdout_fold",
+      "target": "delta_capacity_Ah"
+    }
+  ],
+  "bootstrap_resamples": 1000,
+  "claim_rows": [
+    {
+      "claim": "Prior EIS beats strongest non-EIS for capacity primary target",
+      "decision": "Allow only narrow split-specific EIS claim",
+      "evidence": "1 split rows have bootstrap p05 > 0; C-rate mean -0.0052792, p05 -0.0139444",
+      "status": "supported"
+    },
+    {
+      "claim": "Prior EIS improves delta_capacity_Ah",
+      "decision": "Do not claim fade-rate improvement",
+      "evidence": "C-rate mean 0.00339262, p05 -0.00894379",
+      "status": "not_supported"
+    },
+    {
+      "claim": "Leakage safety",
+      "decision": "Future EIS state, EIS deltas, R0/R1, DRT, and embeddings remain blocked.",
+      "evidence": "Only prior EIS `k` scalar features are allowed for non-EIS targets.",
+      "status": "supported"
+    }
+  ],
+  "filters": {
+    "max_eis_alignment_delta_s": null,
+    "min_valid_modeling_fraction": null,
+    "require_complete_selected_frequencies": false
+  },
+  "generated_at_utc": "2026-05-23T13:58:26.612764+00:00",
+  "inputs": {
+    "eis_targets": "data/interim/eis_target_table_v1.parquet",
+    "non_eis_reports": [
+      "reports/baselines/capacity_hgb50_focused_report.json",
+      "reports/baselines/capacity_stress_features_v1_1_hgb50_report.json"
+    ],
+    "prior_eis_report": "reports/baselines/capacity_with_prior_eis_hgb50_report.json"
+  },
+  "outputs": {
+    "claim_readiness": "reports/baselines/capacity_prior_eis_vs_best_noneis/prior_eis_capacity_claim_readiness.md",
+    "out_dir": "reports/baselines/capacity_prior_eis_vs_best_noneis",
+    "paired_gain_vs_best_noneis": "reports/baselines/capacity_prior_eis_vs_best_noneis/paired_gain_vs_best_noneis.csv",
+    "split_level_gain_vs_best_noneis": "reports/baselines/capacity_prior_eis_vs_best_noneis/split_level_gain_vs_best_noneis.csv"
+  },
+  "row_counts": {
+    "covered_c_rate_prediction_keys": 312,
+    "covered_prediction_keys": 20694,
+    "covered_profile_prediction_keys": 1500,
+    "eligible_c_rate_rows": 157,
+    "eligible_cells": 228,
+    "eligible_interval_keys": 3827,
+    "eligible_parameter_sets": 76,
+    "eligible_profile_rows": 752,
+    "non_eis_condition_rows": 4540,
+    "paired_gain_rows": 428,
+    "prior_eis_condition_rows": 1712,
+    "split_summary_rows": 10
+  },
+  "schema_version": "gate211.eis_claim_hardening.v1",
+  "seed": 42,
+  "status": "passed",
+  "target_family": "capacity"
+}

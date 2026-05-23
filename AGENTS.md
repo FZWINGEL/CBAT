@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 2.1: EIS scalar diagnostic baselines.
+Milestone 2.1.1: EIS claim hardening and alignment sensitivity.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -35,18 +35,20 @@ Current state:
   state improves `capacity_Ah_k1` over F4 in selected grouped splits, but it
   does not beat the strongest supplied non-PULSE HGB baselines and does not
   improve `delta_capacity_Ah`.
-- The current main-project track evaluates EIS as a scalar diagnostic endpoint
-  and prior-state feature under grouped validation. EIS remains non-neural,
-  scalar, and gated; no broad EIS improvement claim is authorized.
+- The current main-project track hardens the EIS scalar baseline results by
+  comparing prior-EIS groups against strongest supplied non-EIS baselines on
+  the same EIS-covered population, with bootstrap, alignment, feature
+  completeness, and leakage checks. EIS remains non-neural, scalar, and gated;
+  no broad EIS improvement claim is authorized.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
 Allowed work:
-- EIS scalar target tables
-- EIS target QA
-- EIS scalar baselines
-- prior-EIS feature groups using check-up `k` features only
-- grouped baseline comparisons
+- EIS scalar result hardening
+- prior-EIS vs strongest non-EIS paired comparisons
+- EIS alignment-threshold sensitivity
+- EIS feature-completeness sensitivity
+- parameter-set bootstrap intervals
 - EIS claim-readiness updates
 - documentation/evidence memo updates
 - lightweight report formatting or consistency fixes
