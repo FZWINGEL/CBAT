@@ -29,6 +29,11 @@ authorize EIS modeling, future PULSE state, PULSE deltas as capacity inputs,
 broad capacity+PULSE multimodal claims, sequence models, neural models, policy
 ranking, or CBAT. Milestone 0.9.1 compares prior-PULSE groups against the
 strongest supplied non-PULSE HGB baselines before strengthening the 0.9 claim.
+Milestone 1.0 is evidence synthesis and paper-claim lock. It authorizes only
+documentation, claim ledgers, figure/table planning, negative-result summaries,
+and source-artifact cross-checks. It does not authorize new model training, new
+feature engineering, EIS modeling, broad multimodal claims, sequence models,
+neural models, policy ranking, or CBAT.
 
 Required split discipline:
 
@@ -42,6 +47,22 @@ Required split discipline:
 - The primary capacity run uses `baseline_clean_tolerant`.
 - Every baseline report must include a sensitivity run excluding
   `sensitivity_flagged_monotonicity == true`.
+
+Required Milestone 1.0 synthesis artifacts:
+
+- `docs/experiments/2026-05-23_evidence_synthesis.md`
+- `docs/PAPER_CLAIM_LEDGER.md`
+- `docs/PAPER_FIGURE_PLAN.md`
+- `docs/PAPER_SKELETON.md`
+- `reports/synthesis/claim_matrix.csv`
+- `reports/synthesis/evidence_matrix.md`
+- `reports/synthesis/model_ladder_summary.csv`
+- `reports/synthesis/split_difficulty_summary.csv`
+- `reports/synthesis/negative_results.md`
+
+Milestone 1.0 claim statuses must distinguish supported claims,
+partially-supported claims, not-supported claims, gated claims, and blocked
+claims. Unsupported claims must not be promoted by wording in paper-facing docs.
 
 Allowed Milestone 0.5 targets:
 

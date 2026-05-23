@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 0.9.1: Prior-PULSE vs Strongest Non-PULSE Baseline**.
+The repository is in **Milestone 1.0: Evidence Synthesis and Paper-Claim Lock**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -29,6 +29,9 @@ Milestone 0.9 tests a narrow non-neural predictive claim using prior PULSE state
 at check-up `k` only.
 Milestone 0.9.1 compares that prior-PULSE result against the strongest supplied
 non-PULSE HGB baselines on the same PULSE-covered interval population.
+Milestone 1.0 consolidates the completed capacity, LOG_AGE stress-feature,
+PULSE resistance, coupling, and prior-PULSE evidence into a paper-facing claim
+ledger, synthesis report set, figure plan, and paper skeleton.
 
 No EIS claims, PULSE scientific claims beyond scalar resistance baselines,
 sequence models, neural architecture, policy ranking, CBAT architecture, or EIS
@@ -98,6 +101,9 @@ Current state:
 - Milestone 0.9.1 strongest non-PULSE comparison is implemented and run. It
   does not support the stronger claim that prior PULSE beats the best supplied
   non-PULSE HGB baseline.
+- Milestone 1.0 evidence synthesis is now the active workstream. Its purpose is
+  to lock supported, partially supported, not-supported, gated, and blocked
+  claims before any EIS or new modeling path is opened.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -1090,6 +1096,40 @@ Decision:
 - Keep only the narrow “prior PULSE improves over F4” statement. Do not claim
   prior PULSE is the best available non-neural capacity feature path.
 
+### Milestone 1.0
+
+Milestone 1.0 is evidence synthesis and paper-claim lock. It adds no new model
+training or feature engineering. The active goal is to convert the completed
+baseline sequence into paper-facing artifacts that separate supported claims
+from partial, negative, gated, and blocked claims.
+
+Implemented synthesis artifacts:
+
+- Claim ledger: `docs/PAPER_CLAIM_LEDGER.md`
+- Figure/table plan: `docs/PAPER_FIGURE_PLAN.md`
+- Paper skeleton: `docs/PAPER_SKELETON.md`
+- Experiment synthesis:
+  `docs/experiments/2026-05-23_evidence_synthesis.md`
+- Claim matrix: `reports/synthesis/claim_matrix.csv`
+- Evidence matrix: `reports/synthesis/evidence_matrix.md`
+- Model ladder summary: `reports/synthesis/model_ladder_summary.csv`
+- Split difficulty summary: `reports/synthesis/split_difficulty_summary.csv`
+- Negative-result summary: `reports/synthesis/negative_results.md`
+
+Locked claim posture:
+
+- LOG_AGE scalar features and stress features are partially supported, but they
+  do not solve C-rate `delta_capacity_Ah`.
+- C-rate holdout is the hardest capacity generalization view.
+- Canonical RT/50 PULSE is ready for scalar resistance-baseline diagnostics.
+- PULSE growth is supported as an explanatory diagnostic for capacity residuals,
+  especially in C-rate views.
+- Prior PULSE improves `capacity_Ah_k1` over F4 in selected grouped splits, but
+  it does not beat the strongest supplied non-PULSE HGB baselines and does not
+  improve `delta_capacity_Ah`.
+- Quantile HGB uncertainty is not calibrated.
+- EIS and CBAT remain gated/blocked.
+
 ## Important Implementation Notes
 
 The interval builder preserves result-table timestamps in the public schema, but
@@ -1146,14 +1186,18 @@ PYTHONDONTWRITEBYTECODE=1 UV_CACHE_DIR=/tmp/uv-cache .venv/bin/pytest -p no:cach
 107 passed.
 ```
 
+Milestone 1.0 adds documentation and tracked synthesis CSV/Markdown artifacts
+only. No new code or generated Parquet data products are introduced by this
+synthesis step.
+
 The previous `datetime.utcnow()` deprecation warning in
 `src/mbp/data/luh_blank/qa_result_data.py` has been fixed.
 
 ## Recommended Next Step
 
-Review the **Milestone 0.9.1 Prior-PULSE vs Strongest Non-PULSE Baseline**
-before opening any broader multimodal milestone. The current result supports
-prior PULSE over F4, but not over the strongest supplied non-PULSE baselines.
-The C-rate `delta_capacity_Ah` forecast failure remains unresolved. EIS,
-sequence models, neural models, policy ranking, CBAT, and architecture work
-remain blocked.
+Review the **Milestone 1.0 Evidence Synthesis and Paper-Claim Lock** artifacts
+before opening any new evidence stream. The preferred next branch is paper-first
+benchmark consolidation. If new data work is opened instead, the next gated
+technical path should be EIS QA and feature validation, not EIS modeling,
+sequence models, neural models, policy ranking, CBAT, or broad multimodal
+claims.

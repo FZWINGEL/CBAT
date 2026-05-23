@@ -16,97 +16,34 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 0.9.1: Prior-PULSE vs strongest non-PULSE baseline.
+Milestone 1.0: Evidence synthesis and paper-claim lock.
 
 Current state:
-- Gate 2b implementation and reports are committed.
-- Milestone 0.4 baseline-readiness artifacts are committed: LOG_AGE policy,
-  interval subset registry, split audit, and dependency metadata.
-- Milestone 0.5 bounded capacity baseline reports exist and remain limited to
-  interval scalar features.
-- Milestone 0.5b diagnostics, Ridge scaling, HGB-50 robustness, and quantile
-  metrics are implemented.
-- Milestone 0.5c synthesis and claim-readiness artifacts are committed.
-- Milestone 0.7 opened a scoped PULSE evidence stream after the LOG_AGE-only
-  C-rate delta pass failed to beat the F4 threshold. Milestone 0.7.1 hardened
-  that stream with alignment-threshold sensitivity, direction-specific target
-  extraction, canonical-target missingness reports, and scalar resistance
-  baseline sensitivity runs. Milestone 0.7.2 finalized target robustness and
-  claim-readiness for scalar PULSE resistance baselines. Milestone 0.8 tests
-  capacity-PULSE scalar coupling diagnostics without opening architecture work.
-  Milestone 0.8.1 hardens those diagnostics with canonical-model selection,
-  interval-level aggregation, condition-level aggregation, parameter-set
-  bootstrap summaries, and simple confound-control residualization.
-  Milestone 0.9 tests a narrow non-neural predictive claim: prior PULSE state at
-  check-up `k` may improve `capacity_Ah_k1` under grouped validation. It keeps
-  `delta_capacity_Ah` as a secondary guardrail and does not authorize broad
-  multimodal claims. Milestone 0.9.1 checks whether that gain survives
-  comparison against the strongest supplied non-PULSE HGB baselines on the same
-  PULSE-covered interval population.
+- Gate 2b LOG_AGE integrity triage and Milestones 0.4-0.9.1 are implemented
+  and documented.
+- Capacity, LOG_AGE stress-feature, PULSE resistance, capacity-PULSE coupling,
+  and prior-PULSE predictive diagnostics have produced enough evidence for a
+  paper-facing claim ledger.
+- The strongest current prior-PULSE result is deliberately narrow: prior PULSE
+  state improves `capacity_Ah_k1` over F4 in selected grouped splits, but it
+  does not beat the strongest supplied non-PULSE HGB baselines and does not
+  improve `delta_capacity_Ah`.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
-- LOG_AGE monotonicity has been triaged and propagated into interval quality
-  flags.
-- Capacity baseline code must consume `interval_subset_registry_v1.parquet` and
-  report strict-vs-tolerant monotonicity sensitivity.
 
 Allowed work:
-- small tests with synthetic fixtures
-- capacity-only baseline runner execution
-- capacity-baseline report hardening
-- baseline diagnostics and robustness reruns
-- capacity-only stress-feature engineering
-- scalar LOG_AGE interval features
-- current-sign audit
-- timestamp-weighted dwell features
-- event-segmented scalar stress features
-- stress-feature QA and schema hardening
-- capacity target consistency diagnostics
-- C-rate failure-mode analysis
-- scalar stress-feature ablation diagnostics
-- target normalization experiments
-- train-fold residual/bias correction diagnostics
-- narrow cold/current scalar feature groups
-- HGB/Ridge capacity reruns
-- reference L0 comparison hardening
-- C-rate holdout grouped diagnostics
-- claim-readiness summaries
-- capacity targets: `capacity_Ah_k1` and `delta_capacity_Ah`
-- scalar interval features
-- condition-level grouped validation
-- strict/tolerant interval subset sensitivity reporting
-- baseline evaluation cards / leaderboard summaries
-- Ridge numeric standardization and bounded HGB robustness checks
-- LOG_AGE-derived stress feature diagnostics
+- evidence synthesis
+- claim ledger updates
+- paper skeleton and figure/table planning
+- negative-result summaries
+- source-artifact cross-checks
 - documentation/evidence memo updates
-- PULSE QA
-- PULSE target policy
-- PULSE alignment diagnostics
-- PULSE alignment-threshold sensitivity
-- PULSE direction-specific QA
-- PULSE target coverage diagnostics
-- PULSE target robustness diagnostics
-- secondary PULSE target baselines
-- PULSE claim-readiness summaries
-- PULSE interval target table construction
-- PULSE resistance baselines
-- capacity-PULSE coupling diagnostics
-- scalar prior-PULSE feature additions to capacity baselines
-- capacity residual versus PULSE growth analysis
-- grouped coupling diagnostic reports
-- capacity-PULSE coupling robustness diagnostics
-- interval-level residual correlation analysis
-- condition-level residual correlation analysis
-- parameter-set bootstrap confidence intervals
-- simple non-neural confound-control diagnostics
-- non-neural capacity + prior-PULSE predictive baselines
-- prior PULSE state at check-up `k` only
-- grouped paired comparisons
-- bootstrap confidence intervals over parameter_set
-- coverage/missingness diagnostics
-- strongest non-PULSE baseline comparison
+- lightweight report formatting or consistency fixes
+- small tests only if synthesis-generating code is added
 
 Forbidden work:
+- new model training
+- new capacity/PULSE feature engineering
 - EIS modeling
 - EIS embeddings
 - knee prediction
@@ -116,8 +53,7 @@ Forbidden work:
 - policy ranking
 - capacity+PULSE multimodal claims
 - broad multimodal claims
-- capacity+PULSE predictive claims
-- PULSE scientific claims beyond scalar resistance baselines
+- PULSE scientific claims beyond the Milestone 1.0 claim ledger
 - future PULSE state as capacity input
 - PULSE deltas as capacity input features
 
