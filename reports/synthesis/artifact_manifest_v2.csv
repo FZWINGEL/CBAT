@@ -1,0 +1,41 @@
+artifact_path,artifact_type,tracked_or_ignored,source_command,depends_on,row_count_if_known,schema_version,claim_relevance,notes
+docs/MAIN_PROJECT_CLAIM_LEDGER_V2.md,claim_ledger,tracked,manual synthesis,completed milestone reports,,n/a,all claims,v2 main-project claim source
+reports/synthesis/main_project_claim_matrix_v2.csv,claim_matrix,tracked,manual synthesis,docs/MAIN_PROJECT_CLAIM_LEDGER_V2.md,,n/a,all claims,v2 machine-readable claim matrix
+reports/synthesis/main_project_gate_status.md,synthesis_report,tracked,manual synthesis,completed milestone reports,,n/a,gate status,main gate summary
+reports/synthesis/technical_decision_matrix_v2.md,synthesis_report,tracked,manual synthesis,completed milestone reports,,n/a,next branch,branch option review
+reports/synthesis/blocked_claims_v2.md,synthesis_report,tracked,manual synthesis,completed milestone reports,,n/a,blocked claims,blocked-claim register
+reports/synthesis/next_branch_decision.md,synthesis_report,tracked,manual synthesis,main_project_gate_status.md,,n/a,next branch,recommends release/manuscript integration
+reports/synthesis/source_consistency_check_v2.md,consistency_check,tracked,manual synthesis,main_project_claim_matrix_v2.csv,,n/a,source consistency,checks source artifact posture
+docs/BENCHMARK_REPRODUCIBILITY.md,release_doc,tracked,manual release hardening,docs/REPO_STATUS.md,,n/a,reproducibility,environment and artifact policy
+docs/BENCHMARK_RUNBOOK.md,release_doc,tracked,manual release hardening,docs/COMMAND_DAG.md,,n/a,reproducibility,ordered command runbook
+docs/COMMAND_DAG.md,release_doc,tracked,manual release hardening,docs/BENCHMARK_RUNBOOK.md,,n/a,reproducibility,dependency map
+docs/BENCHMARK_ARTIFACTS.md,release_doc,tracked,manual release hardening,artifact_manifest_v2.csv,,n/a,reproducibility,tracked versus ignored artifact policy
+docs/BENCHMARK_RELEASE_CHECKLIST.md,release_doc,tracked,manual release hardening,artifact_manifest_v2.csv,,n/a,reproducibility,release checklist
+docs/CODEX_NEXT_WORK.md,release_doc,tracked,manual release hardening,next_branch_decision.md,,n/a,next branch,future-agent operating guide
+reports/synthesis/reproducibility_gate_status.md,synthesis_report,tracked,manual release hardening,docs/BENCHMARK_REPRODUCIBILITY.md,,n/a,reproducibility,release gate status
+reports/synthesis/release_candidate_check.md,consistency_check,tracked,manual release hardening,artifact_manifest_v2.csv,,n/a,reproducibility,manual release-candidate check
+docs/experiments/2026-05-23_main_project_evidence_synthesis_v2.md,experiment_memo,tracked,manual synthesis,completed milestone reports,,n/a,all claims,v2 synthesis memo
+docs/experiments/2026-05-23_threshold_warning_censoring_finalization.md,experiment_memo,tracked,threshold-warning finalization,threshold_warning reports,,n/a,threshold warning,locks narrow diagnostic claim
+reports/baselines/threshold_warning_l0_l2/threshold_warning_final_claim_readiness.md,claim_readiness,tracked,mbp baseline finalize-threshold-warning-claim,threshold warning predictions,,n/a,threshold warning,final readiness report
+reports/baselines/threshold_warning_censoring_sensitivity/censoring_sensitivity_summary.md,diagnostic_report,tracked,mbp baseline compare-threshold-warning-censoring,all-row and verified-only reports,,n/a,threshold warning,censoring sensitivity summary
+reports/analysis/calibration_capacity/calibration_claim_readiness.md,claim_readiness,tracked,mbp analysis calibrate-capacity,capacity predictions,,n/a,calibrated uncertainty,keeps uncertainty blocked
+reports/baselines/capacity_sequence_value_hgb50/sequence_value_claim_readiness.md,claim_readiness,tracked,mbp baseline diagnose-sequence-value,sequence value report,,n/a,temporal order,keeps sequence models blocked
+reports/analysis/knee/knee_claim_readiness.md,claim_readiness,tracked,mbp analysis knee-labels,knee candidates,,n/a,knee labels,keeps detector-knee prediction blocked
+reports/analysis/knee/threshold_event_claim_readiness.md,claim_readiness,tracked,mbp analysis threshold-event-labels,threshold labels,,n/a,threshold labels,target-readiness evidence
+reports/audit/eis_claim_readiness.md,claim_readiness,tracked,mbp eis feature-qa,eis qa/features,,n/a,EIS,EIS QA/readiness posture
+reports/baselines/eis_scalar_l0_l3_report.json,baseline_report,tracked,mbp baseline run-eis,eis_target_table_v1.parquet,,n/a,EIS scalar diagnostics,scalar endpoint evidence
+reports/baselines/semi_empirical_capacity_report.json,baseline_report,tracked,mbp baseline run-semi-empirical,interval/stress features,,n/a,semi-empirical comparator,domain comparator evidence
+reports/analysis/replicate_uncertainty/replicate_uncertainty_summary.md,diagnostic_report,tracked,mbp analysis replicate-uncertainty,capacity predictions,,n/a,replicate uncertainty,diagnostic only
+data/interim/interval_table.parquet,data_product,ignored,mbp intervals build,ingested modality tables,3827,INTERVAL_TABLE_SCHEMA,all baselines,local generated artifact
+data/splits/interval_subset_registry_v1.parquet,data_product,ignored,mbp split interval-subsets,interval_table.parquet,,INTERVAL_SUBSET_SCHEMA,grouped validation,local generated artifact
+data/interim/modality_table_log_age.parquet,data_product,ignored,mbp ingest log-age,raw LOG_AGE archives,904977105,MODALITY_TABLE_LOG_AGE_SCHEMA,LOG_AGE features,local generated artifact
+data/interim/interval_stress_features_v1_1.parquet,data_product,ignored,mbp features build-stress,interval_table.parquet,,INTERVAL_STRESS_FEATURES_SCHEMA,stress features,local generated artifact
+data/interim/run_event_table_v1.parquet,data_product,ignored,mbp features build-run-events,modality_table_log_age.parquet,79328229,RUN_EVENT_TABLE_V1_SCHEMA,temporal order,local generated artifact
+data/interim/interval_sequence_features_v1.parquet,data_product,ignored,mbp features build-sequence-features,run_event_table_v1.parquet,3827,INTERVAL_SEQUENCE_FEATURES_V1_SCHEMA,temporal order,local generated artifact
+data/interim/eis_feature_table_v1.parquet,data_product,ignored,mbp eis build-features,modality_table_eis.parquet,3983,EIS_FEATURE_TABLE_V1_SCHEMA,EIS,local generated artifact
+data/interim/eis_target_table_v1.parquet,data_product,ignored,mbp eis build-targets,eis_feature_table_v1.parquet,3827,EIS_TARGET_TABLE_V1_SCHEMA,EIS scalar diagnostics,local generated artifact
+data/interim/knee_candidate_table_v1.parquet,data_product,ignored,mbp analysis knee-labels,interval_table.parquet,9576,KNEE_CANDIDATE_TABLE_V1_SCHEMA,knee labels,local generated artifact
+data/interim/threshold_event_label_table_v1.parquet,data_product,ignored,mbp analysis threshold-event-labels,interval_table.parquet,22962,THRESHOLD_EVENT_LABEL_TABLE_V1_SCHEMA,threshold labels,local generated artifact
+data/interim/threshold_warning_table_v1.parquet,data_product,ignored,mbp analysis build-threshold-warning-table,threshold_event_label_table_v1.parquet,3827,THRESHOLD_WARNING_TABLE_V1_SCHEMA,threshold warning,local generated artifact
+data/processed/capacity_hgb50_focused_predictions.parquet,predictions,ignored,mbp baseline run-capacity,interval_table.parquet,,n/a,capacity diagnostics,local generated artifact
+data/processed/threshold_warning_l0_l2_predictions.parquet,predictions,ignored,mbp baseline run-threshold-warning,threshold_warning_table_v1.parquet,,n/a,threshold warning,local generated artifact

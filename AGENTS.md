@@ -16,8 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 3.0: Main-project evidence synthesis refresh and next-branch
-decision.
+Milestone 3.1: Benchmark release and reproducibility hardening.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -36,14 +35,21 @@ Current state:
   state improves `capacity_Ah_k1` over F4 in selected grouped splits, but it
   does not beat the strongest supplied non-PULSE HGB baselines and does not
   improve `delta_capacity_Ah`.
-- The current main-project track consolidates all completed main-project gates
-  after Milestone 2.6.2 into an updated technical claim ledger, gate-status
-  matrix, blocked-claim review, and next-branch decision. This is evidence
-  synthesis, not a new modeling milestone.
+- The current main-project track turns the completed benchmark evidence into a
+  reproducible release-candidate package: runbook, command DAG, artifact
+  manifest, release checklist, source-consistency checks, and future Codex
+  operating guidance. This is engineering/documentation work, not a new
+  modeling milestone.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
 Allowed work:
+- benchmark runbooks and reproducibility documentation
+- command DAG documentation
+- artifact manifests
+- release-candidate checks
+- source-artifact consistency checks
+- Codex/developer operating guide updates
 - capacity trajectory extraction
 - knee detector implementation
 - detector agreement diagnostics

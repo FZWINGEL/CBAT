@@ -119,6 +119,18 @@ grouped warning evaluation, leakage audits, and calibration diagnostics for
 `capacity_below_80pct_initial`. It does not authorize detector-knee
 prediction, neural/sequence models, CBAT, policy ranking, causal claims,
 same-cell counterfactual claims, or future interval exposure leakage.
+Milestone 3.0 authorizes technical evidence synthesis after all main-project
+gates through threshold-warning finalization. It does not authorize new models,
+new feature engineering, neural/sequence models, CBAT, DRT, EIS embeddings,
+policy ranking, causal claims, same-cell counterfactual claims, or broad
+multimodal claims.
+Milestone 3.1 authorizes benchmark release and reproducibility hardening:
+runbooks, command DAGs, artifact manifests, release-candidate checks,
+source-consistency checks, and Codex/developer operating guidance. It does not
+authorize new model training, new feature engineering, neural models, sequence
+models, transformers, CBAT, DRT, EIS embeddings, policy ranking,
+causal/mechanistic claims, same-cell counterfactual claims, or broad multimodal
+claims.
 
 Required split discipline:
 
@@ -132,6 +144,19 @@ Required split discipline:
 - The primary capacity run uses `baseline_clean_tolerant`.
 - Every baseline report must include a sensitivity run excluding
   `sensitivity_flagged_monotonicity == true`.
+
+Required Milestone 3.1 release-hardening artifacts:
+
+- `docs/BENCHMARK_REPRODUCIBILITY.md`
+- `docs/BENCHMARK_RUNBOOK.md`
+- `docs/BENCHMARK_ARTIFACTS.md`
+- `docs/BENCHMARK_RELEASE_CHECKLIST.md`
+- `docs/COMMAND_DAG.md`
+- `docs/CODEX_NEXT_WORK.md`
+- `reports/synthesis/artifact_manifest_v2.csv`
+- `reports/synthesis/reproducibility_gate_status.md`
+- `reports/synthesis/release_candidate_check.md`
+- `docs/experiments/2026-05-23_benchmark_release_reproducibility.md`
 
 Required Milestone 1.0 synthesis artifacts:
 

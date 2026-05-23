@@ -11,8 +11,8 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 3.0: Main-project evidence synthesis refresh
-and next-branch decision**.
+The repository is in **Milestone 3.1: Benchmark release and reproducibility
+hardening**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -83,6 +83,10 @@ claim-readiness matrices before locking any threshold-warning wording.
 Milestone 3.0 consolidates all completed main-project gates into a refreshed
 technical claim ledger, gate-status matrix, blocked-claim review, and
 next-branch decision without adding new models or features.
+Milestone 3.1 turns that checkpoint into a reproducible release-candidate
+package with a runbook, command DAG, artifact manifest, release checklist,
+manual release-candidate check, and Codex next-work guide. It adds no new
+models, features, or scientific claims.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -91,6 +95,10 @@ improvement claims have been started.
 
 Current state:
 
+- Milestone 3.1 is an engineering and reproducibility hardening pass. It
+  documents how to regenerate major data products and reports, records which
+  artifacts are tracked versus ignored, and keeps generated raw/interim/
+  processed Parquets out of Git.
 - LOG_AGE monotonicity policy is documented in
   `docs/LOG_AGE_MONOTONICITY_POLICY.md`.
 - Interval subset registry generation is implemented with
