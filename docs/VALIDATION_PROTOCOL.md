@@ -871,3 +871,38 @@ Claim rules:
 - Calibration remains separate; poor ECE blocks calibrated-risk wording.
 - Detector-knee prediction, causal early-warning claims, policy ranking,
   neural/sequence models, and CBAT remain blocked.
+
+## Milestone 3.0 Main-Project Evidence Synthesis
+
+Milestone 3.0 is a documentation and source-traceability checkpoint. It
+consolidates all completed main-project gates after threshold-warning
+censoring finalization and decides the next branch.
+
+Required artifacts:
+
+- `docs/experiments/2026-05-23_main_project_evidence_synthesis_v2.md`
+- `docs/MAIN_PROJECT_CLAIM_LEDGER_V2.md`
+- `reports/synthesis/main_project_claim_matrix_v2.csv`
+- `reports/synthesis/main_project_gate_status.md`
+- `reports/synthesis/technical_decision_matrix_v2.md`
+- `reports/synthesis/blocked_claims_v2.md`
+- `reports/synthesis/next_branch_decision.md`
+- `reports/synthesis/source_consistency_check_v2.md`
+
+Validation:
+
+- All referenced source artifacts must exist.
+- No blocked claim may be marked supported.
+- No calibrated-risk, detector-knee prediction, CBAT, policy-ranking, causal,
+  or same-cell counterfactual claim may appear as supported.
+- If no code is added, `git diff --check` is sufficient.
+
+Decision rule:
+
+- Default recommendation is to return to synthesis/manuscript integration and
+  benchmark release preparation.
+- If additional technical work is selected, it should be limited to a narrow
+  threshold-warning calibration branch.
+- New model training, feature engineering, neural/sequence models, DRT, EIS
+  embeddings, policy ranking, CBAT, causal claims, and same-cell
+  counterfactual claims remain blocked.

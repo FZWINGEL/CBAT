@@ -63,6 +63,7 @@ Schema version prefix: `gate1.audit.v1`
 | `threshold_warning_hardening_diagnostics` | Implemented | `mbp.baselines.threshold_warning` | threshold warning report path, prediction path, warning table path, lead-time bins, proximity bins, censoring policy, reliability bins, calibration by split |
 | `threshold_warning_censoring_sensitivity` | Implemented | `mbp.baselines.threshold_warning` | all-row report path, verified-only report path, label-policy definitions, metric comparison, split comparison, C-rate comparison |
 | `threshold_warning_final_claim_readiness` | Implemented | `mbp.baselines.threshold_warning` | threshold warning report path, prediction path, warning table path, censoring sensitivity summary, final lead-time and C-rate claim matrices |
+| `main_project_synthesis_v2` | Implemented | docs/reports synthesis | source claim ledger, experiment memos, gate-status table, blocked-claim review, next-branch decision, source-consistency check |
 
 ## Gate 2/3 Schema Contracts
 
@@ -108,3 +109,4 @@ Schema version prefix: `gate1.audit.v1`
 - `threshold_warning_hardening_diagnostics` records lead-time performance, proximity-bin performance, C-rate lead-time performance, censoring-policy counts, reliability bins, split-level calibration, and C-rate calibration summaries. These diagnostics harden the threshold-warning result but do not authorize calibrated risk.
 - `threshold_warning_censoring_sensitivity` compares all-row and verified-only label policies for event-rate, logistic proximity, and HGB W2 rows. It records target row counts, positive/negative counts, grouped metrics, C-rate metrics, and whether both policies pass the diagnostic claim rule.
 - `threshold_warning_final_claim_readiness` records the final threshold-warning decision. It can support a narrow diagnostic threshold-event forecasting claim while keeping calibrated risk, detector-knee prediction, causal early-warning claims, policy ranking, and CBAT blocked.
+- `main_project_synthesis_v2` records the post-2.6.2 technical checkpoint: refreshed claims, gate status, blocked claims, next-branch decision, and source consistency. It is documentation-only and does not create models, features, or generated data products.

@@ -16,7 +16,8 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 2.6.2: Censoring-aware threshold warning and claim finalization.
+Milestone 3.0: Main-project evidence synthesis refresh and next-branch
+decision.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -35,12 +36,10 @@ Current state:
   state improves `capacity_Ah_k1` over F4 in selected grouped splits, but it
   does not beat the strongest supplied non-PULSE HGB baselines and does not
   improve `delta_capacity_Ah`.
-- The current main-project track finalizes the
-  `capacity_below_80pct_initial` threshold-event warning claim with
-  verified-only evaluation, censoring-policy sensitivity, final lead-time
-  claim matrices, and calibration diagnostics. This is threshold-event
-  forecasting, not detector-knee prediction, calibrated risk, or policy
-  ranking.
+- The current main-project track consolidates all completed main-project gates
+  after Milestone 2.6.2 into an updated technical claim ledger, gate-status
+  matrix, blocked-claim review, and next-branch decision. This is evidence
+  synthesis, not a new modeling milestone.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
@@ -63,6 +62,11 @@ Allowed work:
 - censoring-policy sensitivity
 - verified-only threshold-warning evaluation
 - final threshold-warning claim-readiness reporting
+- technical evidence synthesis
+- claim ledger refresh
+- blocked-claim review
+- next-branch decision
+- source-artifact consistency checks
 - probability calibration diagnostics
 - exploratory candidate knee label tables
 - knee claim-readiness reporting
@@ -71,6 +75,8 @@ Allowed work:
 - small tests with synthetic fixtures
 
 Forbidden work:
+- new model training
+- new feature engineering
 - knee prediction models
 - neural models
 - sequence models

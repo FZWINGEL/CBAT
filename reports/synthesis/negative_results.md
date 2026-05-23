@@ -153,3 +153,19 @@ remain excluded from the warning feature set.
 Decision: threshold-event forecasting is supported for diagnostics; calibrated
 risk, policy ranking, detector-knee prediction, and causal warning claims
 remain blocked.
+
+## Milestone 3.0 Blocked-Claim Refresh
+
+The v2 synthesis keeps the following negative boundaries active:
+
+- detector-knee prediction remains blocked by replicate inconsistency;
+- threshold-warning calibration remains unsupported, despite diagnostic
+  forecasting support;
+- sequence models remain blocked by the order-vs-aggregate and
+  order-vs-shuffled negative result;
+- calibrated uncertainty remains blocked by C-rate coverage failure;
+- CBAT, policy ranking, causal claims, same-cell counterfactuals, DRT, and
+  learned EIS embeddings remain blocked.
+
+Decision: return to synthesis/manuscript integration unless a narrow
+threshold-warning calibration branch is explicitly opened.

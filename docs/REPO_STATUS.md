@@ -11,8 +11,8 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 2.6.2: Censoring-aware threshold warning and
-claim finalization**.
+The repository is in **Milestone 3.0: Main-project evidence synthesis refresh
+and next-branch decision**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -80,6 +80,9 @@ prior-only extrapolation baselines, lead-time/proximity diagnostics,
 censoring-policy sensitivity, and probability-calibration checks.
 Milestone 2.6.2 adds verified-only censoring sensitivity and final
 claim-readiness matrices before locking any threshold-warning wording.
+Milestone 3.0 consolidates all completed main-project gates into a refreshed
+technical claim ledger, gate-status matrix, blocked-claim review, and
+next-branch decision without adding new models or features.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -289,6 +292,12 @@ Current state:
   distance baseline. The final claim readiness supports a narrow diagnostic
   threshold-event forecasting claim, including C-rate diagnostic wording, while
   keeping early-warning wording exploratory and calibrated-risk claims blocked.
+- Milestone 3.0 synthesis is the active checkpoint. The recommended next
+  branch is to return to synthesis/manuscript integration and benchmark
+  release preparation. If technical work continues, it should be limited to a
+  narrow threshold-warning calibration branch; CBAT, neural/sequence models,
+  DRT, EIS embeddings, policy ranking, causal claims, and same-cell
+  counterfactual claims remain blocked.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene
@@ -378,6 +387,13 @@ Small audit sidecars that are referenced by documentation are tracked:
 - `reports/baselines/threshold_warning_l0_l2/threshold_warning_final_claim_readiness.md`
 - `reports/baselines/threshold_warning_l0_l2/plots/final_lead_time_claim_matrix.csv`
 - `reports/baselines/threshold_warning_l0_l2/plots/final_c_rate_warning_matrix.csv`
+- `docs/MAIN_PROJECT_CLAIM_LEDGER_V2.md`
+- `reports/synthesis/main_project_claim_matrix_v2.csv`
+- `reports/synthesis/main_project_gate_status.md`
+- `reports/synthesis/technical_decision_matrix_v2.md`
+- `reports/synthesis/blocked_claims_v2.md`
+- `reports/synthesis/next_branch_decision.md`
+- `reports/synthesis/source_consistency_check_v2.md`
 
 The large Parquet outputs remain local generated artifacts:
 

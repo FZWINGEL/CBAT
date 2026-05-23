@@ -1,0 +1,32 @@
+# Main Project Claim Ledger v2
+
+This ledger is the post-Milestone 2.6.2 technical source of truth. It extends
+the paper claim ledger with main-project gate decisions and next actions.
+
+| ID | Claim | Status | Source artifact | Allowed wording | Forbidden wording | Next action |
+|---|---|---|---|---|---|---|
+| C01 | Scalar LOG_AGE summaries help nonlinear models in some grouped views, but gains are mixed. | `partially_supported` | `docs/experiments/2026-05-22_capacity_baseline_synthesis.md` | LOG_AGE scalar summaries help some grouped views. | LOG_AGE solves operating-history generalization. | Integrate as mixed benchmark evidence. |
+| C02 | LOG_AGE stress features solve C-rate fade prediction. | `not_supported` | `reports/baselines/capacity_stress_features_v1_1_hgb50/stress_feature_diagnostics.md` | Stress features do not solve C-rate fade. | Stress features solve C-rate fade. | Keep as negative result. |
+| C03 | C-rate holdout is the hardest capacity generalization view. | `supported` | `docs/experiments/2026-05-22_capacity_baseline_synthesis.md` | C-rate holdout is the dominant unresolved capacity transfer stressor. | Generalization is uniform across stressor axes. | Lead benchmark narrative. |
+| C04 | PULSE RT/50 is usable as a scalar resistance endpoint. | `supported_for_diagnostics` | `docs/experiments/2026-05-23_pulse_target_robustness_decision.md` | RT/50 PULSE is usable for scalar resistance diagnostics. | PULSE validates broad multimodal modeling. | Include as diagnostic endpoint. |
+| C05 | PULSE growth explains capacity residuals. | `supported_for_explanatory_diagnostics` | `docs/experiments/2026-05-23_capacity_pulse_coupling_robustness.md` | PULSE growth is associated with capacity residual magnitude. | PULSE growth is causal. | Include as explanatory diagnostic. |
+| C06 | Prior PULSE improves capacity-level prediction over F4. | `supported_for_selected_splits` | `docs/experiments/2026-05-23_prior_pulse_capacity_prediction.md` | Prior PULSE improves `capacity_Ah_k1` over F4 in selected splits. | Prior PULSE improves all targets/splits. | Report with guardrails. |
+| C07 | Prior PULSE beats strongest supplied non-PULSE capacity baseline. | `not_supported` | `docs/experiments/2026-05-23_prior_pulse_vs_best_nonpulse.md` | Prior PULSE does not beat strongest non-PULSE. | Prior PULSE is best available non-neural feature path. | Keep as negative result. |
+| C08 | Prior PULSE improves `delta_capacity_Ah`. | `not_supported` | `reports/baselines/capacity_prior_pulse_vs_best_nonpulse/prior_pulse_vs_best_nonpulse_claim_readiness.md` | Fade-rate improvement remains unsupported. | Prior PULSE improves fade-rate prediction. | Keep blocked. |
+| C09 | Quantile HGB uncertainty is calibrated. | `not_supported` | `reports/analysis/calibration_capacity/calibration_claim_readiness.md` | Raw HGB quantiles are undercovered. | HGB quantiles are calibrated uncertainty. | Keep blocked. |
+| C10 | EIS improves any non-EIS outcome broadly. | `partially_supported` | `docs/experiments/2026-05-23_eis_claim_hardening.md` | EIS is a scalar diagnostic endpoint with narrow profile-split signals. | EIS broadly improves degradation prediction. | Diagnostic only unless future evidence appears. |
+| C11 | CBAT architecture is justified. | `blocked` | `docs/PROJECT_CHARTER.md` | CBAT remains reserved late-stage architecture work. | CBAT is validated. | Do not open. |
+| C12 | Grouped condition validation is required for publishable evidence. | `supported` | `docs/VALIDATION_PROTOCOL.md` | Headline claims require grouped validation. | Random row/cell splits are publishable evidence. | Preserve in all reports. |
+| C13 | Semi-empirical stress baselines beat strongest grouped HGB baselines. | `not_supported` | `docs/experiments/2026-05-23_semi_empirical_replicate_gate.md` | Semi-empirical comparators are useful but weaker in C-rate views. | Semi-empirical models outperform ML baselines. | Include as domain check. |
+| C14 | Replicate-aware diagnostics validate calibrated uncertainty. | `not_supported` | `reports/analysis/replicate_uncertainty/uncertainty_claim_readiness.md` | Replicate spread contextualizes model error. | Replicate intervals validate calibrated uncertainty. | Diagnostic only. |
+| C15 | Grouped conformal calibration validates capacity uncertainty. | `not_supported` | `docs/experiments/2026-05-23_grouped_calibration_replicate_uncertainty.md` | Conformal improves mean coverage but C-rate fails. | Conformal validates global calibrated uncertainty. | Keep uncertainty claim blocked. |
+| C16 | Ordered LOG_AGE event structure justifies sequence models. | `not_supported` | `docs/experiments/2026-05-23_temporal_history_value_gate.md` | Event-order summaries do not justify sequence models. | Sequence models are justified. | Do not open sequence models. |
+| C17 | Knee labels are stable enough for prediction. | `not_supported` | `docs/experiments/2026-05-23_knee_label_stability_gate.md` | Detector knees are exploratory diagnostics. | Knee-risk prediction is authorized. | Keep detector-knee prediction blocked. |
+| C18 | Threshold-event labels are more stable than detector knees. | `partially_supported` | `docs/experiments/2026-05-23_knee_threshold_label_forensics.md` | 80% threshold labels are more stable candidate targets. | Threshold labels alone authorize prediction. | Use only with prospective baseline evidence. |
+| C19 | Non-neural baselines can forecast the 80% threshold event under grouped validation. | `supported_for_diagnostics` | `docs/experiments/2026-05-23_threshold_warning_censoring_finalization.md` | Non-neural baselines forecast the 80% threshold event diagnostically beyond proximity and under verified-only sensitivity. | Calibrated risk, causal warning, detector-knee prediction, policy ranking, or CBAT are authorized. | Lock diagnostic claim; optional calibration branch only. |
+
+## Next Action
+
+Return to manuscript/benchmark integration. If one more technical branch is
+opened, restrict it to threshold-warning calibration and keep it non-neural,
+grouped, and diagnostic until calibration passes.
