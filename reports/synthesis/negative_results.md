@@ -152,14 +152,17 @@ remain excluded from the warning feature set.
 
 Milestone 5.0 tested the narrow post-hoc calibration branch directly. Platt
 and isotonic calibration improve mean ECE for the primary 3-check-up horizon,
-but C-rate ECE remains above the 0.10 guardrail: verified-only C-rate ECE is
-`0.167813` for Platt and `0.159021` for isotonic.
+but C-rate ECE remains above the 0.10 guardrail. Milestone 5.3 hardens this
+gate so all-row and verified-only policies are both required, C-rate is checked
+per policy, and fallback-raw calibration rows cannot pass strict readiness.
+Verified-only C-rate ECE is `0.167653` for Platt and `0.159021` for isotonic.
 
 Milestone 5.2 adds equal-frequency ECE as a binning-sensitivity check rather
-than replacing the fixed-width metric. The primary verified-only Platt row has
-fixed-width ECE `0.0749807` and equal-frequency ECE `0.072939`, but the
+than replacing the fixed-width metric. After the Milestone 5.3 Platt
+convention and readiness-gate hardening, the primary verified-only Platt row
+has fixed-width ECE `0.0748136` and equal-frequency ECE `0.0729286`, but the
 verified-only C-rate Platt row remains above guardrail with fixed-width ECE
-`0.167813` and equal-frequency ECE `0.176461`.
+`0.167653` and equal-frequency ECE `0.176185`.
 
 Decision: threshold-event forecasting is supported for diagnostics; calibrated
 risk, policy ranking, detector-knee prediction, and causal warning claims

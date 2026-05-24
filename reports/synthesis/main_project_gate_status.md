@@ -14,14 +14,14 @@
 | Temporal order | Not supported | Order-aware features do not beat aggregate/shuffled controls. | Sequence model justification. | Keep sequence models blocked. |
 | Detector knee labels | Not supported | Only 45 / 64 primary-valid conditions are replicate-consistent within 2 check-ups. | Detector-knee prediction. | Keep diagnostic only. |
 | Threshold warning | Supported for diagnostics | Verified-only HGB W2 Brier `0.090116` beats prior `0.178655` and proximity `0.168492`. | Calibrated risk, causal warning, policy ranking. | Lock diagnostic claim. |
-| Threshold-warning calibration | Not supported for calibrated risk | Equal-frequency ECE sensitivity is now reported; Platt verified-only primary ECE is `0.0749807` fixed and `0.072939` equal-frequency, but C-rate remains above guardrail (`0.167813` fixed; `0.176461` equal-frequency). | Calibrated risk. | Keep probabilities diagnostic. |
+| Threshold-warning calibration | Not supported for calibrated risk | Equal-frequency ECE sensitivity is reported; corrected Platt verified-only primary ECE is `0.0748136` fixed and `0.0729286` equal-frequency, but policy-specific C-rate remains above guardrail (`0.167653` fixed; `0.176185` equal-frequency). | Calibrated risk. | Keep probabilities diagnostic. |
 | Policy ranking | Blocked | No calibrated risk, no causal evidence, no intervention test. | Policy ranking. | Do not open. |
 | CBAT | Blocked | Simpler gates do not justify architecture. | CBAT validation. | Do not open. |
 
 ## Summary Decision
 
 The main technical program has reached a coherent benchmark checkpoint.
-Milestone 5.2 closes calibration metric sensitivity and quantile noncrossing
-hygiene. It does not authorize calibrated-risk, calibrated-uncertainty,
-robust-capacity, policy, architecture, causal, or broad multimodal claims.
+Milestone 5.3 closes calibration and robustness gate correctness hardening. It
+does not authorize calibrated-risk, calibrated-uncertainty, robust-capacity,
+policy, architecture, causal, or broad multimodal claims.
 Further modeling should not be opened without a new gated technical rationale.

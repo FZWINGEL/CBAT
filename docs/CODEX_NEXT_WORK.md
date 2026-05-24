@@ -5,19 +5,19 @@ stressor-robustness forensics pass only if explicitly requested.
 
 ## Current Phase
 
-Milestone 5.2 is a calibration/quantile hygiene gate. It adds
-equal-frequency ECE alongside fixed-width ECE for threshold-warning diagnostics
-and enforces noncrossing L3 capacity quantile endpoints while preserving q50
-point predictions. It is not a new modeling, architecture, calibration-claim,
-or policy-ranking branch.
+Milestone 5.3 is a calibration and stressor-robustness correctness-hardening
+gate. It fixes silent readiness-gate failure modes, empty-run guards,
+calibration schema metadata, Platt/logistic convention drift, and
+stressor-robust bagging/selection hygiene. It is not a new modeling,
+architecture, calibration-claim, or policy-ranking branch.
 
 ## Current Result
 
-The hygiene pass does not change the claim posture. Threshold-warning
+The correctness pass does not change the claim posture. Threshold-warning
 probability calibration still blocks calibrated-risk wording: Platt
-verified-only primary-horizon mean fixed-width ECE is `0.0749807` and
-equal-frequency ECE is `0.072939`, but C-rate verified-only ECE remains above
-the guardrail (`0.167813` fixed-width; `0.176461` equal-frequency). Capacity
+verified-only primary-horizon mean fixed-width ECE is `0.0748136` and
+equal-frequency ECE is `0.0729286`, but C-rate verified-only ECE remains above
+the guardrail (`0.167653` fixed-width; `0.176185` equal-frequency). Capacity
 uncertainty also remains blocked: raw noncrossing q10-q90 mean coverage is
 `0.701398`, and C-rate coverage remains below target.
 

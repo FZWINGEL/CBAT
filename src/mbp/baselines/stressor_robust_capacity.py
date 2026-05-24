@@ -51,6 +51,11 @@ SELECTION_MODEL_LEVELS = (
     "R1_condition_balanced_hgb",
     "R2_stressor_balanced_hgb",
 )
+SELECTION_TIE_BREAK_ORDER = {
+    "R2_stressor_balanced_hgb": 0,
+    "R1_condition_balanced_hgb": 1,
+    "R0_reference_hgb50": 2,
+}
 DEFAULT_ROBUST_FEATURE_GROUPS = ("F4_state_log_age_scalar", "F8_timestamp_weighted_stress")
 PRIMARY_TARGET = "delta_capacity_Ah"
 PRIMARY_SPLIT = "c_rate_holdout_fold"
@@ -178,6 +183,8 @@ def run_stressor_robust_capacity(
                                 )
                             )
 
+    if not metrics:
+        raise ValueError("No metrics were generated.")
     report_dir = out_dir or _default_report_dir(out_path)
     predictions_out_path.parent.mkdir(parents=True, exist_ok=True)
     pq.write_table(
@@ -335,11 +342,12 @@ def _fit_hgb_predictions(
     seed: int,
     hgb_max_iter: int,
     sample_weight: list[float] | None = None,
+    encoder: FeatureEncoder | None = None,
 ) -> list[dict[str, float | None]]:
     np, _, HistGradientBoostingRegressor = _import_sklearn_stack()
-    encoder = FeatureEncoder.fit(train_rows, feature_group)
-    x_train = np.asarray(encoder.transform(train_rows), dtype=float)
-    x_test = np.asarray(encoder.transform(test_rows), dtype=float)
+    fitted_encoder = encoder or FeatureEncoder.fit(train_rows, feature_group)
+    x_train = np.asarray(fitted_encoder.transform(train_rows), dtype=float)
+    x_test = np.asarray(fitted_encoder.transform(test_rows), dtype=float)
     y_train = np.asarray([_training_target_value(row, target) for row in train_rows], dtype=float)
     if not all(math.isfinite(float(value)) for value in y_train):
         raise ValueError(f"Target {target} has non-finite train values.")
@@ -371,6 +379,8 @@ def _condition_bagged_predictions(
     parameter_sets = sorted(condition_rows)
     if not parameter_sets:
         raise ValueError("Cannot bag over zero parameter-set conditions.")
+    encoder = FeatureEncoder.fit(train_rows, feature_group)
+    rows_per_condition_draw = max(1, math.ceil(len(train_rows) / len(parameter_sets)))
     bag_values: list[list[float]] = []
     for bag_idx in range(bag_count):
         rng = random.Random(
@@ -378,7 +388,13 @@ def _condition_bagged_predictions(
         )
         sampled_rows: list[dict[str, Any]] = []
         for _ in parameter_sets:
-            sampled_rows.extend(condition_rows[rng.choice(parameter_sets)])
+            sampled_rows.extend(
+                _sample_condition_rows(
+                    condition_rows[rng.choice(parameter_sets)],
+                    rows_per_condition_draw,
+                    rng,
+                )
+            )
         predictions = _fit_hgb_predictions(
             feature_group=feature_group,
             train_rows=sampled_rows,
@@ -386,6 +402,7 @@ def _condition_bagged_predictions(
             target=target,
             seed=_variant_seed(seed, "bag_model", feature_group, target, split_name, heldout_fold, bag_idx),
             hgb_max_iter=hgb_max_iter,
+            encoder=encoder,
         )
         bag_values.append([_as_float(prediction["y_pred"]) for prediction in predictions])
     averaged = [
@@ -393,6 +410,16 @@ def _condition_bagged_predictions(
         for idx in range(len(test_rows))
     ]
     return averaged
+
+
+def _sample_condition_rows(
+    rows: list[dict[str, Any]],
+    count: int,
+    rng: random.Random,
+) -> list[dict[str, Any]]:
+    if not rows:
+        raise ValueError("Cannot sample an empty condition.")
+    return [rows[rng.randrange(len(rows))] for _ in range(count)]
 
 
 def _worst_fold_selected_predictions(
@@ -438,7 +465,10 @@ def _worst_fold_selected_predictions(
             train_rows=fit_rows,
         )
         scored.append((float(metric["worst_condition_mae"]), float(metric["condition_mean_mae"]), candidate))
-    best_worst, best_mean, selected = min(scored, key=lambda item: (item[0], item[1], item[2]))
+    best_worst, best_mean, selected = min(
+        scored,
+        key=lambda item: (item[0], item[1], SELECTION_TIE_BREAK_ORDER[item[2]]),
+    )
     predictions = _fit_predict_hgb_variant(
         selected,
         feature_group=feature_group,
@@ -675,6 +705,7 @@ def stressor_robust_claim_readiness(
         "policy_ranking": "blocked",
         "selection_policy": (
             "R4 selects from R0/R1/R2 on internal training-only condition splits. "
+            "Exact validation-metric ties prefer R2, then R1, then R0. "
             "R3 bagging is evaluated directly but excluded from nested selection to avoid redundant bagged refits."
         ),
         "claim_rule": (
@@ -891,7 +922,7 @@ def _max_other_split_relative_degradation(
         if ref_value <= 0:
             continue
         values.append((float(row["condition_mean_mae"]) - ref_value) / ref_value)
-    return max(values, default=0.0)
+    return max(values) if values else None
 
 
 def _write_c_rate_summary_md(

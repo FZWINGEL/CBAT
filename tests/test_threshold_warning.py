@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pyarrow as pa
 import pyarrow.parquet as pq
+import pytest
 
 from mbp.analysis.knee import (
     build_threshold_warning_table,
@@ -26,6 +27,14 @@ from mbp.baselines.threshold_warning import (
     run_threshold_warning_baselines,
     run_threshold_warning_calibration,
     warning_metrics,
+)
+from mbp.baselines.threshold_warning import (
+    CALIBRATION_SCHEMA_VERSION,
+    UNPENALIZED_LOGISTIC_C,
+    _calibration_method_passes,
+    _normalize_selection,
+    _removable_calibration_conditions,
+    threshold_probability_calibration_readiness,
 )
 
 
@@ -256,9 +265,125 @@ def test_threshold_warning_probability_calibration(tmp_path: Path) -> None:
     assert report["schema_version"] == "gate50.threshold_warning_probability_calibration.v1"
     assert report["row_counts"]["metrics"] > 0
     assert prediction_path.exists()
+    assert pq.read_metadata(prediction_path).metadata[b"schema_version"] == CALIBRATION_SCHEMA_VERSION.encode()
     assert (out_dir / "threshold_warning_calibration_claim_readiness.md").exists()
     assert (out_dir / "reliability_bins.csv").exists()
     predictions = pq.read_table(prediction_path).to_pylist()
     assert all(row["calibration_method"] in {"C0_raw_hgb_w2", "C1_platt_logistic"} for row in predictions)
     assert all(row["feature_group"] == "W2_nominal" for row in predictions)
     assert all(row["model_level"] == "B6_hist_gradient_boosting_classifier" for row in predictions)
+
+
+def _calibration_metric(
+    *,
+    policy: str,
+    method: str,
+    ece: float,
+    brier: float = 0.10,
+    logloss: float = 0.20,
+    status: str = "calibrated",
+    split_name: str = "c_rate_holdout_fold",
+) -> dict[str, object]:
+    return {
+        "target": "event_within_3_checkups",
+        "label_policy": policy,
+        "calibration_method": method,
+        "calibration_status": status,
+        "split_name": split_name,
+        "heldout_fold": 0,
+        "brier": brier,
+        "log_loss": logloss,
+        "ece_10_bin": ece,
+        "ece_10_bin_equal_freq": ece,
+        "auroc": 0.8,
+        "auprc": 0.8,
+        "test_positive_count": 3,
+        "test_negative_count": 7,
+    }
+
+
+def test_calibration_readiness_requires_verified_only_policy() -> None:
+    metrics = [
+        _calibration_metric(policy="all_rows", method="C0_raw_hgb_w2", ece=0.20, status="raw"),
+        _calibration_metric(policy="all_rows", method="C1_platt_logistic", ece=0.05),
+        _calibration_metric(policy="censored_as_negative", method="C0_raw_hgb_w2", ece=0.20, status="raw"),
+        _calibration_metric(policy="censored_as_negative", method="C1_platt_logistic", ece=0.05),
+    ]
+
+    readiness = threshold_probability_calibration_readiness(metrics, {"status": "passed"})
+
+    assert readiness["method_results"]["C1_platt_logistic"]["passes"] is False
+    assert readiness["grouped_probability_calibration"] == "not_supported"
+
+
+def test_calibration_readiness_checks_c_rate_per_required_policy() -> None:
+    metrics = [
+        _calibration_metric(policy="all_rows", method="C0_raw_hgb_w2", ece=0.20, status="raw"),
+        _calibration_metric(policy="verified_only", method="C0_raw_hgb_w2", ece=0.20, status="raw"),
+        _calibration_metric(policy="all_rows", method="C1_platt_logistic", ece=0.04),
+        _calibration_metric(policy="verified_only", method="C1_platt_logistic", ece=0.15),
+    ]
+
+    readiness = threshold_probability_calibration_readiness(metrics, {"status": "passed"})
+
+    c_rate = readiness["method_results"]["C1_platt_logistic"]["c_rate_by_policy"]
+    assert c_rate["all_rows"]["passes_ece_threshold"] is True
+    assert c_rate["verified_only"]["passes_ece_threshold"] is False
+    assert readiness["method_results"]["C1_platt_logistic"]["passes"] is False
+
+
+def test_calibration_readiness_rejects_fallback_raw_rows() -> None:
+    policy_results = {
+        "all_rows": {
+            "passes_mean_ece": True,
+            "passes_brier_guardrail": True,
+            "passes_log_loss_guardrail": True,
+            "calibrated_rows": 1,
+            "fallback_rows": 0,
+            "evaluated_rows": 1,
+        },
+        "verified_only": {
+            "passes_mean_ece": True,
+            "passes_brier_guardrail": True,
+            "passes_log_loss_guardrail": True,
+            "calibrated_rows": 1,
+            "fallback_rows": 1,
+            "evaluated_rows": 2,
+        },
+    }
+    c_rate = {
+        "all_rows": {"passes_ece_threshold": True, "passes_no_fallback": True},
+        "verified_only": {"passes_ece_threshold": True, "passes_no_fallback": True},
+    }
+
+    assert _calibration_method_passes(policy_results, c_rate) is False
+
+
+def test_calibration_partition_removable_conditions_preserve_class_counts() -> None:
+    rows = [
+        {"parameter_set": 1, "event_within_3_checkups": False},
+        {"parameter_set": 2, "event_within_3_checkups": False},
+        {"parameter_set": 3, "event_within_3_checkups": True},
+        {"parameter_set": 4, "event_within_3_checkups": True},
+    ]
+
+    removable = _removable_calibration_conditions(
+        rows,
+        {1, 2, 3, 4},
+        target="event_within_3_checkups",
+        min_calibration_class_count=1,
+    )
+
+    assert removable == [1, 2, 3, 4]
+
+
+def test_threshold_warning_normalize_selection_rejects_empty_and_dedupes() -> None:
+    assert _normalize_selection(["all_rows", "all_rows", ""], ("all_rows", "verified_only"), ("all_rows",), "policy") == [
+        "all_rows"
+    ]
+    with pytest.raises(ValueError, match="At least one policy"):
+        _normalize_selection([""], ("all_rows", "verified_only"), ("all_rows",), "policy")
+
+
+def test_platt_calibration_uses_unpenalized_logistic_convention() -> None:
+    assert UNPENALIZED_LOGISTIC_C == 1e6

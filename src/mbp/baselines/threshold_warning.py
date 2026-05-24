@@ -48,9 +48,11 @@ CALIBRATION_SCHEMA_VERSION = "gate50.threshold_warning_probability_calibration.v
 CALIBRATION_METHODS = ("C0_raw_hgb_w2", "C1_platt_logistic", "C2_isotonic")
 DEFAULT_CALIBRATION_METHODS = CALIBRATION_METHODS
 DEFAULT_CALIBRATION_LABEL_POLICIES = ("all_rows", "verified_only")
+REQUIRED_CALIBRATION_POLICIES = frozenset(DEFAULT_CALIBRATION_LABEL_POLICIES)
 CALIBRATION_BASE_MODEL_LEVEL = "B6_hist_gradient_boosting_classifier"
 CALIBRATION_BASE_FEATURE_GROUP = "W2_nominal"
 PRIMARY_CALIBRATION_TARGET = "event_within_3_checkups"
+UNPENALIZED_LOGISTIC_C = 1e6
 LEAKAGE_FIELDS = {
     "capacity_Ah_k1",
     "delta_capacity_Ah",
@@ -239,6 +241,8 @@ def run_threshold_warning_baselines(
                             )
                         )
 
+    if not metrics:
+        raise ValueError("No metrics were generated.")
     predictions_out_path.parent.mkdir(parents=True, exist_ok=True)
     pq.write_table(pa.Table.from_pylist(predictions), predictions_out_path)
     report_dir = _default_report_dir(out_path)
@@ -435,8 +439,15 @@ def run_threshold_warning_calibration(
                             )
                         )
 
+    if not metrics:
+        raise ValueError("No metrics were generated.")
     predictions_out_path.parent.mkdir(parents=True, exist_ok=True)
-    pq.write_table(pa.Table.from_pylist(predictions), predictions_out_path)
+    pq.write_table(
+        pa.Table.from_pylist(predictions).replace_schema_metadata(
+            {b"schema_version": CALIBRATION_SCHEMA_VERSION.encode()}
+        ),
+        predictions_out_path,
+    )
     out_dir.mkdir(parents=True, exist_ok=True)
     readiness = threshold_probability_calibration_readiness(metrics, leakage_audit([CALIBRATION_BASE_FEATURE_GROUP]))
     report = {
@@ -536,7 +547,7 @@ def predict_warning_probability(
     x_train = np.asarray(encoder.transform(train_rows, standardize_numeric=standardize), dtype=float)
     x_test = np.asarray(encoder.transform(test_rows, standardize_numeric=standardize), dtype=float)
     if model_level == "B4_logistic_regression":
-        model = LogisticRegression(C=1e6, max_iter=1000, random_state=seed)
+        model = LogisticRegression(C=UNPENALIZED_LOGISTIC_C, max_iter=1000, random_state=seed)
     elif model_level == "B5_ridge_logistic":
         model = LogisticRegression(C=1.0, max_iter=1000, random_state=seed)
     elif model_level == "B6_hist_gradient_boosting_classifier":
@@ -624,7 +635,14 @@ def _threshold_calibration_partition(
         if len(calibration_conditions) >= len(conditions):
             break
     if len(calibration_conditions) >= len(conditions):
-        calibration_conditions.remove(ordered[-1])
+        removable = _removable_calibration_conditions(
+            train_rows,
+            calibration_conditions,
+            target=target,
+            min_calibration_class_count=min_calibration_class_count,
+        )
+        removal = removable[0] if removable else ordered[-1]
+        calibration_conditions.remove(removal)
     calibration_rows = [row for row in train_rows if int(row["parameter_set"]) in calibration_conditions]
     fit_rows = [row for row in train_rows if int(row["parameter_set"]) not in calibration_conditions]
     partition_status = "passed"
@@ -639,6 +657,25 @@ def _threshold_calibration_partition(
         "n_calibration_conditions": len({int(row["parameter_set"]) for row in calibration_rows}),
         "partition_status": partition_status,
     }
+
+
+def _removable_calibration_conditions(
+    train_rows: list[dict[str, Any]],
+    calibration_conditions: set[int],
+    *,
+    target: str,
+    min_calibration_class_count: int,
+) -> list[int]:
+    """Return calibration conditions whose removal preserves calibration class counts."""
+    removable = []
+    for condition in sorted(calibration_conditions):
+        candidate_conditions = calibration_conditions - {condition}
+        candidate_rows = [
+            row for row in train_rows if int(row["parameter_set"]) in candidate_conditions
+        ]
+        if _has_minimum_class_counts(candidate_rows, target, min_calibration_class_count):
+            removable.append(condition)
+    return removable
 
 
 def _threshold_calibration_partition_row(
@@ -704,7 +741,7 @@ def _apply_probability_calibration(
         LogisticRegression, _ = _import_sklearn()
         x_cal = np.asarray([[_logit(value)] for value in calibration_base_probabilities], dtype=float)
         x_test = np.asarray([[_logit(value)] for value in test_base_probabilities], dtype=float)
-        calibrator = LogisticRegression(C=1.0, max_iter=1000, random_state=seed)
+        calibrator = LogisticRegression(C=UNPENALIZED_LOGISTIC_C, max_iter=1000, random_state=seed)
         calibrator.fit(x_cal, np.asarray(calibration_y, dtype=int))
         return [_clip_probability(float(value)) for value in calibrator.predict_proba(x_test)[:, 1]], "calibrated", None
     if method == "C2_isotonic":
@@ -1398,40 +1435,61 @@ def _passes_worsening_guardrail(
     return float(cand) <= float(ref) * (1.0 + max_relative_worsening)
 
 
-def _c_rate_primary_method_summary(metrics: list[dict[str, Any]], method: str) -> dict[str, Any]:
+def _c_rate_primary_method_summary(
+    metrics: list[dict[str, Any]],
+    method: str,
+    label_policy: str,
+) -> dict[str, Any]:
     rows = [
         row
         for row in metrics
         if row["target"] == PRIMARY_CALIBRATION_TARGET
         and row["split_name"] == "c_rate_holdout_fold"
         and row["calibration_method"] == method
+        and row["label_policy"] == label_policy
     ]
+    fallback_rows = sum(1 for row in rows if row["calibration_status"] == "fallback_raw")
+    calibrated_rows = sum(1 for row in rows if row["calibration_status"] == "calibrated")
     return {
+        "label_policy": label_policy,
         "mean_brier": _mean([row["brier"] for row in rows]),
         "mean_log_loss": _mean([row["log_loss"] for row in rows]),
         "mean_ece_10_bin": _mean([row["ece_10_bin"] for row in rows]),
         "mean_ece_10_bin_equal_freq": _mean([row["ece_10_bin_equal_freq"] for row in rows]),
         "test_positive_count": sum(int(row["test_positive_count"]) for row in rows),
         "evaluated_rows": len(rows),
+        "calibrated_rows": calibrated_rows,
+        "fallback_rows": fallback_rows,
         "passes_ece_threshold": (
             (ece := _mean([row["ece_10_bin"] for row in rows])) is not None and ece <= 0.10
         ),
+        "passes_no_fallback": bool(rows) and fallback_rows == 0 and calibrated_rows == len(rows),
     }
 
 
-def _calibration_method_passes(policy_results: dict[str, dict[str, Any]], c_rate: dict[str, Any]) -> bool:
-    required_policies = {"all_rows", "verified_only"}
-    if set(policy_results) < required_policies:
+def _calibration_method_passes(
+    policy_results: dict[str, dict[str, Any]],
+    c_rate_by_policy: dict[str, dict[str, Any]],
+) -> bool:
+    if not REQUIRED_CALIBRATION_POLICIES.issubset(policy_results):
+        return False
+    if not REQUIRED_CALIBRATION_POLICIES.issubset(c_rate_by_policy):
         return False
     policy_pass = all(
-        row["passes_mean_ece"]
+        (row := policy_results[policy])["passes_mean_ece"]
         and row["passes_brier_guardrail"]
         and row["passes_log_loss_guardrail"]
         and row["calibrated_rows"] > 0
-        for policy, row in policy_results.items()
-        if policy in required_policies
+        and row["fallback_rows"] == 0
+        and row["calibrated_rows"] == row["evaluated_rows"]
+        for policy in REQUIRED_CALIBRATION_POLICIES
     )
-    return policy_pass and bool(c_rate.get("passes_ece_threshold"))
+    c_rate_pass = all(
+        (row := c_rate_by_policy[policy])["passes_ece_threshold"]
+        and row["passes_no_fallback"]
+        for policy in REQUIRED_CALIBRATION_POLICIES
+    )
+    return policy_pass and c_rate_pass
 
 
 def _method_status(result: dict[str, Any]) -> str:
@@ -1634,17 +1692,21 @@ def threshold_probability_calibration_readiness(
                 "mean_log_loss": row["mean_log_loss"],
                 "raw_mean_log_loss": raw.get("mean_log_loss") if raw else None,
                 "log_loss_gain_vs_raw": log_loss_gain,
+                "evaluated_rows": row["evaluated_rows"],
                 "calibrated_rows": row["calibrated_rows"],
                 "fallback_rows": row["fallback_rows"],
                 "passes_mean_ece": ece_gain is not None and ece_gain > 0,
                 "passes_brier_guardrail": _passes_worsening_guardrail(raw, row, "mean_brier"),
                 "passes_log_loss_guardrail": _passes_worsening_guardrail(raw, row, "mean_log_loss"),
             }
-        c_rate = _c_rate_primary_method_summary(metrics, method)
+        c_rate_by_policy = {
+            policy: _c_rate_primary_method_summary(metrics, method, policy)
+            for policy in sorted(REQUIRED_CALIBRATION_POLICIES)
+        }
         method_results[method] = {
             "policy_results": policy_results,
-            "c_rate": c_rate,
-            "passes": _calibration_method_passes(policy_results, c_rate),
+            "c_rate_by_policy": c_rate_by_policy,
+            "passes": _calibration_method_passes(policy_results, c_rate_by_policy),
         }
     strict_method = next(
         (method for method, row in method_results.items() if row["passes"] and audit["status"] == "passed"),
@@ -2068,8 +2130,8 @@ def _write_threshold_probability_calibration_claim_readiness_md(readiness: dict[
         "",
         "## Primary-Horizon Method Summary",
         "",
-        "| Method | Label policy | Raw fixed ECE | Method fixed ECE | Fixed ECE gain | Raw equal-freq ECE | Method equal-freq ECE | Equal-freq ECE gain | Brier gain | Log-loss gain | Passes fixed ECE | Brier guardrail | Log-loss guardrail |",
-        "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---|",
+        "| Method | Label policy | Raw fixed ECE | Method fixed ECE | Fixed ECE gain | Raw equal-freq ECE | Method equal-freq ECE | Equal-freq ECE gain | Brier gain | Log-loss gain | Evaluated rows | Fallback rows | Passes fixed ECE | Brier guardrail | Log-loss guardrail |",
+        "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---|",
     ]
     for method, result in readiness["method_results"].items():
         for policy, row in sorted(result.get("policy_results", {}).items()):
@@ -2084,9 +2146,33 @@ def _write_threshold_probability_calibration_claim_readiness_md(readiness: dict[
                 f"`{_fmt(row['ece_equal_freq_gain_vs_raw'])}` | "
                 f"`{_fmt(row['brier_gain_vs_raw'])}` | "
                 f"`{_fmt(row['log_loss_gain_vs_raw'])}` | "
+                f"`{row['evaluated_rows']}` | "
+                f"`{row['fallback_rows']}` | "
                 f"`{row['passes_mean_ece']}` | "
                 f"`{row['passes_brier_guardrail']}` | "
                 f"`{row['passes_log_loss_guardrail']}` |"
+            )
+    lines.extend(
+        [
+            "",
+            "## Required C-Rate Policy Summary",
+            "",
+            "| Method | Label policy | Fixed-width ECE | Equal-frequency ECE | Brier | Evaluated rows | Fallback rows | Passes fixed ECE | No fallback |",
+            "|---|---|---:|---:|---:|---:|---:|---|---|",
+        ]
+    )
+    for method, result in readiness["method_results"].items():
+        for policy, row in sorted(result.get("c_rate_by_policy", {}).items()):
+            lines.append(
+                "| "
+                f"`{method}` | `{policy}` | "
+                f"`{_fmt(row['mean_ece_10_bin'])}` | "
+                f"`{_fmt(row['mean_ece_10_bin_equal_freq'])}` | "
+                f"`{_fmt(row['mean_brier'])}` | "
+                f"`{row['evaluated_rows']}` | "
+                f"`{row['fallback_rows']}` | "
+                f"`{row['passes_ece_threshold']}` | "
+                f"`{row['passes_no_fallback']}` |"
             )
     lines.extend(
         [
@@ -2183,10 +2269,20 @@ def _normalize_selection(
     default: tuple[str, ...],
     label: str,
 ) -> list[str]:
-    selected = list(default if values is None else values)
+    raw = default if values is None else values
+    selected = []
+    seen = set()
+    for item in raw:
+        normalized = item.strip()
+        if not normalized or normalized in seen:
+            continue
+        selected.append(normalized)
+        seen.add(normalized)
     unknown = sorted(set(selected) - set(allowed))
     if unknown:
         raise ValueError(f"Unknown {label}: {unknown}")
+    if not selected:
+        raise ValueError(f"At least one {label} must be selected.")
     return selected
 
 

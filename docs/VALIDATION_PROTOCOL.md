@@ -218,6 +218,16 @@ It does not authorize new feature engineering, new model families, neural or
 sequence models, CBAT, DRT, EIS embeddings, policy ranking, calibrated-risk
 wording, calibrated-uncertainty wording, causal claims, same-cell
 counterfactual claims, robust-capacity wording, or broad multimodal claims.
+Milestone 5.3 authorizes correctness hardening of existing calibration and
+stressor-robustness gates only. It may fix readiness logic, empty-run guards,
+schema metadata, label-policy-specific C-rate checks, fallback-row handling,
+calibration partition edge cases, and stressor-robust bagging/selection hygiene
+when those fixes prevent silent false support. It may rerun the affected
+threshold-warning calibration and stressor-robust capacity reports. It does not
+authorize new model families, new feature engineering, neural or sequence
+models, CBAT, DRT, EIS embeddings, policy ranking, calibrated-risk wording,
+calibrated-uncertainty wording, causal claims, same-cell counterfactual claims,
+robust-capacity wording, or broad multimodal claims.
 
 Required split discipline:
 
@@ -288,6 +298,24 @@ Required Milestone 5.2 calibration/quantile hygiene artifacts:
 - `docs/GITHUB_RELEASE_DRAFT_v0.1-rc1.md`
 - `docs/GITHUB_RELEASE_DRAFT_v0.1-rc2.md`
 - optional `docs/FUTURE_BRANCHES.md`
+
+Required Milestone 5.3 correctness-hardening artifacts:
+
+- fixed threshold-warning calibration readiness gate requiring both all-row and
+  verified-only policies
+- policy-specific C-rate calibration readiness summary
+- fallback-raw calibration rows blocked from strict passing status
+- unpenalized Platt/logistic calibration convention
+- calibration prediction Parquet schema metadata
+- no-empty-metric guards for affected runners
+- fixed stressor-robust non-degradation missing-evidence handling
+- stable stressor-robust bagging encoder and balanced per-condition row draws
+- explicit stressor-robust R4 tie-break policy
+- refreshed `reports/baselines/threshold_warning_calibration_report.json`
+- refreshed `reports/baselines/threshold_warning_calibration/threshold_warning_calibration_claim_readiness.md`
+- refreshed `reports/baselines/capacity_stressor_robust_hgb50_report.json`
+- refreshed `reports/baselines/capacity_stressor_robust_hgb50/stressor_robustness_claim_readiness.md`
+- `docs/experiments/2026-05-24_calibration_robustness_correctness_hardening.md`
 
 Required Milestone 4.0 manuscript-integration artifacts:
 
@@ -665,6 +693,18 @@ Milestone 5.2 validation commands:
 - `mbp baseline calibrate-threshold-warning`
 - focused `mbp baseline run-capacity` over L2/L3 HGB groups
 - `mbp analysis calibrate-capacity`
+- `ruff check . --no-cache`
+- `pytest -p no:cacheprovider`
+- `mbp report check-release-candidate`
+- `git diff --check`
+- generated prediction Parquets under `data/processed/` must remain untracked
+
+Milestone 5.3 validation commands:
+
+- focused tests for threshold-warning calibration and stressor-robust capacity
+  gate helpers
+- `mbp baseline calibrate-threshold-warning`
+- `mbp baseline run-stressor-robust-capacity`
 - `ruff check . --no-cache`
 - `pytest -p no:cacheprovider`
 - `mbp report check-release-candidate`

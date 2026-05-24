@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 5.2: Calibration metric sensitivity and quantile noncrossing hygiene.
+Milestone 5.3: Calibration and robustness gate correctness hardening.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -43,12 +43,13 @@ Current state:
   found a diagnostic C-rate `delta_capacity_Ah` improvement, but did not
   support a global robust-capacity claim because the outside-C-rate
   non-degradation guardrail narrowly failed.
-- The current main-project track is a hygiene and sensitivity gate: add
-  equal-frequency ECE alongside fixed-width ECE for threshold-warning
-  calibration diagnostics, enforce noncrossing L3 capacity quantile endpoints
-  by row-wise post-sort while preserving q50 point predictions, and refresh
-  affected reports. This is not new model expansion and does not authorize
-  calibrated-risk or calibrated-uncertainty wording.
+- The current main-project track is a correctness-hardening gate for existing
+  calibration and stressor-robustness checks. It fixes silent readiness-gate
+  failure modes, enforces no-empty-metric runner failures, keeps calibration
+  fit/test policy checks label-policy specific, and refreshes affected reports.
+  This is not new model expansion and does not authorize calibrated-risk,
+  calibrated-uncertainty, robust-capacity, architecture, policy, or causal
+  wording.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
@@ -57,6 +58,10 @@ Allowed work:
 - L3 capacity quantile noncrossing post-sort hygiene
 - rerunning existing threshold-warning calibration and capacity calibration reports
 - calibration/quantile hygiene claim-readiness reporting
+- calibration readiness gate correctness fixes
+- stressor-robust readiness gate correctness fixes
+- no-empty-metric runner guards
+- report refreshes caused by corrected readiness logic
 - stressor-axis robust non-neural capacity baselines
 - condition-balanced and stressor-balanced HGB sample weighting
 - condition-bagged HGB diagnostics

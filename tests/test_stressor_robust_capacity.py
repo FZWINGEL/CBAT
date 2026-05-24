@@ -4,14 +4,21 @@ from pathlib import Path
 
 import pyarrow as pa
 import pyarrow.parquet as pq
+import pytest
 
 from mbp.baselines.capacity import BASELINE_PREDICTION_SCHEMA
+from mbp.baselines import stressor_robust_capacity as robust_module
 from mbp.baselines.stressor_robust_capacity import (
+    SELECTION_TIE_BREAK_ORDER,
+    _condition_bagged_predictions,
     condition_balanced_weights,
     diagnose_stressor_robustness,
+    _max_other_split_relative_degradation,
     paired_condition_gain_rows,
     run_stressor_robust_capacity,
+    _sample_condition_rows,
     stressor_balanced_weights,
+    stressor_robust_claim_readiness,
 )
 from mbp.baselines.stressor_robust_capacity import _internal_condition_validation_split
 
@@ -166,6 +173,141 @@ def test_paired_condition_gains_compare_cross_feature_references() -> None:
     }
     assert {row["candidate_feature_group"] for row in rows} == {"F8_timestamp_weighted_stress"}
     assert len(rows) == 4
+
+
+def test_missing_other_split_evidence_does_not_pass_non_degradation() -> None:
+    leaderboard = [
+        {
+            "run_scope": "primary",
+            "target": "delta_capacity_Ah",
+            "split_name": "c_rate_holdout_fold",
+            "model_level": "R0_reference_hgb50",
+            "feature_group": "F4_state_log_age_scalar",
+            "condition_mean_mae": 0.10,
+        },
+        {
+            "run_scope": "primary",
+            "target": "delta_capacity_Ah",
+            "split_name": "c_rate_holdout_fold",
+            "model_level": "R2_stressor_balanced_hgb",
+            "feature_group": "F4_state_log_age_scalar",
+            "condition_mean_mae": 0.08,
+        },
+    ]
+
+    max_degradation = _max_other_split_relative_degradation(leaderboard, leaderboard[1])
+    claim = stressor_robust_claim_readiness(leaderboard, [], bootstrap_resamples=10, seed=1)
+
+    assert max_degradation is None
+    assert claim["max_other_split_relative_degradation"] is None
+    assert claim["robust_capacity_claim"] == "not_supported"
+
+
+def test_condition_bagging_uses_stable_encoder_and_balanced_condition_draws(monkeypatch: pytest.MonkeyPatch) -> None:
+    train_rows = [
+        {
+            "parameter_set": 1,
+            "capacity_Ah_k": 3.0,
+            "duration_h": 1.0,
+            "calendar_days": 1.0,
+            "checkup_k": 0,
+            "log_age_efc_delta": 1.0,
+            "log_age_delta_q_Ah": 1.0,
+            "aging_mode": "cyclic",
+            "voltage_window_family": "A",
+            "delta_capacity_Ah": -0.1,
+        },
+        {
+            "parameter_set": 1,
+            "capacity_Ah_k": 2.9,
+            "duration_h": 1.0,
+            "calendar_days": 1.0,
+            "checkup_k": 1,
+            "log_age_efc_delta": 1.0,
+            "log_age_delta_q_Ah": 1.0,
+            "aging_mode": "cyclic",
+            "voltage_window_family": "A",
+            "delta_capacity_Ah": -0.1,
+        },
+        {
+            "parameter_set": 2,
+            "capacity_Ah_k": 3.0,
+            "duration_h": 1.0,
+            "calendar_days": 1.0,
+            "checkup_k": 0,
+            "log_age_efc_delta": 1.0,
+            "log_age_delta_q_Ah": 1.0,
+            "aging_mode": "calendar",
+            "voltage_window_family": "B",
+            "delta_capacity_Ah": -0.2,
+        },
+    ]
+    captured = []
+
+    def fake_fit_hgb_predictions(**kwargs: object) -> list[dict[str, float | None]]:
+        sampled_rows = kwargs["train_rows"]
+        encoder = kwargs["encoder"]
+        captured.append(
+            {
+                "sampled_count": len(sampled_rows),
+                "columns": encoder.output_columns,
+            }
+        )
+        return [{"y_pred": -0.1, "y_pred_q10": None, "y_pred_q50": None, "y_pred_q90": None}]
+
+    monkeypatch.setattr(robust_module, "_fit_hgb_predictions", fake_fit_hgb_predictions)
+
+    predictions = _condition_bagged_predictions(
+        feature_group="F4_state_log_age_scalar",
+        train_rows=train_rows,
+        test_rows=[train_rows[0]],
+        target="delta_capacity_Ah",
+        split_name="condition_fold",
+        heldout_fold=0,
+        seed=1,
+        hgb_max_iter=2,
+        bag_count=3,
+    )
+
+    assert len(predictions) == 1
+    assert {row["sampled_count"] for row in captured} == {4}
+    assert len({row["columns"] for row in captured}) == 1
+    assert "voltage_window_family=A" in captured[0]["columns"]
+    assert "voltage_window_family=B" in captured[0]["columns"]
+
+
+def test_sample_condition_rows_uses_fixed_draw_count() -> None:
+    rows = [{"idx": idx} for idx in range(2)]
+    sampled = _sample_condition_rows(rows, 5, robust_module.random.Random(1))
+    assert len(sampled) == 5
+    assert {row["idx"] for row in sampled} <= {0, 1}
+
+
+def test_r4_tie_break_prefers_rebalanced_candidates() -> None:
+    assert SELECTION_TIE_BREAK_ORDER["R2_stressor_balanced_hgb"] < SELECTION_TIE_BREAK_ORDER["R1_condition_balanced_hgb"]
+    assert SELECTION_TIE_BREAK_ORDER["R1_condition_balanced_hgb"] < SELECTION_TIE_BREAK_ORDER["R0_reference_hgb50"]
+
+
+def test_stressor_robust_runner_fails_when_no_metrics_generated(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    row = {"sensitivity_flagged_monotonicity": False}
+    monkeypatch.setattr(robust_module, "load_baseline_rows", lambda *args, **kwargs: ([row], [row]))
+    monkeypatch.setattr(robust_module, "iter_split_instances", lambda *args, **kwargs: iter(()))
+
+    with pytest.raises(ValueError, match="No metrics were generated"):
+        run_stressor_robust_capacity(
+            tmp_path / "interval.parquet",
+            tmp_path / "subsets.parquet",
+            tmp_path / "report.json",
+            tmp_path / "predictions.parquet",
+            model_levels=["R0_reference_hgb50"],
+            feature_groups=["F4_state_log_age_scalar"],
+            targets=["delta_capacity_Ah"],
+            split_views=["condition_fold"],
+            hgb_max_iter=1,
+        )
 
 
 def test_stressor_robust_capacity_runner_and_diagnostics(tmp_path: Path) -> None:

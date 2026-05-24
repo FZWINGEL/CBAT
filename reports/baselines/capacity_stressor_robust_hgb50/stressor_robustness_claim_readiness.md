@@ -7,6 +7,6 @@
 | Architecture readiness | `blocked` | This is a non-neural baseline gate only. |
 | Policy ranking | `blocked` | No calibrated risk or intervention task is tested. |
 
-R4 selects from R0/R1/R2 on internal training-only condition splits. R3 bagging is evaluated directly but excluded from nested selection to avoid redundant bagged refits.
+R4 selects from R0/R1/R2 on internal training-only condition splits. Exact validation-metric ties prefer R2, then R1, then R0. R3 bagging is evaluated directly but excluded from nested selection to avoid redundant bagged refits.
 
 Support requires C-rate delta gains over F4 and strongest stress R0, paired bootstrap p05 above zero against both references, and <=5% degradation outside C-rate.

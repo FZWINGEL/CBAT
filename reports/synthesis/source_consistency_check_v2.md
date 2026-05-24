@@ -13,9 +13,10 @@ This check covers the Milestone 3.0 synthesis artifacts:
 - `reports/synthesis/blocked_claims_v2.md`
 - `reports/synthesis/next_branch_decision.md`
 
-It has been refreshed after Milestones 5.0, 5.1, and 5.2 to include
+It has been refreshed after Milestones 5.0, 5.1, 5.2, and 5.3 to include
 threshold-warning probability calibration, stressor-axis robust capacity, and
-calibration/quantile hygiene results.
+calibration/quantile hygiene plus calibration/robustness correctness-hardening
+results.
 
 ## Source Artifact Existence
 

@@ -5,7 +5,7 @@ Status: `passed`
 ## Summary
 
 - Required files checked: 10
-- Tracked artifacts checked: 31
+- Tracked artifacts checked: 32
 - Ignored artifacts checked: 15
 - Claim matrix rows checked: 21
 

@@ -1157,7 +1157,7 @@ def baseline_run_stressor_robust_capacity(
     feature_groups: str = typer.Option(
         "F4_state_log_age_scalar,F8_timestamp_weighted_stress",
         "--feature-groups",
-        help="Comma-separated existing capacity feature groups.",
+        help="Comma-separated supported robust feature groups: F4_state_log_age_scalar,F8_timestamp_weighted_stress.",
     ),
     targets: str = typer.Option(
         "capacity_Ah_k1,delta_capacity_Ah",
@@ -1727,6 +1727,8 @@ def baseline_calibrate_threshold_warning(
     calibration_fraction: float = typer.Option(
         0.25,
         "--calibration-fraction",
+        min=0.0,
+        max=1.0,
         help="Fraction of non-test conditions reserved for calibration.",
     ),
     min_calibration_conditions: int = typer.Option(

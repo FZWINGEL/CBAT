@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 5.2: Calibration metric sensitivity and quantile noncrossing hygiene**.
+The repository is in **Milestone 5.3: Calibration and robustness gate correctness hardening**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -126,7 +126,13 @@ equal-frequency ECE alongside fixed-width ECE for threshold-warning diagnostics
 and enforces noncrossing L3 capacity quantile endpoints by row-wise sorting
 while preserving q50 point predictions. The refreshed reports do not unblock
 calibrated-risk, calibrated-uncertainty, robust-capacity, policy, or
-architecture claims.
+architecture claims. Milestone 5.3 hardens the existing calibration and
+stressor-robustness gates against silent correctness failures: required
+all-row/verified-only policy checks are now explicit, C-rate calibration gates
+are policy-specific, fallback-raw calibration rows cannot pass strict
+readiness, empty metric runs fail instead of writing passed reports, Platt
+calibration uses the unpenalized logistic convention, and stressor-robust
+readiness no longer treats missing outside-C-rate evidence as support.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -135,18 +141,20 @@ improvement claims have been started.
 
 Current state:
 
-- Milestone 5.2 is a calibration/quantile hygiene gate. It adds
-  `ece_10_bin_equal_freq` alongside the existing fixed-width `ece_10_bin` in
-  threshold-warning baseline, censoring, final-claim, and probability-calibration
-  reports; it does not replace historical fixed-width ECE values.
+- Milestone 5.3 is a correctness-hardening gate for existing calibration and
+  stressor-robustness reports. It does not add models, features, or claims.
+- Milestone 5.2 added `ece_10_bin_equal_freq` alongside the existing
+  fixed-width `ece_10_bin` in threshold-warning baseline, censoring,
+  final-claim, and probability-calibration reports; it does not replace
+  historical fixed-width ECE values.
 - L3 capacity quantile HGB predictions now enforce noncrossing q10/q50/q90
   endpoints by sorting the three evaluated quantile endpoints per row while
   preserving the independent q50 point prediction exactly.
 - The refreshed threshold-warning probability calibration report still blocks
   calibrated-risk wording. For the primary 3-check-up horizon, Platt verified-only
-  mean fixed-width ECE is `0.0749807` and equal-frequency ECE is `0.072939`,
-  but C-rate verified-only ECE remains above the guardrail (`0.167813`
-  fixed-width; `0.176461` equal-frequency).
+  mean fixed-width ECE is `0.0748136` and equal-frequency ECE is `0.0729286`,
+  but C-rate verified-only ECE remains above the guardrail (`0.167653`
+  fixed-width; `0.176185` equal-frequency).
 - The refreshed capacity calibration report still blocks calibrated-capacity
   uncertainty. Raw noncrossing q10-q90 mean coverage is `0.701398`, and C-rate
   mean coverage across calibration methods is `0.72293`, below the nominal
@@ -361,10 +369,12 @@ Current state:
   run. `mbp baseline calibrate-threshold-warning` evaluates raw HGB W2,
   Platt/logistic calibration, and isotonic calibration under all-row and
   verified-only label policies with held-out condition groups. Milestone 5.2
-  refreshes those diagnostics with equal-frequency ECE sensitivity. Platt and
+  refreshes those diagnostics with equal-frequency ECE sensitivity. Milestone
+  5.3 hardens the required-policy, C-rate, fallback-row, and Platt-calibration
+  gate logic. Platt and
   isotonic improve mean ECE for `event_within_3_checkups`, but C-rate ECE
-  remains above the 0.10 guardrail under verified-only (`0.167813` fixed-width
-  and `0.176461` equal-frequency for Platt; `0.159021` for isotonic), so
+  remains above the 0.10 guardrail under verified-only (`0.167653` fixed-width
+  and `0.176185` equal-frequency for Platt; `0.159021` for isotonic), so
   calibrated-risk claims remain not supported. Threshold-warning probabilities
   remain diagnostic scores.
 - Experiment notes are tracked under `docs/experiments/`.

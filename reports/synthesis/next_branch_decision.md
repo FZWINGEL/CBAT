@@ -22,21 +22,24 @@ The project has completed the major baseline-first charter gates:
 - threshold-event warning and censoring finalization;
 - threshold-warning probability calibration;
 - stressor-axis robust capacity baselines;
-- calibration metric sensitivity and capacity quantile noncrossing hygiene.
+- calibration metric sensitivity and capacity quantile noncrossing hygiene;
+- calibration and robustness gate correctness hardening.
 
 The strongest contribution is now a rigorous grouped-validation benchmark that
 documents which battery-degradation signals are supported, diagnostic-only,
-negative, or blocked. Milestone 5.2 closes the latest hygiene requests:
-equal-frequency ECE sensitivity and noncrossing quantile endpoints do not
-change the blocked status of calibrated-risk or calibrated-uncertainty claims.
+negative, or blocked. Milestone 5.3 closes the latest correctness requests:
+required-policy calibration checks, policy-specific C-rate checks, fallback-row
+guardrails, no-empty-run failures, and stressor-robust bagging/readiness
+hygiene do not change the blocked status of calibrated-risk,
+calibrated-uncertainty, robust-capacity, policy, or architecture claims.
 
 ## Recommended Path
 
 1. Preserve the benchmark/data-methods framing rather than an architecture
    branch.
-2. If manuscript work resumes, integrate Milestone 5.0/5.2 as blocked
+2. If manuscript work resumes, integrate Milestones 5.0/5.2/5.3 as blocked
    calibrated-risk and calibrated-uncertainty evidence, and Milestone 5.1 as a
-   diagnostic stressor-robustness result.
+   diagnostic stressor-robustness result hardened by 5.3 correctness checks.
 3. If engineering work resumes, prefer release automation or reproducibility
    checks over new scientific expansion.
 
@@ -45,8 +48,9 @@ change the blocked status of calibrated-risk or calibrated-uncertainty claims.
 The narrow threshold-warning calibration branch has now been run. Platt and
 isotonic calibration improve mean reliability, but C-rate ECE remains above
 the guardrail, so calibrated-risk and policy-ranking claims remain blocked.
-Milestone 5.2 adds equal-frequency ECE sensitivity and reaches the same
-decision. Any future calibration work should be scoped as diagnostics only.
+Milestone 5.2 adds equal-frequency ECE sensitivity and Milestone 5.3 hardens
+the readiness logic; both reach the same decision. Any future calibration work
+should be scoped as diagnostics only.
 
 The narrow stressor-robust capacity branch has also been run. Stressor-balanced
 HGB improves C-rate fade diagnostics, but the global claim remains blocked by
