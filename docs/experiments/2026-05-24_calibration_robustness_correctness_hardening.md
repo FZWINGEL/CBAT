@@ -18,6 +18,11 @@ DRT, EIS embeddings, or CBAT work.
 - Fallback-raw calibration rows cannot satisfy strict calibrated-risk readiness.
 - Platt scaling uses the same unpenalized logistic convention as the existing
   unpenalized warning baseline.
+- Baseline warning probabilities and calibration C0 probabilities are clipped
+  consistently before scoring/writing.
+- Calibration leaderboards now expose calibrated-only mean metrics alongside
+  all-status means so fallback-raw rows cannot be mistaken for calibrated
+  performance.
 - Calibrated prediction Parquet output now carries Arrow schema metadata.
 - Threshold-warning and stressor-robust runners fail when no metrics are
   generated instead of writing a passed empty report.
@@ -116,6 +121,7 @@ Validation run during implementation:
 
 ```bash
 .venv/bin/pytest tests/test_threshold_warning.py tests/test_stressor_robust_capacity.py -q
+.venv/bin/pytest tests/test_threshold_warning.py -q
 .venv/bin/ruff check src/mbp/baselines/threshold_warning.py src/mbp/baselines/stressor_robust_capacity.py src/mbp/cli.py tests/test_threshold_warning.py tests/test_stressor_robust_capacity.py --no-cache
 .venv/bin/ruff check . --no-cache
 .venv/bin/pytest -p no:cacheprovider

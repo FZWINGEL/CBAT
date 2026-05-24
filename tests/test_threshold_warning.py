@@ -6,6 +6,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
+from mbp.baselines import threshold_warning as warning_module
 from mbp.analysis.knee import (
     build_threshold_warning_table,
     threshold_warning_class_balance_rows,
@@ -24,8 +25,10 @@ from mbp.baselines.threshold_warning import (
     lead_time_bin,
     reliability_bin_rows,
     filter_rows_by_label_policy,
+    predict_warning_probability,
     run_threshold_warning_baselines,
     run_threshold_warning_calibration,
+    threshold_calibration_leaderboard_rows,
     warning_metrics,
 )
 from mbp.baselines.threshold_warning import (
@@ -387,3 +390,95 @@ def test_threshold_warning_normalize_selection_rejects_empty_and_dedupes() -> No
 
 def test_platt_calibration_uses_unpenalized_logistic_convention() -> None:
     assert UNPENALIZED_LOGISTIC_C == 1e6
+
+
+def test_predict_warning_probability_clips_model_outputs(monkeypatch: pytest.MonkeyPatch) -> None:
+    class FakeHistGradientBoostingClassifier:
+        def __init__(self, **_: object) -> None:
+            pass
+
+        def fit(self, *_: object) -> "FakeHistGradientBoostingClassifier":
+            return self
+
+        def predict_proba(self, matrix: object) -> object:
+            row_count = len(matrix)
+            return warning_module.np.asarray(
+                [[1.0, 0.0] if idx == 0 else [0.0, 1.0] for idx in range(row_count)],
+                dtype=float,
+            )
+
+    monkeypatch.setattr(
+        warning_module,
+        "_import_sklearn",
+        lambda: (object, FakeHistGradientBoostingClassifier),
+    )
+    train_rows = [
+        {
+            "event_within_3_checkups": False,
+            "capacity_Ah_k": 3.0,
+            "soh_k": 1.0,
+            "checkup_k": 0,
+            "calendar_day_k": 0.0,
+            "cumulative_efc_k": 0.0,
+            "nominal_temperature_C": 25.0,
+            "nominal_charge_C_rate": 1.0,
+            "nominal_discharge_C_rate": 1.0,
+            "voltage_window_family": "A",
+            "profile_label": "CC",
+            "aging_mode": "cyclic",
+        },
+        {
+            "event_within_3_checkups": True,
+            "capacity_Ah_k": 2.4,
+            "soh_k": 0.8,
+            "checkup_k": 5,
+            "calendar_day_k": 5.0,
+            "cumulative_efc_k": 50.0,
+            "nominal_temperature_C": 40.0,
+            "nominal_charge_C_rate": 1.5,
+            "nominal_discharge_C_rate": 1.0,
+            "voltage_window_family": "B",
+            "profile_label": "WLTP",
+            "aging_mode": "profile",
+        },
+    ]
+
+    probabilities, train_one_class = predict_warning_probability(
+        "B6_hist_gradient_boosting_classifier",
+        "W2_nominal",
+        train_rows,
+        train_rows,
+        "event_within_3_checkups",
+        seed=1,
+        hgb_max_iter=2,
+    )
+
+    assert train_one_class is False
+    assert probabilities[0] == pytest.approx(1e-6)
+    assert probabilities[1] == pytest.approx(1.0 - 1e-6)
+
+
+def test_calibration_leaderboard_splits_calibrated_only_means() -> None:
+    metrics = [
+        _calibration_metric(policy="verified_only", method="C1_platt_logistic", ece=0.05),
+        _calibration_metric(
+            policy="verified_only",
+            method="C1_platt_logistic",
+            ece=0.25,
+            brier=0.30,
+            logloss=0.40,
+            status="fallback_raw",
+            split_name="condition_fold",
+        ),
+    ]
+
+    rows = threshold_calibration_leaderboard_rows(metrics)
+    row = rows[0]
+
+    assert row["evaluated_rows"] == 2
+    assert row["calibrated_rows"] == 1
+    assert row["fallback_rows"] == 1
+    assert row["mean_ece_10_bin"] == pytest.approx(0.15)
+    assert row["calibrated_only_mean_ece_10_bin"] == pytest.approx(0.05)
+    assert row["mean_brier"] == pytest.approx(0.20)
+    assert row["calibrated_only_mean_brier"] == pytest.approx(0.10)

@@ -49,6 +49,10 @@
         "policy_results": {
           "all_rows": {
             "brier_gain_vs_raw": 0.0022554186095526257,
+            "calibrated_only_mean_brier": 0.07129076961306541,
+            "calibrated_only_mean_ece_10_bin": 0.06065851967261517,
+            "calibrated_only_mean_ece_10_bin_equal_freq": 0.06172178343550136,
+            "calibrated_only_mean_log_loss": 0.25447210725769087,
             "calibrated_rows": 12,
             "ece_equal_freq_gain_vs_raw": 0.0009938006612647543,
             "ece_gain_vs_raw": 0.004510443647300071,
@@ -69,6 +73,10 @@
           },
           "verified_only": {
             "brier_gain_vs_raw": 0.014981314213777297,
+            "calibrated_only_mean_brier": 0.08466110169032214,
+            "calibrated_only_mean_ece_10_bin": 0.07481358963290505,
+            "calibrated_only_mean_ece_10_bin_equal_freq": 0.07292855725979043,
+            "calibrated_only_mean_log_loss": 0.2805216018018323,
             "calibrated_rows": 12,
             "ece_equal_freq_gain_vs_raw": 0.017824406248134778,
             "ece_gain_vs_raw": 0.02255750631681644,
@@ -122,6 +130,10 @@
         "policy_results": {
           "all_rows": {
             "brier_gain_vs_raw": 0.0038200556690489162,
+            "calibrated_only_mean_brier": 0.06972613255356912,
+            "calibrated_only_mean_ece_10_bin": 0.05621110726081197,
+            "calibrated_only_mean_ece_10_bin_equal_freq": 0.05654184295899264,
+            "calibrated_only_mean_log_loss": 0.4095221925270269,
             "calibrated_rows": 12,
             "ece_equal_freq_gain_vs_raw": 0.006173741137773477,
             "ece_gain_vs_raw": 0.008957856059103271,
@@ -142,6 +154,10 @@
           },
           "verified_only": {
             "brier_gain_vs_raw": 0.01578818537776154,
+            "calibrated_only_mean_brier": 0.08385423052633789,
+            "calibrated_only_mean_ece_10_bin": 0.07258020563675627,
+            "calibrated_only_mean_ece_10_bin_equal_freq": 0.0706745783274448,
+            "calibrated_only_mean_log_loss": 0.41652886532024236,
             "calibrated_rows": 12,
             "ece_equal_freq_gain_vs_raw": 0.020078385180480413,
             "ece_gain_vs_raw": 0.02479089031296522,
@@ -168,7 +184,7 @@
     "raw_hgb_probability_calibration": "not_supported",
     "strict_passing_method": null
   },
-  "generated_at_utc": "2026-05-24T15:59:53.946153+00:00",
+  "generated_at_utc": "2026-05-24T16:36:39.733233+00:00",
   "hgb_max_iter": 50,
   "inputs": {
     "warning_table": "data/interim/threshold_warning_table_v1.parquet"

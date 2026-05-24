@@ -528,11 +528,11 @@ def predict_warning_probability(
     base_rate = float(np.mean(y_train)) if len(y_train) else 0.0
     train_one_class = len(set(y_train.tolist())) < 2
     if model_level == "B0_event_rate_prior" or train_one_class:
-        return [base_rate for _ in test_rows], train_one_class
+        return [_clip_probability(base_rate) for _ in test_rows], train_one_class
     if model_level == "B1_distance_to_threshold_rule":
-        return distance_rule_probabilities(train_rows, test_rows, target), False
+        return [_clip_probability(value) for value in distance_rule_probabilities(train_rows, test_rows, target)], False
     if model_level == "B2_linear_extrapolation_to_threshold":
-        return extrapolation_probabilities(train_rows, test_rows, target), False
+        return [_clip_probability(value) for value in extrapolation_probabilities(train_rows, test_rows, target)], False
 
     LogisticRegression, HistGradientBoostingClassifier = _import_sklearn()
     if model_level == "B3_logistic_distance_baseline":
@@ -541,7 +541,7 @@ def predict_warning_probability(
         x_test = np.asarray(distance_feature_matrix(test_rows), dtype=float)
         model = LogisticRegression(C=1.0, max_iter=1000, random_state=seed)
         model.fit(x_train, y_train)
-        return [float(value) for value in model.predict_proba(x_test)[:, 1]], False
+        return [_clip_probability(float(value)) for value in model.predict_proba(x_test)[:, 1]], False
     encoder = WarningFeatureEncoder.fit(train_rows, feature_group)
     standardize = model_level in {"B4_logistic_regression", "B5_ridge_logistic"}
     x_train = np.asarray(encoder.transform(train_rows, standardize_numeric=standardize), dtype=float)
@@ -555,7 +555,7 @@ def predict_warning_probability(
     else:
         raise ValueError(f"Unknown model level: {model_level}")
     model.fit(x_train, y_train)
-    return [float(value) for value in model.predict_proba(x_test)[:, 1]], False
+    return [_clip_probability(float(value)) for value in model.predict_proba(x_test)[:, 1]], False
 
 
 def _fit_hgb_w2_probability_model(
@@ -1640,19 +1640,27 @@ def threshold_calibration_leaderboard_rows(metrics: list[dict[str, Any]]) -> lis
         grouped[(row["target"], row["label_policy"], row["calibration_method"])].append(row)
     output = []
     for (target, policy, method), rows in sorted(grouped.items()):
+        calibrated_metric_rows = [row for row in rows if row["calibration_status"] == "calibrated"]
         output.append(
             {
                 "target": target,
                 "label_policy": policy,
                 "calibration_method": method,
+                "metric_scope": "all_status_rows",
                 "mean_brier": _mean([row["brier"] for row in rows]),
                 "mean_log_loss": _mean([row["log_loss"] for row in rows]),
                 "mean_ece_10_bin": _mean([row["ece_10_bin"] for row in rows]),
                 "mean_ece_10_bin_equal_freq": _mean([row["ece_10_bin_equal_freq"] for row in rows]),
+                "calibrated_only_mean_brier": _mean([row["brier"] for row in calibrated_metric_rows]),
+                "calibrated_only_mean_log_loss": _mean([row["log_loss"] for row in calibrated_metric_rows]),
+                "calibrated_only_mean_ece_10_bin": _mean([row["ece_10_bin"] for row in calibrated_metric_rows]),
+                "calibrated_only_mean_ece_10_bin_equal_freq": _mean(
+                    [row["ece_10_bin_equal_freq"] for row in calibrated_metric_rows]
+                ),
                 "mean_auroc": _mean([row["auroc"] for row in rows if row["auroc"] is not None]),
                 "mean_auprc": _mean([row["auprc"] for row in rows if row["auprc"] is not None]),
                 "evaluated_rows": len(rows),
-                "calibrated_rows": sum(1 for row in rows if row["calibration_status"] == "calibrated"),
+                "calibrated_rows": len(calibrated_metric_rows),
                 "fallback_rows": sum(1 for row in rows if row["calibration_status"] == "fallback_raw"),
             }
         )
@@ -1681,17 +1689,23 @@ def threshold_probability_calibration_readiness(
                 "mean_ece_10_bin": row["mean_ece_10_bin"],
                 "raw_mean_ece_10_bin": raw.get("mean_ece_10_bin") if raw else None,
                 "ece_gain_vs_raw": ece_gain,
+                "calibrated_only_mean_ece_10_bin": row["calibrated_only_mean_ece_10_bin"],
                 "mean_ece_10_bin_equal_freq": row["mean_ece_10_bin_equal_freq"],
                 "raw_mean_ece_10_bin_equal_freq": (
                     raw.get("mean_ece_10_bin_equal_freq") if raw else None
                 ),
                 "ece_equal_freq_gain_vs_raw": _metric_gain(raw, row, "mean_ece_10_bin_equal_freq"),
+                "calibrated_only_mean_ece_10_bin_equal_freq": row[
+                    "calibrated_only_mean_ece_10_bin_equal_freq"
+                ],
                 "mean_brier": row["mean_brier"],
                 "raw_mean_brier": raw.get("mean_brier") if raw else None,
                 "brier_gain_vs_raw": brier_gain,
+                "calibrated_only_mean_brier": row["calibrated_only_mean_brier"],
                 "mean_log_loss": row["mean_log_loss"],
                 "raw_mean_log_loss": raw.get("mean_log_loss") if raw else None,
                 "log_loss_gain_vs_raw": log_loss_gain,
+                "calibrated_only_mean_log_loss": row["calibrated_only_mean_log_loss"],
                 "evaluated_rows": row["evaluated_rows"],
                 "calibrated_rows": row["calibrated_rows"],
                 "fallback_rows": row["fallback_rows"],
@@ -2130,8 +2144,10 @@ def _write_threshold_probability_calibration_claim_readiness_md(readiness: dict[
         "",
         "## Primary-Horizon Method Summary",
         "",
-        "| Method | Label policy | Raw fixed ECE | Method fixed ECE | Fixed ECE gain | Raw equal-freq ECE | Method equal-freq ECE | Equal-freq ECE gain | Brier gain | Log-loss gain | Evaluated rows | Fallback rows | Passes fixed ECE | Brier guardrail | Log-loss guardrail |",
-        "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---|",
+        "Method mean columns include all evaluated rows for auditability. The calibrated-only columns exclude fallback-raw rows, and strict readiness requires zero fallback rows.",
+        "",
+        "| Method | Label policy | Raw fixed ECE | Method fixed ECE | Calibrated-only fixed ECE | Fixed ECE gain | Raw equal-freq ECE | Method equal-freq ECE | Calibrated-only equal-freq ECE | Equal-freq ECE gain | Brier gain | Log-loss gain | Evaluated rows | Fallback rows | Passes fixed ECE | Brier guardrail | Log-loss guardrail |",
+        "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---|",
     ]
     for method, result in readiness["method_results"].items():
         for policy, row in sorted(result.get("policy_results", {}).items()):
@@ -2140,9 +2156,11 @@ def _write_threshold_probability_calibration_claim_readiness_md(readiness: dict[
                 f"`{method}` | `{policy}` | "
                 f"`{_fmt(row['raw_mean_ece_10_bin'])}` | "
                 f"`{_fmt(row['mean_ece_10_bin'])}` | "
+                f"`{_fmt(row['calibrated_only_mean_ece_10_bin'])}` | "
                 f"`{_fmt(row['ece_gain_vs_raw'])}` | "
                 f"`{_fmt(row['raw_mean_ece_10_bin_equal_freq'])}` | "
                 f"`{_fmt(row['mean_ece_10_bin_equal_freq'])}` | "
+                f"`{_fmt(row['calibrated_only_mean_ece_10_bin_equal_freq'])}` | "
                 f"`{_fmt(row['ece_equal_freq_gain_vs_raw'])}` | "
                 f"`{_fmt(row['brier_gain_vs_raw'])}` | "
                 f"`{_fmt(row['log_loss_gain_vs_raw'])}` | "
