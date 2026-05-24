@@ -194,6 +194,14 @@ candidate narrowly fails the outside-C-rate non-degradation guardrail: maximum
 relative degradation outside C-rate is `0.0528343`, above the 5% threshold,
 from the voltage-window delta comparison.
 
+Milestone 5.4 ran the promised forensics/Pareto follow-up without relaxing the
+guardrail. The predeclared R2/F8/weight=1.0 setting remains the strongest
+C-rate diagnostic row, with C-rate gains `0.0305899` versus F4 and `0.0319729`
+versus the stress R0 reference, and paired p05 values above zero. It still
+fails the 5% outside-C-rate guardrail at `0.0528343`. Two lighter
+non-predeclared frontier settings pass the 5% threshold diagnostically, but
+they do not authorize the predeclared robust-capacity claim.
+
 Decision: report the stressor-balanced C-rate improvement as diagnostic
 robustness evidence only. Do not claim C-rate fade is solved, do not open
 architecture work, and do not use this result for policy ranking or causal
@@ -207,8 +215,9 @@ The v2 synthesis keeps the following negative boundaries active:
 - threshold-warning calibrated-risk wording remains unsupported after the
   Milestone 5.0 calibration gate and Milestone 5.2 equal-frequency ECE
   sensitivity;
-- stressor-robust HGB improves C-rate delta diagnostically but does not pass
-  the global non-degradation guardrail;
+- stressor-robust HGB improves C-rate delta diagnostically, but the
+  predeclared Pareto setting still does not pass the global non-degradation
+  guardrail;
 - sequence models remain blocked by the order-vs-aggregate and
   order-vs-shuffled negative result;
 - calibrated uncertainty remains blocked by C-rate coverage failure even after

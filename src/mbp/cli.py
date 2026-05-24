@@ -1219,6 +1219,94 @@ def baseline_diagnose_stressor_robustness(
     )
 
 
+@baseline_app.command("diagnose-stressor-robust-forensics")
+def baseline_diagnose_stressor_robust_forensics(
+    report: Path = typer.Option(..., "--report", help="Stressor-robust capacity JSON report."),
+    predictions: Path = typer.Option(..., "--predictions", help="Stressor-robust prediction Parquet."),
+    out_dir: Path = typer.Option(..., "--out-dir", help="Output directory for forensics."),
+) -> None:
+    """Render stressor-robust failure-source forensics from an existing run."""
+    from mbp.baselines.stressor_robust_capacity import diagnose_stressor_robust_forensics
+
+    result = diagnose_stressor_robust_forensics(report, predictions, out_dir)
+    typer.echo(
+        "Stressor-robust forensics generated: "
+        f"{result['row_counts']['split_degradation_rows']} split rows"
+    )
+
+
+@baseline_app.command("run-stressor-robust-pareto")
+def baseline_run_stressor_robust_pareto(
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    interval_subsets: Path = typer.Option(..., "--interval-subsets", help="Path to interval_subset_registry_v1.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output JSON report path."),
+    predictions_out: Path = typer.Option(..., "--predictions-out", help="Output prediction Parquet path."),
+    stress_features: Path | None = typer.Option(
+        None,
+        "--stress-features",
+        help="Optional interval_stress_features_v1_1.parquet sidecar for stress feature groups.",
+    ),
+    out_dir: Path | None = typer.Option(None, "--out-dir", help="Output directory for Pareto diagnostics."),
+    subset: str = typer.Option("baseline_clean_tolerant", "--subset", help="Interval subset flag."),
+    seed: int = typer.Option(42, "--seed", help="Deterministic model seed."),
+    hgb_max_iter: int = typer.Option(50, "--hgb-max-iter", min=1, help="HGB max_iter."),
+    model_levels: str = typer.Option(
+        "R0_reference_hgb50,R1_condition_balanced_hgb,R2_stressor_balanced_hgb,R3_condition_bagged_hgb,R4_worst_fold_selected_hgb",
+        "--model-levels",
+        help="Comma-separated robust model levels.",
+    ),
+    feature_groups: str = typer.Option(
+        "F4_state_log_age_scalar,F8_timestamp_weighted_stress",
+        "--feature-groups",
+        help="Comma-separated supported robust feature groups.",
+    ),
+    targets: str = typer.Option(
+        "capacity_Ah_k1,delta_capacity_Ah",
+        "--targets",
+        help="Comma-separated capacity targets.",
+    ),
+    split_views: str = typer.Option(
+        "condition_fold,temperature_holdout_fold,c_rate_holdout_fold,profile_holdout_fold,voltage_window_holdout_fold",
+        "--split-views",
+        help="Comma-separated split views.",
+    ),
+    weight_strengths: str = typer.Option(
+        "0.25,0.5,0.75,1.0",
+        "--weight-strengths",
+        help="Comma-separated R1/R2/R4 reweighting strengths.",
+    ),
+    bag_counts: str = typer.Option(
+        "3,5,9",
+        "--bag-counts",
+        help="Comma-separated R3 condition-bagging ensemble sizes.",
+    ),
+) -> None:
+    """Run bounded stressor-robust Pareto diagnostics."""
+    from mbp.baselines.stressor_robust_capacity import run_stressor_robust_pareto
+
+    report = run_stressor_robust_pareto(
+        interval_table,
+        interval_subsets,
+        out,
+        predictions_out,
+        stress_features_path=stress_features,
+        out_dir=out_dir,
+        subset=subset,
+        seed=seed,
+        hgb_max_iter=hgb_max_iter,
+        model_levels=_comma_values(model_levels),
+        feature_groups=_comma_values(feature_groups),
+        targets=_comma_values(targets),
+        split_views=_comma_values(split_views),
+        weight_strengths=_comma_floats(weight_strengths),
+        bag_counts=_comma_ints(bag_counts),
+    )
+    typer.echo(
+        "Stressor-robust Pareto report generated: "
+        f"{report['row_counts']['metrics']} metric rows written to {out}"
+    )
+
+
 @baseline_app.command("compare-prior-pulse-capacity")
 def baseline_compare_prior_pulse_capacity(
     baseline_report: Path = typer.Option(..., "--baseline-report", help="Capacity baseline report without prior-PULSE feature groups."),
@@ -2247,6 +2335,14 @@ def coupling_pulse_capacity_robustness(
 
 def _comma_values(value: str) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def _comma_floats(value: str) -> list[float]:
+    return [float(item) for item in _comma_values(value)]
+
+
+def _comma_ints(value: str) -> list[int]:
+    return [int(item) for item in _comma_values(value)]
 
 
 @audit_app.command("report")

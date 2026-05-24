@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 5.3: Calibration and robustness gate correctness hardening.
+Milestone 5.4: Stressor-robust Pareto forensics and claim finalization.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -43,13 +43,13 @@ Current state:
   found a diagnostic C-rate `delta_capacity_Ah` improvement, but did not
   support a global robust-capacity claim because the outside-C-rate
   non-degradation guardrail narrowly failed.
-- The current main-project track is a correctness-hardening gate for existing
-  calibration and stressor-robustness checks. It fixes silent readiness-gate
-  failure modes, enforces no-empty-metric runner failures, keeps calibration
-  fit/test policy checks label-policy specific, and refreshes affected reports.
-  This is not new model expansion and does not authorize calibrated-risk,
-  calibrated-uncertainty, robust-capacity, architecture, policy, or causal
-  wording.
+- Milestone 5.3 hardened existing calibration and stressor-robustness checks
+  against silent false support.
+- The current main-project track is a bounded stressor-robustness forensics
+  gate. It diagnoses where the Milestone 5.1 outside-C-rate non-degradation
+  guardrail fails and evaluates a small, predeclared Pareto grid of existing
+  non-neural robust HGB settings. It must not relax the 5% guardrail or convert
+  non-predeclared tuning wins into a supported robust-capacity claim.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
@@ -68,6 +68,10 @@ Allowed work:
 - train-only internal condition model selection
 - paired condition-level robustness diagnostics
 - stressor-robust capacity claim-readiness reporting
+- stressor-robust failure forensics
+- bounded stressor-robust Pareto diagnostics over existing robust HGB variants
+- non-degradation threshold sensitivity reporting without relaxing the
+  predeclared 5% guardrail
 - grouped threshold-warning probability calibration
 - Platt/logistic and isotonic post-hoc calibration fitted on calibration
   conditions only
@@ -142,8 +146,8 @@ Allowed work:
 - small tests with synthetic fixtures
 
 Forbidden work:
-- new model training outside the scoped calibration/quantile hygiene reruns
-- new feature engineering outside the scoped calibration/quantile hygiene gate
+- new model training outside the scoped stressor-robust Pareto/forensics gate
+- new feature engineering outside the scoped stressor-robust Pareto/forensics gate
 - knee prediction models
 - neural models
 - sequence models

@@ -228,6 +228,17 @@ authorize new model families, new feature engineering, neural or sequence
 models, CBAT, DRT, EIS embeddings, policy ranking, calibrated-risk wording,
 calibrated-uncertainty wording, causal claims, same-cell counterfactual claims,
 robust-capacity wording, or broad multimodal claims.
+Milestone 5.4 authorizes only stressor-robust capacity forensics and a bounded
+Pareto diagnostic grid over the existing non-neural robust HGB variants and
+existing F4/F8 feature groups. It may render split/condition degradation
+forensics, evaluate predeclared reweighting strengths and bag counts, and
+report non-degradation threshold sensitivity. It must keep the predeclared 5%
+outside-C-rate non-degradation guardrail intact; lighter or otherwise
+non-predeclared settings that pass are diagnostic only. It does not authorize
+new feature engineering, neural or sequence models, CBAT, DRT, EIS embeddings,
+policy ranking, calibrated-risk wording, calibrated-uncertainty wording,
+causal claims, same-cell counterfactual claims, robust-capacity support unless
+the predeclared setting passes, or broad multimodal claims.
 
 Required split discipline:
 
@@ -316,6 +327,34 @@ Required Milestone 5.3 correctness-hardening artifacts:
 - refreshed `reports/baselines/capacity_stressor_robust_hgb50_report.json`
 - refreshed `reports/baselines/capacity_stressor_robust_hgb50/stressor_robustness_claim_readiness.md`
 - `docs/experiments/2026-05-24_calibration_robustness_correctness_hardening.md`
+
+Required Milestone 5.4 stressor-robust Pareto/forensics artifacts:
+
+- `mbp baseline diagnose-stressor-robust-forensics`
+- `mbp baseline run-stressor-robust-pareto`
+- `reports/baselines/capacity_stressor_robust_hgb50/stressor_failure_forensics.md`
+- `reports/baselines/capacity_stressor_robust_hgb50/plots/degradation_by_split_target_feature.csv`
+- `reports/baselines/capacity_stressor_robust_hgb50/plots/degradation_by_condition.csv`
+- `reports/baselines/capacity_stressor_robust_hgb50/plots/worst_regression_conditions.csv`
+- `reports/baselines/capacity_stressor_robust_pareto_report.json`
+- `reports/baselines/capacity_stressor_robust_pareto/robustness_leaderboard.csv`
+- `reports/baselines/capacity_stressor_robust_pareto/paired_condition_gains.csv`
+- `reports/baselines/capacity_stressor_robust_pareto/plots/pareto_frontier.csv`
+- `reports/baselines/capacity_stressor_robust_pareto/plots/non_degradation_threshold_sensitivity.csv`
+- `reports/baselines/capacity_stressor_robust_pareto/stressor_robust_pareto_claim_readiness.md`
+- `docs/experiments/2026-05-24_stressor_robust_pareto_forensics.md`
+
+Milestone 5.4 claim rules:
+
+- If the predeclared R2/F8/weight=1.0 setting passes C-rate gain, paired p05,
+  and <=5% outside-C-rate non-degradation, a narrow robust-capacity diagnostic
+  claim may be supported.
+- If only lighter or otherwise non-predeclared settings pass, report them as
+  Pareto diagnostics only.
+- If the predeclared setting fails the 5% guardrail, keep robust-capacity
+  support blocked even if the miss is narrow.
+- Architecture, policy, causal, calibrated-risk, calibrated-uncertainty,
+  sequence/neural, and CBAT claims remain blocked.
 
 Required Milestone 4.0 manuscript-integration artifacts:
 

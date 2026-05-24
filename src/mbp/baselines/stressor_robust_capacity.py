@@ -38,6 +38,7 @@ from mbp.baselines.capacity import _prediction_to_evaluation_space
 from mbp.baselines.capacity import _training_target_value
 
 SCHEMA_VERSION = "gate51.stressor_robust_capacity.v1"
+PARETO_SCHEMA_VERSION = "gate54.stressor_robust_pareto.v1"
 ROBUST_MODEL_LEVELS = (
     "R0_reference_hgb50",
     "R1_condition_balanced_hgb",
@@ -59,6 +60,12 @@ SELECTION_TIE_BREAK_ORDER = {
 DEFAULT_ROBUST_FEATURE_GROUPS = ("F4_state_log_age_scalar", "F8_timestamp_weighted_stress")
 PRIMARY_TARGET = "delta_capacity_Ah"
 PRIMARY_SPLIT = "c_rate_holdout_fold"
+DEFAULT_PARETO_WEIGHT_STRENGTHS = (0.25, 0.5, 0.75, 1.0)
+DEFAULT_PARETO_BAG_COUNTS = (3, 5, 9)
+NON_DEGRADATION_THRESHOLDS = (0.03, 0.05, 0.075, 0.10)
+PREDECLARED_PARETO_MODEL_LEVEL = "R2_stressor_balanced_hgb"
+PREDECLARED_PARETO_FEATURE_GROUP = "F8_timestamp_weighted_stress"
+PREDECLARED_PARETO_WEIGHT_STRENGTH = 1.0
 
 
 @dataclass(frozen=True)
@@ -232,6 +239,190 @@ def run_stressor_robust_capacity(
     return report
 
 
+def run_stressor_robust_pareto(
+    interval_table_path: Path,
+    interval_subsets_path: Path,
+    out_path: Path,
+    predictions_out_path: Path,
+    *,
+    stress_features_path: Path | None = None,
+    out_dir: Path | None = None,
+    subset: str = "baseline_clean_tolerant",
+    seed: int = 42,
+    hgb_max_iter: int = DEFAULT_HGB_MAX_ITER,
+    model_levels: list[str] | None = None,
+    feature_groups: list[str] | None = None,
+    targets: list[str] | None = None,
+    split_views: list[str] | None = None,
+    weight_strengths: list[float] | None = None,
+    bag_counts: list[int] | None = None,
+) -> dict[str, Any]:
+    """Run a bounded stressor-robust Pareto diagnostic grid."""
+    if hgb_max_iter <= 0:
+        raise ValueError("hgb_max_iter must be positive.")
+    selected_models = _normalize_selection(
+        model_levels,
+        ROBUST_MODEL_LEVELS,
+        "robust model level",
+        default=DEFAULT_ROBUST_MODEL_LEVELS,
+    )
+    selected_feature_groups = _normalize_selection(
+        feature_groups,
+        DEFAULT_ROBUST_FEATURE_GROUPS,
+        "feature group",
+        default=DEFAULT_ROBUST_FEATURE_GROUPS,
+    )
+    selected_targets = _normalize_selection(targets, DIRECT_TARGETS, "target", default=DIRECT_TARGETS)
+    selected_splits = _normalize_selection(split_views, SPLIT_COLUMNS, "split view")
+    selected_weight_strengths = _normalize_float_grid(
+        weight_strengths,
+        DEFAULT_PARETO_WEIGHT_STRENGTHS,
+        "weight strength",
+    )
+    selected_bag_counts = _normalize_int_grid(bag_counts, DEFAULT_PARETO_BAG_COUNTS, "bag count")
+    if STRESS_FEATURE_GROUPS & set(selected_feature_groups) and stress_features_path is None:
+        raise ValueError("Stress feature groups require --stress-features.")
+    _import_sklearn_stack()
+
+    all_rows, subset_rows = load_baseline_rows(
+        interval_table_path,
+        interval_subsets_path,
+        subset,
+        stress_features_path=stress_features_path,
+    )
+    if not subset_rows:
+        raise ValueError("Selected interval subset is empty.")
+    settings = pareto_model_settings(
+        selected_models,
+        weight_strengths=selected_weight_strengths,
+        bag_counts=selected_bag_counts,
+    )
+
+    metrics: list[dict[str, Any]] = []
+    predictions: list[dict[str, Any]] = []
+    for split_name in selected_splits:
+        for heldout_fold, train_rows, test_rows in iter_split_instances(subset_rows, split_name):
+            assert_no_parameter_set_leakage(train_rows, test_rows, split_name, heldout_fold)
+            for setting in settings:
+                for feature_group in selected_feature_groups:
+                    for target in selected_targets:
+                        result = predict_stressor_robust_capacity_target(
+                            model_level=str(setting["model_level"]),
+                            feature_group=feature_group,
+                            train_rows=train_rows,
+                            test_rows=test_rows,
+                            target=target,
+                            split_name=split_name,
+                            heldout_fold=heldout_fold,
+                            seed=seed,
+                            hgb_max_iter=hgb_max_iter,
+                            bag_count=int(setting["bag_count"]),
+                            weight_strength=float(setting["weight_strength"]),
+                        )
+                        metric = compute_metrics(
+                            test_rows,
+                            result.predictions,
+                            target=target,
+                            subset_name=subset,
+                            run_scope="primary",
+                            split_name=split_name,
+                            heldout_fold=heldout_fold,
+                            model_level=str(setting["model_level"]),
+                            feature_group=feature_group,
+                            train_rows=train_rows,
+                        )
+                        metric.update(
+                            {
+                                "schema_version": PARETO_SCHEMA_VERSION,
+                                "model_setting_id": setting["model_setting_id"],
+                                "weight_strength": setting["weight_strength"],
+                                "bag_count": setting["bag_count"],
+                                "selected_variant": result.selected_variant,
+                                "internal_validation_metric": result.internal_validation_metric,
+                                "internal_validation_condition_mean_mae": (
+                                    result.internal_validation_condition_mean_mae
+                                ),
+                            }
+                        )
+                        metrics.append(metric)
+                        predictions.extend(
+                            _pareto_prediction_rows(
+                                test_rows,
+                                result.predictions,
+                                subset_name=subset,
+                                split_name=split_name,
+                                heldout_fold=heldout_fold,
+                                model_level=str(setting["model_level"]),
+                                feature_group=feature_group,
+                                target=target,
+                                model_setting_id=str(setting["model_setting_id"]),
+                                weight_strength=float(setting["weight_strength"]),
+                                bag_count=int(setting["bag_count"]),
+                            )
+                        )
+
+    if not metrics:
+        raise ValueError("No metrics were generated.")
+    report_dir = out_dir or _default_report_dir(out_path)
+    predictions_out_path.parent.mkdir(parents=True, exist_ok=True)
+    pq.write_table(
+        pa.Table.from_pylist(predictions).replace_schema_metadata(
+            {b"schema_version": PARETO_SCHEMA_VERSION.encode()}
+        ),
+        predictions_out_path,
+    )
+    leaderboard = pareto_leaderboard_rows(metrics)
+    paired = pareto_paired_condition_gain_rows(predictions)
+    frontier = pareto_frontier_rows(leaderboard, paired)
+    threshold_sensitivity = non_degradation_threshold_sensitivity_rows(frontier)
+    claim = stressor_robust_pareto_claim_readiness(frontier)
+    report = {
+        "status": "passed",
+        "schema_version": PARETO_SCHEMA_VERSION,
+        "generated_at_utc": datetime.now(UTC).isoformat(),
+        "inputs": {
+            "interval_table": str(interval_table_path),
+            "interval_subsets": str(interval_subsets_path),
+            "stress_features": str(stress_features_path) if stress_features_path else None,
+        },
+        "outputs": {
+            "report": str(out_path),
+            "predictions": str(predictions_out_path),
+            "out_dir": str(report_dir),
+        },
+        "subset": subset,
+        "seed": seed,
+        "hgb_max_iter": hgb_max_iter,
+        "model_levels": selected_models,
+        "feature_groups": selected_feature_groups,
+        "targets": selected_targets,
+        "split_views": selected_splits,
+        "weight_strengths": selected_weight_strengths,
+        "bag_counts": selected_bag_counts,
+        "row_counts": {
+            "full_interval_rows": len(all_rows),
+            "selected_subset_rows": len(subset_rows),
+            "settings": len(settings),
+            "metrics": len(metrics),
+            "predictions": len(predictions),
+        },
+        "claim_readiness": claim,
+        "metrics": metrics,
+    }
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    render_stressor_robust_pareto_artifacts(
+        report,
+        leaderboard,
+        paired,
+        frontier,
+        threshold_sensitivity,
+        claim,
+        report_dir,
+    )
+    return report
+
+
 def predict_stressor_robust_capacity_target(
     *,
     model_level: str,
@@ -244,6 +435,7 @@ def predict_stressor_robust_capacity_target(
     seed: int,
     hgb_max_iter: int,
     bag_count: int,
+    weight_strength: float = 1.0,
 ) -> RobustPredictionResult:
     if model_level not in ROBUST_MODEL_LEVELS:
         raise ValueError(f"Unknown robust model level: {model_level}")
@@ -258,6 +450,7 @@ def predict_stressor_robust_capacity_target(
             seed=seed,
             hgb_max_iter=hgb_max_iter,
             bag_count=bag_count,
+            weight_strength=weight_strength,
         )
     predictions = _fit_predict_hgb_variant(
         model_level,
@@ -270,24 +463,25 @@ def predict_stressor_robust_capacity_target(
         seed=seed,
         hgb_max_iter=hgb_max_iter,
         bag_count=bag_count,
+        weight_strength=weight_strength,
     )
     return RobustPredictionResult(predictions=predictions)
 
 
-def condition_balanced_weights(rows: list[dict[str, Any]]) -> list[float]:
+def condition_balanced_weights(rows: list[dict[str, Any]], *, strength: float = 1.0) -> list[float]:
     counts = defaultdict(int)
     for row in rows:
         counts[int(row["parameter_set"])] += 1
     raw = [1.0 / counts[int(row["parameter_set"])] for row in rows]
-    return _normalize_weights(raw)
+    return _blend_weights(_normalize_weights(raw), strength=strength)
 
 
-def stressor_balanced_weights(rows: list[dict[str, Any]], split_name: str) -> list[float]:
+def stressor_balanced_weights(rows: list[dict[str, Any]], split_name: str, *, strength: float = 1.0) -> list[float]:
     counts = defaultdict(int)
     for row in rows:
         counts[_stressor_key(row, split_name)] += 1
     raw = [1.0 / counts[_stressor_key(row, split_name)] for row in rows]
-    return _normalize_weights(raw)
+    return _blend_weights(_normalize_weights(raw), strength=strength)
 
 
 def _fit_predict_hgb_variant(
@@ -302,6 +496,7 @@ def _fit_predict_hgb_variant(
     seed: int,
     hgb_max_iter: int,
     bag_count: int,
+    weight_strength: float = 1.0,
 ) -> list[dict[str, float | None]]:
     if model_level == "R3_condition_bagged_hgb":
         return _condition_bagged_predictions(
@@ -317,9 +512,9 @@ def _fit_predict_hgb_variant(
         )
     sample_weight = None
     if model_level == "R1_condition_balanced_hgb":
-        sample_weight = condition_balanced_weights(train_rows)
+        sample_weight = condition_balanced_weights(train_rows, strength=weight_strength)
     elif model_level == "R2_stressor_balanced_hgb":
-        sample_weight = stressor_balanced_weights(train_rows, split_name)
+        sample_weight = stressor_balanced_weights(train_rows, split_name, strength=weight_strength)
     elif model_level != "R0_reference_hgb50":
         raise ValueError(f"Unsupported direct robust HGB variant: {model_level}")
     return _fit_hgb_predictions(
@@ -433,6 +628,7 @@ def _worst_fold_selected_predictions(
     seed: int,
     hgb_max_iter: int,
     bag_count: int,
+    weight_strength: float = 1.0,
 ) -> RobustPredictionResult:
     fit_rows, validation_rows = _internal_condition_validation_split(
         train_rows,
@@ -451,6 +647,7 @@ def _worst_fold_selected_predictions(
             seed=seed,
             hgb_max_iter=hgb_max_iter,
             bag_count=bag_count,
+            weight_strength=weight_strength,
         )
         metric = compute_metrics(
             validation_rows,
@@ -480,6 +677,7 @@ def _worst_fold_selected_predictions(
         seed=seed,
         hgb_max_iter=hgb_max_iter,
         bag_count=bag_count,
+        weight_strength=weight_strength,
     )
     return RobustPredictionResult(
         predictions=predictions,
@@ -715,6 +913,376 @@ def stressor_robust_claim_readiness(
     }
 
 
+def pareto_model_settings(
+    selected_models: list[str],
+    *,
+    weight_strengths: list[float],
+    bag_counts: list[int],
+) -> list[dict[str, Any]]:
+    settings: list[dict[str, Any]] = []
+    for model_level in selected_models:
+        if model_level == "R0_reference_hgb50":
+            settings.append(
+                {
+                    "model_setting_id": "R0_reference_hgb50",
+                    "model_level": model_level,
+                    "weight_strength": 0.0,
+                    "bag_count": 1,
+                }
+            )
+        elif model_level in {"R1_condition_balanced_hgb", "R2_stressor_balanced_hgb", "R4_worst_fold_selected_hgb"}:
+            for strength in weight_strengths:
+                settings.append(
+                    {
+                        "model_setting_id": f"{model_level}__w{_slug_float(strength)}",
+                        "model_level": model_level,
+                        "weight_strength": strength,
+                        "bag_count": 1,
+                    }
+                )
+        elif model_level == "R3_condition_bagged_hgb":
+            for bag_count in bag_counts:
+                settings.append(
+                    {
+                        "model_setting_id": f"{model_level}__bags{bag_count}",
+                        "model_level": model_level,
+                        "weight_strength": 0.0,
+                        "bag_count": bag_count,
+                    }
+                )
+        else:
+            raise ValueError(f"Unknown robust model level: {model_level}")
+    if not settings:
+        raise ValueError("At least one Pareto model setting must be selected.")
+    return settings
+
+
+def diagnose_stressor_robust_forensics(
+    report_path: Path,
+    predictions_path: Path,
+    out_dir: Path,
+) -> dict[str, Any]:
+    """Render failure-source forensics for an existing stressor-robust run."""
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    predictions = pq.read_table(predictions_path).to_pylist()
+    out_dir.mkdir(parents=True, exist_ok=True)
+    leaderboard = robust_leaderboard_rows(report["metrics"])
+    split_degradation = degradation_by_split_target_feature_rows(leaderboard)
+    condition_degradation = degradation_by_condition_rows(predictions)
+    worst_conditions = sorted(
+        [row for row in condition_degradation if _as_float(row["condition_mae_delta"]) > 0],
+        key=lambda row: _as_float(row["condition_mae_delta"]),
+        reverse=True,
+    )[:50]
+    claim = stressor_robust_claim_readiness(
+        leaderboard,
+        paired_condition_gain_rows(predictions),
+        bootstrap_resamples=1000,
+        seed=42,
+    )
+    _write_csv(out_dir / "plots" / "degradation_by_split_target_feature.csv", split_degradation)
+    _write_csv(out_dir / "plots" / "degradation_by_condition.csv", condition_degradation)
+    _write_csv(out_dir / "plots" / "worst_regression_conditions.csv", worst_conditions)
+    _write_stressor_forensics_md(
+        split_degradation,
+        worst_conditions,
+        claim,
+        out_dir / "stressor_failure_forensics.md",
+    )
+    return {
+        "status": "passed",
+        "row_counts": {
+            "split_degradation_rows": len(split_degradation),
+            "condition_degradation_rows": len(condition_degradation),
+            "worst_condition_rows": len(worst_conditions),
+        },
+        "outputs": {
+            "forensics": str(out_dir / "stressor_failure_forensics.md"),
+            "split_degradation": str(out_dir / "plots" / "degradation_by_split_target_feature.csv"),
+            "condition_degradation": str(out_dir / "plots" / "degradation_by_condition.csv"),
+            "worst_conditions": str(out_dir / "plots" / "worst_regression_conditions.csv"),
+        },
+    }
+
+
+def degradation_by_split_target_feature_rows(leaderboard: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    output = []
+    for row in leaderboard:
+        if row["run_scope"] != "primary" or row["model_level"] == "R0_reference_hgb50":
+            continue
+        reference = _find_leaderboard(
+            [
+                ref
+                for ref in leaderboard
+                if ref["run_scope"] == row["run_scope"]
+                and ref["target"] == row["target"]
+                and ref["split_name"] == row["split_name"]
+            ],
+            "R0_reference_hgb50",
+            str(row["feature_group"]),
+        )
+        if not reference:
+            continue
+        ref_value = _as_float(reference["condition_mean_mae"])
+        candidate_value = _as_float(row["condition_mean_mae"])
+        output.append(
+            {
+                "run_scope": row["run_scope"],
+                "split_name": row["split_name"],
+                "target": row["target"],
+                "model_level": row["model_level"],
+                "feature_group": row["feature_group"],
+                "reference_model_level": "R0_reference_hgb50",
+                "reference_feature_group": row["feature_group"],
+                "candidate_condition_mean_mae": candidate_value,
+                "reference_condition_mean_mae": ref_value,
+                "condition_mean_mae_delta": candidate_value - ref_value,
+                "relative_degradation": ((candidate_value - ref_value) / ref_value) if ref_value > 0 else None,
+                "exceeds_5pct_guardrail": (
+                    ((candidate_value - ref_value) / ref_value) > 0.05 if ref_value > 0 else False
+                ),
+            }
+        )
+    return output
+
+
+def degradation_by_condition_rows(predictions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    condition_errors = _condition_mae_by_prediction_group(predictions)
+    output = []
+    for key, candidate_mae in sorted(condition_errors.items()):
+        run_scope, split_name, target, model, feature, fold, parameter_set = key
+        if model == "R0_reference_hgb50" or run_scope != "primary":
+            continue
+        reference = condition_errors.get(
+            (run_scope, split_name, target, "R0_reference_hgb50", feature, fold, parameter_set)
+        )
+        if reference is None:
+            continue
+        output.append(
+            {
+                "run_scope": run_scope,
+                "split_name": split_name,
+                "target": target,
+                "model_level": model,
+                "feature_group": feature,
+                "heldout_fold": fold,
+                "parameter_set": parameter_set,
+                "candidate_condition_mae": candidate_mae,
+                "reference_condition_mae": reference,
+                "condition_mae_delta": candidate_mae - reference,
+                "relative_degradation": ((candidate_mae - reference) / reference) if reference > 0 else None,
+            }
+        )
+    return output
+
+
+def pareto_leaderboard_rows(metrics: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    grouped: dict[tuple[str, str, str, str, str, str], list[dict[str, Any]]] = defaultdict(list)
+    for metric in metrics:
+        grouped[
+            (
+                str(metric["run_scope"]),
+                str(metric["model_setting_id"]),
+                str(metric["model_level"]),
+                str(metric["feature_group"]),
+                str(metric["target"]),
+                str(metric["split_name"]),
+            )
+        ].append(metric)
+    rows = []
+    for (run_scope, setting_id, model, feature, target, split), group in sorted(grouped.items()):
+        rows.append(
+            {
+                "run_scope": run_scope,
+                "model_setting_id": setting_id,
+                "model_level": model,
+                "feature_group": feature,
+                "target": target,
+                "split_name": split,
+                "fold_count": len(group),
+                "weight_strength": group[0].get("weight_strength"),
+                "bag_count": group[0].get("bag_count"),
+                "mean_mae": _mean([float(item["mae"]) for item in group]),
+                "mean_rmse": _mean([float(item["rmse"]) for item in group]),
+                "condition_mean_mae": _mean([float(item["condition_mean_mae"]) for item in group]),
+                "condition_median_mae": _mean([float(item["condition_median_mae"]) for item in group]),
+                "worst_condition_mae": max(float(item["worst_condition_mae"]) for item in group),
+                "selected_variants": ",".join(
+                    sorted({str(item.get("selected_variant")) for item in group if item.get("selected_variant")})
+                ),
+            }
+        )
+    return rows
+
+
+def pareto_paired_condition_gain_rows(predictions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    condition_errors = _condition_mae_by_prediction_setting_group(predictions)
+    reference_items = [(key, value) for key, value in condition_errors.items() if key[3] == "R0_reference_hgb50"]
+    rows = []
+    for key, candidate_mae in sorted(condition_errors.items()):
+        run_scope, split_name, target, model, feature, setting_id, fold, parameter_set = key
+        if model == "R0_reference_hgb50":
+            continue
+        for reference_key, reference in reference_items:
+            (
+                ref_run_scope,
+                ref_split_name,
+                ref_target,
+                _ref_model,
+                ref_feature,
+                _ref_setting,
+                ref_fold,
+                ref_parameter_set,
+            ) = reference_key
+            if (
+                ref_run_scope != run_scope
+                or ref_split_name != split_name
+                or ref_target != target
+                or ref_fold != fold
+                or ref_parameter_set != parameter_set
+            ):
+                continue
+            rows.append(
+                {
+                    "run_scope": run_scope,
+                    "split_name": split_name,
+                    "heldout_fold": fold,
+                    "target": target,
+                    "model_setting_id": setting_id,
+                    "feature_group": feature,
+                    "candidate_feature_group": feature,
+                    "reference_feature_group": ref_feature,
+                    "candidate_model_level": model,
+                    "reference_model_level": "R0_reference_hgb50",
+                    "parameter_set": parameter_set,
+                    "reference_condition_mae": reference,
+                    "candidate_condition_mae": candidate_mae,
+                    "condition_mae_gain": reference - candidate_mae,
+                }
+            )
+    return rows
+
+
+def pareto_frontier_rows(
+    leaderboard: list[dict[str, Any]],
+    paired_gains: list[dict[str, Any]],
+    *,
+    bootstrap_resamples: int = 1000,
+    seed: int = 42,
+) -> list[dict[str, Any]]:
+    primary_rows = [
+        row
+        for row in leaderboard
+        if row["run_scope"] == "primary" and row["target"] == PRIMARY_TARGET and row["split_name"] == PRIMARY_SPLIT
+    ]
+    r0_f4 = _find_pareto_leaderboard(primary_rows, "R0_reference_hgb50", "F4_state_log_age_scalar")
+    r0_stress_rows = [
+        row
+        for row in primary_rows
+        if row["model_level"] == "R0_reference_hgb50" and row["feature_group"] != "F4_state_log_age_scalar"
+    ]
+    r0_stress = min(r0_stress_rows, key=lambda row: float(row["condition_mean_mae"]), default=None)
+    output = []
+    for row in primary_rows:
+        if row["model_level"] == "R0_reference_hgb50":
+            continue
+        gain_vs_f4 = _leaderboard_gain(r0_f4, row)
+        gain_vs_stress = _leaderboard_gain(r0_stress, row)
+        paired_vs_f4 = _pareto_gains_for_candidate(paired_gains, row, "F4_state_log_age_scalar")
+        paired_vs_stress = _pareto_gains_for_candidate(
+            paired_gains,
+            row,
+            str(r0_stress["feature_group"]) if r0_stress else "",
+        )
+        max_degradation = _max_other_split_relative_degradation_for_setting(leaderboard, row)
+        output.append(
+            {
+                "model_setting_id": row["model_setting_id"],
+                "model_level": row["model_level"],
+                "feature_group": row["feature_group"],
+                "weight_strength": row.get("weight_strength"),
+                "bag_count": row.get("bag_count"),
+                "c_rate_condition_mean_mae": row["condition_mean_mae"],
+                "c_rate_worst_condition_mae": row["worst_condition_mae"],
+                "gain_vs_f4": gain_vs_f4,
+                "gain_vs_stress_reference": gain_vs_stress,
+                "paired_p05_vs_f4": _bootstrap_mean_p05(paired_vs_f4, resamples=bootstrap_resamples, seed=seed),
+                "paired_p05_vs_stress_reference": _bootstrap_mean_p05(
+                    paired_vs_stress,
+                    resamples=bootstrap_resamples,
+                    seed=seed,
+                ),
+                "max_other_split_relative_degradation": max_degradation,
+                "is_predeclared_primary_setting": _is_predeclared_pareto_setting(row),
+            }
+        )
+    _mark_nondominated(output)
+    return sorted(
+        output,
+        key=lambda item: (
+            not bool(item["is_predeclared_primary_setting"]),
+            _finite_or(item["max_other_split_relative_degradation"], math.inf),
+            -_finite_or(item["gain_vs_stress_reference"], -math.inf),
+        ),
+    )
+
+
+def non_degradation_threshold_sensitivity_rows(frontier: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    output = []
+    for row in frontier:
+        for threshold in NON_DEGRADATION_THRESHOLDS:
+            max_degradation = row["max_other_split_relative_degradation"]
+            passes = _pareto_candidate_passes(row, max_degradation_threshold=threshold)
+            output.append(
+                {
+                    "model_setting_id": row["model_setting_id"],
+                    "model_level": row["model_level"],
+                    "feature_group": row["feature_group"],
+                    "weight_strength": row["weight_strength"],
+                    "bag_count": row["bag_count"],
+                    "threshold": threshold,
+                    "gain_vs_f4": row["gain_vs_f4"],
+                    "gain_vs_stress_reference": row["gain_vs_stress_reference"],
+                    "paired_p05_vs_f4": row["paired_p05_vs_f4"],
+                    "paired_p05_vs_stress_reference": row["paired_p05_vs_stress_reference"],
+                    "max_other_split_relative_degradation": max_degradation,
+                    "passes_threshold": passes,
+                    "is_predeclared_primary_setting": row["is_predeclared_primary_setting"],
+                }
+            )
+    return output
+
+
+def stressor_robust_pareto_claim_readiness(frontier: list[dict[str, Any]]) -> dict[str, Any]:
+    predeclared = next((row for row in frontier if row["is_predeclared_primary_setting"]), None)
+    predeclared_passes = bool(predeclared and _pareto_candidate_passes(predeclared, max_degradation_threshold=0.05))
+    passing_frontier = [
+        row for row in frontier if _pareto_candidate_passes(row, max_degradation_threshold=0.05)
+    ]
+    status = "supported_for_diagnostics" if predeclared_passes else "not_supported"
+    if not predeclared_passes and passing_frontier:
+        status = "diagnostic_only"
+    best = predeclared or (frontier[0] if frontier else None)
+    return {
+        "stressor_robust_pareto_claim": status,
+        "predeclared_setting_id": best["model_setting_id"] if best else None,
+        "predeclared_passes_5pct": predeclared_passes,
+        "passing_frontier_settings_5pct": len(passing_frontier),
+        "best_c_rate_gain_vs_f4": best["gain_vs_f4"] if best else None,
+        "best_c_rate_gain_vs_stress_reference": best["gain_vs_stress_reference"] if best else None,
+        "best_max_other_split_relative_degradation": (
+            best["max_other_split_relative_degradation"] if best else None
+        ),
+        "architecture_readiness": "blocked",
+        "policy_ranking": "blocked",
+        "claim_rule": (
+            "Support requires the predeclared R2/F8/weight=1.0 setting to retain positive C-rate delta gains "
+            "versus F4 and stress references, paired p05 above zero for both references, and <=5% outside-C-rate "
+            "degradation. Other passing frontier points are diagnostic only."
+        ),
+    }
+
+
 def _robust_prediction_rows(
     test_rows: list[dict[str, Any]],
     predictions: list[dict[str, float | None]],
@@ -755,6 +1323,43 @@ def _robust_prediction_rows(
     return rows
 
 
+def _pareto_prediction_rows(
+    test_rows: list[dict[str, Any]],
+    predictions: list[dict[str, float | None]],
+    *,
+    subset_name: str,
+    split_name: str,
+    heldout_fold: int,
+    model_level: str,
+    feature_group: str,
+    target: str,
+    model_setting_id: str,
+    weight_strength: float,
+    bag_count: int,
+) -> list[dict[str, Any]]:
+    rows = _robust_prediction_rows(
+        test_rows,
+        predictions,
+        subset_name=subset_name,
+        run_scope="primary",
+        split_name=split_name,
+        heldout_fold=heldout_fold,
+        model_level=model_level,
+        feature_group=feature_group,
+        target=target,
+    )
+    for row in rows:
+        row.update(
+            {
+                "schema_version": PARETO_SCHEMA_VERSION,
+                "model_setting_id": model_setting_id,
+                "weight_strength": weight_strength,
+                "bag_count": bag_count,
+            }
+        )
+    return rows
+
+
 def _condition_mae_by_prediction_group(predictions: list[dict[str, Any]]) -> dict[tuple[str, str, str, str, str, int, int], float]:
     grouped: dict[tuple[str, str, str, str, str, int, int], list[float]] = defaultdict(list)
     for row in predictions:
@@ -764,6 +1369,25 @@ def _condition_mae_by_prediction_group(predictions: list[dict[str, Any]]) -> dic
             str(row["target"]),
             str(row["model_level"]),
             str(row["feature_group"]),
+            int(row["heldout_fold"]),
+            int(row["parameter_set"]),
+        )
+        grouped[key].append(abs(_as_float(row["y_pred"]) - _as_float(row["y_true"])))
+    return {key: _mean(values) for key, values in grouped.items()}
+
+
+def _condition_mae_by_prediction_setting_group(
+    predictions: list[dict[str, Any]],
+) -> dict[tuple[str, str, str, str, str, str, int, int], float]:
+    grouped: dict[tuple[str, str, str, str, str, str, int, int], list[float]] = defaultdict(list)
+    for row in predictions:
+        key = (
+            str(row["run_scope"]),
+            str(row["split_name"]),
+            str(row["target"]),
+            str(row["model_level"]),
+            str(row["feature_group"]),
+            str(row.get("model_setting_id", row["model_level"])),
             int(row["heldout_fold"]),
             int(row["parameter_set"]),
         )
@@ -802,6 +1426,50 @@ def _rows_by_parameter_set(rows: list[dict[str, Any]]) -> dict[int, list[dict[st
 def _normalize_weights(raw_weights: list[float]) -> list[float]:
     mean = sum(raw_weights) / len(raw_weights)
     return [value / mean for value in raw_weights]
+
+
+def _normalize_float_grid(values: list[float] | None, default: tuple[float, ...], label: str) -> list[float]:
+    raw = list(default if values is None else values)
+    selected: list[float] = []
+    seen = set()
+    for value in raw:
+        number = float(value)
+        if number < 0:
+            raise ValueError(f"{label} values must be non-negative.")
+        if number in seen:
+            continue
+        selected.append(number)
+        seen.add(number)
+    if not selected:
+        raise ValueError(f"At least one {label} must be selected.")
+    return selected
+
+
+def _normalize_int_grid(values: list[int] | None, default: tuple[int, ...], label: str) -> list[int]:
+    raw = list(default if values is None else values)
+    selected: list[int] = []
+    seen = set()
+    for value in raw:
+        number = int(value)
+        if number <= 0:
+            raise ValueError(f"{label} values must be positive.")
+        if number in seen:
+            continue
+        selected.append(number)
+        seen.add(number)
+    if not selected:
+        raise ValueError(f"At least one {label} must be selected.")
+    return selected
+
+
+def _blend_weights(weights: list[float], *, strength: float) -> list[float]:
+    if strength < 0:
+        raise ValueError("weight strength must be non-negative.")
+    return [1.0 + strength * (value - 1.0) for value in weights]
+
+
+def _slug_float(value: float) -> str:
+    return f"{value:g}".replace(".", "p").replace("-", "m")
 
 
 def _stressor_key(row: dict[str, Any], split_name: str) -> tuple[str, ...]:
@@ -923,6 +1591,241 @@ def _max_other_split_relative_degradation(
             continue
         values.append((float(row["condition_mean_mae"]) - ref_value) / ref_value)
     return max(values) if values else None
+
+
+def _max_other_split_relative_degradation_for_setting(
+    leaderboard: list[dict[str, Any]],
+    candidate: dict[str, Any] | None,
+) -> float | None:
+    if not candidate:
+        return None
+    values = []
+    for row in leaderboard:
+        if (
+            row["run_scope"] != "primary"
+            or row["target"] != PRIMARY_TARGET
+            or row["model_setting_id"] != candidate["model_setting_id"]
+            or row["model_level"] != candidate["model_level"]
+            or row["feature_group"] != candidate["feature_group"]
+            or row["split_name"] == PRIMARY_SPLIT
+        ):
+            continue
+        reference = _find_pareto_leaderboard(
+            [
+                ref
+                for ref in leaderboard
+                if ref["run_scope"] == "primary"
+                and ref["target"] == PRIMARY_TARGET
+                and ref["split_name"] == row["split_name"]
+            ],
+            "R0_reference_hgb50",
+            str(candidate["feature_group"]),
+        )
+        if not reference:
+            continue
+        ref_value = float(reference["condition_mean_mae"])
+        if ref_value <= 0:
+            continue
+        values.append((float(row["condition_mean_mae"]) - ref_value) / ref_value)
+    return max(values) if values else None
+
+
+def _find_pareto_leaderboard(
+    rows: list[dict[str, Any]],
+    model_level: str,
+    feature_group: str,
+) -> dict[str, Any] | None:
+    return next(
+        (
+            row
+            for row in rows
+            if row["model_level"] == model_level and row["feature_group"] == feature_group
+        ),
+        None,
+    )
+
+
+def _pareto_gains_for_candidate(
+    paired_gains: list[dict[str, Any]],
+    candidate: dict[str, Any],
+    reference_feature_group: str,
+) -> list[float]:
+    if not reference_feature_group:
+        return []
+    return [
+        float(row["condition_mae_gain"])
+        for row in paired_gains
+        if row["run_scope"] == "primary"
+        and row["target"] == PRIMARY_TARGET
+        and row["split_name"] == PRIMARY_SPLIT
+        and row["candidate_model_level"] == candidate["model_level"]
+        and row["candidate_feature_group"] == candidate["feature_group"]
+        and row["model_setting_id"] == candidate["model_setting_id"]
+        and row["reference_feature_group"] == reference_feature_group
+    ]
+
+
+def _is_predeclared_pareto_setting(row: dict[str, Any]) -> bool:
+    return (
+        row["model_level"] == PREDECLARED_PARETO_MODEL_LEVEL
+        and row["feature_group"] == PREDECLARED_PARETO_FEATURE_GROUP
+        and abs(_as_float(row.get("weight_strength")) - PREDECLARED_PARETO_WEIGHT_STRENGTH) < 1e-12
+    )
+
+
+def _pareto_candidate_passes(row: dict[str, Any], *, max_degradation_threshold: float) -> bool:
+    return (
+        (gain_f4 := row.get("gain_vs_f4")) is not None
+        and (gain_stress := row.get("gain_vs_stress_reference")) is not None
+        and (p05_f4 := row.get("paired_p05_vs_f4")) is not None
+        and (p05_stress := row.get("paired_p05_vs_stress_reference")) is not None
+        and (degradation := row.get("max_other_split_relative_degradation")) is not None
+        and _as_float(gain_f4) > 0
+        and _as_float(gain_stress) > 0
+        and _as_float(p05_f4) > 0
+        and _as_float(p05_stress) > 0
+        and _as_float(degradation) <= max_degradation_threshold
+    )
+
+
+def _mark_nondominated(rows: list[dict[str, Any]]) -> None:
+    for row in rows:
+        row_gain = _finite_or(row.get("gain_vs_stress_reference"), -math.inf)
+        row_degradation = _finite_or(row.get("max_other_split_relative_degradation"), math.inf)
+        dominated = False
+        for other in rows:
+            if other is row:
+                continue
+            other_gain = _finite_or(other.get("gain_vs_stress_reference"), -math.inf)
+            other_degradation = _finite_or(other.get("max_other_split_relative_degradation"), math.inf)
+            if (
+                other_gain >= row_gain
+                and other_degradation <= row_degradation
+                and (other_gain > row_gain or other_degradation < row_degradation)
+            ):
+                dominated = True
+                break
+        row["is_nondominated"] = not dominated
+
+
+def _finite_or(value: Any, default: float) -> float:
+    number = _as_float(value)
+    return number if math.isfinite(number) else default
+
+
+def render_stressor_robust_pareto_artifacts(
+    report: dict[str, Any],
+    leaderboard: list[dict[str, Any]],
+    paired: list[dict[str, Any]],
+    frontier: list[dict[str, Any]],
+    threshold_sensitivity: list[dict[str, Any]],
+    claim: dict[str, Any],
+    out_dir: Path,
+) -> None:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    _write_csv(out_dir / "robustness_leaderboard.csv", leaderboard)
+    _write_csv(out_dir / "paired_condition_gains.csv", paired)
+    _write_csv(out_dir / "plots" / "pareto_frontier.csv", frontier)
+    _write_csv(out_dir / "plots" / "non_degradation_threshold_sensitivity.csv", threshold_sensitivity)
+    _write_pareto_claim_readiness_md(report, claim, frontier, out_dir / "stressor_robust_pareto_claim_readiness.md")
+
+
+def _write_stressor_forensics_md(
+    split_degradation: list[dict[str, Any]],
+    worst_conditions: list[dict[str, Any]],
+    claim: dict[str, Any],
+    path: Path,
+) -> None:
+    worst_splits = sorted(
+        [row for row in split_degradation if row["target"] == PRIMARY_TARGET],
+        key=lambda row: _finite_or(row["relative_degradation"], -math.inf),
+        reverse=True,
+    )[:10]
+    lines = [
+        "# Stressor-Robust Failure Forensics",
+        "",
+        "This report diagnoses where the existing robust-capacity near miss fails. It does not change the 5% non-degradation guardrail.",
+        "",
+        f"Current robust-capacity claim: `{claim['robust_capacity_claim']}`.",
+        f"Best candidate: `{claim['best_candidate_model_level']}` / `{claim['best_candidate_feature_group']}`.",
+        f"Max outside-C-rate relative degradation: `{_fmt(claim['max_other_split_relative_degradation'])}`.",
+        "",
+        "## Largest Split-Level Regressions",
+        "",
+        "| Split | Target | Model | Feature | Relative degradation | MAE delta |",
+        "|---|---|---|---|---:|---:|",
+    ]
+    for row in worst_splits:
+        lines.append(
+            "| "
+            f"`{row['split_name']}` | `{row['target']}` | `{row['model_level']}` | `{row['feature_group']}` | "
+            f"`{_fmt(row['relative_degradation'])}` | `{_fmt(row['condition_mean_mae_delta'])}` |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Largest Condition-Level Regressions",
+            "",
+            "| Split | Target | Model | Feature | Parameter set | MAE delta | Relative degradation |",
+            "|---|---|---|---|---:|---:|---:|",
+        ]
+    )
+    for row in worst_conditions[:10]:
+        lines.append(
+            "| "
+            f"`{row['split_name']}` | `{row['target']}` | `{row['model_level']}` | `{row['feature_group']}` | "
+            f"`{row['parameter_set']}` | `{_fmt(row['condition_mae_delta'])}` | "
+            f"`{_fmt(row['relative_degradation'])}` |"
+        )
+    lines.extend(
+        [
+            "",
+            "Decision: use this for forensics only. Do not relax the 5% gate based on this report.",
+        ]
+    )
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _write_pareto_claim_readiness_md(
+    report: dict[str, Any],
+    claim: dict[str, Any],
+    frontier: list[dict[str, Any]],
+    path: Path,
+) -> None:
+    lines = [
+        "# Stressor-Robust Pareto Claim Readiness",
+        "",
+        "| Claim area | Status | Evidence |",
+        "|---|---|---|",
+        f"| Pareto robust-capacity claim | `{claim['stressor_robust_pareto_claim']}` | Predeclared setting passes 5% gate: `{claim['predeclared_passes_5pct']}`. |",
+        f"| C-rate gain | `diagnostic` | Gain vs F4 `{_fmt(claim['best_c_rate_gain_vs_f4'])}`; gain vs stress reference `{_fmt(claim['best_c_rate_gain_vs_stress_reference'])}`. |",
+        f"| Other split non-degradation | `{'supported_for_diagnostics' if claim['predeclared_passes_5pct'] else 'not_supported'}` | Max degradation for predeclared setting `{_fmt(claim['best_max_other_split_relative_degradation'])}`. |",
+        f"| Architecture readiness | `{claim['architecture_readiness']}` | This is a non-neural Pareto diagnostic only. |",
+        f"| Policy ranking | `{claim['policy_ranking']}` | No calibrated risk or intervention task is tested. |",
+        "",
+        claim["claim_rule"],
+        "",
+        "## Nondominated Frontier Rows",
+        "",
+        "| Setting | Model | Feature | Gain vs F4 | Gain vs stress | Max outside-C-rate degradation | Predeclared |",
+        "|---|---|---|---:|---:|---:|---|",
+    ]
+    for row in [item for item in frontier if item.get("is_nondominated")][:20]:
+        lines.append(
+            "| "
+            f"`{row['model_setting_id']}` | `{row['model_level']}` | `{row['feature_group']}` | "
+            f"`{_fmt(row['gain_vs_f4'])}` | `{_fmt(row['gain_vs_stress_reference'])}` | "
+            f"`{_fmt(row['max_other_split_relative_degradation'])}` | "
+            f"`{row['is_predeclared_primary_setting']}` |"
+        )
+    lines.extend(
+        [
+            "",
+            f"Metric rows evaluated: `{report['row_counts']['metrics']}`.",
+            "Decision: passing non-predeclared frontier rows are diagnostic only.",
+        ]
+    )
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def _write_c_rate_summary_md(

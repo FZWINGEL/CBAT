@@ -23,7 +23,8 @@ The project has completed the major baseline-first charter gates:
 - threshold-warning probability calibration;
 - stressor-axis robust capacity baselines;
 - calibration metric sensitivity and capacity quantile noncrossing hygiene;
-- calibration and robustness gate correctness hardening.
+- calibration and robustness gate correctness hardening;
+- stressor-robust Pareto forensics and claim finalization.
 
 The strongest contribution is now a rigorous grouped-validation benchmark that
 documents which battery-degradation signals are supported, diagnostic-only,
@@ -52,10 +53,13 @@ Milestone 5.2 adds equal-frequency ECE sensitivity and Milestone 5.3 hardens
 the readiness logic; both reach the same decision. Any future calibration work
 should be scoped as diagnostics only.
 
-The narrow stressor-robust capacity branch has also been run. Stressor-balanced
-HGB improves C-rate fade diagnostics, but the global claim remains blocked by
-outside-C-rate degradation. Any future work here should be a forensics pass on
-the voltage-window regression, not a new architecture.
+The narrow stressor-robust capacity branch and follow-up Pareto forensics have
+also been run. Stressor-balanced HGB improves C-rate fade diagnostics, but the
+predeclared robust-capacity claim remains blocked by outside-C-rate
+degradation (`0.0528343` versus the 5% guardrail). Lighter non-predeclared
+settings are useful diagnostics only. Further work here is lower value than
+synthesis/release maintenance unless a new, predeclared robustness question is
+explicitly justified.
 
 ## Explicitly Rejected Branches
 

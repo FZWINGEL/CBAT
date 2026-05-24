@@ -9,15 +9,23 @@ import pytest
 from mbp.baselines.capacity import BASELINE_PREDICTION_SCHEMA
 from mbp.baselines import stressor_robust_capacity as robust_module
 from mbp.baselines.stressor_robust_capacity import (
+    PARETO_SCHEMA_VERSION,
     SELECTION_TIE_BREAK_ORDER,
     _condition_bagged_predictions,
     condition_balanced_weights,
+    degradation_by_split_target_feature_rows,
+    diagnose_stressor_robust_forensics,
     diagnose_stressor_robustness,
     _max_other_split_relative_degradation,
+    non_degradation_threshold_sensitivity_rows,
     paired_condition_gain_rows,
+    pareto_frontier_rows,
+    pareto_model_settings,
     run_stressor_robust_capacity,
+    run_stressor_robust_pareto,
     _sample_condition_rows,
     stressor_balanced_weights,
+    stressor_robust_pareto_claim_readiness,
     stressor_robust_claim_readiness,
 )
 from mbp.baselines.stressor_robust_capacity import _internal_condition_validation_split
@@ -119,6 +127,17 @@ def test_stressor_balanced_weights_use_training_rows_only() -> None:
     weights = stressor_balanced_weights(rows, "c_rate_holdout_fold")
     assert weights[0] == weights[1]
     assert weights[2] > weights[0]
+
+
+def test_weight_strength_blends_toward_uniform() -> None:
+    rows = [{"parameter_set": 1}, {"parameter_set": 1}, {"parameter_set": 2}]
+    uniform = condition_balanced_weights(rows, strength=0.0)
+    full = condition_balanced_weights(rows, strength=1.0)
+    half = condition_balanced_weights(rows, strength=0.5)
+
+    assert uniform == [1.0, 1.0, 1.0]
+    assert half[0] == pytest.approx(1.0 + 0.5 * (full[0] - 1.0))
+    assert half[2] == pytest.approx(1.0 + 0.5 * (full[2] - 1.0))
 
 
 def test_internal_validation_split_keeps_conditions_disjoint() -> None:
@@ -288,6 +307,144 @@ def test_r4_tie_break_prefers_rebalanced_candidates() -> None:
     assert SELECTION_TIE_BREAK_ORDER["R1_condition_balanced_hgb"] < SELECTION_TIE_BREAK_ORDER["R0_reference_hgb50"]
 
 
+def test_pareto_model_settings_expand_predeclared_grid() -> None:
+    settings = pareto_model_settings(
+        ["R0_reference_hgb50", "R2_stressor_balanced_hgb", "R3_condition_bagged_hgb"],
+        weight_strengths=[0.5, 1.0],
+        bag_counts=[3, 5],
+    )
+
+    assert [row["model_setting_id"] for row in settings] == [
+        "R0_reference_hgb50",
+        "R2_stressor_balanced_hgb__w0p5",
+        "R2_stressor_balanced_hgb__w1",
+        "R3_condition_bagged_hgb__bags3",
+        "R3_condition_bagged_hgb__bags5",
+    ]
+
+
+def test_pareto_frontier_and_threshold_sensitivity_gate() -> None:
+    leaderboard = [
+        {
+            "run_scope": "primary",
+            "model_setting_id": "R0_reference_hgb50",
+            "model_level": "R0_reference_hgb50",
+            "feature_group": "F4_state_log_age_scalar",
+            "target": "delta_capacity_Ah",
+            "split_name": "c_rate_holdout_fold",
+            "condition_mean_mae": 0.10,
+            "worst_condition_mae": 0.20,
+            "weight_strength": 0.0,
+            "bag_count": 1,
+        },
+        {
+            "run_scope": "primary",
+            "model_setting_id": "R0_reference_hgb50",
+            "model_level": "R0_reference_hgb50",
+            "feature_group": "F8_timestamp_weighted_stress",
+            "target": "delta_capacity_Ah",
+            "split_name": "c_rate_holdout_fold",
+            "condition_mean_mae": 0.11,
+            "worst_condition_mae": 0.20,
+            "weight_strength": 0.0,
+            "bag_count": 1,
+        },
+        {
+            "run_scope": "primary",
+            "model_setting_id": "R2_stressor_balanced_hgb__w1",
+            "model_level": "R2_stressor_balanced_hgb",
+            "feature_group": "F8_timestamp_weighted_stress",
+            "target": "delta_capacity_Ah",
+            "split_name": "c_rate_holdout_fold",
+            "condition_mean_mae": 0.08,
+            "worst_condition_mae": 0.18,
+            "weight_strength": 1.0,
+            "bag_count": 1,
+        },
+        {
+            "run_scope": "primary",
+            "model_setting_id": "R0_reference_hgb50",
+            "model_level": "R0_reference_hgb50",
+            "feature_group": "F8_timestamp_weighted_stress",
+            "target": "delta_capacity_Ah",
+            "split_name": "voltage_window_holdout_fold",
+            "condition_mean_mae": 0.10,
+            "worst_condition_mae": 0.20,
+            "weight_strength": 0.0,
+            "bag_count": 1,
+        },
+        {
+            "run_scope": "primary",
+            "model_setting_id": "R2_stressor_balanced_hgb__w1",
+            "model_level": "R2_stressor_balanced_hgb",
+            "feature_group": "F8_timestamp_weighted_stress",
+            "target": "delta_capacity_Ah",
+            "split_name": "voltage_window_holdout_fold",
+            "condition_mean_mae": 0.106,
+            "worst_condition_mae": 0.20,
+            "weight_strength": 1.0,
+            "bag_count": 1,
+        },
+    ]
+    paired = [
+        {
+            "run_scope": "primary",
+            "target": "delta_capacity_Ah",
+            "split_name": "c_rate_holdout_fold",
+            "candidate_model_level": "R2_stressor_balanced_hgb",
+            "candidate_feature_group": "F8_timestamp_weighted_stress",
+            "model_setting_id": "R2_stressor_balanced_hgb__w1",
+            "reference_feature_group": "F4_state_log_age_scalar",
+            "condition_mae_gain": 0.02,
+        },
+        {
+            "run_scope": "primary",
+            "target": "delta_capacity_Ah",
+            "split_name": "c_rate_holdout_fold",
+            "candidate_model_level": "R2_stressor_balanced_hgb",
+            "candidate_feature_group": "F8_timestamp_weighted_stress",
+            "model_setting_id": "R2_stressor_balanced_hgb__w1",
+            "reference_feature_group": "F8_timestamp_weighted_stress",
+            "condition_mae_gain": 0.03,
+        },
+    ]
+
+    frontier = pareto_frontier_rows(leaderboard, paired, bootstrap_resamples=10, seed=1)
+    sensitivity = non_degradation_threshold_sensitivity_rows(frontier)
+    claim = stressor_robust_pareto_claim_readiness(frontier)
+
+    assert frontier[0]["max_other_split_relative_degradation"] == pytest.approx(0.06)
+    assert any(row["threshold"] == 0.05 and not row["passes_threshold"] for row in sensitivity)
+    assert any(row["threshold"] == 0.075 and row["passes_threshold"] for row in sensitivity)
+    assert claim["stressor_robust_pareto_claim"] == "not_supported"
+
+
+def test_degradation_by_split_target_feature_rows() -> None:
+    rows = degradation_by_split_target_feature_rows(
+        [
+            {
+                "run_scope": "primary",
+                "model_level": "R0_reference_hgb50",
+                "feature_group": "F8_timestamp_weighted_stress",
+                "target": "delta_capacity_Ah",
+                "split_name": "voltage_window_holdout_fold",
+                "condition_mean_mae": 0.10,
+            },
+            {
+                "run_scope": "primary",
+                "model_level": "R2_stressor_balanced_hgb",
+                "feature_group": "F8_timestamp_weighted_stress",
+                "target": "delta_capacity_Ah",
+                "split_name": "voltage_window_holdout_fold",
+                "condition_mean_mae": 0.106,
+            },
+        ]
+    )
+
+    assert rows[0]["relative_degradation"] == pytest.approx(0.06)
+    assert rows[0]["exceeds_5pct_guardrail"] is True
+
+
 def test_stressor_robust_runner_fails_when_no_metrics_generated(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -337,3 +494,36 @@ def test_stressor_robust_capacity_runner_and_diagnostics(tmp_path: Path) -> None
     result = diagnose_stressor_robustness(report_path, predictions_path, tmp_path / "diagnostics", bootstrap_resamples=10)
     assert result["row_counts"]["leaderboard_rows"] > 0
     assert (tmp_path / "diagnostics" / "paired_condition_gains.csv").exists()
+    forensics = diagnose_stressor_robust_forensics(report_path, predictions_path, tmp_path / "forensics")
+    assert forensics["row_counts"]["split_degradation_rows"] > 0
+    assert (tmp_path / "forensics" / "stressor_failure_forensics.md").exists()
+
+
+def test_stressor_robust_pareto_runner_smoke(tmp_path: Path) -> None:
+    interval_path, subset_path = _write_capacity_fixture(tmp_path)
+    report_path = tmp_path / "stressor_robust_pareto_report.json"
+    predictions_path = tmp_path / "stressor_robust_pareto_predictions.parquet"
+    out_dir = tmp_path / "stressor_robust_pareto"
+
+    report = run_stressor_robust_pareto(
+        interval_path,
+        subset_path,
+        report_path,
+        predictions_path,
+        out_dir=out_dir,
+        model_levels=["R0_reference_hgb50", "R2_stressor_balanced_hgb"],
+        feature_groups=["F4_state_log_age_scalar"],
+        targets=["delta_capacity_Ah"],
+        split_views=["condition_fold"],
+        weight_strengths=[0.5, 1.0],
+        bag_counts=[3],
+        hgb_max_iter=2,
+    )
+
+    metadata = pq.read_table(predictions_path).schema.metadata or {}
+    assert report["status"] == "passed"
+    assert report["row_counts"]["metrics"] > 0
+    assert metadata[b"schema_version"] == PARETO_SCHEMA_VERSION.encode()
+    assert (out_dir / "plots" / "pareto_frontier.csv").exists()
+    assert (out_dir / "plots" / "non_degradation_threshold_sensitivity.csv").exists()
+    assert (out_dir / "stressor_robust_pareto_claim_readiness.md").exists()

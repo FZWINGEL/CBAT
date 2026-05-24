@@ -25,7 +25,7 @@ the paper claim ledger with main-project gate decisions and next actions.
 | C18 | Threshold-event labels are more stable than detector knees. | `partially_supported` | `docs/experiments/2026-05-23_knee_threshold_label_forensics.md` | 80% threshold labels are more stable candidate targets. | Threshold labels alone authorize prediction. | Use only with prospective baseline evidence. |
 | C19 | Non-neural baselines can forecast the 80% threshold event under grouped validation. | `supported_for_diagnostics` | `docs/experiments/2026-05-23_threshold_warning_censoring_finalization.md` | Non-neural baselines forecast the 80% threshold event diagnostically beyond proximity and under verified-only sensitivity. | Calibrated risk, causal warning, detector-knee prediction, policy ranking, or CBAT are authorized. | Lock diagnostic claim; optional calibration branch only. |
 | C20 | Threshold-warning probabilities are calibrated risk estimates. | `not_supported` | `docs/experiments/2026-05-24_calibration_robustness_correctness_hardening.md` | Post-hoc calibration improves mean reliability and equal-frequency ECE sensitivity is reported, but policy-specific C-rate calibration remains insufficient; probabilities are diagnostic scores. | Threshold-warning probabilities are calibrated risk estimates. | Keep calibrated-risk and policy-ranking claims blocked. |
-| C21 | Stressor-axis robust HGB solves the C-rate capacity-fade generalization problem without other split regressions. | `not_supported` | `docs/experiments/2026-05-24_stressor_robust_capacity_gate.md` | Stressor-balanced HGB gives a diagnostic C-rate `delta_capacity_Ah` improvement, but a global robust-capacity claim is not supported because the non-degradation guardrail fails. | Stressor-robust training solves C-rate fade or justifies architecture work. | Keep as diagnostic robustness evidence; optionally run forensics on the voltage-window degradation. |
+| C21 | Stressor-axis robust HGB solves the C-rate capacity-fade generalization problem without other split regressions. | `not_supported` | `docs/experiments/2026-05-24_stressor_robust_pareto_forensics.md` | Stressor-balanced HGB gives a diagnostic C-rate `delta_capacity_Ah` improvement, but the predeclared robust-capacity setting fails the 5% outside-C-rate non-degradation guardrail. Lighter non-predeclared Pareto settings are diagnostic only. | Stressor-robust training solves C-rate fade or justifies architecture work. | Keep as diagnostic robustness evidence; do not relax the guardrail or open architecture work. |
 
 ## Next Action
 
@@ -33,4 +33,6 @@ Return to benchmark/manuscript integration, release maintenance, or a narrow
 stressor-robustness forensics pass. Milestone 5.3 closes calibration and
 robustness gate correctness hardening without authorizing calibrated-risk,
 calibrated-uncertainty, robust-capacity, architecture, policy, or causal
-claims.
+claims. Milestone 5.4 then runs that forensics/Pareto pass and keeps
+robust-capacity support blocked because the predeclared setting misses the
+5% non-degradation guardrail.

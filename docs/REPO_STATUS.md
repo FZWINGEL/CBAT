@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 5.3: Calibration and robustness gate correctness hardening**.
+The repository is in **Milestone 5.4: Stressor-robust Pareto forensics and claim finalization**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -133,6 +133,11 @@ are policy-specific, fallback-raw calibration rows cannot pass strict
 readiness, empty metric runs fail instead of writing passed reports, Platt
 calibration uses the unpenalized logistic convention, and stressor-robust
 readiness no longer treats missing outside-C-rate evidence as support.
+Milestone 5.4 diagnoses the stressor-robust near miss and runs a bounded
+Pareto grid over existing non-neural robust HGB variants. The predeclared
+R2/F8 full-strength setting still improves C-rate `delta_capacity_Ah`, but it
+fails the 5% outside-C-rate non-degradation guardrail at `0.0528343`, so the
+robust-capacity claim remains diagnostic-only/not supported.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -141,8 +146,25 @@ improvement claims have been started.
 
 Current state:
 
-- Milestone 5.3 is a correctness-hardening gate for existing calibration and
-  stressor-robustness reports. It does not add models, features, or claims.
+- Milestone 5.4 is a bounded forensics and Pareto diagnostic gate for the
+  existing stressor-robust capacity branch. It does not add feature
+  engineering, neural/sequence models, CBAT, policy ranking, calibrated-risk
+  claims, calibrated-uncertainty claims, or architecture claims.
+- `mbp baseline diagnose-stressor-robust-forensics` adds split/condition
+  regression diagnostics for the Milestone 5.1 robust-capacity run. The largest
+  regressions are concentrated in non-C-rate views, including profile and
+  voltage-window `delta_capacity_Ah` rows for some robust variants.
+- `mbp baseline run-stressor-robust-pareto` evaluated 16 bounded settings over
+  3,827 intervals, producing 768 metric rows and 663,360 ignored prediction
+  rows. The predeclared R2/F8/weight=1.0 setting has C-rate delta gains of
+  `0.0305899` versus F4 and `0.0319729` versus the stress R0 reference, but
+  its max outside-C-rate relative degradation is `0.0528343`, so it fails the
+  5% guardrail.
+- Two lighter non-predeclared frontier settings pass the 5% threshold
+  diagnostically, but they are not enough to support the predeclared
+  robust-capacity claim.
+- Milestone 5.3 remains a correctness-hardening gate for existing calibration
+  and stressor-robustness reports. It does not add models, features, or claims.
 - Milestone 5.2 added `ece_10_bin_equal_freq` alongside the existing
   fixed-width `ece_10_bin` in threshold-warning baseline, censoring,
   final-claim, and probability-calibration reports; it does not replace
@@ -1855,11 +1877,10 @@ The previous `datetime.utcnow()` deprecation warning in
 
 ## Recommended Next Step
 
-Treat Milestone 5.1 as a diagnostic robustness result unless a follow-up
-specifically hardens the non-degradation failure. The default next technical
-step is synthesis/release maintenance or a narrow stressor-robustness
-forensics pass that explains the voltage-window degradation and checks whether
-the C-rate gain is stable under stricter selection rules. Do not open knee
+Treat Milestone 5.4 as the stressor-robustness follow-up result: useful
+diagnostic C-rate gains exist, but the predeclared robust-capacity claim is not
+supported under the 5% outside-C-rate non-degradation guardrail. The default
+next technical step is synthesis/release maintenance. Do not open knee
 prediction models, neural models, sequence models, CBAT, DRT, EIS embeddings,
 policy ranking, capacity+PULSE+EIS multimodal models, calibrated-risk claims,
 or broad causal/mechanistic claims.
