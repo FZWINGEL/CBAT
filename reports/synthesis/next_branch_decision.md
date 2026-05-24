@@ -20,18 +20,22 @@ The project has completed the major baseline-first charter gates:
 - temporal-order falsification;
 - knee-label stability;
 - threshold-event warning and censoring finalization;
-- threshold-warning probability calibration.
+- threshold-warning probability calibration;
+- stressor-axis robust capacity baselines.
 
 The strongest contribution is now a rigorous grouped-validation benchmark that
 documents which battery-degradation signals are supported, diagnostic-only,
-negative, or blocked.
+negative, or blocked. Milestone 5.1 adds a real but claim-bounded C-rate
+robustness result: stressor-balanced HGB improves C-rate `delta_capacity_Ah`,
+but does not pass the global non-degradation rule.
 
 ## Recommended Path
 
 1. Preserve the benchmark/data-methods framing rather than an architecture
    branch.
-2. If manuscript work resumes, integrate the Milestone 5.0 calibration result
-   as a blocked calibrated-risk claim.
+2. If manuscript work resumes, integrate Milestone 5.0 as a blocked
+   calibrated-risk claim and Milestone 5.1 as a diagnostic stressor-robustness
+   result.
 3. If engineering work resumes, prefer release automation or reproducibility
    checks over new scientific expansion.
 
@@ -41,6 +45,11 @@ The narrow threshold-warning calibration branch has now been run. Platt and
 isotonic calibration improve mean reliability, but C-rate ECE remains above
 the guardrail, so calibrated-risk and policy-ranking claims remain blocked.
 Any future calibration work should be scoped as diagnostics only.
+
+The narrow stressor-robust capacity branch has also been run. Stressor-balanced
+HGB improves C-rate fade diagnostics, but the global claim remains blocked by
+outside-C-rate degradation. Any future work here should be a forensics pass on
+the voltage-window regression, not a new architecture.
 
 ## Explicitly Rejected Branches
 

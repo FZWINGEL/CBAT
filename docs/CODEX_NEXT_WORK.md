@@ -1,27 +1,29 @@
 # Codex Next Work
 
-Current recommended branch: grouped threshold-warning probability calibration gate.
+Current recommended branch: stressor-robustness forensics or synthesis/release maintenance.
 
 ## Current Phase
 
-Milestone 5.0 evaluates whether the supported non-neural 80% threshold-event
-warning diagnostic can support calibrated probability wording. It is limited
-to grouped post-hoc calibration of the existing HGB W2 warning baseline with
-separate fit, calibration, and test condition groups.
+Milestone 5.1 evaluates whether non-neural stressor-axis robust HGB variants
+can improve the hard C-rate capacity/fade split without degrading other
+grouped views. It is limited to existing capacity feature groups and grouped
+validation; it is not an architecture or policy-ranking branch.
 
 ## Current Result
 
-Platt/logistic and isotonic calibration improve mean ECE for the primary
-3-check-up threshold-warning horizon, but C-rate ECE remains above the
-guardrail. Treat threshold-warning probabilities as diagnostic scores, not
-calibrated risk.
+Stressor-balanced HGB with `F8_timestamp_weighted_stress` improves C-rate
+`delta_capacity_Ah` to condition-mean MAE `0.0705429`, versus F4 R0
+`0.101133` and stress R0 `0.102516`, with paired bootstrap p05 above zero
+against both references. The global robust-capacity claim is still
+`not_supported` because outside-C-rate relative degradation reaches
+`0.0528343`, above the 5% guardrail.
 
 ## Optional Technical Branch
 
 No broader technical branch is currently justified. Future technical work, if
-opened, should be a narrowly scoped calibration-method comparison or release
-automation task, not CBAT, policy ranking, sequence modeling, or new modality
-expansion.
+opened, should be a narrow voltage-window/stressor-robustness forensics pass or
+release automation task, not CBAT, policy ranking, sequence modeling, or new
+modality expansion.
 
 ## Blocked Branches
 
@@ -39,6 +41,7 @@ Do not open:
 - same-cell counterfactual claims
 - broad multimodal degradation claims
 - calibrated risk or calibrated uncertainty claims without grouped evidence
+- robust-capacity/fade-solved claims without passing non-degradation guardrails
 
 ## Updating Phase Docs
 
@@ -66,6 +69,8 @@ Allowed current wording:
 - calibrated uncertainty and calibrated risk remain blocked
 - threshold-warning post-hoc calibration improves mean reliability but does
   not pass C-rate calibrated-risk guardrails
+- stressor-balanced HGB improves C-rate delta diagnostics but does not support
+  a global robust-capacity claim
 
 Forbidden current wording:
 
@@ -75,6 +80,7 @@ Forbidden current wording:
 - detector-knee prediction
 - causal early warning
 - broad multimodal improvement
+- C-rate fade solved
 
 ## Avoiding Data Artifact Commits
 

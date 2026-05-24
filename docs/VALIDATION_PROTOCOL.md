@@ -196,6 +196,17 @@ verified-only label policies. It does not authorize new feature engineering,
 detector-knee prediction, policy ranking, CBAT, neural/sequence models, causal
 claims, same-cell counterfactual claims, or calibrated-risk wording unless
 both grouped and C-rate calibration guardrails pass without leakage.
+Milestone 5.1 authorizes only non-neural stressor-axis robust capacity
+baselines over existing capacity feature groups. It may fit reference HGB,
+condition-balanced HGB, stressor-balanced HGB, condition-bagged HGB, and
+train-only internal condition-selected HGB variants under the existing grouped
+split views. It may compare C-rate `delta_capacity_Ah` gains against F4 and
+the strongest stress-feature R0 references and must require paired
+condition-level bootstrap support plus non-degradation outside C-rate before
+any robust-capacity wording is strengthened. It does not authorize new feature
+engineering, neural/sequence models, CBAT, DRT, EIS embeddings, policy
+ranking, calibrated-risk wording, calibrated-uncertainty wording, causal
+claims, same-cell counterfactual claims, or broad multimodal claims.
 
 Required split discipline:
 
@@ -238,6 +249,18 @@ Required Milestone 3.3 release-polish artifacts:
 - `docs/BENCHMARK_V0_1_RC2_SUMMARY.md`
 - `reports/synthesis/benchmark_v0_1_rc1_handoff_check.md`
 - `reports/synthesis/benchmark_v0_1_rc2_handoff_check.md`
+
+Required Milestone 5.1 stressor-robust capacity artifacts:
+
+- `src/mbp/baselines/stressor_robust_capacity.py`
+- `mbp baseline run-stressor-robust-capacity`
+- `mbp baseline diagnose-stressor-robustness`
+- `reports/baselines/capacity_stressor_robust_hgb50_report.json`
+- `reports/baselines/capacity_stressor_robust_hgb50/robustness_leaderboard.csv`
+- `reports/baselines/capacity_stressor_robust_hgb50/paired_condition_gains.csv`
+- `reports/baselines/capacity_stressor_robust_hgb50/c_rate_robustness_summary.md`
+- `reports/baselines/capacity_stressor_robust_hgb50/stressor_robustness_claim_readiness.md`
+- `docs/experiments/2026-05-24_stressor_robust_capacity_gate.md`
 - `docs/GITHUB_RELEASE_DRAFT_v0.1-rc1.md`
 - `docs/GITHUB_RELEASE_DRAFT_v0.1-rc2.md`
 - optional `docs/FUTURE_BRANCHES.md`

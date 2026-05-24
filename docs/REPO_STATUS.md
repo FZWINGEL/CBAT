@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 5.0: Grouped threshold-warning probability calibration gate**.
+The repository is in **Milestone 5.1: Stressor-axis robust capacity baseline gate**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -115,7 +115,12 @@ probability calibration for the existing non-neural 80% threshold-event
 warning baseline. It adds Platt/logistic and isotonic calibration diagnostics
 with train/calibration/test condition separation and does not add new feature
 engineering, detector-knee prediction, policy ranking, causal claims, CBAT, or
-neural/sequence models.
+neural/sequence models. Milestone 5.1 tests whether non-neural stressor-axis
+robust HGB variants can improve the hard C-rate capacity/fade split without
+degrading other grouped views. It finds a strong C-rate `delta_capacity_Ah`
+diagnostic improvement for stressor-balanced HGB, but the global robust-capacity
+claim remains not supported because the non-degradation guardrail narrowly
+fails on another split.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -124,11 +129,23 @@ improvement claims have been started.
 
 Current state:
 
-- Milestone 4.4 is public-facing repository entry point and submission metadata
-  triage. The release candidate is already validated and published, v0.7 is a
-  submission-preflight package, and v0.8 is a venue-neutral handoff bundle.
-  The current work is to make the repository front door and metadata TODOs
-  match that state without adding new science.
+- Milestone 5.1 is a non-neural capacity robustness gate. It adds
+  `mbp baseline run-stressor-robust-capacity` and
+  `mbp baseline diagnose-stressor-robustness`, runs R0-R4 robust HGB variants
+  over F4/F8 and the standard grouped split views, and keeps architecture,
+  policy ranking, neural/sequence models, causal claims, calibrated risk, and
+  broad multimodal claims blocked.
+- The real Milestone 5.1 run produced 480 metric rows and 356,120 prediction
+  rows. The best C-rate `delta_capacity_Ah` candidate is
+  `R2_stressor_balanced_hgb` with `F8_timestamp_weighted_stress`, condition
+  mean MAE `0.0705429` versus F4 R0 `0.101133` and stress-feature R0
+  `0.102516`. Paired bootstrap p05 is positive versus F4 (`0.0216868`) and
+  versus the stress reference (`0.0165793`).
+- The robust-capacity claim remains `not_supported` because the selected
+  candidate's non-C-rate degradation guardrail fails narrowly: the maximum
+  outside-C-rate relative degradation is `0.0528343`, above the 5% threshold,
+  on the voltage-window delta comparison. This supports a diagnostic C-rate
+  stressor-balanced result, not a global robust-capacity or architecture claim.
 - LOG_AGE monotonicity policy is documented in
   `docs/LOG_AGE_MONOTONICITY_POLICY.md`.
 - Interval subset registry generation is implemented with
@@ -1816,15 +1833,11 @@ The previous `datetime.utcnow()` deprecation warning in
 
 ## Recommended Next Step
 
-Use the public review entry point, v0.8 submission bundle, and v0.9
-submission-readiness triage for human review, coauthor handoff, or
-venue-specific formatting. The default next work is selecting a target venue,
-choosing repository metadata such as license/citation/archive policy, and then
-formatting from the claim-bounded v0.7 manuscript and `benchmark-v0.1-rc2`
-release package.
-
-If a technical branch is opened instead of submission work, keep it limited to a narrow
-threshold-warning score-calibration branch. Do not open knee prediction models,
-neural models, sequence models, CBAT, DRT, EIS embeddings, policy ranking,
-capacity+PULSE+EIS multimodal models, risk-score calibration claims without
-grouped evidence, or broad causal/mechanistic claims.
+Treat Milestone 5.1 as a diagnostic robustness result unless a follow-up
+specifically hardens the non-degradation failure. The default next technical
+step is synthesis/release maintenance or a narrow stressor-robustness
+forensics pass that explains the voltage-window degradation and checks whether
+the C-rate gain is stable under stricter selection rules. Do not open knee
+prediction models, neural models, sequence models, CBAT, DRT, EIS embeddings,
+policy ranking, capacity+PULSE+EIS multimodal models, calibrated-risk claims,
+or broad causal/mechanistic claims.

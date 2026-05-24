@@ -12,6 +12,7 @@
 | Broad EIS improvement | EIS support is diagnostic/narrow profile-split only. | `docs/experiments/2026-05-23_eis_claim_hardening.md` |
 | Prior PULSE strongest-baseline dominance | Prior PULSE does not beat strongest non-PULSE HGB baselines. | `docs/experiments/2026-05-23_prior_pulse_vs_best_nonpulse.md` |
 | Fade-rate solved | LOG_AGE stress, prior PULSE, and prior EIS do not solve C-rate `delta_capacity_Ah`. | `reports/synthesis/negative_results.md` |
+| Stressor-robust training solves C-rate fade globally | Milestone 5.1 improves C-rate `delta_capacity_Ah` diagnostically, but the selected candidate fails the outside-C-rate non-degradation guardrail. | `docs/experiments/2026-05-24_stressor_robust_capacity_gate.md` |
 | Same-cell counterfactual claims | No same-cell intervention or counterfactual design exists. | `docs/PROJECT_CHARTER.md` |
 | DRT or learned EIS embeddings | EIS is gated; current evidence does not justify high-choice feature paths. | `docs/EIS_FEATURE_POLICY.md` |
 

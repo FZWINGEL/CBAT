@@ -1,6 +1,6 @@
 # Main Project Claim Ledger v2
 
-This ledger is the post-Milestone 5.0 technical source of truth. It extends
+This ledger is the post-Milestone 5.1 technical source of truth. It extends
 the paper claim ledger with main-project gate decisions and next actions.
 
 | ID | Claim | Status | Source artifact | Allowed wording | Forbidden wording | Next action |
@@ -25,10 +25,11 @@ the paper claim ledger with main-project gate decisions and next actions.
 | C18 | Threshold-event labels are more stable than detector knees. | `partially_supported` | `docs/experiments/2026-05-23_knee_threshold_label_forensics.md` | 80% threshold labels are more stable candidate targets. | Threshold labels alone authorize prediction. | Use only with prospective baseline evidence. |
 | C19 | Non-neural baselines can forecast the 80% threshold event under grouped validation. | `supported_for_diagnostics` | `docs/experiments/2026-05-23_threshold_warning_censoring_finalization.md` | Non-neural baselines forecast the 80% threshold event diagnostically beyond proximity and under verified-only sensitivity. | Calibrated risk, causal warning, detector-knee prediction, policy ranking, or CBAT are authorized. | Lock diagnostic claim; optional calibration branch only. |
 | C20 | Threshold-warning probabilities are calibrated risk estimates. | `not_supported` | `docs/experiments/2026-05-24_threshold_warning_probability_calibration.md` | Post-hoc calibration improves mean reliability but C-rate calibration remains insufficient; probabilities are diagnostic scores. | Threshold-warning probabilities are calibrated risk estimates. | Keep calibrated-risk and policy-ranking claims blocked. |
+| C21 | Stressor-axis robust HGB solves the C-rate capacity-fade generalization problem without other split regressions. | `not_supported` | `docs/experiments/2026-05-24_stressor_robust_capacity_gate.md` | Stressor-balanced HGB gives a diagnostic C-rate `delta_capacity_Ah` improvement, but a global robust-capacity claim is not supported because the non-degradation guardrail fails. | Stressor-robust training solves C-rate fade or justifies architecture work. | Keep as diagnostic robustness evidence; optionally run forensics on the voltage-window degradation. |
 
 ## Next Action
 
-Return to benchmark/manuscript integration or release maintenance. The narrow
-threshold-warning calibration branch has now been run and does not authorize
-calibrated-risk wording; broader architecture, policy, and causal branches
-remain blocked.
+Return to benchmark/manuscript integration, release maintenance, or a narrow
+stressor-robustness forensics pass. Milestone 5.1 finds a real C-rate
+diagnostic improvement, but does not authorize a global robust-capacity,
+architecture, policy, calibrated-risk, or causal claim.

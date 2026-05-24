@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 5.0: Grouped threshold-warning probability calibration gate.
+Milestone 5.1: Stressor-axis robust capacity baseline gate.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -35,15 +35,24 @@ Current state:
   state improves `capacity_Ah_k1` over F4 in selected grouped splits, but it
   does not beat the strongest supplied non-PULSE HGB baselines and does not
   improve `delta_capacity_Ah`.
-- The current main-project track evaluates whether the supported diagnostic
-  80% threshold-event warning result can be turned into calibrated probability
-  diagnostics under grouped splits. This is a narrow non-neural calibration
-  gate using the existing prospective threshold-warning table, not a new
-  architecture or policy-ranking milestone.
+- Milestone 5.0 evaluated whether the supported diagnostic 80%
+  threshold-event warning result can be turned into calibrated probability
+  diagnostics under grouped splits. It did not authorize calibrated-risk
+  wording because C-rate calibration remained above the guardrail.
+- The current main-project track evaluates whether non-neural stressor-axis
+  robust HGB training variants can improve the hard C-rate capacity/fade
+  split without degrading other grouped views. This is a capacity-baseline
+  robustness gate, not an architecture, sequence, policy, or causal milestone.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
 Allowed work:
+- stressor-axis robust non-neural capacity baselines
+- condition-balanced and stressor-balanced HGB sample weighting
+- condition-bagged HGB diagnostics
+- train-only internal condition model selection
+- paired condition-level robustness diagnostics
+- stressor-robust capacity claim-readiness reporting
 - grouped threshold-warning probability calibration
 - Platt/logistic and isotonic post-hoc calibration fitted on calibration
   conditions only
@@ -118,8 +127,8 @@ Allowed work:
 - small tests with synthetic fixtures
 
 Forbidden work:
-- new model training outside the scoped threshold-warning calibration gate
-- new feature engineering outside the scoped threshold-warning calibration gate
+- new model training outside the scoped stressor-robust capacity baseline gate
+- new feature engineering outside the scoped stressor-robust capacity baseline gate
 - knee prediction models
 - neural models
 - sequence models

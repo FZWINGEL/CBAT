@@ -5,9 +5,9 @@ Status: `passed`
 ## Summary
 
 - Required files checked: 10
-- Tracked artifacts checked: 28
-- Ignored artifacts checked: 14
-- Claim matrix rows checked: 20
+- Tracked artifacts checked: 30
+- Ignored artifacts checked: 15
+- Claim matrix rows checked: 21
 
 ## Errors
 
@@ -53,6 +53,7 @@ Status: `passed`
 - diagnose-capacity
 - diagnose-sequence-value
 - diagnose-stress-features
+- diagnose-stressor-robustness
 - diagnose-target-consistency
 - diagnose-threshold-warning
 - eis
@@ -89,6 +90,7 @@ Status: `passed`
 - run-pipeline
 - run-pulse
 - run-semi-empirical
+- run-stressor-robust-capacity
 - run-threshold-warning
 - sequence-qa
 - split

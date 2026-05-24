@@ -1,6 +1,6 @@
 # Source Consistency Check v2
 
-Date: 2026-05-23
+Date: 2026-05-24
 
 ## Scope
 
@@ -12,6 +12,9 @@ This check covers the Milestone 3.0 synthesis artifacts:
 - `reports/synthesis/technical_decision_matrix_v2.md`
 - `reports/synthesis/blocked_claims_v2.md`
 - `reports/synthesis/next_branch_decision.md`
+
+It has been refreshed after Milestones 5.0 and 5.1 to include threshold-warning
+probability calibration and stressor-axis robust capacity results.
 
 ## Source Artifact Existence
 
@@ -37,6 +40,7 @@ blocked or not supported:
 - broad EIS improvement;
 - prior-PULSE strongest-baseline dominance;
 - fade-rate solved;
+- stressor-robust training solves C-rate fade globally;
 - same-cell counterfactual claims;
 - DRT and learned EIS embeddings.
 
@@ -56,5 +60,8 @@ The synthesis does not authorize:
 ## Remaining Risk
 
 The threshold-warning diagnostic result is strong enough for diagnostic
-forecasting wording, but its probabilities remain uncalibrated. Any future
-calibrated-risk or policy use requires a separate grouped calibration milestone.
+forecasting wording, but its probabilities remain uncalibrated. Milestone 5.1
+adds a real C-rate stressor-balanced diagnostic improvement, but the global
+robust-capacity claim remains unsupported because the non-degradation guardrail
+fails. Any future calibrated-risk, policy, or robust-capacity claim requires a
+separate gated milestone.

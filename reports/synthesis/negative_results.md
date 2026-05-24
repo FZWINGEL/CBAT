@@ -159,6 +159,25 @@ Decision: threshold-event forecasting is supported for diagnostics; calibrated
 risk, policy ranking, detector-knee prediction, and causal warning claims
 remain blocked.
 
+## Stressor-Robust Training Did Not Lock a Global Robust-Capacity Claim
+
+Milestone 5.1 tested non-neural stressor-axis robust HGB variants over existing
+F4/F8 capacity feature groups. The result is useful but still claim-bounded:
+`R2_stressor_balanced_hgb` with `F8_timestamp_weighted_stress` improves the
+hard C-rate `delta_capacity_Ah` row to condition-mean MAE `0.0705429`, versus
+F4 R0 `0.101133` and stress-feature R0 `0.102516`. The paired bootstrap p05 is
+positive versus F4 (`0.0216868`) and the stress reference (`0.0165793`).
+
+The global robust-capacity claim remains not supported because the selected
+candidate narrowly fails the outside-C-rate non-degradation guardrail: maximum
+relative degradation outside C-rate is `0.0528343`, above the 5% threshold,
+from the voltage-window delta comparison.
+
+Decision: report the stressor-balanced C-rate improvement as diagnostic
+robustness evidence only. Do not claim C-rate fade is solved, do not open
+architecture work, and do not use this result for policy ranking or causal
+claims.
+
 ## Milestone 3.0 Blocked-Claim Refresh
 
 The v2 synthesis keeps the following negative boundaries active:
@@ -166,6 +185,8 @@ The v2 synthesis keeps the following negative boundaries active:
 - detector-knee prediction remains blocked by replicate inconsistency;
 - threshold-warning calibrated-risk wording remains unsupported after the
   Milestone 5.0 calibration gate;
+- stressor-robust HGB improves C-rate delta diagnostically but does not pass
+  the global non-degradation guardrail;
 - sequence models remain blocked by the order-vs-aggregate and
   order-vs-shuffled negative result;
 - calibrated uncertainty remains blocked by C-rate coverage failure;

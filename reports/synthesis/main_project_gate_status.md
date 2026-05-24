@@ -4,6 +4,7 @@
 |---|---|---|---|---|
 | Capacity | Supported benchmark foundation | C-rate remains hardest: `capacity_Ah_k1` MAE `0.125186`, `delta_capacity_Ah` MAE `0.101133`. | Uniform generalization. | Use as central benchmark story. |
 | LOG_AGE stress | Mixed / partially supported | Stress features help some views but C-rate delta best stress row `0.102516` is worse than F4 `0.101133`. | Stress features solve C-rate fade. | Keep as mixed result. |
+| Stressor-robust capacity | Diagnostic improvement / global claim not supported | Stressor-balanced HGB improves C-rate delta to `0.0705429` with paired p05 above zero versus F4 and stress R0, but max outside-C-rate degradation is `0.0528343`. | C-rate fade solved; architecture justified. | Keep diagnostic or run narrow voltage-window forensics. |
 | PULSE | Supported for diagnostics | Canonical RT/50 PULSE target robustness and scalar baselines pass. | Broad multimodal claims. | Include scalar endpoint only. |
 | Capacity-PULSE coupling | Explanatory diagnostic | C-rate residual correlations remain strong after robustness checks. | Causal or predictive capacity+PULSE claim. | Use as explanatory diagnostic. |
 | EIS | Diagnostic / partially supported | QA, masks, scalar endpoints, and narrow profile prior-EIS signals pass; C-rate and fade claims fail. | Broad EIS improvement, DRT, embeddings. | Keep diagnostic unless new gate is opened. |
@@ -19,7 +20,8 @@
 
 ## Summary Decision
 
-The main technical program has reached a coherent benchmark checkpoint. The
-narrow threshold-warning calibration branch has been run and does not authorize
-calibrated risk. Further modeling should not be opened without a new gated
-technical rationale.
+The main technical program has reached a coherent benchmark checkpoint.
+Milestone 5.1 adds a useful diagnostic C-rate robustness improvement, but it
+does not authorize a global robust-capacity claim because another grouped split
+regresses beyond the pre-set guardrail. Further modeling should not be opened
+without a new gated technical rationale.
