@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 4.4: Public-facing repository entry point and submission metadata triage.
+Milestone 5.0: Grouped threshold-warning probability calibration gate.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -35,15 +35,21 @@ Current state:
   state improves `capacity_Ah_k1` over F4 in selected grouped splits, but it
   does not beat the strongest supplied non-PULSE HGB baselines and does not
   improve `delta_capacity_Ah`.
-- The current main-project track aligns the public repository entry point,
-  package metadata, venue-triage notes, and submission-readiness checklist
-  with the validated v0.7 manuscript and `benchmark-v0.1-rc2` release
-  evidence. This is release/manuscript communication work, not a new modeling
-  milestone.
+- The current main-project track evaluates whether the supported diagnostic
+  80% threshold-event warning result can be turned into calibrated probability
+  diagnostics under grouped splits. This is a narrow non-neural calibration
+  gate using the existing prospective threshold-warning table, not a new
+  architecture or policy-ranking milestone.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
 Allowed work:
+- grouped threshold-warning probability calibration
+- Platt/logistic and isotonic post-hoc calibration fitted on calibration
+  conditions only
+- train/calibration/test condition partitioning checks
+- C-rate and verified-only calibration diagnostics
+- threshold-warning calibration claim-readiness reporting
 - public README refresh
 - repository metadata triage
 - public-review entry point documentation
@@ -112,8 +118,8 @@ Allowed work:
 - small tests with synthetic fixtures
 
 Forbidden work:
-- new model training
-- new feature engineering
+- new model training outside the scoped threshold-warning calibration gate
+- new feature engineering outside the scoped threshold-warning calibration gate
 - knee prediction models
 - neural models
 - sequence models

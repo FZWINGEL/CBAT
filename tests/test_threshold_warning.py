@@ -22,6 +22,7 @@ from mbp.baselines.threshold_warning import (
     reliability_bin_rows,
     filter_rows_by_label_policy,
     run_threshold_warning_baselines,
+    run_threshold_warning_calibration,
 )
 
 
@@ -199,3 +200,39 @@ def test_threshold_warning_reliability_bins() -> None:
     bins = reliability_bin_rows(rows, bins=10)
     assert {row["bin"] for row in bins} == {0, 8}
     assert all(row["row_count"] == 1 for row in bins)
+
+
+def test_threshold_warning_probability_calibration(tmp_path: Path) -> None:
+    interval_path = tmp_path / "interval.parquet"
+    label_path = tmp_path / "threshold_labels.parquet"
+    warning_path = tmp_path / "warning.parquet"
+    report_path = tmp_path / "calibration_report.json"
+    prediction_path = tmp_path / "calibrated_predictions.parquet"
+    out_dir = tmp_path / "calibration"
+    pq.write_table(pa.Table.from_pylist(_interval_rows()), interval_path)
+    write_threshold_event_labels(interval_path, tmp_path / "reports", label_path)
+    build_threshold_warning_table(label_path, interval_path, warning_path)
+
+    report = run_threshold_warning_calibration(
+        warning_path,
+        report_path,
+        prediction_path,
+        out_dir,
+        targets=["event_within_3_checkups"],
+        split_views=["condition_fold"],
+        label_policies=["all_rows"],
+        calibration_methods=["C0_raw_hgb_w2", "C1_platt_logistic"],
+        hgb_max_iter=5,
+        min_calibration_conditions=1,
+        min_calibration_class_count=1,
+    )
+
+    assert report["schema_version"] == "gate50.threshold_warning_probability_calibration.v1"
+    assert report["row_counts"]["metrics"] > 0
+    assert prediction_path.exists()
+    assert (out_dir / "threshold_warning_calibration_claim_readiness.md").exists()
+    assert (out_dir / "reliability_bins.csv").exists()
+    predictions = pq.read_table(prediction_path).to_pylist()
+    assert all(row["calibration_method"] in {"C0_raw_hgb_w2", "C1_platt_logistic"} for row in predictions)
+    assert all(row["feature_group"] == "W2_nominal" for row in predictions)
+    assert all(row["model_level"] == "B6_hist_gradient_boosting_classifier" for row in predictions)

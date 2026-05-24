@@ -2,12 +2,12 @@
 
 | Blocked claim | Reason | Source |
 |---|---|---|
-| Calibrated risk | Threshold-warning probabilities remain diagnostic; C-rate ECE remains high. | `reports/baselines/threshold_warning_l0_l2/threshold_warning_final_claim_readiness.md` |
+| Calibrated risk | Threshold-warning probabilities remain diagnostic; post-hoc calibration improves mean ECE but C-rate ECE remains high. | `reports/baselines/threshold_warning_calibration/threshold_warning_calibration_claim_readiness.md` |
 | Calibrated capacity uncertainty | C-rate conformal coverage remains below target. | `docs/experiments/2026-05-23_grouped_calibration_replicate_uncertainty.md` |
 | Detector-knee prediction | Primary detector knees fail replicate consistency. | `docs/experiments/2026-05-23_knee_label_stability_gate.md` |
 | Sequence models | Order-aware event features do not beat aggregate or shuffled controls. | `docs/experiments/2026-05-23_temporal_history_value_gate.md` |
 | CBAT | Simpler baselines, calibration, sequence, and multimodal gates do not justify architecture. | `docs/PROJECT_CHARTER.md` |
-| Policy ranking | No calibrated risk, no intervention test, and no causal evidence. | `reports/baselines/threshold_warning_l0_l2/threshold_warning_final_claim_readiness.md` |
+| Policy ranking | No calibrated risk, no intervention test, and no causal evidence. | `reports/baselines/threshold_warning_calibration/threshold_warning_calibration_claim_readiness.md` |
 | Broad multimodal improvement | Prior PULSE/EIS do not beat strongest baselines broadly. | `docs/experiments/2026-05-23_prior_pulse_vs_best_nonpulse.md`; `docs/experiments/2026-05-23_eis_claim_hardening.md` |
 | Broad EIS improvement | EIS support is diagnostic/narrow profile-split only. | `docs/experiments/2026-05-23_eis_claim_hardening.md` |
 | Prior PULSE strongest-baseline dominance | Prior PULSE does not beat strongest non-PULSE HGB baselines. | `docs/experiments/2026-05-23_prior_pulse_vs_best_nonpulse.md` |

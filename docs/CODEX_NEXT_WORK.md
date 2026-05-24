@@ -1,19 +1,27 @@
 # Codex Next Work
 
-Current recommended branch: public-facing repository entry point and submission metadata triage.
+Current recommended branch: grouped threshold-warning probability calibration gate.
 
 ## Current Phase
 
-Milestone 4.4 aligns the root README, package description, public-review entry
-point, metadata checklist, venue-targeting matrix, and submission-readiness
-triage with the validated v0.7 manuscript, v0.8 handoff bundle, and
-`benchmark-v0.1-rc2` release evidence.
+Milestone 5.0 evaluates whether the supported non-neural 80% threshold-event
+warning diagnostic can support calibrated probability wording. It is limited
+to grouped post-hoc calibration of the existing HGB W2 warning baseline with
+separate fit, calibration, and test condition groups.
+
+## Current Result
+
+Platt/logistic and isotonic calibration improve mean ECE for the primary
+3-check-up threshold-warning horizon, but C-rate ECE remains above the
+guardrail. Treat threshold-warning probabilities as diagnostic scores, not
+calibrated risk.
 
 ## Optional Technical Branch
 
-The only optional technical branch currently justified after public handoff is a narrow
-threshold-warning calibration branch. It must remain non-neural, grouped,
-prospective, and leakage-safe. It must not become policy ranking or CBAT.
+No broader technical branch is currently justified. Future technical work, if
+opened, should be a narrowly scoped calibration-method comparison or release
+automation task, not CBAT, policy ranking, sequence modeling, or new modality
+expansion.
 
 ## Blocked Branches
 
@@ -56,6 +64,8 @@ Allowed current wording:
 - threshold-event forecasting diagnostic
 - negative result for temporal-order sequence readiness
 - calibrated uncertainty and calibrated risk remain blocked
+- threshold-warning post-hoc calibration improves mean reliability but does
+  not pass C-rate calibrated-risk guardrails
 
 Forbidden current wording:
 

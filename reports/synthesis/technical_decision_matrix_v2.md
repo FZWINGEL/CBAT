@@ -4,7 +4,7 @@
 |---|---|---|---|---|
 | Stop modeling and return to manuscript/benchmark integration | Major charter gates are closed; claim posture is coherent; threshold-warning diagnostic is now hardened. | Some claims remain diagnostic rather than predictive. | Low; strongest path to publishable benchmark. | Recommended default. |
 | Threshold-warning diagnostic extension | 80% threshold warning survives proximity and verified-only sensitivity. | Lead-time remains exploratory and calibration is poor. | Moderate scope creep. | Allow only if tied to reporting, not new architectures. |
-| Threshold-warning calibration branch | Diagnostic scores are strong but uncalibrated. | C-rate ECE remains high; calibrated-risk claim could fail. | Moderate; must avoid policy claims. | Optional narrow 3.1 branch. |
+| Threshold-warning calibration branch | Diagnostic scores are strong and post-hoc calibration improves mean ECE. | C-rate ECE remains above guardrail after Milestone 5.0. | Moderate; further tuning could chase calibration noise. | Do not extend unless a narrow diagnostic calibration question is explicitly needed. |
 | Run-event engineering acceleration | Run-event product is large and had OOM/performance history. | Temporal-order result is negative for modeling value. | Engineering work may not improve claims. | Only if needed for reproducibility/release. |
 | EIS feature-quality extension | EIS QA/features are useful diagnostics. | Prior-EIS signal is narrow; broad EIS improvement is blocked. | Modality expansion without claim value. | Defer. |
 | Sequence model branch | Charter mentions sequence value as a possible path. | Order-aware features failed vs aggregate/shuffled controls. | High; violates gate discipline. | Do not open. |
@@ -13,6 +13,7 @@
 
 ## Recommended Path
 
-Return to manuscript integration and benchmark release preparation. If the
-project needs one more technical branch, choose threshold-warning calibration
-only, with no policy, causal, CBAT, neural, or sequence claims.
+Return to benchmark release maintenance or manuscript integration. The narrow
+threshold-warning calibration branch has been tested and does not support
+calibrated-risk wording. Do not open policy, causal, CBAT, neural, or sequence
+claims.

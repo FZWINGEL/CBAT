@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 4.4: Public-facing repository entry point and submission metadata triage**.
+The repository is in **Milestone 5.0: Grouped threshold-warning probability calibration gate**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -109,7 +109,13 @@ without adding new science.
 Milestone 4.4 aligns the root README, package description, public-review
 entry point, repository metadata checklist, venue-targeting matrix, and
 submission-readiness triage with that release/manuscript handoff package
-without adding new science.
+without adding new science. Milestone 5.0 reopens only the narrow optional
+technical branch left by the synthesis decision matrix: grouped post-hoc
+probability calibration for the existing non-neural 80% threshold-event
+warning baseline. It adds Platt/logistic and isotonic calibration diagnostics
+with train/calibration/test condition separation and does not add new feature
+engineering, detector-knee prediction, policy ranking, causal claims, CBAT, or
+neural/sequence models.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -324,12 +330,14 @@ Current state:
   distance baseline. The final claim readiness supports a narrow diagnostic
   threshold-event forecasting claim, including C-rate diagnostic wording, while
   keeping early-warning wording exploratory and calibrated-risk claims blocked.
-- Milestone 3.0 synthesis is the active checkpoint. The recommended next
-  branch is to return to synthesis/manuscript integration and benchmark
-  release preparation. If technical work continues, it should be limited to a
-  narrow threshold-warning calibration branch; CBAT, neural/sequence models,
-  DRT, EIS embeddings, policy ranking, causal claims, and same-cell
-  counterfactual claims remain blocked.
+- Milestone 5.0 threshold-warning probability calibration is implemented and
+  run. `mbp baseline calibrate-threshold-warning` evaluates raw HGB W2,
+  Platt/logistic calibration, and isotonic calibration under all-row and
+  verified-only label policies with held-out condition groups. Platt and
+  isotonic improve mean ECE for `event_within_3_checkups`, but C-rate ECE
+  remains above the 0.10 guardrail (`0.167813` Platt and `0.159021` isotonic
+  under verified-only), so calibrated-risk claims remain not supported.
+  Threshold-warning probabilities remain diagnostic scores.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene

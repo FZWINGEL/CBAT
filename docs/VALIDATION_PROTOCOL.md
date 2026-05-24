@@ -187,6 +187,15 @@ engineering, neural models, sequence models, transformers, CBAT, DRT, EIS
 embeddings, policy ranking, detector-knee prediction, risk-score calibration
 claims, causal claims, same-cell counterfactual claims, broad multimodal
 claims, or any new scientific claim.
+Milestone 5.0 authorizes only grouped threshold-warning probability
+calibration for the existing `capacity_below_80pct_initial` warning baseline.
+It may fit non-neural post-hoc calibrators on calibration conditions drawn
+from the non-test side of each grouped split. It may compare raw HGB W2,
+Platt/logistic calibration, and isotonic calibration under all-row and
+verified-only label policies. It does not authorize new feature engineering,
+detector-knee prediction, policy ranking, CBAT, neural/sequence models, causal
+claims, same-cell counterfactual claims, or calibrated-risk wording unless
+both grouped and C-rate calibration guardrails pass without leakage.
 
 Required split discipline:
 
@@ -287,6 +296,17 @@ Required Milestone 4.4 public-entrypoint artifacts:
 - `manuscript/venue_targeting_matrix_v0_9.md`
 - `manuscript/submission_readiness_v0_9.md`
 - `docs/experiments/2026-05-24_public_entrypoint_submission_metadata.md`
+
+Required Milestone 5.0 threshold-warning probability-calibration artifacts:
+
+- `mbp baseline calibrate-threshold-warning`
+- `reports/baselines/threshold_warning_calibration_report.json`
+- `reports/baselines/threshold_warning_calibration/calibration_metric_summary.csv`
+- `reports/baselines/threshold_warning_calibration/reliability_by_split.csv`
+- `reports/baselines/threshold_warning_calibration/reliability_bins.csv`
+- `reports/baselines/threshold_warning_calibration/c_rate_calibration_summary.md`
+- `reports/baselines/threshold_warning_calibration/threshold_warning_calibration_claim_readiness.md`
+- `docs/experiments/2026-05-24_threshold_warning_probability_calibration.md`
 
 Required Milestone 1.0 synthesis artifacts:
 
@@ -579,6 +599,15 @@ Milestone 2.6 validation commands:
 - `ruff check . --no-cache`
 - `pytest -p no:cacheprovider`
 - `git diff --check`
+
+Milestone 5.0 validation commands:
+
+- `mbp baseline calibrate-threshold-warning`
+- `ruff check . --no-cache`
+- `pytest -p no:cacheprovider`
+- `git diff --check`
+- generated calibrated prediction Parquets under `data/processed/` must remain
+  untracked
 
 Milestone 2.1 EIS validation commands:
 

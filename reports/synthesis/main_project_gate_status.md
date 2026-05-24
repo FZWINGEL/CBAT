@@ -12,12 +12,14 @@
 | Grouped calibration | Not supported globally | Mean coverage improves but C-rate coverage fails. | Calibrated capacity uncertainty. | Keep blocked. |
 | Temporal order | Not supported | Order-aware features do not beat aggregate/shuffled controls. | Sequence model justification. | Keep sequence models blocked. |
 | Detector knee labels | Not supported | Only 45 / 64 primary-valid conditions are replicate-consistent within 2 check-ups. | Detector-knee prediction. | Keep diagnostic only. |
-| Threshold warning | Supported for diagnostics | Verified-only HGB W2 Brier `0.090116` beats prior `0.178655` and proximity `0.168492`. | Calibrated risk, causal warning, policy ranking. | Lock diagnostic claim; optional calibration branch. |
+| Threshold warning | Supported for diagnostics | Verified-only HGB W2 Brier `0.090116` beats prior `0.178655` and proximity `0.168492`. | Calibrated risk, causal warning, policy ranking. | Lock diagnostic claim. |
+| Threshold-warning calibration | Not supported for calibrated risk | Platt/isotonic improve mean ECE, but verified-only C-rate ECE remains `0.167813` / `0.159021`. | Calibrated risk. | Keep probabilities diagnostic. |
 | Policy ranking | Blocked | No calibrated risk, no causal evidence, no intervention test. | Policy ranking. | Do not open. |
 | CBAT | Blocked | Simpler gates do not justify architecture. | CBAT validation. | Do not open. |
 
 ## Summary Decision
 
 The main technical program has reached a coherent benchmark checkpoint. The
-best next step is synthesis/manuscript integration. Further modeling should
-not be opened unless it is a narrow threshold-warning calibration branch.
+narrow threshold-warning calibration branch has been run and does not authorize
+calibrated risk. Further modeling should not be opened without a new gated
+technical rationale.

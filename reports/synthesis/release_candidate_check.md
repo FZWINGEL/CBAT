@@ -5,9 +5,9 @@ Status: `passed`
 ## Summary
 
 - Required files checked: 10
-- Tracked artifacts checked: 27
-- Ignored artifacts checked: 13
-- Claim matrix rows checked: 19
+- Tracked artifacts checked: 28
+- Ignored artifacts checked: 14
+- Claim matrix rows checked: 20
 
 ## Errors
 
@@ -35,6 +35,7 @@ Status: `passed`
 - build-targets
 - build-threshold-warning-table
 - calibrate-capacity
+- calibrate-threshold-warning
 - check-manuscript
 - check-reader-manuscript
 - check-release-candidate

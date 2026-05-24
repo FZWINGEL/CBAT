@@ -1618,6 +1618,68 @@ def baseline_run_threshold_warning(
     )
 
 
+@baseline_app.command("calibrate-threshold-warning")
+def baseline_calibrate_threshold_warning(
+    warning_table: Path = typer.Option(..., "--warning-table", help="Path to threshold_warning_table_v1.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output JSON calibration report path."),
+    predictions_out: Path = typer.Option(..., "--predictions-out", help="Output calibrated prediction Parquet path."),
+    out_dir: Path = typer.Option(..., "--out-dir", help="Output directory for calibration diagnostics."),
+    seed: int = typer.Option(42, "--seed", help="Deterministic model seed."),
+    hgb_max_iter: int = typer.Option(50, "--hgb-max-iter", min=1, help="HGB classifier max_iter."),
+    targets: str | None = typer.Option(None, "--targets", help="Comma-separated target labels."),
+    split_views: str | None = typer.Option(None, "--split-views", help="Comma-separated split views."),
+    label_policies: str | None = typer.Option(
+        None,
+        "--label-policies",
+        help="Comma-separated label policies: all_rows, verified_only, censored_as_negative.",
+    ),
+    calibration_methods: str | None = typer.Option(
+        None,
+        "--calibration-methods",
+        help="Comma-separated calibration methods: C0_raw_hgb_w2, C1_platt_logistic, C2_isotonic.",
+    ),
+    calibration_fraction: float = typer.Option(
+        0.25,
+        "--calibration-fraction",
+        help="Fraction of non-test conditions reserved for calibration.",
+    ),
+    min_calibration_conditions: int = typer.Option(
+        5,
+        "--min-calibration-conditions",
+        min=1,
+        help="Minimum condition groups reserved for calibration when available.",
+    ),
+    min_calibration_class_count: int = typer.Option(
+        3,
+        "--min-calibration-class-count",
+        min=1,
+        help="Minimum positive and negative calibration rows required for fitted calibrators.",
+    ),
+) -> None:
+    """Calibrate non-neural threshold-warning probabilities under grouped splits."""
+    from mbp.baselines.threshold_warning import run_threshold_warning_calibration
+
+    report = run_threshold_warning_calibration(
+        warning_table,
+        out,
+        predictions_out,
+        out_dir,
+        seed=seed,
+        hgb_max_iter=hgb_max_iter,
+        targets=_comma_values(targets) if targets else None,
+        split_views=_comma_values(split_views) if split_views else None,
+        label_policies=_comma_values(label_policies) if label_policies else None,
+        calibration_methods=_comma_values(calibration_methods) if calibration_methods else None,
+        calibration_fraction=calibration_fraction,
+        min_calibration_conditions=min_calibration_conditions,
+        min_calibration_class_count=min_calibration_class_count,
+    )
+    typer.echo(
+        "Threshold-warning calibration report generated: "
+        f"{report['row_counts']['metrics']} metric rows written to {out}"
+    )
+
+
 @baseline_app.command("compare-threshold-warning-censoring")
 def baseline_compare_threshold_warning_censoring(
     all_rows_report: Path = typer.Option(..., "--all-rows-report", help="All-row threshold-warning JSON report."),

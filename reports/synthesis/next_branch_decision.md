@@ -2,7 +2,8 @@
 
 ## Decision
 
-Return to synthesis/manuscript integration and benchmark release preparation.
+Return to benchmark release maintenance, synthesis refreshes, or manuscript
+integration. Do not open a broad new modeling branch.
 
 ## Rationale
 
@@ -18,7 +19,8 @@ The project has completed the major baseline-first charter gates:
 - grouped calibration;
 - temporal-order falsification;
 - knee-label stability;
-- threshold-event warning and censoring finalization.
+- threshold-event warning and censoring finalization;
+- threshold-warning probability calibration.
 
 The strongest contribution is now a rigorous grouped-validation benchmark that
 documents which battery-degradation signals are supported, diagnostic-only,
@@ -26,22 +28,19 @@ negative, or blocked.
 
 ## Recommended Path
 
-1. Integrate Milestone 2.0-2.6.2 evidence into the manuscript package.
-2. Refresh figures/tables around EIS, temporal-order, knee/threshold, and
-   threshold-warning results.
-3. Prepare a benchmark/data-methods framing rather than an architecture paper.
+1. Preserve the benchmark/data-methods framing rather than an architecture
+   branch.
+2. If manuscript work resumes, integrate the Milestone 5.0 calibration result
+   as a blocked calibrated-risk claim.
+3. If engineering work resumes, prefer release automation or reproducibility
+   checks over new scientific expansion.
 
 ## Optional Technical Branch
 
-Only open a narrow threshold-warning calibration branch if calibrated
-probability scores are needed:
-
-- grouped Platt/isotonic calibration only;
-- no policy ranking;
-- no detector-knee prediction;
-- no CBAT;
-- no neural/sequence models;
-- no causal claims.
+The narrow threshold-warning calibration branch has now been run. Platt and
+isotonic calibration improve mean reliability, but C-rate ECE remains above
+the guardrail, so calibrated-risk and policy-ranking claims remain blocked.
+Any future calibration work should be scoped as diagnostics only.
 
 ## Explicitly Rejected Branches
 

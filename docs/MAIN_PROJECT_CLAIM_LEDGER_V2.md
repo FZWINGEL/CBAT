@@ -1,6 +1,6 @@
 # Main Project Claim Ledger v2
 
-This ledger is the post-Milestone 2.6.2 technical source of truth. It extends
+This ledger is the post-Milestone 5.0 technical source of truth. It extends
 the paper claim ledger with main-project gate decisions and next actions.
 
 | ID | Claim | Status | Source artifact | Allowed wording | Forbidden wording | Next action |
@@ -24,9 +24,11 @@ the paper claim ledger with main-project gate decisions and next actions.
 | C17 | Knee labels are stable enough for prediction. | `not_supported` | `docs/experiments/2026-05-23_knee_label_stability_gate.md` | Detector knees are exploratory diagnostics. | Knee-risk prediction is authorized. | Keep detector-knee prediction blocked. |
 | C18 | Threshold-event labels are more stable than detector knees. | `partially_supported` | `docs/experiments/2026-05-23_knee_threshold_label_forensics.md` | 80% threshold labels are more stable candidate targets. | Threshold labels alone authorize prediction. | Use only with prospective baseline evidence. |
 | C19 | Non-neural baselines can forecast the 80% threshold event under grouped validation. | `supported_for_diagnostics` | `docs/experiments/2026-05-23_threshold_warning_censoring_finalization.md` | Non-neural baselines forecast the 80% threshold event diagnostically beyond proximity and under verified-only sensitivity. | Calibrated risk, causal warning, detector-knee prediction, policy ranking, or CBAT are authorized. | Lock diagnostic claim; optional calibration branch only. |
+| C20 | Threshold-warning probabilities are calibrated risk estimates. | `not_supported` | `docs/experiments/2026-05-24_threshold_warning_probability_calibration.md` | Post-hoc calibration improves mean reliability but C-rate calibration remains insufficient; probabilities are diagnostic scores. | Threshold-warning probabilities are calibrated risk estimates. | Keep calibrated-risk and policy-ranking claims blocked. |
 
 ## Next Action
 
-Return to manuscript/benchmark integration. If one more technical branch is
-opened, restrict it to threshold-warning calibration and keep it non-neural,
-grouped, and diagnostic until calibration passes.
+Return to benchmark/manuscript integration or release maintenance. The narrow
+threshold-warning calibration branch has now been run and does not authorize
+calibrated-risk wording; broader architecture, policy, and causal branches
+remain blocked.

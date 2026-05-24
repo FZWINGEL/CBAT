@@ -150,6 +150,11 @@ records 1,394 right-censored unknown rows for each horizon.
 Future interval exposure, future capacity, PULSE/EIS deltas, and detector knees
 remain excluded from the warning feature set.
 
+Milestone 5.0 tested the narrow post-hoc calibration branch directly. Platt
+and isotonic calibration improve mean ECE for the primary 3-check-up horizon,
+but C-rate ECE remains above the 0.10 guardrail: verified-only C-rate ECE is
+`0.167813` for Platt and `0.159021` for isotonic.
+
 Decision: threshold-event forecasting is supported for diagnostics; calibrated
 risk, policy ranking, detector-knee prediction, and causal warning claims
 remain blocked.
@@ -159,13 +164,13 @@ remain blocked.
 The v2 synthesis keeps the following negative boundaries active:
 
 - detector-knee prediction remains blocked by replicate inconsistency;
-- threshold-warning calibration remains unsupported, despite diagnostic
-  forecasting support;
+- threshold-warning calibrated-risk wording remains unsupported after the
+  Milestone 5.0 calibration gate;
 - sequence models remain blocked by the order-vs-aggregate and
   order-vs-shuffled negative result;
 - calibrated uncertainty remains blocked by C-rate coverage failure;
 - CBAT, policy ranking, causal claims, same-cell counterfactuals, DRT, and
   learned EIS embeddings remain blocked.
 
-Decision: return to synthesis/manuscript integration unless a narrow
-threshold-warning calibration branch is explicitly opened.
+Decision: return to synthesis/release maintenance unless a new narrow
+calibration-method diagnostic is explicitly justified.

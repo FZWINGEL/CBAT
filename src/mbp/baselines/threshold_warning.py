@@ -6,6 +6,7 @@ from collections import defaultdict
 import csv
 from dataclasses import dataclass
 from datetime import UTC, datetime
+import hashlib
 import json
 import math
 from pathlib import Path
@@ -43,6 +44,13 @@ DEFAULT_MODELS = MODEL_LEVELS
 DEFAULT_FEATURE_GROUPS = FEATURE_GROUPS
 LABEL_POLICIES = ("all_rows", "verified_only", "censored_as_negative")
 DEFAULT_LABEL_POLICY = "all_rows"
+CALIBRATION_SCHEMA_VERSION = "gate50.threshold_warning_probability_calibration.v1"
+CALIBRATION_METHODS = ("C0_raw_hgb_w2", "C1_platt_logistic", "C2_isotonic")
+DEFAULT_CALIBRATION_METHODS = CALIBRATION_METHODS
+DEFAULT_CALIBRATION_LABEL_POLICIES = ("all_rows", "verified_only")
+CALIBRATION_BASE_MODEL_LEVEL = "B6_hist_gradient_boosting_classifier"
+CALIBRATION_BASE_FEATURE_GROUP = "W2_nominal"
+PRIMARY_CALIBRATION_TARGET = "event_within_3_checkups"
 LEAKAGE_FIELDS = {
     "capacity_Ah_k1",
     "delta_capacity_Ah",
@@ -126,6 +134,22 @@ class WarningFeatureEncoder:
                 values.extend(1.0 if observed == category else 0.0 for category in self.categorical_values[column])
             matrix.append(values)
         return matrix
+
+
+@dataclass(frozen=True)
+class FittedWarningProbabilityModel:
+    """Base probability model fit on training conditions only."""
+
+    encoder: WarningFeatureEncoder | None
+    model: Any | None
+    base_rate: float
+    train_one_class: bool
+
+    def predict(self, rows: list[dict[str, Any]]) -> list[float]:
+        if self.train_one_class or self.model is None or self.encoder is None:
+            return [_clip_probability(self.base_rate) for _ in rows]
+        matrix = np.asarray(self.encoder.transform(rows, standardize_numeric=False), dtype=float)
+        return [_clip_probability(float(value)) for value in self.model.predict_proba(matrix)[:, 1]]
 
 
 def run_threshold_warning_baselines(
@@ -252,6 +276,207 @@ def run_threshold_warning_baselines(
     return report
 
 
+def run_threshold_warning_calibration(
+    warning_table_path: Path,
+    out_path: Path,
+    predictions_out_path: Path,
+    out_dir: Path,
+    *,
+    seed: int = 42,
+    hgb_max_iter: int = 50,
+    targets: list[str] | None = None,
+    split_views: list[str] | None = None,
+    label_policies: list[str] | None = None,
+    calibration_methods: list[str] | None = None,
+    calibration_fraction: float = 0.25,
+    min_calibration_conditions: int = 5,
+    min_calibration_class_count: int = 3,
+) -> dict[str, Any]:
+    """Run grouped post-hoc calibration for the HGB W2 threshold-warning model."""
+    selected_targets = _normalize_selection(targets, TARGETS, TARGETS, "target")
+    selected_splits = _normalize_selection(split_views, SPLIT_COLUMNS, SPLIT_COLUMNS, "split view")
+    selected_policies = _normalize_selection(
+        label_policies,
+        LABEL_POLICIES,
+        DEFAULT_CALIBRATION_LABEL_POLICIES,
+        "label policy",
+    )
+    selected_methods = _normalize_selection(
+        calibration_methods,
+        CALIBRATION_METHODS,
+        DEFAULT_CALIBRATION_METHODS,
+        "calibration method",
+    )
+    if hgb_max_iter <= 0:
+        raise ValueError("hgb_max_iter must be positive.")
+    if not 0.0 < calibration_fraction < 1.0:
+        raise ValueError("calibration_fraction must be between 0 and 1.")
+    if min_calibration_conditions <= 0:
+        raise ValueError("min_calibration_conditions must be positive.")
+    if min_calibration_class_count <= 0:
+        raise ValueError("min_calibration_class_count must be positive.")
+
+    rows = pq.read_table(warning_table_path).to_pylist()
+    if not rows:
+        raise ValueError("Threshold-warning table is empty.")
+    _audit_warning_feature_groups([CALIBRATION_BASE_FEATURE_GROUP])
+    if any(method != "C0_raw_hgb_w2" for method in selected_methods):
+        _import_sklearn()
+    if "C2_isotonic" in selected_methods:
+        _import_isotonic_regression()
+
+    metrics: list[dict[str, Any]] = []
+    predictions: list[dict[str, Any]] = []
+    partition_rows: list[dict[str, Any]] = []
+    for split_name in selected_splits:
+        for heldout_fold, train_rows, test_rows in iter_split_instances(rows, split_name):
+            assert_no_parameter_set_leakage(train_rows, test_rows, split_name, heldout_fold)
+            for target in selected_targets:
+                for label_policy in selected_policies:
+                    policy_train_rows = filter_rows_by_label_policy(train_rows, target, label_policy)
+                    policy_test_rows = filter_rows_by_label_policy(test_rows, target, label_policy)
+                    if not policy_train_rows or not policy_test_rows:
+                        continue
+                    partition = _threshold_calibration_partition(
+                        policy_train_rows,
+                        target=target,
+                        label_policy=label_policy,
+                        split_name=split_name,
+                        heldout_fold=heldout_fold,
+                        seed=seed,
+                        calibration_fraction=calibration_fraction,
+                        min_calibration_conditions=min_calibration_conditions,
+                        min_calibration_class_count=min_calibration_class_count,
+                    )
+                    fit_rows = partition["fit_rows"]
+                    calibration_rows = partition["calibration_rows"]
+                    if not fit_rows:
+                        continue
+                    _assert_disjoint_parameter_sets(
+                        fit_rows,
+                        calibration_rows,
+                        f"{split_name} fold {heldout_fold} fit/calibration",
+                    )
+                    _assert_disjoint_parameter_sets(
+                        calibration_rows,
+                        policy_test_rows,
+                        f"{split_name} fold {heldout_fold} calibration/test",
+                    )
+                    base_model = _fit_hgb_w2_probability_model(
+                        fit_rows,
+                        target,
+                        seed=seed,
+                        hgb_max_iter=hgb_max_iter,
+                    )
+                    base_calibration_probs = base_model.predict(calibration_rows)
+                    base_test_probs = base_model.predict(policy_test_rows)
+                    calibration_y = [1 if row[target] else 0 for row in calibration_rows]
+                    partition_rows.append(
+                        _threshold_calibration_partition_row(
+                            partition,
+                            target=target,
+                            label_policy=label_policy,
+                            split_name=split_name,
+                            heldout_fold=heldout_fold,
+                            base_train_one_class=base_model.train_one_class,
+                        )
+                    )
+                    for method in selected_methods:
+                        calibrated_probs, status, fallback_reason = _apply_probability_calibration(
+                            method,
+                            base_calibration_probs,
+                            calibration_y,
+                            base_test_probs,
+                            seed=seed,
+                            min_calibration_class_count=min_calibration_class_count,
+                            base_train_one_class=base_model.train_one_class,
+                        )
+                        metric = warning_metrics(
+                            policy_test_rows,
+                            calibrated_probs,
+                            target=target,
+                            split_name=split_name,
+                            heldout_fold=heldout_fold,
+                            model_level=CALIBRATION_BASE_MODEL_LEVEL,
+                            feature_group=CALIBRATION_BASE_FEATURE_GROUP,
+                            train_rows=fit_rows,
+                            train_one_class=base_model.train_one_class,
+                        )
+                        test_y = [1 if row[target] else 0 for row in policy_test_rows]
+                        metric.update(
+                            {
+                                "label_policy": label_policy,
+                                "calibration_method": method,
+                                "calibration_status": status,
+                                "fallback_reason": fallback_reason,
+                                "n_fit_conditions": partition["n_fit_conditions"],
+                                "n_calibration": len(calibration_rows),
+                                "n_calibration_conditions": partition["n_calibration_conditions"],
+                                "calibration_positive_count": sum(calibration_y),
+                                "calibration_negative_count": len(calibration_y) - sum(calibration_y),
+                                "base_train_one_class": base_model.train_one_class,
+                                "calibration_slope": calibration_slope(test_y, calibrated_probs),
+                                "calibration_intercept": calibration_intercept(test_y, calibrated_probs),
+                            }
+                        )
+                        metrics.append(metric)
+                        predictions.extend(
+                            _threshold_calibration_prediction_rows(
+                                policy_test_rows,
+                                calibrated_probs,
+                                base_test_probs,
+                                target=target,
+                                split_name=split_name,
+                                heldout_fold=heldout_fold,
+                                label_policy=label_policy,
+                                calibration_method=method,
+                                calibration_status=status,
+                                fallback_reason=fallback_reason,
+                            )
+                        )
+
+    predictions_out_path.parent.mkdir(parents=True, exist_ok=True)
+    pq.write_table(pa.Table.from_pylist(predictions), predictions_out_path)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    readiness = threshold_probability_calibration_readiness(metrics, leakage_audit([CALIBRATION_BASE_FEATURE_GROUP]))
+    report = {
+        "status": "passed",
+        "schema_version": CALIBRATION_SCHEMA_VERSION,
+        "generated_at_utc": datetime.now(UTC).isoformat(),
+        "inputs": {"warning_table": str(warning_table_path)},
+        "outputs": {
+            "report": str(out_path),
+            "predictions": str(predictions_out_path),
+            "out_dir": str(out_dir),
+        },
+        "seed": seed,
+        "hgb_max_iter": hgb_max_iter,
+        "targets": selected_targets,
+        "split_views": selected_splits,
+        "label_policies": selected_policies,
+        "calibration_methods": selected_methods,
+        "base_model_level": CALIBRATION_BASE_MODEL_LEVEL,
+        "base_feature_group": CALIBRATION_BASE_FEATURE_GROUP,
+        "calibration_fraction": calibration_fraction,
+        "min_calibration_conditions": min_calibration_conditions,
+        "min_calibration_class_count": min_calibration_class_count,
+        "row_counts": {
+            "rows": len(rows),
+            "metrics": len(metrics),
+            "predictions": len(predictions),
+            "partitions": len(partition_rows),
+        },
+        "leakage_audit": leakage_audit([CALIBRATION_BASE_FEATURE_GROUP]),
+        "claim_readiness": readiness,
+        "partition_rows": partition_rows,
+        "metrics": metrics,
+    }
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    render_threshold_warning_calibration_artifacts(report, predictions, out_dir)
+    return report
+
+
 def filter_rows_by_label_policy(rows: list[dict[str, Any]], target: str, label_policy: str) -> list[dict[str, Any]]:
     if label_policy not in LABEL_POLICIES:
         raise ValueError(f"Unknown label policy: {label_policy}")
@@ -320,6 +545,180 @@ def predict_warning_probability(
         raise ValueError(f"Unknown model level: {model_level}")
     model.fit(x_train, y_train)
     return [float(value) for value in model.predict_proba(x_test)[:, 1]], False
+
+
+def _fit_hgb_w2_probability_model(
+    train_rows: list[dict[str, Any]],
+    target: str,
+    *,
+    seed: int,
+    hgb_max_iter: int,
+) -> FittedWarningProbabilityModel:
+    y_train = np.asarray([1.0 if row[target] else 0.0 for row in train_rows], dtype=float)
+    base_rate = float(np.mean(y_train)) if len(y_train) else 0.0
+    train_one_class = len(set(y_train.tolist())) < 2
+    if train_one_class:
+        return FittedWarningProbabilityModel(
+            encoder=None,
+            model=None,
+            base_rate=base_rate,
+            train_one_class=True,
+        )
+    _, HistGradientBoostingClassifier = _import_sklearn()
+    encoder = WarningFeatureEncoder.fit(train_rows, CALIBRATION_BASE_FEATURE_GROUP)
+    x_train = np.asarray(encoder.transform(train_rows, standardize_numeric=False), dtype=float)
+    model = HistGradientBoostingClassifier(random_state=seed, max_iter=hgb_max_iter)
+    model.fit(x_train, y_train)
+    return FittedWarningProbabilityModel(
+        encoder=encoder,
+        model=model,
+        base_rate=base_rate,
+        train_one_class=False,
+    )
+
+
+def _threshold_calibration_partition(
+    train_rows: list[dict[str, Any]],
+    *,
+    target: str,
+    label_policy: str,
+    split_name: str,
+    heldout_fold: int,
+    seed: int,
+    calibration_fraction: float,
+    min_calibration_conditions: int,
+    min_calibration_class_count: int,
+) -> dict[str, Any]:
+    conditions = sorted({int(row["parameter_set"]) for row in train_rows})
+    if len(conditions) < 2:
+        return {
+            "fit_rows": train_rows,
+            "calibration_rows": [],
+            "calibration_conditions": [],
+            "fit_conditions": conditions,
+            "n_fit_conditions": len(conditions),
+            "n_calibration_conditions": 0,
+            "partition_status": "insufficient_conditions",
+        }
+    desired = max(min_calibration_conditions, math.ceil(len(conditions) * calibration_fraction))
+    desired = min(max(desired, 1), len(conditions) - 1)
+    ordered = sorted(
+        conditions,
+        key=lambda condition: _stable_calibration_key(
+            condition,
+            seed=seed,
+            target=target,
+            label_policy=label_policy,
+            split_name=split_name,
+            heldout_fold=heldout_fold,
+        ),
+    )
+    calibration_conditions = set(ordered[:desired])
+    remaining = ordered[desired:]
+    while remaining and not _has_minimum_class_counts(
+        [row for row in train_rows if int(row["parameter_set"]) in calibration_conditions],
+        target,
+        min_calibration_class_count,
+    ):
+        calibration_conditions.add(remaining.pop(0))
+        if len(calibration_conditions) >= len(conditions):
+            break
+    if len(calibration_conditions) >= len(conditions):
+        calibration_conditions.remove(ordered[-1])
+    calibration_rows = [row for row in train_rows if int(row["parameter_set"]) in calibration_conditions]
+    fit_rows = [row for row in train_rows if int(row["parameter_set"]) not in calibration_conditions]
+    partition_status = "passed"
+    if not _has_minimum_class_counts(calibration_rows, target, min_calibration_class_count):
+        partition_status = "sparse_calibration_classes"
+    return {
+        "fit_rows": fit_rows,
+        "calibration_rows": calibration_rows,
+        "calibration_conditions": sorted(calibration_conditions),
+        "fit_conditions": sorted(set(conditions) - calibration_conditions),
+        "n_fit_conditions": len({int(row["parameter_set"]) for row in fit_rows}),
+        "n_calibration_conditions": len({int(row["parameter_set"]) for row in calibration_rows}),
+        "partition_status": partition_status,
+    }
+
+
+def _threshold_calibration_partition_row(
+    partition: dict[str, Any],
+    *,
+    target: str,
+    label_policy: str,
+    split_name: str,
+    heldout_fold: int,
+    base_train_one_class: bool,
+) -> dict[str, Any]:
+    calibration_rows = partition["calibration_rows"]
+    fit_rows = partition["fit_rows"]
+    calibration_positive_count = sum(1 for row in calibration_rows if row[target])
+    fit_positive_count = sum(1 for row in fit_rows if row[target])
+    return {
+        "target": target,
+        "label_policy": label_policy,
+        "split_name": split_name,
+        "heldout_fold": heldout_fold,
+        "partition_status": partition["partition_status"],
+        "n_fit": len(fit_rows),
+        "n_fit_conditions": partition["n_fit_conditions"],
+        "n_calibration": len(calibration_rows),
+        "n_calibration_conditions": partition["n_calibration_conditions"],
+        "fit_positive_count": fit_positive_count,
+        "fit_negative_count": len(fit_rows) - fit_positive_count,
+        "calibration_positive_count": calibration_positive_count,
+        "calibration_negative_count": len(calibration_rows) - calibration_positive_count,
+        "base_train_one_class": base_train_one_class,
+    }
+
+
+def _apply_probability_calibration(
+    method: str,
+    calibration_base_probabilities: list[float],
+    calibration_y: list[int],
+    test_base_probabilities: list[float],
+    *,
+    seed: int,
+    min_calibration_class_count: int,
+    base_train_one_class: bool,
+) -> tuple[list[float], str, str | None]:
+    if method not in CALIBRATION_METHODS:
+        raise ValueError(f"Unknown calibration method: {method}")
+    if method == "C0_raw_hgb_w2":
+        return [_clip_probability(value) for value in test_base_probabilities], "raw", None
+    class_counts = {
+        0: sum(1 for value in calibration_y if value == 0),
+        1: sum(1 for value in calibration_y if value == 1),
+    }
+    if base_train_one_class:
+        return [_clip_probability(value) for value in test_base_probabilities], "fallback_raw", "base_train_one_class"
+    if len(calibration_y) == 0:
+        return [_clip_probability(value) for value in test_base_probabilities], "fallback_raw", "no_calibration_rows"
+    if min(class_counts.values()) < min_calibration_class_count:
+        return (
+            [_clip_probability(value) for value in test_base_probabilities],
+            "fallback_raw",
+            "insufficient_calibration_class_count",
+        )
+    if method == "C1_platt_logistic":
+        LogisticRegression, _ = _import_sklearn()
+        x_cal = np.asarray([[_logit(value)] for value in calibration_base_probabilities], dtype=float)
+        x_test = np.asarray([[_logit(value)] for value in test_base_probabilities], dtype=float)
+        calibrator = LogisticRegression(C=1.0, max_iter=1000, random_state=seed)
+        calibrator.fit(x_cal, np.asarray(calibration_y, dtype=int))
+        return [_clip_probability(float(value)) for value in calibrator.predict_proba(x_test)[:, 1]], "calibrated", None
+    if method == "C2_isotonic":
+        IsotonicRegression = _import_isotonic_regression()
+        calibrator = IsotonicRegression(y_min=0.0, y_max=1.0, out_of_bounds="clip")
+        calibrator.fit(
+            np.asarray([_clip_probability(value) for value in calibration_base_probabilities], dtype=float),
+            np.asarray(calibration_y, dtype=float),
+        )
+        transformed = calibrator.predict(
+            np.asarray([_clip_probability(value) for value in test_base_probabilities], dtype=float)
+        )
+        return [_clip_probability(float(value)) for value in transformed], "calibrated", None
+    raise ValueError(f"Unknown calibration method: {method}")
 
 
 def warning_metrics(
@@ -393,6 +792,42 @@ def prediction_rows(
                 "proximity_bin": proximity_bin(row),
                 "label_status": label_status(row, target),
                 "schema_version": SCHEMA_VERSION,
+            }
+        )
+    return rows
+
+
+def _threshold_calibration_prediction_rows(
+    test_rows: list[dict[str, Any]],
+    probabilities: list[float],
+    base_probabilities: list[float],
+    *,
+    target: str,
+    split_name: str,
+    heldout_fold: int,
+    label_policy: str,
+    calibration_method: str,
+    calibration_status: str,
+    fallback_reason: str | None,
+) -> list[dict[str, Any]]:
+    rows = prediction_rows(
+        test_rows,
+        probabilities,
+        target=target,
+        split_name=split_name,
+        heldout_fold=heldout_fold,
+        model_level=CALIBRATION_BASE_MODEL_LEVEL,
+        feature_group=CALIBRATION_BASE_FEATURE_GROUP,
+    )
+    for row, base_probability in zip(rows, base_probabilities):
+        row.update(
+            {
+                "base_y_prob": _clip_probability(base_probability),
+                "label_policy": label_policy,
+                "calibration_method": calibration_method,
+                "calibration_status": calibration_status,
+                "fallback_reason": fallback_reason,
+                "schema_version": CALIBRATION_SCHEMA_VERSION,
             }
         )
     return rows
@@ -533,6 +968,27 @@ def render_threshold_warning_artifacts(report: dict[str, Any], report_dir: Path)
     _write_leakage_audit_md(report["leakage_audit"], report_dir / "threshold_warning_leakage_audit.md")
     _write_claim_readiness_md(report["metrics"], report["leakage_audit"], report_dir / "threshold_warning_claim_readiness.md")
     _write_summary_md(report, report_dir / "baseline_summary.md")
+
+
+def render_threshold_warning_calibration_artifacts(
+    report: dict[str, Any],
+    predictions: list[dict[str, Any]],
+    out_dir: Path,
+) -> None:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    _write_csv(out_dir / "calibration_metric_summary.csv", report["metrics"])
+    _write_csv(out_dir / "calibration_partition_summary.csv", report["partition_rows"])
+    _write_csv(out_dir / "reliability_bins.csv", threshold_calibration_reliability_bin_rows(predictions))
+    _write_csv(out_dir / "reliability_by_split.csv", threshold_calibration_by_split_rows(report["metrics"]))
+    _write_csv(out_dir / "plots" / "calibration_method_comparison.csv", threshold_calibration_leaderboard_rows(report["metrics"]))
+    _write_c_rate_probability_calibration_md(
+        report["metrics"],
+        out_dir / "c_rate_calibration_summary.md",
+    )
+    _write_threshold_probability_calibration_claim_readiness_md(
+        report["claim_readiness"],
+        out_dir / "threshold_warning_calibration_claim_readiness.md",
+    )
 
 
 def diagnose_threshold_warning(
@@ -911,6 +1367,78 @@ def _brier_gain(reference: dict[str, Any] | None, candidate: dict[str, Any] | No
     return float(ref) - float(cand)
 
 
+def _metric_gain(reference: dict[str, Any] | None, candidate: dict[str, Any] | None, field: str) -> float | None:
+    if not reference or not candidate:
+        return None
+    ref = reference.get(field)
+    cand = candidate.get(field)
+    if ref is None or cand is None:
+        return None
+    return float(ref) - float(cand)
+
+
+def _passes_worsening_guardrail(
+    reference: dict[str, Any] | None,
+    candidate: dict[str, Any] | None,
+    field: str,
+    *,
+    max_relative_worsening: float = 0.05,
+) -> bool:
+    if not reference or not candidate:
+        return False
+    ref = reference.get(field)
+    cand = candidate.get(field)
+    if ref is None or cand is None:
+        return False
+    return float(cand) <= float(ref) * (1.0 + max_relative_worsening)
+
+
+def _c_rate_primary_method_summary(metrics: list[dict[str, Any]], method: str) -> dict[str, Any]:
+    rows = [
+        row
+        for row in metrics
+        if row["target"] == PRIMARY_CALIBRATION_TARGET
+        and row["split_name"] == "c_rate_holdout_fold"
+        and row["calibration_method"] == method
+    ]
+    return {
+        "mean_brier": _mean([row["brier"] for row in rows]),
+        "mean_log_loss": _mean([row["log_loss"] for row in rows]),
+        "mean_ece_10_bin": _mean([row["ece_10_bin"] for row in rows]),
+        "test_positive_count": sum(int(row["test_positive_count"]) for row in rows),
+        "evaluated_rows": len(rows),
+        "passes_ece_threshold": (
+            (ece := _mean([row["ece_10_bin"] for row in rows])) is not None and ece <= 0.10
+        ),
+    }
+
+
+def _calibration_method_passes(policy_results: dict[str, dict[str, Any]], c_rate: dict[str, Any]) -> bool:
+    required_policies = {"all_rows", "verified_only"}
+    if set(policy_results) < required_policies:
+        return False
+    policy_pass = all(
+        row["passes_mean_ece"]
+        and row["passes_brier_guardrail"]
+        and row["passes_log_loss_guardrail"]
+        and row["calibrated_rows"] > 0
+        for policy, row in policy_results.items()
+        if policy in required_policies
+    )
+    return policy_pass and bool(c_rate.get("passes_ece_threshold"))
+
+
+def _method_status(result: dict[str, Any]) -> str:
+    if not result:
+        return "not_supported"
+    if result.get("passes"):
+        return "supported_for_diagnostics"
+    policy_results = result.get("policy_results", {})
+    if any(row.get("passes_mean_ece") for row in policy_results.values()):
+        return "partially_supported"
+    return "not_supported"
+
+
 def reliability_bin_rows(predictions: list[dict[str, Any]], *, bins: int = 10) -> list[dict[str, Any]]:
     grouped: dict[tuple[str, str, str, int], list[dict[str, Any]]] = defaultdict(list)
     for row in predictions:
@@ -969,6 +1497,162 @@ def calibration_by_split_rows(predictions: list[dict[str, Any]]) -> list[dict[st
             }
         )
     return output
+
+
+def threshold_calibration_reliability_bin_rows(
+    predictions: list[dict[str, Any]],
+    *,
+    bins: int = 10,
+) -> list[dict[str, Any]]:
+    grouped: dict[tuple[str, str, str, str, int], list[dict[str, Any]]] = defaultdict(list)
+    for row in predictions:
+        prob = _clip_probability(_as_float(row["y_prob"]))
+        bin_idx = min(int(prob * bins), bins - 1)
+        grouped[
+            (
+                str(row["target"]),
+                str(row.get("label_policy", DEFAULT_LABEL_POLICY)),
+                str(row.get("calibration_method", "C0_raw_hgb_w2")),
+                str(row["split_name"]),
+                bin_idx,
+            )
+        ].append(row)
+    output = []
+    for (target, policy, method, split_name, bin_idx), rows in sorted(grouped.items()):
+        probs = [_clip_probability(_as_float(row["y_prob"])) for row in rows]
+        positives = sum(bool(row["y_true"]) for row in rows)
+        output.append(
+            {
+                "target": target,
+                "label_policy": policy,
+                "calibration_method": method,
+                "split_name": split_name,
+                "bin": bin_idx,
+                "bin_left": bin_idx / bins,
+                "bin_right": (bin_idx + 1) / bins,
+                "row_count": len(rows),
+                "positive_count": positives,
+                "mean_probability": sum(probs) / len(probs),
+                "observed_rate": positives / len(rows),
+            }
+        )
+    return output
+
+
+def threshold_calibration_by_split_rows(metrics: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    output = []
+    for row in metrics:
+        output.append(
+            {
+                "target": row["target"],
+                "label_policy": row["label_policy"],
+                "calibration_method": row["calibration_method"],
+                "calibration_status": row["calibration_status"],
+                "fallback_reason": row.get("fallback_reason"),
+                "split_name": row["split_name"],
+                "heldout_fold": row["heldout_fold"],
+                "n_fit": row["n_train"],
+                "n_calibration": row["n_calibration"],
+                "n_test": row["n_test"],
+                "test_positive_count": row["test_positive_count"],
+                "test_negative_count": row["test_negative_count"],
+                "brier": row["brier"],
+                "log_loss": row["log_loss"],
+                "auroc": row["auroc"],
+                "auprc": row["auprc"],
+                "ece_10_bin": row["ece_10_bin"],
+                "calibration_slope": row.get("calibration_slope"),
+                "calibration_intercept": row.get("calibration_intercept"),
+            }
+        )
+    return output
+
+
+def threshold_calibration_leaderboard_rows(metrics: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    grouped: dict[tuple[str, str, str], list[dict[str, Any]]] = defaultdict(list)
+    for row in metrics:
+        grouped[(row["target"], row["label_policy"], row["calibration_method"])].append(row)
+    output = []
+    for (target, policy, method), rows in sorted(grouped.items()):
+        output.append(
+            {
+                "target": target,
+                "label_policy": policy,
+                "calibration_method": method,
+                "mean_brier": _mean([row["brier"] for row in rows]),
+                "mean_log_loss": _mean([row["log_loss"] for row in rows]),
+                "mean_ece_10_bin": _mean([row["ece_10_bin"] for row in rows]),
+                "mean_auroc": _mean([row["auroc"] for row in rows if row["auroc"] is not None]),
+                "mean_auprc": _mean([row["auprc"] for row in rows if row["auprc"] is not None]),
+                "evaluated_rows": len(rows),
+                "calibrated_rows": sum(1 for row in rows if row["calibration_status"] == "calibrated"),
+                "fallback_rows": sum(1 for row in rows if row["calibration_status"] == "fallback_raw"),
+            }
+        )
+    return output
+
+
+def threshold_probability_calibration_readiness(
+    metrics: list[dict[str, Any]],
+    audit: dict[str, Any],
+) -> dict[str, Any]:
+    leaderboard = threshold_calibration_leaderboard_rows(metrics)
+    primary = [row for row in leaderboard if row["target"] == PRIMARY_CALIBRATION_TARGET]
+    raw_by_policy = {
+        row["label_policy"]: row for row in primary if row["calibration_method"] == "C0_raw_hgb_w2"
+    }
+    method_results: dict[str, dict[str, Any]] = {}
+    for method in ("C1_platt_logistic", "C2_isotonic"):
+        rows = [row for row in primary if row["calibration_method"] == method]
+        policy_results = {}
+        for row in rows:
+            raw = raw_by_policy.get(row["label_policy"])
+            ece_gain = _metric_gain(raw, row, "mean_ece_10_bin")
+            brier_gain = _metric_gain(raw, row, "mean_brier")
+            log_loss_gain = _metric_gain(raw, row, "mean_log_loss")
+            policy_results[row["label_policy"]] = {
+                "mean_ece_10_bin": row["mean_ece_10_bin"],
+                "raw_mean_ece_10_bin": raw.get("mean_ece_10_bin") if raw else None,
+                "ece_gain_vs_raw": ece_gain,
+                "mean_brier": row["mean_brier"],
+                "raw_mean_brier": raw.get("mean_brier") if raw else None,
+                "brier_gain_vs_raw": brier_gain,
+                "mean_log_loss": row["mean_log_loss"],
+                "raw_mean_log_loss": raw.get("mean_log_loss") if raw else None,
+                "log_loss_gain_vs_raw": log_loss_gain,
+                "calibrated_rows": row["calibrated_rows"],
+                "fallback_rows": row["fallback_rows"],
+                "passes_mean_ece": ece_gain is not None and ece_gain > 0,
+                "passes_brier_guardrail": _passes_worsening_guardrail(raw, row, "mean_brier"),
+                "passes_log_loss_guardrail": _passes_worsening_guardrail(raw, row, "mean_log_loss"),
+            }
+        c_rate = _c_rate_primary_method_summary(metrics, method)
+        method_results[method] = {
+            "policy_results": policy_results,
+            "c_rate": c_rate,
+            "passes": _calibration_method_passes(policy_results, c_rate),
+        }
+    strict_method = next(
+        (method for method, row in method_results.items() if row["passes"] and audit["status"] == "passed"),
+        None,
+    )
+    return {
+        "leakage_status": audit["status"],
+        "raw_hgb_probability_calibration": "not_supported",
+        "platt_calibration": _method_status(method_results.get("C1_platt_logistic", {})),
+        "isotonic_calibration": _method_status(method_results.get("C2_isotonic", {})),
+        "grouped_probability_calibration": "supported_for_diagnostics" if strict_method else "not_supported",
+        "c_rate_calibration": "supported_for_diagnostics" if strict_method else "not_supported",
+        "calibrated_risk": "supported_for_diagnostics" if strict_method else "not_supported",
+        "policy_ranking": "blocked",
+        "detector_knee_prediction": "blocked",
+        "strict_passing_method": strict_method,
+        "method_results": method_results,
+        "claim_rule": (
+            "A calibrated-risk diagnostic requires all-row and verified-only ECE gains, "
+            "no material Brier/log-loss degradation, C-rate ECE <= 0.10, and no leakage."
+        ),
+    }
 
 
 def censoring_policy_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
@@ -1295,6 +1979,85 @@ def _write_c_rate_calibration_md(rows: list[dict[str, Any]], path: Path) -> None
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def _write_c_rate_probability_calibration_md(metrics: list[dict[str, Any]], path: Path) -> None:
+    rows = [
+        row
+        for row in metrics
+        if row["target"] == PRIMARY_CALIBRATION_TARGET and row["split_name"] == "c_rate_holdout_fold"
+    ]
+    grouped: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        grouped[(row["label_policy"], row["calibration_method"])].append(row)
+    lines = [
+        "# C-Rate Threshold-Warning Probability Calibration",
+        "",
+        "This report checks probability calibration for the C-rate holdout only. It does not authorize policy ranking or causal risk claims.",
+        "",
+        "| Label policy | Calibration method | Mean Brier | Mean ECE | Mean log loss | Fallback rows |",
+        "|---|---|---:|---:|---:|---:|",
+    ]
+    for (policy, method), method_rows in sorted(grouped.items()):
+        lines.append(
+            "| "
+            f"`{policy}` | `{method}` | "
+            f"`{_fmt(_mean([row['brier'] for row in method_rows]))}` | "
+            f"`{_fmt(_mean([row['ece_10_bin'] for row in method_rows]))}` | "
+            f"`{_fmt(_mean([row['log_loss'] for row in method_rows]))}` | "
+            f"`{sum(1 for row in method_rows if row['calibration_status'] == 'fallback_raw')}` |"
+        )
+    lines.extend(
+        [
+            "",
+            "C-rate calibrated-risk wording remains blocked unless this split passes the grouped ECE guardrail.",
+        ]
+    )
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _write_threshold_probability_calibration_claim_readiness_md(readiness: dict[str, Any], path: Path) -> None:
+    lines = [
+        "# Threshold-Warning Probability Calibration Claim Readiness",
+        "",
+        "| Claim area | Status | Evidence |",
+        "|---|---|---|",
+        f"| Raw HGB W2 probabilities calibrated | `{readiness['raw_hgb_probability_calibration']}` | Raw probabilities are the diagnostic reference, not a calibrated-risk claim. |",
+        f"| Platt calibration | `{readiness['platt_calibration']}` | Method result is summarized below. |",
+        f"| Isotonic calibration | `{readiness['isotonic_calibration']}` | Method result is summarized below. |",
+        f"| Grouped probability calibration | `{readiness['grouped_probability_calibration']}` | Strict passing method: `{readiness['strict_passing_method']}`. |",
+        f"| C-rate calibration | `{readiness['c_rate_calibration']}` | C-rate must pass ECE <= 0.10 for the primary horizon. |",
+        f"| Calibrated risk | `{readiness['calibrated_risk']}` | {readiness['claim_rule']} |",
+        f"| Detector-knee prediction | `{readiness['detector_knee_prediction']}` | Detector-knee labels remain unstable. |",
+        f"| Policy ranking | `{readiness['policy_ranking']}` | No intervention or ranking task is tested. |",
+        "",
+        "## Primary-Horizon Method Summary",
+        "",
+        "| Method | Label policy | Raw ECE | Method ECE | ECE gain | Brier gain | Log-loss gain | Passes ECE | Brier guardrail | Log-loss guardrail |",
+        "|---|---|---:|---:|---:|---:|---:|---|---|---|",
+    ]
+    for method, result in readiness["method_results"].items():
+        for policy, row in sorted(result.get("policy_results", {}).items()):
+            lines.append(
+                "| "
+                f"`{method}` | `{policy}` | "
+                f"`{_fmt(row['raw_mean_ece_10_bin'])}` | "
+                f"`{_fmt(row['mean_ece_10_bin'])}` | "
+                f"`{_fmt(row['ece_gain_vs_raw'])}` | "
+                f"`{_fmt(row['brier_gain_vs_raw'])}` | "
+                f"`{_fmt(row['log_loss_gain_vs_raw'])}` | "
+                f"`{row['passes_mean_ece']}` | "
+                f"`{row['passes_brier_guardrail']}` | "
+                f"`{row['passes_log_loss_guardrail']}` |"
+            )
+    lines.extend(
+        [
+            "",
+            "Allowed wording must stay tied to grouped threshold-warning probability calibration diagnostics.",
+            "Forbidden wording: policy ranking, causal early-warning claims, detector-knee prediction, CBAT validation, or broad calibrated-risk claims outside the tested target and splits.",
+        ]
+    )
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 def _write_censoring_sensitivity_md(summary: dict[str, Any], path: Path) -> None:
     lines = [
         "# Threshold-Warning Censoring Sensitivity",
@@ -1387,6 +2150,41 @@ def _normalize_selection(
     return selected
 
 
+def _assert_disjoint_parameter_sets(
+    left_rows: list[dict[str, Any]],
+    right_rows: list[dict[str, Any]],
+    context: str,
+) -> None:
+    left = {int(row["parameter_set"]) for row in left_rows}
+    right = {int(row["parameter_set"]) for row in right_rows}
+    overlap = sorted(left & right)
+    if overlap:
+        raise ValueError(f"Parameter-set leakage in {context}: {overlap}")
+
+
+def _stable_calibration_key(
+    parameter_set: int,
+    *,
+    seed: int,
+    target: str,
+    label_policy: str,
+    split_name: str,
+    heldout_fold: int,
+) -> str:
+    text = f"{seed}|{target}|{label_policy}|{split_name}|{heldout_fold}|{parameter_set}"
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _has_minimum_class_counts(
+    rows: list[dict[str, Any]],
+    target: str,
+    min_class_count: int,
+) -> bool:
+    positives = sum(1 for row in rows if row[target])
+    negatives = len(rows) - positives
+    return positives >= min_class_count and negatives >= min_class_count
+
+
 def _import_sklearn() -> tuple[Any, Any]:
     try:
         from sklearn.ensemble import HistGradientBoostingClassifier
@@ -1397,6 +2195,17 @@ def _import_sklearn() -> tuple[Any, Any]:
             "Run `uv sync --extra baseline` and retry."
         ) from exc
     return LogisticRegression, HistGradientBoostingClassifier
+
+
+def _import_isotonic_regression() -> Any:
+    try:
+        from sklearn.isotonic import IsotonicRegression
+    except ImportError as exc:
+        raise RuntimeError(
+            "Threshold-warning calibration requires the baseline dependency extra. "
+            "Run `uv sync --extra baseline` and retry."
+        ) from exc
+    return IsotonicRegression
 
 
 def _as_float(value: Any, default: float = math.nan) -> float:
@@ -1416,6 +2225,11 @@ def _category(value: Any) -> str:
 
 def _clip_probability(value: float) -> float:
     return min(max(float(value), 1e-6), 1.0 - 1e-6)
+
+
+def _logit(value: float) -> float:
+    probability = _clip_probability(value)
+    return math.log(probability / (1.0 - probability))
 
 
 def _mean(values: list[float | None]) -> float | None:
