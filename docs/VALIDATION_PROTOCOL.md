@@ -207,6 +207,17 @@ any robust-capacity wording is strengthened. It does not authorize new feature
 engineering, neural/sequence models, CBAT, DRT, EIS embeddings, policy
 ranking, calibrated-risk wording, calibrated-uncertainty wording, causal
 claims, same-cell counterfactual claims, or broad multimodal claims.
+Milestone 5.2 authorizes only calibration metric sensitivity and quantile
+endpoint hygiene for existing reports. It may add equal-frequency ECE alongside
+fixed-width ECE for threshold-warning baseline, censoring, final-claim, and
+probability-calibration diagnostics. It may enforce noncrossing q10/q50/q90
+endpoints for independently fitted L3 capacity quantile HGB models by row-wise
+post-sort, provided the q50 point prediction is preserved. It may rerun the
+existing threshold-warning and capacity calibration reports to refresh metrics.
+It does not authorize new feature engineering, new model families, neural or
+sequence models, CBAT, DRT, EIS embeddings, policy ranking, calibrated-risk
+wording, calibrated-uncertainty wording, causal claims, same-cell
+counterfactual claims, robust-capacity wording, or broad multimodal claims.
 
 Required split discipline:
 
@@ -261,6 +272,19 @@ Required Milestone 5.1 stressor-robust capacity artifacts:
 - `reports/baselines/capacity_stressor_robust_hgb50/c_rate_robustness_summary.md`
 - `reports/baselines/capacity_stressor_robust_hgb50/stressor_robustness_claim_readiness.md`
 - `docs/experiments/2026-05-24_stressor_robust_capacity_gate.md`
+
+Required Milestone 5.2 calibration/quantile hygiene artifacts:
+
+- additive `ece_10_bin_equal_freq` fields in threshold-warning report outputs
+- noncrossing L3 capacity quantile endpoints in `mbp baseline run-capacity`
+- refreshed `reports/baselines/threshold_warning_l0_l2_report.json`
+- refreshed `reports/baselines/threshold_warning_l0_l2/threshold_warning_final_claim_readiness.md`
+- refreshed `reports/baselines/threshold_warning_calibration_report.json`
+- refreshed `reports/baselines/threshold_warning_calibration/c_rate_calibration_summary.md`
+- refreshed `reports/baselines/threshold_warning_calibration/threshold_warning_calibration_claim_readiness.md`
+- refreshed `reports/baselines/capacity_hgb50_focused_report.json`
+- refreshed `reports/analysis/calibration_capacity/calibration_claim_readiness.md`
+- `docs/experiments/2026-05-24_calibration_quantile_hygiene.md`
 - `docs/GITHUB_RELEASE_DRAFT_v0.1-rc1.md`
 - `docs/GITHUB_RELEASE_DRAFT_v0.1-rc2.md`
 - optional `docs/FUTURE_BRANCHES.md`
@@ -631,6 +655,21 @@ Milestone 5.0 validation commands:
 - `git diff --check`
 - generated calibrated prediction Parquets under `data/processed/` must remain
   untracked
+
+Milestone 5.2 validation commands:
+
+- focused tests for threshold-warning and capacity baseline helpers
+- `mbp baseline run-threshold-warning`
+- `mbp baseline compare-threshold-warning-censoring`
+- `mbp baseline finalize-threshold-warning-claim`
+- `mbp baseline calibrate-threshold-warning`
+- focused `mbp baseline run-capacity` over L2/L3 HGB groups
+- `mbp analysis calibrate-capacity`
+- `ruff check . --no-cache`
+- `pytest -p no:cacheprovider`
+- `mbp report check-release-candidate`
+- `git diff --check`
+- generated prediction Parquets under `data/processed/` must remain untracked
 
 Milestone 2.1 EIS validation commands:
 

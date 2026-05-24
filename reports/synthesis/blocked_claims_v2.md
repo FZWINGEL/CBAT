@@ -2,8 +2,8 @@
 
 | Blocked claim | Reason | Source |
 |---|---|---|
-| Calibrated risk | Threshold-warning probabilities remain diagnostic; post-hoc calibration improves mean ECE but C-rate ECE remains high. | `reports/baselines/threshold_warning_calibration/threshold_warning_calibration_claim_readiness.md` |
-| Calibrated capacity uncertainty | C-rate conformal coverage remains below target. | `docs/experiments/2026-05-23_grouped_calibration_replicate_uncertainty.md` |
+| Calibrated risk | Threshold-warning probabilities remain diagnostic; post-hoc calibration improves mean ECE but C-rate ECE remains high under fixed-width and equal-frequency binning. | `reports/baselines/threshold_warning_calibration/threshold_warning_calibration_claim_readiness.md` |
+| Calibrated capacity uncertainty | C-rate conformal coverage remains below target, and noncrossing quantile hygiene does not fix raw q10-q90 undercoverage. | `reports/analysis/calibration_capacity/calibration_claim_readiness.md` |
 | Detector-knee prediction | Primary detector knees fail replicate consistency. | `docs/experiments/2026-05-23_knee_label_stability_gate.md` |
 | Sequence models | Order-aware event features do not beat aggregate or shuffled controls. | `docs/experiments/2026-05-23_temporal_history_value_gate.md` |
 | CBAT | Simpler baselines, calibration, sequence, and multimodal gates do not justify architecture. | `docs/PROJECT_CHARTER.md` |

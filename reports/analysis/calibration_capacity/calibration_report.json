@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-05-23T14:53:39.272592+00:00",
+  "generated_at_utc": "2026-05-24T15:12:21.765535+00:00",
   "inputs": {
     "capacity_predictions": "data/processed/capacity_hgb50_focused_predictions.parquet",
     "capacity_report": "reports/baselines/capacity_hgb50_focused_report.json",

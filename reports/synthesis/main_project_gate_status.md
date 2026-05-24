@@ -10,18 +10,18 @@
 | EIS | Diagnostic / partially supported | QA, masks, scalar endpoints, and narrow profile prior-EIS signals pass; C-rate and fade claims fail. | Broad EIS improvement, DRT, embeddings. | Keep diagnostic unless new gate is opened. |
 | Semi-empirical comparator | Useful negative comparator | Semi-empirical ridge baselines are weaker than HGB/stress in C-rate views. | Domain baseline superiority. | Include as benchmark comparator. |
 | Replicate uncertainty | Diagnostic only | Triplet spread contextualizes error but does not validate intervals. | Calibrated uncertainty. | Keep as uncertainty context. |
-| Grouped calibration | Not supported globally | Mean coverage improves but C-rate coverage fails. | Calibrated capacity uncertainty. | Keep blocked. |
+| Grouped calibration | Not supported globally | Noncrossing quantile hygiene raises raw q10-q90 mean coverage to `0.701398`, but C-rate coverage remains below target. | Calibrated capacity uncertainty. | Keep blocked. |
 | Temporal order | Not supported | Order-aware features do not beat aggregate/shuffled controls. | Sequence model justification. | Keep sequence models blocked. |
 | Detector knee labels | Not supported | Only 45 / 64 primary-valid conditions are replicate-consistent within 2 check-ups. | Detector-knee prediction. | Keep diagnostic only. |
 | Threshold warning | Supported for diagnostics | Verified-only HGB W2 Brier `0.090116` beats prior `0.178655` and proximity `0.168492`. | Calibrated risk, causal warning, policy ranking. | Lock diagnostic claim. |
-| Threshold-warning calibration | Not supported for calibrated risk | Platt/isotonic improve mean ECE, but verified-only C-rate ECE remains `0.167813` / `0.159021`. | Calibrated risk. | Keep probabilities diagnostic. |
+| Threshold-warning calibration | Not supported for calibrated risk | Equal-frequency ECE sensitivity is now reported; Platt verified-only primary ECE is `0.0749807` fixed and `0.072939` equal-frequency, but C-rate remains above guardrail (`0.167813` fixed; `0.176461` equal-frequency). | Calibrated risk. | Keep probabilities diagnostic. |
 | Policy ranking | Blocked | No calibrated risk, no causal evidence, no intervention test. | Policy ranking. | Do not open. |
 | CBAT | Blocked | Simpler gates do not justify architecture. | CBAT validation. | Do not open. |
 
 ## Summary Decision
 
 The main technical program has reached a coherent benchmark checkpoint.
-Milestone 5.1 adds a useful diagnostic C-rate robustness improvement, but it
-does not authorize a global robust-capacity claim because another grouped split
-regresses beyond the pre-set guardrail. Further modeling should not be opened
-without a new gated technical rationale.
+Milestone 5.2 closes calibration metric sensitivity and quantile noncrossing
+hygiene. It does not authorize calibrated-risk, calibrated-uncertainty,
+robust-capacity, policy, architecture, causal, or broad multimodal claims.
+Further modeling should not be opened without a new gated technical rationale.

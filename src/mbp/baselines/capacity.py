@@ -1701,20 +1701,13 @@ def predict_capacity_target(
             model.fit(x_train, y_train)
             quantile_predictions[quantile] = model.predict(x_test)
         return [
-            {
-                "y_pred": _prediction_to_evaluation_space(
-                    test_rows[idx], target, float(quantile_predictions[0.5][idx])
-                ),
-                "y_pred_q10": _prediction_to_evaluation_space(
-                    test_rows[idx], target, float(quantile_predictions[0.1][idx])
-                ),
-                "y_pred_q50": _prediction_to_evaluation_space(
-                    test_rows[idx], target, float(quantile_predictions[0.5][idx])
-                ),
-                "y_pred_q90": _prediction_to_evaluation_space(
-                    test_rows[idx], target, float(quantile_predictions[0.9][idx])
-                ),
-            }
+            _noncrossing_quantile_prediction(
+                test_rows[idx],
+                target,
+                raw_q10=float(quantile_predictions[0.1][idx]),
+                raw_q50=float(quantile_predictions[0.5][idx]),
+                raw_q90=float(quantile_predictions[0.9][idx]),
+            )
             for idx in range(len(test_rows))
         ]
 
@@ -4431,6 +4424,22 @@ def _safe_ratio(numerator: float, denominator: float) -> float:
 
 def _point_prediction(value: float) -> dict[str, float | None]:
     return {"y_pred": value, "y_pred_q10": None, "y_pred_q50": None, "y_pred_q90": None}
+
+
+def _noncrossing_quantile_prediction(
+    row: dict[str, Any],
+    target: str,
+    *,
+    raw_q10: float,
+    raw_q50: float,
+    raw_q90: float,
+) -> dict[str, float | None]:
+    q10 = _prediction_to_evaluation_space(row, target, raw_q10)
+    q50 = _prediction_to_evaluation_space(row, target, raw_q50)
+    q90 = _prediction_to_evaluation_space(row, target, raw_q90)
+    lower = min(q10, q50, q90)
+    upper = max(q10, q50, q90)
+    return {"y_pred": q50, "y_pred_q10": lower, "y_pred_q50": q50, "y_pred_q90": upper}
 
 
 def _default_report_dir(out_path: Path) -> Path:

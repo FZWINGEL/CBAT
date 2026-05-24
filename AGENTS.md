@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 5.1: Stressor-axis robust capacity baseline gate.
+Milestone 5.2: Calibration metric sensitivity and quantile noncrossing hygiene.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -39,14 +39,24 @@ Current state:
   threshold-event warning result can be turned into calibrated probability
   diagnostics under grouped splits. It did not authorize calibrated-risk
   wording because C-rate calibration remained above the guardrail.
-- The current main-project track evaluates whether non-neural stressor-axis
-  robust HGB training variants can improve the hard C-rate capacity/fade
-  split without degrading other grouped views. This is a capacity-baseline
-  robustness gate, not an architecture, sequence, policy, or causal milestone.
+- Milestone 5.1 evaluated non-neural stressor-axis robust HGB variants. It
+  found a diagnostic C-rate `delta_capacity_Ah` improvement, but did not
+  support a global robust-capacity claim because the outside-C-rate
+  non-degradation guardrail narrowly failed.
+- The current main-project track is a hygiene and sensitivity gate: add
+  equal-frequency ECE alongside fixed-width ECE for threshold-warning
+  calibration diagnostics, enforce noncrossing L3 capacity quantile endpoints
+  by row-wise post-sort while preserving q50 point predictions, and refresh
+  affected reports. This is not new model expansion and does not authorize
+  calibrated-risk or calibrated-uncertainty wording.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
 Allowed work:
+- additive equal-frequency ECE diagnostics alongside fixed-width ECE
+- L3 capacity quantile noncrossing post-sort hygiene
+- rerunning existing threshold-warning calibration and capacity calibration reports
+- calibration/quantile hygiene claim-readiness reporting
 - stressor-axis robust non-neural capacity baselines
 - condition-balanced and stressor-balanced HGB sample weighting
 - condition-bagged HGB diagnostics
@@ -127,8 +137,8 @@ Allowed work:
 - small tests with synthetic fixtures
 
 Forbidden work:
-- new model training outside the scoped stressor-robust capacity baseline gate
-- new feature engineering outside the scoped stressor-robust capacity baseline gate
+- new model training outside the scoped calibration/quantile hygiene reruns
+- new feature engineering outside the scoped calibration/quantile hygiene gate
 - knee prediction models
 - neural models
 - sequence models

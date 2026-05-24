@@ -26,6 +26,7 @@ from mbp.baselines.capacity import load_baseline_rows
 from mbp.baselines.capacity import predict_capacity_target
 from mbp.baselines.capacity import run_capacity_baselines
 from mbp.baselines.capacity import _feature_gain_rows
+from mbp.baselines.capacity import _noncrossing_quantile_prediction
 from mbp.baselines.capacity import _stress_ablation_gain_rows
 from mbp.data.schema_contracts import INTERVAL_SUBSET_REGISTRY_SCHEMA, INTERVAL_TABLE_SCHEMA
 
@@ -438,6 +439,21 @@ def test_quantile_metrics_only_computed_for_quantile_predictions() -> None:
     assert quantile_metrics["q10_q90_interval_coverage"] == pytest.approx(1.0)
     assert quantile_metrics["q10_q90_interval_width_mean"] == pytest.approx(2.0)
     assert quantile_metrics["pinball_loss_q50"] == pytest.approx(0.0)
+
+
+def test_quantile_prediction_post_sort_preserves_q50_point_prediction() -> None:
+    prediction = _noncrossing_quantile_prediction(
+        {"capacity_Ah_k1": 3.0},
+        "capacity_Ah_k1",
+        raw_q10=4.0,
+        raw_q50=3.0,
+        raw_q90=2.0,
+    )
+
+    assert prediction["y_pred"] == pytest.approx(3.0)
+    assert prediction["y_pred_q50"] == pytest.approx(3.0)
+    assert prediction["y_pred_q10"] == pytest.approx(2.0)
+    assert prediction["y_pred_q90"] == pytest.approx(4.0)
 
 
 def test_diagnostics_tables_are_generated_from_capacity_report(tmp_path: Path) -> None:

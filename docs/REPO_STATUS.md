@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 5.1: Stressor-axis robust capacity baseline gate**.
+The repository is in **Milestone 5.2: Calibration metric sensitivity and quantile noncrossing hygiene**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -121,6 +121,12 @@ degrading other grouped views. It finds a strong C-rate `delta_capacity_Ah`
 diagnostic improvement for stressor-balanced HGB, but the global robust-capacity
 claim remains not supported because the non-degradation guardrail narrowly
 fails on another split.
+Milestone 5.2 adds review-requested calibration and quantile hygiene: it reports
+equal-frequency ECE alongside fixed-width ECE for threshold-warning diagnostics
+and enforces noncrossing L3 capacity quantile endpoints by row-wise sorting
+while preserving q50 point predictions. The refreshed reports do not unblock
+calibrated-risk, calibrated-uncertainty, robust-capacity, policy, or
+architecture claims.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -129,23 +135,27 @@ improvement claims have been started.
 
 Current state:
 
-- Milestone 5.1 is a non-neural capacity robustness gate. It adds
-  `mbp baseline run-stressor-robust-capacity` and
-  `mbp baseline diagnose-stressor-robustness`, runs R0-R4 robust HGB variants
-  over F4/F8 and the standard grouped split views, and keeps architecture,
-  policy ranking, neural/sequence models, causal claims, calibrated risk, and
-  broad multimodal claims blocked.
-- The real Milestone 5.1 run produced 480 metric rows and 356,120 prediction
-  rows. The best C-rate `delta_capacity_Ah` candidate is
-  `R2_stressor_balanced_hgb` with `F8_timestamp_weighted_stress`, condition
-  mean MAE `0.0705429` versus F4 R0 `0.101133` and stress-feature R0
-  `0.102516`. Paired bootstrap p05 is positive versus F4 (`0.0216868`) and
-  versus the stress reference (`0.0165793`).
-- The robust-capacity claim remains `not_supported` because the selected
-  candidate's non-C-rate degradation guardrail fails narrowly: the maximum
-  outside-C-rate relative degradation is `0.0528343`, above the 5% threshold,
-  on the voltage-window delta comparison. This supports a diagnostic C-rate
-  stressor-balanced result, not a global robust-capacity or architecture claim.
+- Milestone 5.2 is a calibration/quantile hygiene gate. It adds
+  `ece_10_bin_equal_freq` alongside the existing fixed-width `ece_10_bin` in
+  threshold-warning baseline, censoring, final-claim, and probability-calibration
+  reports; it does not replace historical fixed-width ECE values.
+- L3 capacity quantile HGB predictions now enforce noncrossing q10/q50/q90
+  endpoints by sorting the three evaluated quantile endpoints per row while
+  preserving the independent q50 point prediction exactly.
+- The refreshed threshold-warning probability calibration report still blocks
+  calibrated-risk wording. For the primary 3-check-up horizon, Platt verified-only
+  mean fixed-width ECE is `0.0749807` and equal-frequency ECE is `0.072939`,
+  but C-rate verified-only ECE remains above the guardrail (`0.167813`
+  fixed-width; `0.176461` equal-frequency).
+- The refreshed capacity calibration report still blocks calibrated-capacity
+  uncertainty. Raw noncrossing q10-q90 mean coverage is `0.701398`, and C-rate
+  mean coverage across calibration methods is `0.72293`, below the nominal
+  target.
+- Milestone 5.1 remains a diagnostic C-rate robustness result only. The best
+  C-rate `delta_capacity_Ah` candidate is `R2_stressor_balanced_hgb` with
+  `F8_timestamp_weighted_stress`, but the global robust-capacity claim remains
+  `not_supported` because the outside-C-rate non-degradation guardrail narrowly
+  fails.
 - LOG_AGE monotonicity policy is documented in
   `docs/LOG_AGE_MONOTONICITY_POLICY.md`.
 - Interval subset registry generation is implemented with
@@ -350,11 +360,13 @@ Current state:
 - Milestone 5.0 threshold-warning probability calibration is implemented and
   run. `mbp baseline calibrate-threshold-warning` evaluates raw HGB W2,
   Platt/logistic calibration, and isotonic calibration under all-row and
-  verified-only label policies with held-out condition groups. Platt and
+  verified-only label policies with held-out condition groups. Milestone 5.2
+  refreshes those diagnostics with equal-frequency ECE sensitivity. Platt and
   isotonic improve mean ECE for `event_within_3_checkups`, but C-rate ECE
-  remains above the 0.10 guardrail (`0.167813` Platt and `0.159021` isotonic
-  under verified-only), so calibrated-risk claims remain not supported.
-  Threshold-warning probabilities remain diagnostic scores.
+  remains above the 0.10 guardrail under verified-only (`0.167813` fixed-width
+  and `0.176461` equal-frequency for Platt; `0.159021` for isotonic), so
+  calibrated-risk claims remain not supported. Threshold-warning probabilities
+  remain diagnostic scores.
 - Experiment notes are tracked under `docs/experiments/`.
 
 ## Git And Artifact Hygiene

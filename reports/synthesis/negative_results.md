@@ -155,9 +155,27 @@ and isotonic calibration improve mean ECE for the primary 3-check-up horizon,
 but C-rate ECE remains above the 0.10 guardrail: verified-only C-rate ECE is
 `0.167813` for Platt and `0.159021` for isotonic.
 
+Milestone 5.2 adds equal-frequency ECE as a binning-sensitivity check rather
+than replacing the fixed-width metric. The primary verified-only Platt row has
+fixed-width ECE `0.0749807` and equal-frequency ECE `0.072939`, but the
+verified-only C-rate Platt row remains above guardrail with fixed-width ECE
+`0.167813` and equal-frequency ECE `0.176461`.
+
 Decision: threshold-event forecasting is supported for diagnostics; calibrated
 risk, policy ranking, detector-knee prediction, and causal warning claims
 remain blocked.
+
+## Quantile Noncrossing Hygiene Does Not Validate Capacity Uncertainty
+
+Milestone 5.2 also enforces noncrossing q10/q50/q90 endpoints for independent
+L3 capacity quantile HGB predictions by row-wise post-sort while preserving the
+q50 point prediction. This is interval hygiene, not calibration. The refreshed
+capacity calibration report still blocks uncertainty wording: raw q10-q90 mean
+coverage is `0.701398`, min coverage is `0.00226244`, and C-rate mean coverage
+across calibration methods is `0.72293`.
+
+Decision: keep L3 quantile intervals diagnostic only. Do not claim calibrated
+capacity uncertainty.
 
 ## Stressor-Robust Training Did Not Lock a Global Robust-Capacity Claim
 
@@ -184,12 +202,14 @@ The v2 synthesis keeps the following negative boundaries active:
 
 - detector-knee prediction remains blocked by replicate inconsistency;
 - threshold-warning calibrated-risk wording remains unsupported after the
-  Milestone 5.0 calibration gate;
+  Milestone 5.0 calibration gate and Milestone 5.2 equal-frequency ECE
+  sensitivity;
 - stressor-robust HGB improves C-rate delta diagnostically but does not pass
   the global non-degradation guardrail;
 - sequence models remain blocked by the order-vs-aggregate and
   order-vs-shuffled negative result;
-- calibrated uncertainty remains blocked by C-rate coverage failure;
+- calibrated uncertainty remains blocked by C-rate coverage failure even after
+  quantile noncrossing hygiene;
 - CBAT, policy ranking, causal claims, same-cell counterfactuals, DRT, and
   learned EIS embeddings remain blocked.
 

@@ -13,12 +13,12 @@
 
 ## Primary-Horizon Method Summary
 
-| Method | Label policy | Raw ECE | Method ECE | ECE gain | Brier gain | Log-loss gain | Passes ECE | Brier guardrail | Log-loss guardrail |
-|---|---|---:|---:|---:|---:|---:|---|---|---|
-| `C1_platt_logistic` | `all_rows` | `0.065169` | `0.0607504` | `0.00441857` | `0.00230842` | `0.0276846` | `True` | `True` | `True` |
-| `C1_platt_logistic` | `verified_only` | `0.0973711` | `0.0749807` | `0.0223904` | `0.0150357` | `0.0804388` | `True` | `True` | `True` |
-| `C2_isotonic` | `all_rows` | `0.065169` | `0.0562111` | `0.00895786` | `0.00382006` | `-0.128242` | `True` | `True` | `False` |
-| `C2_isotonic` | `verified_only` | `0.0973711` | `0.0725802` | `0.0247909` | `0.0157882` | `-0.0559272` | `True` | `True` | `False` |
+| Method | Label policy | Raw fixed ECE | Method fixed ECE | Fixed ECE gain | Raw equal-freq ECE | Method equal-freq ECE | Equal-freq ECE gain | Brier gain | Log-loss gain | Passes fixed ECE | Brier guardrail | Log-loss guardrail |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---|
+| `C1_platt_logistic` | `all_rows` | `0.065169` | `0.0607504` | `0.00441857` | `0.0627156` | `0.0616616` | `0.00105399` | `0.00230842` | `0.0276846` | `True` | `True` | `True` |
+| `C1_platt_logistic` | `verified_only` | `0.0973711` | `0.0749807` | `0.0223904` | `0.090753` | `0.072939` | `0.017814` | `0.0150357` | `0.0804388` | `True` | `True` | `True` |
+| `C2_isotonic` | `all_rows` | `0.065169` | `0.0562111` | `0.00895786` | `0.0627156` | `0.0565418` | `0.00617374` | `0.00382006` | `-0.128242` | `True` | `True` | `False` |
+| `C2_isotonic` | `verified_only` | `0.0973711` | `0.0725802` | `0.0247909` | `0.090753` | `0.0706746` | `0.0200784` | `0.0157882` | `-0.0559272` | `True` | `True` | `False` |
 
 Allowed wording must stay tied to grouped threshold-warning probability calibration diagnostics.
 Forbidden wording: policy ranking, causal early-warning claims, detector-knee prediction, CBAT validation, or broad calibrated-risk claims outside the tested target and splits.

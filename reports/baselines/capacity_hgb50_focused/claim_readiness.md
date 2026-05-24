@@ -11,6 +11,6 @@ policy ranking, or CBAT.
 | LOG_AGE scalar features help | Partially supported | `F3_state_nominal -> F4_state_log_age_scalar` mean gain 8.54832e-05; the benefit is model-dependent and strongest in focused HGB. | Build stronger log-derived stress features before adding modalities. |
 | C-rate holdout is hardest | Supported | Best C-rate condition-mean MAE max 0.125186, other split best max 0.0844129. | Focus next engineering on C-rate/stress exposure. |
 | Monotonicity policy changes conclusions | Not supported | Mean absolute strict-vs-tolerant delta 0.00539365. | Keep tolerant subset as primary with strict sensitivity. |
-| Quantile HGB is calibrated | Not supported | Mean q10-q90 coverage 0.678207; nominal central coverage is 0.8. | Treat quantile metrics as diagnostics only. |
+| Quantile HGB is calibrated | Not supported | Mean q10-q90 coverage 0.696702; nominal central coverage is 0.8. | Treat quantile metrics as diagnostics only. |
 
 C-rate condition rows used for stress analysis: `24`.

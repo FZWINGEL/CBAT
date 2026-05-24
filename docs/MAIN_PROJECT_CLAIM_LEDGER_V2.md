@@ -1,6 +1,6 @@
 # Main Project Claim Ledger v2
 
-This ledger is the post-Milestone 5.1 technical source of truth. It extends
+This ledger is the post-Milestone 5.2 technical source of truth. It extends
 the paper claim ledger with main-project gate decisions and next actions.
 
 | ID | Claim | Status | Source artifact | Allowed wording | Forbidden wording | Next action |
@@ -13,7 +13,7 @@ the paper claim ledger with main-project gate decisions and next actions.
 | C06 | Prior PULSE improves capacity-level prediction over F4. | `supported_for_selected_splits` | `docs/experiments/2026-05-23_prior_pulse_capacity_prediction.md` | Prior PULSE improves `capacity_Ah_k1` over F4 in selected splits. | Prior PULSE improves all targets/splits. | Report with guardrails. |
 | C07 | Prior PULSE beats strongest supplied non-PULSE capacity baseline. | `not_supported` | `docs/experiments/2026-05-23_prior_pulse_vs_best_nonpulse.md` | Prior PULSE does not beat strongest non-PULSE. | Prior PULSE is best available non-neural feature path. | Keep as negative result. |
 | C08 | Prior PULSE improves `delta_capacity_Ah`. | `not_supported` | `reports/baselines/capacity_prior_pulse_vs_best_nonpulse/prior_pulse_vs_best_nonpulse_claim_readiness.md` | Fade-rate improvement remains unsupported. | Prior PULSE improves fade-rate prediction. | Keep blocked. |
-| C09 | Quantile HGB uncertainty is calibrated. | `not_supported` | `reports/analysis/calibration_capacity/calibration_claim_readiness.md` | Raw HGB quantiles are undercovered. | HGB quantiles are calibrated uncertainty. | Keep blocked. |
+| C09 | Quantile HGB uncertainty is calibrated. | `not_supported` | `reports/analysis/calibration_capacity/calibration_claim_readiness.md` | Raw noncrossing HGB quantiles remain undercovered. | HGB quantiles are calibrated uncertainty. | Keep blocked. |
 | C10 | EIS improves any non-EIS outcome broadly. | `partially_supported` | `docs/experiments/2026-05-23_eis_claim_hardening.md` | EIS is a scalar diagnostic endpoint with narrow profile-split signals. | EIS broadly improves degradation prediction. | Diagnostic only unless future evidence appears. |
 | C11 | CBAT architecture is justified. | `blocked` | `docs/PROJECT_CHARTER.md` | CBAT remains reserved late-stage architecture work. | CBAT is validated. | Do not open. |
 | C12 | Grouped condition validation is required for publishable evidence. | `supported` | `docs/VALIDATION_PROTOCOL.md` | Headline claims require grouped validation. | Random row/cell splits are publishable evidence. | Preserve in all reports. |
@@ -24,12 +24,13 @@ the paper claim ledger with main-project gate decisions and next actions.
 | C17 | Knee labels are stable enough for prediction. | `not_supported` | `docs/experiments/2026-05-23_knee_label_stability_gate.md` | Detector knees are exploratory diagnostics. | Knee-risk prediction is authorized. | Keep detector-knee prediction blocked. |
 | C18 | Threshold-event labels are more stable than detector knees. | `partially_supported` | `docs/experiments/2026-05-23_knee_threshold_label_forensics.md` | 80% threshold labels are more stable candidate targets. | Threshold labels alone authorize prediction. | Use only with prospective baseline evidence. |
 | C19 | Non-neural baselines can forecast the 80% threshold event under grouped validation. | `supported_for_diagnostics` | `docs/experiments/2026-05-23_threshold_warning_censoring_finalization.md` | Non-neural baselines forecast the 80% threshold event diagnostically beyond proximity and under verified-only sensitivity. | Calibrated risk, causal warning, detector-knee prediction, policy ranking, or CBAT are authorized. | Lock diagnostic claim; optional calibration branch only. |
-| C20 | Threshold-warning probabilities are calibrated risk estimates. | `not_supported` | `docs/experiments/2026-05-24_threshold_warning_probability_calibration.md` | Post-hoc calibration improves mean reliability but C-rate calibration remains insufficient; probabilities are diagnostic scores. | Threshold-warning probabilities are calibrated risk estimates. | Keep calibrated-risk and policy-ranking claims blocked. |
+| C20 | Threshold-warning probabilities are calibrated risk estimates. | `not_supported` | `docs/experiments/2026-05-24_calibration_quantile_hygiene.md` | Post-hoc calibration improves mean reliability and equal-frequency ECE sensitivity is reported, but C-rate calibration remains insufficient; probabilities are diagnostic scores. | Threshold-warning probabilities are calibrated risk estimates. | Keep calibrated-risk and policy-ranking claims blocked. |
 | C21 | Stressor-axis robust HGB solves the C-rate capacity-fade generalization problem without other split regressions. | `not_supported` | `docs/experiments/2026-05-24_stressor_robust_capacity_gate.md` | Stressor-balanced HGB gives a diagnostic C-rate `delta_capacity_Ah` improvement, but a global robust-capacity claim is not supported because the non-degradation guardrail fails. | Stressor-robust training solves C-rate fade or justifies architecture work. | Keep as diagnostic robustness evidence; optionally run forensics on the voltage-window degradation. |
 
 ## Next Action
 
 Return to benchmark/manuscript integration, release maintenance, or a narrow
-stressor-robustness forensics pass. Milestone 5.1 finds a real C-rate
-diagnostic improvement, but does not authorize a global robust-capacity,
-architecture, policy, calibrated-risk, or causal claim.
+stressor-robustness forensics pass. Milestone 5.2 closes calibration metric and
+quantile noncrossing hygiene without authorizing calibrated-risk,
+calibrated-uncertainty, robust-capacity, architecture, policy, or causal
+claims.

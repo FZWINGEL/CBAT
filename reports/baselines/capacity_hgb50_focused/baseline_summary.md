@@ -1,7 +1,7 @@
 # Capacity Baseline Summary
 
 Schema version: `gate5.capacity_baseline.v1`
-Generated at UTC: `2026-05-22T15:09:33.614090+00:00`
+Generated at UTC: `2026-05-24T15:12:13.426243+00:00`
 Primary subset: `baseline_clean_tolerant`
 
 ## Row Counts

@@ -6,7 +6,7 @@
 | Threshold detection only | `not_supported` | HGB W2 beats the proximity baseline, so the result is not only a current-threshold detector. |
 | Early-warning diagnostic | `exploratory_only` | Lead-time bins are reported separately; this wording remains exploratory. |
 | C-rate threshold warning | `supported_for_diagnostics` | C-rate HGB W2 gain vs prior `0.247388` and vs proximity `0.195335`. |
-| Calibrated risk | `not_supported` | C-rate ECE is `0.174673` and grouped calibration remains claim-gated. |
+| Calibrated risk | `not_supported` | C-rate fixed-width ECE is `0.174673` and equal-frequency ECE is `0.174648`; grouped calibration remains claim-gated. |
 | Detector-knee prediction | `blocked` | Detector-knee replicate consistency failed in Milestone 2.5. |
 | Policy ranking | `blocked` | No intervention or ranking task is tested. |
 

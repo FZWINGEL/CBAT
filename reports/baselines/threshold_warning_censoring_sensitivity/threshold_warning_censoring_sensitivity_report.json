@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-05-23T18:47:19.053315+00:00",
+  "generated_at_utc": "2026-05-24T15:08:51.315347+00:00",
   "policy_note": "all_rows is equivalent to censored_as_negative for the current Boolean horizon labels.",
   "schema_version": "gate26.threshold_warning_baseline.v1",
   "summary": {

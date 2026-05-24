@@ -756,6 +756,7 @@ def warning_metrics(
         "condition_mean_brier": _mean([row["brier"] for row in condition_brier]),
         "worst_condition_brier": max((row["brier"] for row in condition_brier), default=None),
         "ece_10_bin": expected_calibration_error(y_true, probs, bins=10),
+        "ece_10_bin_equal_freq": expected_calibration_error_equal_frequency(y_true, probs, bins=10),
     }
 
 
@@ -1126,6 +1127,7 @@ def finalize_threshold_warning_claim(
             "auroc": row["auroc"],
             "auprc": row["auprc"],
             "ece_10_bin": row["ece_10_bin"],
+            "ece_10_bin_equal_freq": row["ece_10_bin_equal_freq"],
         }
         for row in report["metrics"]
         if row["split_name"] == "c_rate_holdout_fold"
@@ -1208,6 +1210,7 @@ def grouped_prediction_performance(
                 "auprc": auprc(y_true, probs),
                 "brier": brier_score(y_true, probs),
                 "ece_10_bin": expected_calibration_error(y_true, probs, bins=10),
+                "ece_10_bin_equal_freq": expected_calibration_error_equal_frequency(y_true, probs, bins=10),
             }
         )
     return output
@@ -1257,6 +1260,7 @@ def censoring_policy_split_rows(policy_reports: list[tuple[str, dict[str, Any]]]
                     "auroc": row["auroc"],
                     "auprc": row["auprc"],
                     "ece_10_bin": row["ece_10_bin"],
+                    "ece_10_bin_equal_freq": row["ece_10_bin_equal_freq"],
                 }
             )
     return output
@@ -1330,6 +1334,7 @@ def final_claim_readiness(report: dict[str, Any], warning_rows: list[dict[str, A
         "c_rate_hgb_gain_vs_prior": _brier_gain(c_prior, c_hgb),
         "c_rate_hgb_gain_vs_proximity": _brier_gain(c_distance, c_hgb),
         "c_rate_ece": c_hgb.get("ece_10_bin") if c_hgb else None,
+        "c_rate_ece_equal_freq": c_hgb.get("ece_10_bin_equal_freq") if c_hgb else None,
         "censoring_counts": censoring,
         "both_policies_pass": both_policies_pass,
     }
@@ -1405,6 +1410,7 @@ def _c_rate_primary_method_summary(metrics: list[dict[str, Any]], method: str) -
         "mean_brier": _mean([row["brier"] for row in rows]),
         "mean_log_loss": _mean([row["log_loss"] for row in rows]),
         "mean_ece_10_bin": _mean([row["ece_10_bin"] for row in rows]),
+        "mean_ece_10_bin_equal_freq": _mean([row["ece_10_bin_equal_freq"] for row in rows]),
         "test_positive_count": sum(int(row["test_positive_count"]) for row in rows),
         "evaluated_rows": len(rows),
         "passes_ece_threshold": (
@@ -1492,6 +1498,7 @@ def calibration_by_split_rows(predictions: list[dict[str, Any]]) -> list[dict[st
                 "positive_count": sum(y_true),
                 "brier": brier_score(y_true, probs),
                 "ece_10_bin": expected_calibration_error(y_true, probs, bins=10),
+                "ece_10_bin_equal_freq": expected_calibration_error_equal_frequency(y_true, probs, bins=10),
                 "calibration_slope": calibration_slope(y_true, probs),
                 "calibration_intercept": calibration_intercept(y_true, probs),
             }
@@ -1561,6 +1568,7 @@ def threshold_calibration_by_split_rows(metrics: list[dict[str, Any]]) -> list[d
                 "auroc": row["auroc"],
                 "auprc": row["auprc"],
                 "ece_10_bin": row["ece_10_bin"],
+                "ece_10_bin_equal_freq": row["ece_10_bin_equal_freq"],
                 "calibration_slope": row.get("calibration_slope"),
                 "calibration_intercept": row.get("calibration_intercept"),
             }
@@ -1582,6 +1590,7 @@ def threshold_calibration_leaderboard_rows(metrics: list[dict[str, Any]]) -> lis
                 "mean_brier": _mean([row["brier"] for row in rows]),
                 "mean_log_loss": _mean([row["log_loss"] for row in rows]),
                 "mean_ece_10_bin": _mean([row["ece_10_bin"] for row in rows]),
+                "mean_ece_10_bin_equal_freq": _mean([row["ece_10_bin_equal_freq"] for row in rows]),
                 "mean_auroc": _mean([row["auroc"] for row in rows if row["auroc"] is not None]),
                 "mean_auprc": _mean([row["auprc"] for row in rows if row["auprc"] is not None]),
                 "evaluated_rows": len(rows),
@@ -1614,6 +1623,11 @@ def threshold_probability_calibration_readiness(
                 "mean_ece_10_bin": row["mean_ece_10_bin"],
                 "raw_mean_ece_10_bin": raw.get("mean_ece_10_bin") if raw else None,
                 "ece_gain_vs_raw": ece_gain,
+                "mean_ece_10_bin_equal_freq": row["mean_ece_10_bin_equal_freq"],
+                "raw_mean_ece_10_bin_equal_freq": (
+                    raw.get("mean_ece_10_bin_equal_freq") if raw else None
+                ),
+                "ece_equal_freq_gain_vs_raw": _metric_gain(raw, row, "mean_ece_10_bin_equal_freq"),
                 "mean_brier": row["mean_brier"],
                 "raw_mean_brier": raw.get("mean_brier") if raw else None,
                 "brier_gain_vs_raw": brier_gain,
@@ -1790,6 +1804,27 @@ def expected_calibration_error(y_true: list[int], probabilities: list[float], *,
     return ece
 
 
+def expected_calibration_error_equal_frequency(y_true: list[int], probabilities: list[float], *, bins: int) -> float:
+    total = len(y_true)
+    if total == 0:
+        raise ValueError("Cannot compute ECE with zero rows.")
+    ordered = sorted(
+        ((float(probability), int(truth)) for truth, probability in zip(y_true, probabilities)),
+        key=lambda item: item[0],
+    )
+    ece = 0.0
+    for bin_idx in range(bins):
+        start = bin_idx * total // bins
+        end = (bin_idx + 1) * total // bins
+        if start == end:
+            continue
+        values = ordered[start:end]
+        confidence = sum(prob for prob, _ in values) / len(values)
+        accuracy = sum(truth for _, truth in values) / len(values)
+        ece += len(values) / total * abs(accuracy - confidence)
+    return ece
+
+
 def _condition_brier_rows(
     rows: list[dict[str, Any]], y_true: list[int], probabilities: list[float]
 ) -> list[dict[str, Any]]:
@@ -1822,6 +1857,7 @@ def _leaderboard_rows(metrics: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "mean_auprc": _mean([row["auprc"] for row in rows if row["auprc"] is not None]),
                 "mean_brier": _mean([row["brier"] for row in rows]),
                 "mean_ece_10_bin": _mean([row["ece_10_bin"] for row in rows]),
+                "mean_ece_10_bin_equal_freq": _mean([row["ece_10_bin_equal_freq"] for row in rows]),
                 "n_rows": len(rows),
             }
         )
@@ -1974,7 +2010,7 @@ def _write_c_rate_calibration_md(rows: list[dict[str, Any]], path: Path) -> None
     ]
     if best:
         lines.append(
-            f"Best C-rate HGB row: `{best['target']}` / `{best['feature_group']}` with Brier `{_fmt(best['brier'])}` and ECE `{_fmt(best['ece_10_bin'])}`."
+            f"Best C-rate HGB row: `{best['target']}` / `{best['feature_group']}` with Brier `{_fmt(best['brier'])}`, fixed-width ECE `{_fmt(best['ece_10_bin'])}`, and equal-frequency ECE `{_fmt(best['ece_10_bin_equal_freq'])}`."
         )
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -1993,8 +2029,8 @@ def _write_c_rate_probability_calibration_md(metrics: list[dict[str, Any]], path
         "",
         "This report checks probability calibration for the C-rate holdout only. It does not authorize policy ranking or causal risk claims.",
         "",
-        "| Label policy | Calibration method | Mean Brier | Mean ECE | Mean log loss | Fallback rows |",
-        "|---|---|---:|---:|---:|---:|",
+        "| Label policy | Calibration method | Mean Brier | Fixed-width ECE | Equal-frequency ECE | Mean log loss | Fallback rows |",
+        "|---|---|---:|---:|---:|---:|---:|",
     ]
     for (policy, method), method_rows in sorted(grouped.items()):
         lines.append(
@@ -2002,6 +2038,7 @@ def _write_c_rate_probability_calibration_md(metrics: list[dict[str, Any]], path
             f"`{policy}` | `{method}` | "
             f"`{_fmt(_mean([row['brier'] for row in method_rows]))}` | "
             f"`{_fmt(_mean([row['ece_10_bin'] for row in method_rows]))}` | "
+            f"`{_fmt(_mean([row['ece_10_bin_equal_freq'] for row in method_rows]))}` | "
             f"`{_fmt(_mean([row['log_loss'] for row in method_rows]))}` | "
             f"`{sum(1 for row in method_rows if row['calibration_status'] == 'fallback_raw')}` |"
         )
@@ -2031,8 +2068,8 @@ def _write_threshold_probability_calibration_claim_readiness_md(readiness: dict[
         "",
         "## Primary-Horizon Method Summary",
         "",
-        "| Method | Label policy | Raw ECE | Method ECE | ECE gain | Brier gain | Log-loss gain | Passes ECE | Brier guardrail | Log-loss guardrail |",
-        "|---|---|---:|---:|---:|---:|---:|---|---|---|",
+        "| Method | Label policy | Raw fixed ECE | Method fixed ECE | Fixed ECE gain | Raw equal-freq ECE | Method equal-freq ECE | Equal-freq ECE gain | Brier gain | Log-loss gain | Passes fixed ECE | Brier guardrail | Log-loss guardrail |",
+        "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---|",
     ]
     for method, result in readiness["method_results"].items():
         for policy, row in sorted(result.get("policy_results", {}).items()):
@@ -2042,6 +2079,9 @@ def _write_threshold_probability_calibration_claim_readiness_md(readiness: dict[
                 f"`{_fmt(row['raw_mean_ece_10_bin'])}` | "
                 f"`{_fmt(row['mean_ece_10_bin'])}` | "
                 f"`{_fmt(row['ece_gain_vs_raw'])}` | "
+                f"`{_fmt(row['raw_mean_ece_10_bin_equal_freq'])}` | "
+                f"`{_fmt(row['mean_ece_10_bin_equal_freq'])}` | "
+                f"`{_fmt(row['ece_equal_freq_gain_vs_raw'])}` | "
                 f"`{_fmt(row['brier_gain_vs_raw'])}` | "
                 f"`{_fmt(row['log_loss_gain_vs_raw'])}` | "
                 f"`{row['passes_mean_ece']}` | "
@@ -2103,7 +2143,7 @@ def _write_final_claim_readiness_md(readiness: dict[str, Any], path: Path) -> No
         f"| Threshold detection only | `{readiness['threshold_detection_only']}` | HGB W2 beats the proximity baseline, so the result is not only a current-threshold detector. |",
         f"| Early-warning diagnostic | `{readiness['early_warning_diagnostic']}` | Lead-time bins are reported separately; this wording remains exploratory. |",
         f"| C-rate threshold warning | `{readiness['c_rate_warning']}` | C-rate HGB W2 gain vs prior `{_fmt(readiness['c_rate_hgb_gain_vs_prior'])}` and vs proximity `{_fmt(readiness['c_rate_hgb_gain_vs_proximity'])}`. |",
-        f"| Calibrated risk | `{readiness['calibrated_risk']}` | C-rate ECE is `{_fmt(readiness['c_rate_ece'])}` and grouped calibration remains claim-gated. |",
+        f"| Calibrated risk | `{readiness['calibrated_risk']}` | C-rate fixed-width ECE is `{_fmt(readiness['c_rate_ece'])}` and equal-frequency ECE is `{_fmt(readiness['c_rate_ece_equal_freq'])}`; grouped calibration remains claim-gated. |",
         f"| Detector-knee prediction | `{readiness['detector_knee_prediction']}` | Detector-knee replicate consistency failed in Milestone 2.5. |",
         f"| Policy ranking | `{readiness['policy_ranking']}` | No intervention or ranking task is tested. |",
         "",

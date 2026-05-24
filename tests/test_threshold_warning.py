@@ -15,6 +15,8 @@ from mbp.baselines.threshold_warning import (
     compare_threshold_warning_censoring,
     diagnose_threshold_warning,
     distance_feature_matrix,
+    expected_calibration_error,
+    expected_calibration_error_equal_frequency,
     finalize_threshold_warning_claim,
     leakage_audit,
     label_status,
@@ -23,6 +25,7 @@ from mbp.baselines.threshold_warning import (
     filter_rows_by_label_policy,
     run_threshold_warning_baselines,
     run_threshold_warning_calibration,
+    warning_metrics,
 )
 
 
@@ -200,6 +203,29 @@ def test_threshold_warning_reliability_bins() -> None:
     bins = reliability_bin_rows(rows, bins=10)
     assert {row["bin"] for row in bins} == {0, 8}
     assert all(row["row_count"] == 1 for row in bins)
+
+
+def test_equal_frequency_ece_is_additive_binning_sensitivity() -> None:
+    y_true = [0, 0, 0, 1, 1, 1]
+    probabilities = [0.02, 0.03, 0.04, 0.05, 0.95, 0.96]
+
+    fixed = expected_calibration_error(y_true, probabilities, bins=2)
+    equal_frequency = expected_calibration_error_equal_frequency(y_true, probabilities, bins=2)
+
+    assert fixed != equal_frequency
+    metrics = warning_metrics(
+        [{"parameter_set": idx, "event_within_3_checkups": bool(truth)} for idx, truth in enumerate(y_true, start=1)],
+        probabilities,
+        target="event_within_3_checkups",
+        split_name="condition_fold",
+        heldout_fold=0,
+        model_level="B6_hist_gradient_boosting_classifier",
+        feature_group="W2_nominal",
+        train_rows=[{"event_within_3_checkups": False}, {"event_within_3_checkups": True}],
+        train_one_class=False,
+    )
+    assert metrics["ece_10_bin"] == expected_calibration_error(y_true, probabilities, bins=10)
+    assert metrics["ece_10_bin_equal_freq"] == expected_calibration_error_equal_frequency(y_true, probabilities, bins=10)
 
 
 def test_threshold_warning_probability_calibration(tmp_path: Path) -> None:

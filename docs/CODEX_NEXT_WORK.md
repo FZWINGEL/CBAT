@@ -1,29 +1,37 @@
 # Codex Next Work
 
-Current recommended branch: stressor-robustness forensics or synthesis/release maintenance.
+Current recommended branch: synthesis/release maintenance, or a narrow
+stressor-robustness forensics pass only if explicitly requested.
 
 ## Current Phase
 
-Milestone 5.1 evaluates whether non-neural stressor-axis robust HGB variants
-can improve the hard C-rate capacity/fade split without degrading other
-grouped views. It is limited to existing capacity feature groups and grouped
-validation; it is not an architecture or policy-ranking branch.
+Milestone 5.2 is a calibration/quantile hygiene gate. It adds
+equal-frequency ECE alongside fixed-width ECE for threshold-warning diagnostics
+and enforces noncrossing L3 capacity quantile endpoints while preserving q50
+point predictions. It is not a new modeling, architecture, calibration-claim,
+or policy-ranking branch.
 
 ## Current Result
 
-Stressor-balanced HGB with `F8_timestamp_weighted_stress` improves C-rate
-`delta_capacity_Ah` to condition-mean MAE `0.0705429`, versus F4 R0
-`0.101133` and stress R0 `0.102516`, with paired bootstrap p05 above zero
-against both references. The global robust-capacity claim is still
-`not_supported` because outside-C-rate relative degradation reaches
-`0.0528343`, above the 5% guardrail.
+The hygiene pass does not change the claim posture. Threshold-warning
+probability calibration still blocks calibrated-risk wording: Platt
+verified-only primary-horizon mean fixed-width ECE is `0.0749807` and
+equal-frequency ECE is `0.072939`, but C-rate verified-only ECE remains above
+the guardrail (`0.167813` fixed-width; `0.176461` equal-frequency). Capacity
+uncertainty also remains blocked: raw noncrossing q10-q90 mean coverage is
+`0.701398`, and C-rate coverage remains below target.
+
+Milestone 5.1 remains a useful diagnostic robustness result: stressor-balanced
+HGB with `F8_timestamp_weighted_stress` improves C-rate `delta_capacity_Ah`,
+but the global robust-capacity claim remains `not_supported` because the
+outside-C-rate non-degradation guardrail fails.
 
 ## Optional Technical Branch
 
 No broader technical branch is currently justified. Future technical work, if
-opened, should be a narrow voltage-window/stressor-robustness forensics pass or
-release automation task, not CBAT, policy ranking, sequence modeling, or new
-modality expansion.
+opened, should be a narrow voltage-window/stressor-robustness forensics pass,
+release automation task, or documentation synthesis task, not CBAT, policy
+ranking, sequence modeling, or new modality expansion.
 
 ## Blocked Branches
 
@@ -69,6 +77,8 @@ Allowed current wording:
 - calibrated uncertainty and calibrated risk remain blocked
 - threshold-warning post-hoc calibration improves mean reliability but does
   not pass C-rate calibrated-risk guardrails
+- equal-frequency ECE sensitivity does not unblock calibrated-risk claims
+- L3 capacity quantile noncrossing is hygiene only, not calibrated uncertainty
 - stressor-balanced HGB improves C-rate delta diagnostics but does not support
   a global robust-capacity claim
 
