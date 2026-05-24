@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 4.3: Venue-neutral submission bundle and external handoff.
+Milestone 4.4: Public-facing repository entry point and submission metadata triage.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -35,14 +35,20 @@ Current state:
   state improves `capacity_Ah_k1` over F4 in selected grouped splits, but it
   does not beat the strongest supplied non-PULSE HGB baselines and does not
   improve `delta_capacity_Ah`.
-- The current main-project track packages the validated v0.7 manuscript and
-  `benchmark-v0.1-rc2` release evidence into a venue-neutral v0.8 submission
-  bundle and external handoff package. This is release/manuscript
-  communication work, not a new modeling milestone.
+- The current main-project track aligns the public repository entry point,
+  package metadata, venue-triage notes, and submission-readiness checklist
+  with the validated v0.7 manuscript and `benchmark-v0.1-rc2` release
+  evidence. This is release/manuscript communication work, not a new modeling
+  milestone.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
 Allowed work:
+- public README refresh
+- repository metadata triage
+- public-review entry point documentation
+- venue-targeting matrix
+- submission-readiness triage
 - venue-neutral submission bundle packaging
 - title and abstract variants
 - cover-letter draft text

@@ -178,6 +178,15 @@ training, new feature engineering, neural models, sequence models,
 transformers, CBAT, DRT, EIS embeddings, policy ranking, detector-knee
 prediction, risk-score calibration claims, causal claims, same-cell
 counterfactual claims, broad multimodal claims, or any new scientific claim.
+Milestone 4.4 authorizes public-facing repository entry point and submission
+metadata triage work from tracked evidence only. It authorizes README refresh,
+package-description alignment, public-review entry point documentation,
+repository metadata checklists, venue-targeting matrices, and submission
+readiness triage. It does not authorize new model training, new feature
+engineering, neural models, sequence models, transformers, CBAT, DRT, EIS
+embeddings, policy ranking, detector-knee prediction, risk-score calibration
+claims, causal claims, same-cell counterfactual claims, broad multimodal
+claims, or any new scientific claim.
 
 Required split discipline:
 
@@ -268,6 +277,16 @@ Required Milestone 4.3 submission-bundle artifacts:
 - `manuscript/submission_checklist_v0_8.md`
 - `docs/BENCHMARK_MANUSCRIPT_HANDOFF.md`
 - `docs/experiments/2026-05-24_submission_bundle_external_handoff.md`
+
+Required Milestone 4.4 public-entrypoint artifacts:
+
+- refreshed `README.md`
+- refreshed project description in `pyproject.toml`
+- `docs/PUBLIC_REVIEW_ENTRYPOINT.md`
+- `docs/REPOSITORY_METADATA_CHECKLIST.md`
+- `manuscript/venue_targeting_matrix_v0_9.md`
+- `manuscript/submission_readiness_v0_9.md`
+- `docs/experiments/2026-05-24_public_entrypoint_submission_metadata.md`
 
 Required Milestone 1.0 synthesis artifacts:
 

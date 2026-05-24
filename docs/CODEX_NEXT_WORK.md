@@ -1,18 +1,17 @@
 # Codex Next Work
 
-Current recommended branch: venue-neutral manuscript and benchmark handoff.
+Current recommended branch: public-facing repository entry point and submission metadata triage.
 
 ## Current Phase
 
-Milestone 4.3 packages the validated v0.7 manuscript and
-`benchmark-v0.1-rc2` release evidence for human review, venue selection, or
-external collaborator handoff. Work should focus on title/abstract options,
-cover-letter text, data/code availability wording, figure/table inventory,
-submission checklist, and handoff guidance.
+Milestone 4.4 aligns the root README, package description, public-review entry
+point, metadata checklist, venue-targeting matrix, and submission-readiness
+triage with the validated v0.7 manuscript, v0.8 handoff bundle, and
+`benchmark-v0.1-rc2` release evidence.
 
 ## Optional Technical Branch
 
-The only optional technical branch currently justified after handoff is a narrow
+The only optional technical branch currently justified after public handoff is a narrow
 threshold-warning calibration branch. It must remain non-neural, grouped,
 prospective, and leakage-safe. It must not become policy ranking or CBAT.
 

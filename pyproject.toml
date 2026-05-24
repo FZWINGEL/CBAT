@@ -1,7 +1,7 @@
 [project]
 name = "multimodal-battery-prediction"
 version = "0.1.0"
-description = "Gate 1 dataset audit and provenance verification for Multimodal Battery Prediction."
+description = "Reproducible grouped-validation battery degradation benchmark and manuscript handoff package."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

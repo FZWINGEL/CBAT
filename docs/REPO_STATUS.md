@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 4.3: Venue-neutral submission bundle and external handoff**.
+The repository is in **Milestone 4.4: Public-facing repository entry point and submission metadata triage**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -106,6 +106,10 @@ Milestone 4.3 packages the validated v0.7 manuscript and
 `benchmark-v0.1-rc2` release evidence into a venue-neutral v0.8 submission
 bundle for human review, venue selection, or external collaborator handoff
 without adding new science.
+Milestone 4.4 aligns the root README, package description, public-review
+entry point, repository metadata checklist, venue-targeting matrix, and
+submission-readiness triage with that release/manuscript handoff package
+without adding new science.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -114,12 +118,11 @@ improvement claims have been started.
 
 Current state:
 
-- Milestone 4.3 is venue-neutral submission bundle and external handoff. The
-  release candidate is already validated and published, and v0.7 is already a
-  submission-preflight package. The current work is to package title/abstract
-  options, cover-letter text, data/code availability wording, figure/table
-  inventory, submission checklist, and handoff guidance without adding new
-  science.
+- Milestone 4.4 is public-facing repository entry point and submission metadata
+  triage. The release candidate is already validated and published, v0.7 is a
+  submission-preflight package, and v0.8 is a venue-neutral handoff bundle.
+  The current work is to make the repository front door and metadata TODOs
+  match that state without adding new science.
 - LOG_AGE monotonicity policy is documented in
   `docs/LOG_AGE_MONOTONICITY_POLICY.md`.
 - Interval subset registry generation is implemented with
@@ -1654,7 +1657,7 @@ Reader manuscript check passed.
 .venv/bin/mbp report check-release-candidate
 Release candidate check passed.
 
-blocked-phrase scan across v0.8 submission-bundle files
+blocked-phrase scan across v0.9 public-entrypoint and venue-triage files
 passed.
 
 git diff --check
@@ -1805,12 +1808,14 @@ The previous `datetime.utcnow()` deprecation warning in
 
 ## Recommended Next Step
 
-Use the v0.8 submission bundle for human review, coauthor handoff, or
-venue-specific formatting. The default next work is venue selection and
+Use the public review entry point, v0.8 submission bundle, and v0.9
+submission-readiness triage for human review, coauthor handoff, or
+venue-specific formatting. The default next work is selecting a target venue,
+choosing repository metadata such as license/citation/archive policy, and then
 formatting from the claim-bounded v0.7 manuscript and `benchmark-v0.1-rc2`
 release package.
 
-If a technical branch is opened before submission, keep it limited to a narrow
+If a technical branch is opened instead of submission work, keep it limited to a narrow
 threshold-warning score-calibration branch. Do not open knee prediction models,
 neural models, sequence models, CBAT, DRT, EIS embeddings, policy ranking,
 capacity+PULSE+EIS multimodal models, risk-score calibration claims without
