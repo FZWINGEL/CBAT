@@ -1,16 +1,18 @@
 # Codex Next Work
 
-Current recommended branch: benchmark release and reproducibility hardening.
+Current recommended branch: venue-neutral manuscript and benchmark handoff.
 
 ## Current Phase
 
-Milestone 3.1 turns the completed main-project evidence into a reproducible
-release-candidate package. Work should focus on documentation, artifact
-tracking, command ordering, and consistency checks.
+Milestone 4.3 packages the validated v0.7 manuscript and
+`benchmark-v0.1-rc2` release evidence for human review, venue selection, or
+external collaborator handoff. Work should focus on title/abstract options,
+cover-letter text, data/code availability wording, figure/table inventory,
+submission checklist, and handoff guidance.
 
 ## Optional Technical Branch
 
-The only optional technical branch currently justified is a narrow
+The only optional technical branch currently justified after handoff is a narrow
 threshold-warning calibration branch. It must remain non-neural, grouped,
 prospective, and leakage-safe. It must not become policy ranking or CBAT.
 

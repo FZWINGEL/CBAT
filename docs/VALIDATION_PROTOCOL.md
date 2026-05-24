@@ -169,6 +169,15 @@ preflight checks. It does not authorize new model training, new feature
 engineering, neural models, sequence models, transformers, CBAT, DRT, EIS
 embeddings, policy ranking, detector-knee prediction, calibrated risk claims,
 causal claims, same-cell counterfactual claims, or broad multimodal claims.
+Milestone 4.3 authorizes venue-neutral submission-bundle and external handoff
+work from tracked evidence only. It authorizes title/abstract variants,
+cover-letter draft text, data/code availability wording, figure/table
+inventories, submission checklists, benchmark/manuscript handoff notes, and
+release/manuscript package consistency checks. It does not authorize new model
+training, new feature engineering, neural models, sequence models,
+transformers, CBAT, DRT, EIS embeddings, policy ranking, detector-knee
+prediction, risk-score calibration claims, causal claims, same-cell
+counterfactual claims, broad multimodal claims, or any new scientific claim.
 
 Required split discipline:
 
@@ -248,6 +257,17 @@ Required Milestone 4.2 submission-preflight artifacts:
 - `manuscript/checks/manuscript_v0_7_reader_check.md`
 - `manuscript/checks/manuscript_v0_7_package_check.md`
 - `docs/experiments/2026-05-24_manuscript_v0_7_submission_preflight.md`
+
+Required Milestone 4.3 submission-bundle artifacts:
+
+- `manuscript/submission_bundle_v0_8.md`
+- `manuscript/title_abstract_options_v0_8.md`
+- `manuscript/cover_letter_draft_v0_8.md`
+- `manuscript/data_code_availability_v0_8.md`
+- `manuscript/figure_table_inventory_v0_8.md`
+- `manuscript/submission_checklist_v0_8.md`
+- `docs/BENCHMARK_MANUSCRIPT_HANDOFF.md`
+- `docs/experiments/2026-05-24_submission_bundle_external_handoff.md`
 
 Required Milestone 1.0 synthesis artifacts:
 

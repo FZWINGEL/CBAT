@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 4.2: Reviewer-risk hardening and submission preflight**.
+The repository is in **Milestone 4.3: Venue-neutral submission bundle and external handoff**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -102,6 +102,10 @@ draft into a venue-neutral v0.6 reviewer-ready manuscript package with a
 supplement scaffold, traceability sidecar, and manuscript package checks.
 Milestone 4.2 hardens the v0.6 package against likely reviewer objections and
 adds v0.7 submission-preflight materials without adding new science.
+Milestone 4.3 packages the validated v0.7 manuscript and
+`benchmark-v0.1-rc2` release evidence into a venue-neutral v0.8 submission
+bundle for human review, venue selection, or external collaborator handoff
+without adding new science.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -110,10 +114,11 @@ improvement claims have been started.
 
 Current state:
 
-- Milestone 4.2 is reviewer-risk hardening and submission preflight. The
-  release candidate is already validated and published, and v0.6 is already a
-  venue-neutral reviewer-ready package. The current work is to refresh reviewer
-  risks, response prep, and v0.7 preflight artifacts without adding new
+- Milestone 4.3 is venue-neutral submission bundle and external handoff. The
+  release candidate is already validated and published, and v0.7 is already a
+  submission-preflight package. The current work is to package title/abstract
+  options, cover-letter text, data/code availability wording, figure/table
+  inventory, submission checklist, and handoff guidance without adding new
   science.
 - LOG_AGE monotonicity policy is documented in
   `docs/LOG_AGE_MONOTONICITY_POLICY.md`.
@@ -1638,9 +1643,24 @@ Latest validation run:
 All checks passed.
 
 .venv/bin/pytest -p no:cacheprovider
-139 passed.
+148 passed.
+
+.venv/bin/mbp report check-manuscript --manuscript manuscript/manuscript_v0_7.md --claim-ledger docs/MAIN_PROJECT_CLAIM_LEDGER_V2.md --traceability manuscript/manuscript_v0_7_traceability.md
+Manuscript check passed.
+
+.venv/bin/mbp report check-reader-manuscript --manuscript manuscript/manuscript_v0_7.md --claim-ledger docs/MAIN_PROJECT_CLAIM_LEDGER_V2.md --traceability manuscript/manuscript_v0_7_traceability.md
+Reader manuscript check passed.
+
+.venv/bin/mbp report check-release-candidate
+Release candidate check passed.
+
+blocked-phrase scan across v0.8 submission-bundle files
+passed.
 
 git diff --check
+passed.
+
+data/Parquet diff and staged checks
 passed.
 ```
 
@@ -1785,13 +1805,13 @@ The previous `datetime.utcnow()` deprecation warning in
 
 ## Recommended Next Step
 
-Review the **Milestone 2.6 Non-Neural Threshold-Event Early-Warning Baseline
-Gate** outputs. The 80% threshold-event baseline is diagnostically promising
-and beats event-rate priors under grouped validation, including C-rate, but
-calibrated risk, detector-knee prediction, policy ranking, causality,
-same-cell counterfactuals, neural/sequence models, and CBAT remain blocked.
+Use the v0.8 submission bundle for human review, coauthor handoff, or
+venue-specific formatting. The default next work is venue selection and
+formatting from the claim-bounded v0.7 manuscript and `benchmark-v0.1-rc2`
+release package.
 
-The next technical step should stay baseline-first and claim-gated. Do not jump
-directly to knee prediction models, neural models, sequence models, CBAT, DRT,
-EIS embeddings, policy ranking, capacity+PULSE+EIS multimodal models,
-calibrated-uncertainty claims, or broad causal/mechanistic claims.
+If a technical branch is opened before submission, keep it limited to a narrow
+threshold-warning score-calibration branch. Do not open knee prediction models,
+neural models, sequence models, CBAT, DRT, EIS embeddings, policy ranking,
+capacity+PULSE+EIS multimodal models, risk-score calibration claims without
+grouped evidence, or broad causal/mechanistic claims.
