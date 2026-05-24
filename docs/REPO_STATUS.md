@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 4.1: Manuscript v0.6 reviewer-ready benchmark package**.
+The repository is in **Milestone 4.2: Reviewer-risk hardening and submission preflight**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -97,9 +97,11 @@ release candidate at commit `e499b12`; it includes the release-polish docs and
 has been published as a GitHub prerelease. The rc2-specific release notes,
 summary, draft text, and handoff check are tracked alongside the original rc1
 validation checkpoint notes. Milestone 4.0 integrated that claim-bounded
-benchmark evidence into a v0.5 manuscript draft. Milestone 4.1 turns that
+benchmark evidence into a v0.5 manuscript draft. Milestone 4.1 turned that
 draft into a venue-neutral v0.6 reviewer-ready manuscript package with a
 supplement scaffold, traceability sidecar, and manuscript package checks.
+Milestone 4.2 hardens the v0.6 package against likely reviewer objections and
+adds v0.7 submission-preflight materials without adding new science.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -108,10 +110,11 @@ improvement claims have been started.
 
 Current state:
 
-- Milestone 4.1 is venue-neutral manuscript packaging. The release candidate
-  is already validated and published, and v0.5 already integrates the evidence.
-  The current work is to make a reviewer-ready v0.6 manuscript/supplement
-  package without adding new science.
+- Milestone 4.2 is reviewer-risk hardening and submission preflight. The
+  release candidate is already validated and published, and v0.6 is already a
+  venue-neutral reviewer-ready package. The current work is to refresh reviewer
+  risks, response prep, and v0.7 preflight artifacts without adding new
+  science.
 - LOG_AGE monotonicity policy is documented in
   `docs/LOG_AGE_MONOTONICITY_POLICY.md`.
 - Interval subset registry generation is implemented with

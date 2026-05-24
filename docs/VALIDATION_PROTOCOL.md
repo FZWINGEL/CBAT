@@ -162,6 +162,13 @@ feature engineering, neural models, sequence models, transformers, CBAT, DRT,
 EIS embeddings, policy ranking, detector-knee prediction, calibrated risk
 claims, causal claims, same-cell counterfactual claims, or broad multimodal
 claims.
+Milestone 4.2 authorizes reviewer-risk hardening and submission preflight from
+tracked evidence only. It authorizes reviewer-risk registers, response-prep
+documents, v0.7 manuscript/supplement tightening, package manifests, and
+preflight checks. It does not authorize new model training, new feature
+engineering, neural models, sequence models, transformers, CBAT, DRT, EIS
+embeddings, policy ranking, detector-knee prediction, calibrated risk claims,
+causal claims, same-cell counterfactual claims, or broad multimodal claims.
 
 Required split discipline:
 
@@ -227,6 +234,20 @@ Required Milestone 4.1 reviewer-package artifacts:
 - `manuscript/checks/manuscript_v0_6_reader_check.md`
 - `manuscript/checks/manuscript_v0_6_package_check.md`
 - `docs/experiments/2026-05-24_manuscript_v0_6_reviewer_package.md`
+
+Required Milestone 4.2 submission-preflight artifacts:
+
+- `reports/synthesis/reviewer_risk_register_v2.md`
+- `manuscript/reviewer_response_prep_v2.md`
+- `manuscript/submission_preflight_v0_7.md`
+- `manuscript/manuscript_v0_7.md`
+- `manuscript/manuscript_v0_7_traceability.md`
+- `manuscript/supplement_v0_7.md`
+- `manuscript/manuscript_package_v0_7_manifest.md`
+- `manuscript/checks/manuscript_v0_7_claim_check.md`
+- `manuscript/checks/manuscript_v0_7_reader_check.md`
+- `manuscript/checks/manuscript_v0_7_package_check.md`
+- `docs/experiments/2026-05-24_manuscript_v0_7_submission_preflight.md`
 
 Required Milestone 1.0 synthesis artifacts:
 
