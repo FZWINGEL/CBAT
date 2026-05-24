@@ -1,6 +1,6 @@
 # Repository Status
 
-Last updated: 2026-05-23
+Last updated: 2026-05-24
 
 Current branch: `main`
 
@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 4.0: Manuscript v0.5 benchmark integration**.
+The repository is in **Milestone 4.1: Manuscript v0.6 reviewer-ready benchmark package**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -96,8 +96,10 @@ branch organization notes. `benchmark-v0.1-rc2` is the reviewer-facing
 release candidate at commit `e499b12`; it includes the release-polish docs and
 has been published as a GitHub prerelease. The rc2-specific release notes,
 summary, draft text, and handoff check are tracked alongside the original rc1
-validation checkpoint notes. Milestone 4.0 integrates that claim-bounded
-benchmark evidence into a v0.5 manuscript draft.
+validation checkpoint notes. Milestone 4.0 integrated that claim-bounded
+benchmark evidence into a v0.5 manuscript draft. Milestone 4.1 turns that
+draft into a venue-neutral v0.6 reviewer-ready manuscript package with a
+supplement scaffold, traceability sidecar, and manuscript package checks.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -106,11 +108,10 @@ improvement claims have been started.
 
 Current state:
 
-- Milestone 4.0 is manuscript integration. The release candidate is already
-  validated and published, so the current work is to refresh the manuscript
-  around EIS, semi-empirical comparators, uncertainty, temporal-order
-  falsification, knee/threshold labels, threshold-warning diagnostics, and
-  release reproducibility without adding new science.
+- Milestone 4.1 is venue-neutral manuscript packaging. The release candidate
+  is already validated and published, and v0.5 already integrates the evidence.
+  The current work is to make a reviewer-ready v0.6 manuscript/supplement
+  package without adding new science.
 - LOG_AGE monotonicity policy is documented in
   `docs/LOG_AGE_MONOTONICITY_POLICY.md`.
 - Interval subset registry generation is implemented with

@@ -154,6 +154,14 @@ authorize new model training, new feature engineering, neural models, sequence
 models, transformers, CBAT, DRT, EIS embeddings, policy ranking,
 detector-knee prediction, calibrated risk claims, causal claims,
 same-cell counterfactual claims, or broad multimodal claims.
+Milestone 4.1 authorizes venue-neutral manuscript v0.6 reviewer-package work
+from tracked evidence only. It authorizes reader-facing prose tightening,
+supplement scaffolding, figure/table mapping, traceability sidecars, and
+manuscript package checks. It does not authorize new model training, new
+feature engineering, neural models, sequence models, transformers, CBAT, DRT,
+EIS embeddings, policy ranking, detector-knee prediction, calibrated risk
+claims, causal claims, same-cell counterfactual claims, or broad multimodal
+claims.
 
 Required split discipline:
 
@@ -209,6 +217,16 @@ Required Milestone 4.0 manuscript-integration artifacts:
 - `manuscript/checks/manuscript_v0_5_claim_check.md`
 - `manuscript/checks/manuscript_v0_5_reader_check.md`
 - `docs/experiments/2026-05-24_manuscript_v0_5_benchmark_integration.md`
+
+Required Milestone 4.1 reviewer-package artifacts:
+
+- `manuscript/manuscript_v0_6.md`
+- `manuscript/manuscript_v0_6_traceability.md`
+- `manuscript/supplement_v0_6.md`
+- `manuscript/checks/manuscript_v0_6_claim_check.md`
+- `manuscript/checks/manuscript_v0_6_reader_check.md`
+- `manuscript/checks/manuscript_v0_6_package_check.md`
+- `docs/experiments/2026-05-24_manuscript_v0_6_reviewer_package.md`
 
 Required Milestone 1.0 synthesis artifacts:
 
