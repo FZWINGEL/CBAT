@@ -22,10 +22,10 @@ Blocked:
 - neural or sequence models
 - causal claims
 
-## Future: Manuscript Integration from benchmark-v0.1-rc1
+## Future: Manuscript Integration from benchmark-v0.1-rc2
 
-Purpose: integrate the validated benchmark release-candidate evidence into the
-manuscript package.
+Purpose: integrate the validated reviewer-facing benchmark release-candidate
+evidence into the manuscript package.
 
 Allowed scope:
 

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="420" viewBox="0 0 900 420" role="img" aria-labelledby="title desc">
+  <title id="title">Temporal-order and knee-label gates</title>
+  <desc id="desc">Temporal order and detector knees fail readiness gates, while threshold labels remain the safer candidate label family.</desc>
+  <rect width="900" height="420" fill="#fbfbf8"/>
+  <text x="40" y="52" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="#1c2b32">Temporal-order and knee-label gates</text>
+  <text x="40" y="82" font-family="Arial, sans-serif" font-size="15" fill="#4c5a60">Sequence readiness and detector-knee prediction remain blocked; threshold labels are more stable.</text>
+  <g font-family="Arial, sans-serif" font-size="16">
+    <rect x="58" y="130" width="230" height="126" rx="6" fill="#f1d9d7" stroke="#b66d67"/>
+    <text x="82" y="164" font-weight="700" fill="#5a2520">Event order</text>
+    <text x="82" y="198" fill="#5a2520">order-aware gain negative</text>
+    <text x="82" y="224" fill="#5a2520">sequence branch blocked</text>
+    <rect x="335" y="130" width="230" height="126" rx="6" fill="#f1d9d7" stroke="#b66d67"/>
+    <text x="359" y="164" font-weight="700" fill="#5a2520">Detector knees</text>
+    <text x="359" y="198" fill="#5a2520">45/64 conditions stable</text>
+    <text x="359" y="224" fill="#5a2520">prediction blocked</text>
+    <rect x="612" y="130" width="230" height="126" rx="6" fill="#e7efd9" stroke="#7a9a58"/>
+    <text x="636" y="164" font-weight="700" fill="#263a18">80% threshold labels</text>
+    <text x="636" y="198" fill="#263a18">replicate consistency 0.897</text>
+    <text x="636" y="224" fill="#263a18">candidate target family</text>
+    <text x="112" y="334" fill="#2c3d45">negative gate</text>
+    <text x="390" y="334" fill="#2c3d45">unstable label gate</text>
+    <text x="650" y="334" fill="#2c3d45">diagnostic label path</text>
+  </g>
+</svg>

@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 3.3: Benchmark v0.1 release polish and GitHub release draft.
+Milestone 4.0: Manuscript v0.5 benchmark integration.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -35,14 +35,17 @@ Current state:
   state improves `capacity_Ah_k1` over F4 in selected grouped splits, but it
   does not beat the strongest supplied non-PULSE HGB baselines and does not
   improve `delta_capacity_Ah`.
-- The current main-project track polishes the already-tagged
-  `benchmark-v0.1-rc1` release candidate for external handoff and GitHub
-  release drafting. This is release communication and handoff work, not a new
-  modeling milestone.
+- The current main-project track integrates the validated
+  `benchmark-v0.1-rc2` evidence package into a v0.5 manuscript draft. This is
+  manuscript and evidence-synthesis work, not a new modeling milestone.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
 Allowed work:
+- manuscript v0.5 integration from tracked evidence
+- manuscript traceability sidecars
+- figure/table refresh from tracked reports
+- manuscript no-overclaim checks
 - release handoff summaries
 - GitHub release draft text
 - release checklist finalization

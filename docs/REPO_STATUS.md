@@ -11,8 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 3.3: Benchmark v0.1 release polish and GitHub
-release draft**.
+The repository is in **Milestone 4.0: Manuscript v0.5 benchmark integration**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -91,9 +90,14 @@ Milestone 3.2 makes the release-candidate checks executable with
 `mbp report check-release-candidate`, adds v0.1-rc1 release notes and tagging
 instructions, and keeps the release tag path auditable without adding new
 science.
-Milestone 3.3 polishes the already-tagged `benchmark-v0.1-rc1` handoff with a
+Milestone 3.3 polished the already-tagged release-candidate handoff with a
 release summary, handoff checklist, GitHub release draft text, and future
-branch organization notes. It remains release communication work only.
+branch organization notes. `benchmark-v0.1-rc2` is the reviewer-facing
+release candidate at commit `e499b12`; it includes the release-polish docs and
+has been published as a GitHub prerelease. The rc2-specific release notes,
+summary, draft text, and handoff check are tracked alongside the original rc1
+validation checkpoint notes. Milestone 4.0 integrates that claim-bounded
+benchmark evidence into a v0.5 manuscript draft.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -102,10 +106,11 @@ improvement claims have been started.
 
 Current state:
 
-- Milestone 3.3 is release polish. The `benchmark-v0.1-rc1` tag has been
-  pushed at commit `ff4c8c2`, the executable release checker passes, and the
-  handoff package is being prepared for a GitHub release draft and external
-  reviewer orientation.
+- Milestone 4.0 is manuscript integration. The release candidate is already
+  validated and published, so the current work is to refresh the manuscript
+  around EIS, semi-empirical comparators, uncertainty, temporal-order
+  falsification, knee/threshold labels, threshold-warning diagnostics, and
+  release reproducibility without adding new science.
 - LOG_AGE monotonicity policy is documented in
   `docs/LOG_AGE_MONOTONICITY_POLICY.md`.
 - Interval subset registry generation is implemented with

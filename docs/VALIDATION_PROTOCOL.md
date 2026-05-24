@@ -138,13 +138,22 @@ authorize new model training, new feature engineering, neural models, sequence
 models, transformers, CBAT, DRT, EIS embeddings, policy ranking,
 detector-knee prediction, calibrated risk claims, causal/mechanistic claims,
 same-cell counterfactual claims, or broad multimodal claims.
-Milestone 3.3 authorizes release polish and GitHub release drafting for the
-already-tagged `benchmark-v0.1-rc1` release candidate. It authorizes handoff
-summaries, release-draft text, final release checklists, and future-branch
-organization notes. It does not authorize new model training, new feature
-engineering, neural models, sequence models, transformers, CBAT, DRT, EIS
-embeddings, policy ranking, detector-knee prediction, calibrated risk claims,
-causal claims, same-cell counterfactual claims, or broad multimodal claims.
+Milestone 3.3 authorizes release polish and GitHub release drafting after the
+validated `benchmark-v0.1-rc1` checkpoint. `benchmark-v0.1-rc2` is the
+reviewer-facing release archive that includes handoff documents while
+preserving rc1 as the validation checkpoint. It authorizes handoff summaries,
+release-draft text, final release checklists, and future-branch organization
+notes. It does not authorize new model training, new feature engineering,
+neural models, sequence models, transformers, CBAT, DRT, EIS embeddings,
+policy ranking, detector-knee prediction, calibrated risk claims, causal
+claims, same-cell counterfactual claims, or broad multimodal claims.
+Milestone 4.0 authorizes manuscript v0.5 benchmark integration from tracked
+evidence only. It authorizes reader-facing prose, traceability sidecars,
+figure/table refreshes, captions, and no-overclaim checks. It does not
+authorize new model training, new feature engineering, neural models, sequence
+models, transformers, CBAT, DRT, EIS embeddings, policy ranking,
+detector-knee prediction, calibrated risk claims, causal claims,
+same-cell counterfactual claims, or broad multimodal claims.
 
 Required split discipline:
 
@@ -184,9 +193,22 @@ Required Milestone 3.2 release-candidate validation artifacts:
 Required Milestone 3.3 release-polish artifacts:
 
 - `docs/BENCHMARK_V0_1_RC1_SUMMARY.md`
+- `docs/BENCHMARK_V0_1_RC2_SUMMARY.md`
 - `reports/synthesis/benchmark_v0_1_rc1_handoff_check.md`
+- `reports/synthesis/benchmark_v0_1_rc2_handoff_check.md`
 - `docs/GITHUB_RELEASE_DRAFT_v0.1-rc1.md`
+- `docs/GITHUB_RELEASE_DRAFT_v0.1-rc2.md`
 - optional `docs/FUTURE_BRANCHES.md`
+
+Required Milestone 4.0 manuscript-integration artifacts:
+
+- `manuscript/manuscript_v0_5.md`
+- `manuscript/manuscript_v0_5_traceability.md`
+- refreshed v0.5 figure/table captions
+- refreshed generated manuscript figures/tables for post-v0.4 gates
+- `manuscript/checks/manuscript_v0_5_claim_check.md`
+- `manuscript/checks/manuscript_v0_5_reader_check.md`
+- `docs/experiments/2026-05-24_manuscript_v0_5_benchmark_integration.md`
 
 Required Milestone 1.0 synthesis artifacts:
 

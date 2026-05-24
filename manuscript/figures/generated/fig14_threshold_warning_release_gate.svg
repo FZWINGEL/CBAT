@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="420" viewBox="0 0 900 420" role="img" aria-labelledby="title desc">
+  <title id="title">Threshold-warning and release gate</title>
+  <desc id="desc">The threshold-warning diagnostic beats prior and proximity baselines under verified-only sensitivity and the release checker passes.</desc>
+  <rect width="900" height="420" fill="#fbfbf8"/>
+  <text x="40" y="52" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="#1c2b32">Threshold-warning and release gate</text>
+  <text x="40" y="82" font-family="Arial, sans-serif" font-size="15" fill="#4c5a60">Diagnostic 80% threshold-event forecasting survives proximity and censoring hardening.</text>
+  <g font-family="Arial, sans-serif" font-size="16">
+    <rect x="70" y="124" width="210" height="116" rx="6" fill="#f3e1c7" stroke="#aa8445"/>
+    <text x="92" y="158" font-weight="700" fill="#4b3717">Event-rate prior</text>
+    <text x="92" y="194" fill="#4b3717">verified-only Brier</text>
+    <text x="92" y="220" fill="#4b3717">0.178655</text>
+    <rect x="345" y="124" width="210" height="116" rx="6" fill="#f3e1c7" stroke="#aa8445"/>
+    <text x="367" y="158" font-weight="700" fill="#4b3717">Proximity baseline</text>
+    <text x="367" y="194" fill="#4b3717">verified-only Brier</text>
+    <text x="367" y="220" fill="#4b3717">0.168492</text>
+    <rect x="620" y="124" width="210" height="116" rx="6" fill="#dbeed7" stroke="#67945e"/>
+    <text x="642" y="158" font-weight="700" fill="#223b1f">HGB W2</text>
+    <text x="642" y="194" fill="#223b1f">verified-only Brier</text>
+    <text x="642" y="220" fill="#223b1f">0.090116</text>
+    <rect x="178" y="298" width="544" height="56" rx="6" fill="#d9edf2" stroke="#5a9aaa"/>
+    <text x="205" y="332" font-weight="700" fill="#17333d">Release checker passed; benchmark-v0.1-rc2 is release-polished handoff archive.</text>
+  </g>
+</svg>

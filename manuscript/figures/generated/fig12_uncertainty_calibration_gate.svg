@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="420" viewBox="0 0 900 420" role="img" aria-labelledby="title desc">
+  <title id="title">Replicate and interval-calibration gate</title>
+  <desc id="desc">Replicate spread is diagnostic and conformal methods improve mean coverage, but C-rate coverage remains below target.</desc>
+  <rect width="900" height="420" fill="#fbfbf8"/>
+  <text x="40" y="52" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="#1c2b32">Replicate and interval-calibration gate</text>
+  <text x="40" y="82" font-family="Arial, sans-serif" font-size="15" fill="#4c5a60">Intervals improve average coverage, but C-rate still fails the global reliability gate.</text>
+  <g font-family="Arial, sans-serif" font-size="16">
+    <rect x="60" y="128" width="220" height="110" rx="6" fill="#e5eef8" stroke="#6c91b8"/>
+    <text x="82" y="162" font-weight="700" fill="#203a54">Replicate spread</text>
+    <text x="82" y="194" fill="#203a54">diagnostic context</text>
+    <text x="82" y="220" fill="#203a54">not interval validation</text>
+    <rect x="340" y="128" width="220" height="110" rx="6" fill="#e7efd9" stroke="#7a9a58"/>
+    <text x="362" y="162" font-weight="700" fill="#263a18">Grouped conformal</text>
+    <text x="362" y="194" fill="#263a18">mean coverage improves</text>
+    <text x="362" y="220" fill="#263a18">width penalty reported</text>
+    <rect x="620" y="128" width="220" height="110" rx="6" fill="#f1d9d7" stroke="#b66d67"/>
+    <text x="642" y="162" font-weight="700" fill="#5a2520">C-rate blocker</text>
+    <text x="642" y="194" fill="#5a2520">coverage below target</text>
+    <text x="642" y="220" fill="#5a2520">global claim blocked</text>
+    <line x1="90" y1="310" x2="810" y2="310" stroke="#2c3d45" stroke-width="2"/>
+    <circle cx="170" cy="310" r="12" fill="#6c91b8"/>
+    <circle cx="450" cy="310" r="12" fill="#7a9a58"/>
+    <circle cx="730" cy="310" r="12" fill="#b66d67"/>
+    <text x="94" y="352" fill="#2c3d45">context</text>
+    <text x="372" y="352" fill="#2c3d45">partial improvement</text>
+    <text x="660" y="352" fill="#2c3d45">blocked claim</text>
+  </g>
+</svg>

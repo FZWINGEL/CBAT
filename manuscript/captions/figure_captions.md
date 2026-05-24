@@ -42,3 +42,19 @@ What not to infer: this figure does not support a claim that prior PULSE beats t
 ## Figure 10. Claim ladder
 
 Claim IDs: C01-C12. Source artifact: `reports/synthesis/claim_matrix.csv`. Allowed interpretation: the paper separates supported, partial, negative, gated, and blocked claims. Limitation: the ladder summarizes evidence rather than replacing detailed reports.
+
+## Figure 11. EIS scalar diagnostic gate
+
+Claim IDs: C10. Source artifact: `docs/experiments/2026-05-23_eis_claim_hardening.md`. Allowed interpretation: EIS is QA-ready and useful as a scalar diagnostic endpoint with narrow profile-split prior-feature signal. Limitation: this does not authorize broad EIS predictive claims.
+
+## Figure 12. Replicate and interval-calibration gate
+
+Claim IDs: C09, C14, C15. Source artifact: `docs/experiments/2026-05-23_grouped_calibration_replicate_uncertainty.md`. Allowed interpretation: replicate spread and grouped conformal diagnostics contextualize uncertainty, while C-rate coverage remains insufficient for a global interval claim. Limitation: this figure does not authorize calibrated interval wording.
+
+## Figure 13. Temporal-order and knee-label gates
+
+Claim IDs: C16, C17, C18. Source artifact: `docs/experiments/2026-05-23_temporal_history_value_gate.md`; `docs/experiments/2026-05-23_knee_threshold_label_forensics.md`. Allowed interpretation: event-order summaries and detector-knee labels do not justify sequence or knee-prediction branches, while 80% threshold labels are the more stable candidate label family. Limitation: threshold labels alone do not authorize warning claims.
+
+## Figure 14. Threshold-warning and release gate
+
+Claim IDs: C19. Source artifact: `docs/experiments/2026-05-23_threshold_warning_censoring_finalization.md`; `reports/synthesis/release_candidate_check.md`. Allowed interpretation: non-neural baselines forecast the 80% threshold event diagnostically beyond proximity and under verified-only sensitivity, and the benchmark release checker passes. Limitation: this does not authorize risk calibration, policy ranking, or causal warning.

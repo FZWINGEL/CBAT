@@ -7,6 +7,8 @@ Use this checklist before tagging or handing off a release candidate.
 - [ ] `mbp report check-release-candidate` passes.
 - [ ] `git diff --check` passes.
 - [ ] `docs/RELEASE_NOTES_v0.1-rc1.md` exists.
+- [ ] If creating a reviewer-facing rc2 archive, `docs/RELEASE_NOTES_v0.1-rc2.md`
+      and `docs/BENCHMARK_V0_1_RC2_SUMMARY.md` exist.
 - [ ] `docs/TAGGING_RELEASE_CANDIDATE.md` exists.
 - [ ] No raw data files are staged.
 - [ ] No `data/interim`, `data/splits`, or `data/processed` Parquets are
