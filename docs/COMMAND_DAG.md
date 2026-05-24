@@ -45,6 +45,9 @@ Layer 5: Baseline reports
   mbp baseline run-eis
   mbp baseline run-semi-empirical
   mbp baseline run-threshold-warning
+  mbp baseline run-stressor-robust-capacity
+  mbp baseline run-stressor-robust-pareto
+  mbp baseline run-stressor-robust-adaptive
     |
     v
 Layer 6: Diagnostics and hardening
@@ -55,6 +58,7 @@ Layer 6: Diagnostics and hardening
   mbp baseline compare-prior-eis-capacity
   mbp baseline compare-threshold-warning-censoring
   mbp baseline finalize-threshold-warning-claim
+  mbp baseline diagnose-stressor-robust-forensics
     |
     v
 Layer 7: Synthesis and release checks

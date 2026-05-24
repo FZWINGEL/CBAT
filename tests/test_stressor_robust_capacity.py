@@ -9,8 +9,10 @@ import pytest
 from mbp.baselines.capacity import BASELINE_PREDICTION_SCHEMA
 from mbp.baselines import stressor_robust_capacity as robust_module
 from mbp.baselines.stressor_robust_capacity import (
+    ADAPTIVE_SCHEMA_VERSION,
     PARETO_SCHEMA_VERSION,
     SELECTION_TIE_BREAK_ORDER,
+    aggregate_adaptive_weight_selection_rows,
     _condition_bagged_predictions,
     condition_balanced_weights,
     degradation_by_split_target_feature_rows,
@@ -21,10 +23,13 @@ from mbp.baselines.stressor_robust_capacity import (
     paired_condition_gain_rows,
     pareto_frontier_rows,
     pareto_model_settings,
+    run_stressor_robust_adaptive,
     run_stressor_robust_capacity,
     run_stressor_robust_pareto,
     _sample_condition_rows,
+    select_adaptive_weight_strength,
     stressor_balanced_weights,
+    stressor_robust_adaptive_claim_readiness,
     stressor_robust_pareto_claim_readiness,
     stressor_robust_claim_readiness,
 )
@@ -419,6 +424,81 @@ def test_pareto_frontier_and_threshold_sensitivity_gate() -> None:
     assert claim["stressor_robust_pareto_claim"] == "not_supported"
 
 
+def test_adaptive_selection_prefers_guarded_positive_gain() -> None:
+    rows = aggregate_adaptive_weight_selection_rows(
+        [
+            {
+                "weight_strength": 0.25,
+                "candidate_condition_mean_mae": 0.09,
+                "condition_mean_mae_gain": 0.01,
+                "relative_degradation": 0.02,
+            },
+            {
+                "weight_strength": 0.5,
+                "candidate_condition_mean_mae": 0.08,
+                "condition_mean_mae_gain": 0.02,
+                "relative_degradation": 0.04,
+            },
+            {
+                "weight_strength": 1.0,
+                "candidate_condition_mean_mae": 0.07,
+                "condition_mean_mae_gain": 0.03,
+                "relative_degradation": 0.08,
+            },
+        ]
+    )
+
+    selected = select_adaptive_weight_strength(rows)
+
+    assert selected["weight_strength"] == 0.5
+    assert [row["selected_by_train_only_rule"] for row in rows] == [False, True, False]
+
+
+def test_conservative_adaptive_selection_prefers_lowest_guarded_strength() -> None:
+    rows = aggregate_adaptive_weight_selection_rows(
+        [
+            {
+                "weight_strength": 0.25,
+                "candidate_condition_mean_mae": 0.09,
+                "condition_mean_mae_gain": 0.01,
+                "relative_degradation": 0.02,
+            },
+            {
+                "weight_strength": 0.5,
+                "candidate_condition_mean_mae": 0.08,
+                "condition_mean_mae_gain": 0.02,
+                "relative_degradation": 0.04,
+            },
+        ],
+        selection_policy="conservative_guarded",
+    )
+
+    selected = select_adaptive_weight_strength(rows, policy="conservative_guarded")
+
+    assert selected["weight_strength"] == 0.25
+    assert [row["selected_by_train_only_rule"] for row in rows] == [True, False]
+
+
+def test_adaptive_claim_readiness_requires_outer_guardrail() -> None:
+    frontier = [
+        {
+            "model_setting_id": "R5_train_only_stressor_selected_hgb",
+            "model_level": "R5_train_only_stressor_selected_hgb",
+            "feature_group": "F8_timestamp_weighted_stress",
+            "gain_vs_f4": 0.02,
+            "gain_vs_stress_reference": 0.01,
+            "paired_p05_vs_f4": 0.005,
+            "paired_p05_vs_stress_reference": 0.002,
+            "max_other_split_relative_degradation": 0.049,
+        }
+    ]
+
+    claim = stressor_robust_adaptive_claim_readiness(frontier)
+
+    assert claim["stressor_robust_adaptive_claim"] == "supported_for_diagnostics"
+    assert claim["adaptive_passes_5pct"] is True
+
+
 def test_degradation_by_split_target_feature_rows() -> None:
     rows = degradation_by_split_target_feature_rows(
         [
@@ -527,3 +607,33 @@ def test_stressor_robust_pareto_runner_smoke(tmp_path: Path) -> None:
     assert (out_dir / "plots" / "pareto_frontier.csv").exists()
     assert (out_dir / "plots" / "non_degradation_threshold_sensitivity.csv").exists()
     assert (out_dir / "stressor_robust_pareto_claim_readiness.md").exists()
+
+
+def test_stressor_robust_adaptive_runner_smoke(tmp_path: Path) -> None:
+    interval_path, subset_path = _write_capacity_fixture(tmp_path)
+    report_path = tmp_path / "stressor_robust_adaptive_report.json"
+    predictions_path = tmp_path / "stressor_robust_adaptive_predictions.parquet"
+    out_dir = tmp_path / "stressor_robust_adaptive"
+
+    report = run_stressor_robust_adaptive(
+        interval_path,
+        subset_path,
+        report_path,
+        predictions_path,
+        out_dir=out_dir,
+        feature_groups=["F4_state_log_age_scalar"],
+        targets=["delta_capacity_Ah"],
+        split_views=["condition_fold"],
+        weight_strengths=[0.5, 1.0],
+        selection_split_views=["condition_fold"],
+        hgb_max_iter=2,
+    )
+
+    metadata = pq.read_table(predictions_path).schema.metadata or {}
+    assert report["status"] == "passed"
+    assert report["row_counts"]["metrics"] > 0
+    assert report["row_counts"]["selection_rows"] > 0
+    assert metadata[b"schema_version"] == ADAPTIVE_SCHEMA_VERSION.encode()
+    assert (out_dir / "adaptive_selection_summary.csv").exists()
+    assert (out_dir / "plots" / "adaptive_frontier.csv").exists()
+    assert (out_dir / "stressor_robust_adaptive_claim_readiness.md").exists()

@@ -1307,6 +1307,78 @@ def baseline_run_stressor_robust_pareto(
     )
 
 
+@baseline_app.command("run-stressor-robust-adaptive")
+def baseline_run_stressor_robust_adaptive(
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    interval_subsets: Path = typer.Option(..., "--interval-subsets", help="Path to interval_subset_registry_v1.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output JSON report path."),
+    predictions_out: Path = typer.Option(..., "--predictions-out", help="Output prediction Parquet path."),
+    stress_features: Path | None = typer.Option(
+        None,
+        "--stress-features",
+        help="Optional interval_stress_features_v1_1.parquet sidecar for stress feature groups.",
+    ),
+    out_dir: Path | None = typer.Option(None, "--out-dir", help="Output directory for adaptive diagnostics."),
+    subset: str = typer.Option("baseline_clean_tolerant", "--subset", help="Interval subset flag."),
+    seed: int = typer.Option(42, "--seed", help="Deterministic model seed."),
+    hgb_max_iter: int = typer.Option(50, "--hgb-max-iter", min=1, help="HGB max_iter."),
+    feature_groups: str = typer.Option(
+        "F4_state_log_age_scalar,F8_timestamp_weighted_stress",
+        "--feature-groups",
+        help="Comma-separated supported robust feature groups.",
+    ),
+    targets: str = typer.Option(
+        "delta_capacity_Ah",
+        "--targets",
+        help="Comma-separated capacity targets.",
+    ),
+    split_views: str = typer.Option(
+        "condition_fold,temperature_holdout_fold,c_rate_holdout_fold,profile_holdout_fold,voltage_window_holdout_fold",
+        "--split-views",
+        help="Comma-separated split views.",
+    ),
+    weight_strengths: str = typer.Option(
+        "0.25,0.5,0.75,1.0",
+        "--weight-strengths",
+        help="Comma-separated train-only candidate R2 reweighting strengths.",
+    ),
+    selection_split_views: str = typer.Option(
+        "condition_fold,temperature_holdout_fold,profile_holdout_fold,voltage_window_holdout_fold,c_rate_holdout_fold",
+        "--selection-split-views",
+        help="Comma-separated inner grouped split views used inside each outer train fold.",
+    ),
+    selection_policy: str = typer.Option(
+        "max_gain_guarded",
+        "--selection-policy",
+        help="Adaptive selector policy: max_gain_guarded or conservative_guarded.",
+    ),
+) -> None:
+    """Run train-only adaptive stressor-robust HGB diagnostics."""
+    from mbp.baselines.stressor_robust_capacity import run_stressor_robust_adaptive
+
+    report = run_stressor_robust_adaptive(
+        interval_table,
+        interval_subsets,
+        out,
+        predictions_out,
+        stress_features_path=stress_features,
+        out_dir=out_dir,
+        subset=subset,
+        seed=seed,
+        hgb_max_iter=hgb_max_iter,
+        feature_groups=_comma_values(feature_groups),
+        targets=_comma_values(targets),
+        split_views=_comma_values(split_views),
+        weight_strengths=_comma_floats(weight_strengths),
+        selection_split_views=_comma_values(selection_split_views),
+        selection_policy=selection_policy,
+    )
+    typer.echo(
+        "Stressor-robust adaptive report generated: "
+        f"{report['row_counts']['metrics']} metric rows written to {out}"
+    )
+
+
 @baseline_app.command("compare-prior-pulse-capacity")
 def baseline_compare_prior_pulse_capacity(
     baseline_report: Path = typer.Option(..., "--baseline-report", help="Capacity baseline report without prior-PULSE feature groups."),

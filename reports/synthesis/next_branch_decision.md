@@ -24,15 +24,19 @@ The project has completed the major baseline-first charter gates:
 - stressor-axis robust capacity baselines;
 - calibration metric sensitivity and capacity quantile noncrossing hygiene;
 - calibration and robustness gate correctness hardening;
-- stressor-robust Pareto forensics and claim finalization.
+- stressor-robust Pareto forensics and claim finalization;
+- train-only adaptive stressor-robust selection.
 
 The strongest contribution is now a rigorous grouped-validation benchmark that
 documents which battery-degradation signals are supported, diagnostic-only,
-negative, or blocked. Milestone 5.3 closes the latest correctness requests:
+negative, or blocked. Milestone 5.3 closes the correctness requests:
 required-policy calibration checks, policy-specific C-rate checks, fallback-row
 guardrails, no-empty-run failures, and stressor-robust bagging/readiness
 hygiene do not change the blocked status of calibrated-risk,
 calibrated-uncertainty, robust-capacity, policy, or architecture claims.
+Milestone 5.5 adds a narrow positive diagnostic for conservative train-only
+adaptive stressor-balanced selection, but it does not change the blocked status
+of broad fade-solved, policy, architecture, calibrated-risk, or causal claims.
 
 ## Recommended Path
 
@@ -40,7 +44,8 @@ calibrated-uncertainty, robust-capacity, policy, or architecture claims.
    branch.
 2. If manuscript work resumes, integrate Milestones 5.0/5.2/5.3 as blocked
    calibrated-risk and calibrated-uncertainty evidence, and Milestone 5.1 as a
-   diagnostic stressor-robustness result hardened by 5.3 correctness checks.
+   diagnostic stressor-robustness result hardened by 5.3 correctness checks
+   and narrowed by the Milestone 5.5 adaptive-selection result.
 3. If engineering work resumes, prefer release automation or reproducibility
    checks over new scientific expansion.
 
@@ -53,13 +58,14 @@ Milestone 5.2 adds equal-frequency ECE sensitivity and Milestone 5.3 hardens
 the readiness logic; both reach the same decision. Any future calibration work
 should be scoped as diagnostics only.
 
-The narrow stressor-robust capacity branch and follow-up Pareto forensics have
-also been run. Stressor-balanced HGB improves C-rate fade diagnostics, but the
-predeclared robust-capacity claim remains blocked by outside-C-rate
-degradation (`0.0528343` versus the 5% guardrail). Lighter non-predeclared
-settings are useful diagnostics only. Further work here is lower value than
-synthesis/release maintenance unless a new, predeclared robustness question is
-explicitly justified.
+The narrow stressor-robust capacity branch, Pareto forensics, and adaptive
+selector follow-up have also been run. Stressor-balanced HGB improves C-rate
+fade diagnostics. The fixed predeclared R2/F8/w1 claim remains blocked by
+outside-C-rate degradation (`0.0528343` versus the 5% guardrail), but the
+conservative train-only adaptive selector now passes diagnostically for
+`delta_capacity_Ah` with max outside-C-rate degradation `0.0279117`. Further
+work here is lower value than synthesis/release maintenance unless it is a
+predeclared replication or manuscript-integration check.
 
 ## Explicitly Rejected Branches
 

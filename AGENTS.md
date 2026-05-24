@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 5.4: Stressor-robust Pareto forensics and claim finalization.
+Milestone 5.5: Train-only adaptive stressor-robust selection gate.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -45,11 +45,16 @@ Current state:
   non-degradation guardrail narrowly failed.
 - Milestone 5.3 hardened existing calibration and stressor-robustness checks
   against silent false support.
-- The current main-project track is a bounded stressor-robustness forensics
-  gate. It diagnoses where the Milestone 5.1 outside-C-rate non-degradation
-  guardrail fails and evaluates a small, predeclared Pareto grid of existing
-  non-neural robust HGB settings. It must not relax the 5% guardrail or convert
-  non-predeclared tuning wins into a supported robust-capacity claim.
+- Milestone 5.4 diagnosed where the Milestone 5.1 outside-C-rate
+  non-degradation guardrail failed and evaluated a small bounded Pareto grid of
+  existing non-neural robust HGB settings. The predeclared R2/F8 full-strength
+  setting still failed the 5% guardrail.
+- The current main-project track is a train-only adaptive stressor-robust
+  selection gate. It evaluates whether inner grouped validation on outer
+  training rows can choose a conservative stressor-balanced weight that passes
+  the unchanged outer C-rate gain and outside-C-rate non-degradation guardrail.
+  It must not relax the 5% guardrail or convert a narrow diagnostic selector
+  into a broad C-rate-solved, architecture, policy, or causal claim.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
@@ -72,6 +77,9 @@ Allowed work:
 - bounded stressor-robust Pareto diagnostics over existing robust HGB variants
 - non-degradation threshold sensitivity reporting without relaxing the
   predeclared 5% guardrail
+- train-only adaptive stressor-balanced weight selection using inner grouped
+  validation on outer training rows only
+- conservative adaptive robust-selection claim-readiness reporting
 - grouped threshold-warning probability calibration
 - Platt/logistic and isotonic post-hoc calibration fitted on calibration
   conditions only
@@ -146,8 +154,10 @@ Allowed work:
 - small tests with synthetic fixtures
 
 Forbidden work:
-- new model training outside the scoped stressor-robust Pareto/forensics gate
-- new feature engineering outside the scoped stressor-robust Pareto/forensics gate
+- new model training outside the scoped train-only stressor-robust adaptive
+  selection gate
+- new feature engineering outside the scoped train-only stressor-robust
+  adaptive selection gate
 - knee prediction models
 - neural models
 - sequence models

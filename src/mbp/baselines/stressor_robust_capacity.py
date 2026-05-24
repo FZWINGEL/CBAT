@@ -39,6 +39,7 @@ from mbp.baselines.capacity import _training_target_value
 
 SCHEMA_VERSION = "gate51.stressor_robust_capacity.v1"
 PARETO_SCHEMA_VERSION = "gate54.stressor_robust_pareto.v1"
+ADAPTIVE_SCHEMA_VERSION = "gate55.stressor_robust_adaptive.v1"
 ROBUST_MODEL_LEVELS = (
     "R0_reference_hgb50",
     "R1_condition_balanced_hgb",
@@ -66,6 +67,16 @@ NON_DEGRADATION_THRESHOLDS = (0.03, 0.05, 0.075, 0.10)
 PREDECLARED_PARETO_MODEL_LEVEL = "R2_stressor_balanced_hgb"
 PREDECLARED_PARETO_FEATURE_GROUP = "F8_timestamp_weighted_stress"
 PREDECLARED_PARETO_WEIGHT_STRENGTH = 1.0
+ADAPTIVE_MODEL_LEVEL = "R5_train_only_stressor_selected_hgb"
+ADAPTIVE_MODEL_SETTING_ID = ADAPTIVE_MODEL_LEVEL
+DEFAULT_ADAPTIVE_SELECTION_SPLITS = (
+    "condition_fold",
+    "temperature_holdout_fold",
+    "profile_holdout_fold",
+    "voltage_window_holdout_fold",
+    "c_rate_holdout_fold",
+)
+ADAPTIVE_NON_DEGRADATION_THRESHOLD = 0.05
 
 
 @dataclass(frozen=True)
@@ -74,6 +85,10 @@ class RobustPredictionResult:
     selected_variant: str | None = None
     internal_validation_metric: float | None = None
     internal_validation_condition_mean_mae: float | None = None
+    selected_weight_strength: float | None = None
+    selection_mean_gain: float | None = None
+    selection_max_relative_degradation: float | None = None
+    selection_rows: list[dict[str, Any]] | None = None
 
 
 def run_stressor_robust_capacity(
@@ -423,6 +438,261 @@ def run_stressor_robust_pareto(
     return report
 
 
+def run_stressor_robust_adaptive(
+    interval_table_path: Path,
+    interval_subsets_path: Path,
+    out_path: Path,
+    predictions_out_path: Path,
+    *,
+    stress_features_path: Path | None = None,
+    out_dir: Path | None = None,
+    subset: str = "baseline_clean_tolerant",
+    seed: int = 42,
+    hgb_max_iter: int = DEFAULT_HGB_MAX_ITER,
+    feature_groups: list[str] | None = None,
+    targets: list[str] | None = None,
+    split_views: list[str] | None = None,
+    weight_strengths: list[float] | None = None,
+    selection_split_views: list[str] | None = None,
+    selection_policy: str = "max_gain_guarded",
+) -> dict[str, Any]:
+    """Run a train-only adaptive robust HGB selector under grouped validation."""
+    if hgb_max_iter <= 0:
+        raise ValueError("hgb_max_iter must be positive.")
+    selected_feature_groups = _normalize_selection(
+        feature_groups,
+        DEFAULT_ROBUST_FEATURE_GROUPS,
+        "feature group",
+        default=DEFAULT_ROBUST_FEATURE_GROUPS,
+    )
+    selected_targets = _normalize_selection(targets, DIRECT_TARGETS, "target", default=[PRIMARY_TARGET])
+    selected_splits = _normalize_selection(split_views, SPLIT_COLUMNS, "split view")
+    selected_weight_strengths = _normalize_float_grid(
+        weight_strengths,
+        DEFAULT_PARETO_WEIGHT_STRENGTHS,
+        "weight strength",
+    )
+    selected_selection_splits = _normalize_selection(
+        selection_split_views,
+        SPLIT_COLUMNS,
+        "selection split view",
+        default=DEFAULT_ADAPTIVE_SELECTION_SPLITS,
+    )
+    if selection_policy not in {"max_gain_guarded", "conservative_guarded"}:
+        raise ValueError("selection_policy must be 'max_gain_guarded' or 'conservative_guarded'.")
+    if STRESS_FEATURE_GROUPS & set(selected_feature_groups) and stress_features_path is None:
+        raise ValueError("Stress feature groups require --stress-features.")
+    _import_sklearn_stack()
+
+    all_rows, subset_rows = load_baseline_rows(
+        interval_table_path,
+        interval_subsets_path,
+        subset,
+        stress_features_path=stress_features_path,
+    )
+    if not subset_rows:
+        raise ValueError("Selected interval subset is empty.")
+
+    metrics: list[dict[str, Any]] = []
+    predictions: list[dict[str, Any]] = []
+    selection_rows: list[dict[str, Any]] = []
+    for split_name in selected_splits:
+        for heldout_fold, train_rows, test_rows in iter_split_instances(subset_rows, split_name):
+            assert_no_parameter_set_leakage(train_rows, test_rows, split_name, heldout_fold)
+            for feature_group in selected_feature_groups:
+                for target in selected_targets:
+                    reference_predictions = predict_stressor_robust_capacity_target(
+                        model_level="R0_reference_hgb50",
+                        feature_group=feature_group,
+                        train_rows=train_rows,
+                        test_rows=test_rows,
+                        target=target,
+                        split_name=split_name,
+                        heldout_fold=heldout_fold,
+                        seed=seed,
+                        hgb_max_iter=hgb_max_iter,
+                        bag_count=1,
+                    )
+                    reference_metric = compute_metrics(
+                        test_rows,
+                        reference_predictions.predictions,
+                        target=target,
+                        subset_name=subset,
+                        run_scope="primary",
+                        split_name=split_name,
+                        heldout_fold=heldout_fold,
+                        model_level="R0_reference_hgb50",
+                        feature_group=feature_group,
+                        train_rows=train_rows,
+                    )
+                    reference_metric.update(
+                        {
+                            "schema_version": ADAPTIVE_SCHEMA_VERSION,
+                            "model_setting_id": "R0_reference_hgb50",
+                            "weight_strength": 0.0,
+                            "selected_variant": None,
+                            "selected_weight_strength": None,
+                            "selection_mean_gain": None,
+                            "selection_max_relative_degradation": None,
+                            "internal_validation_metric": None,
+                            "internal_validation_condition_mean_mae": None,
+                        }
+                    )
+                    metrics.append(reference_metric)
+                    predictions.extend(
+                        _adaptive_prediction_rows(
+                            test_rows,
+                            reference_predictions.predictions,
+                            subset_name=subset,
+                            split_name=split_name,
+                            heldout_fold=heldout_fold,
+                            model_level="R0_reference_hgb50",
+                            feature_group=feature_group,
+                            target=target,
+                            model_setting_id="R0_reference_hgb50",
+                            selected_weight_strength=None,
+                            selection_mean_gain=None,
+                            selection_max_relative_degradation=None,
+                        )
+                    )
+
+                    adaptive_result = predict_adaptive_stressor_robust_capacity_target(
+                        feature_group=feature_group,
+                        train_rows=train_rows,
+                        test_rows=test_rows,
+                        target=target,
+                        split_name=split_name,
+                        heldout_fold=heldout_fold,
+                        seed=seed,
+                        hgb_max_iter=hgb_max_iter,
+                        weight_strengths=selected_weight_strengths,
+                        selection_split_views=selected_selection_splits,
+                        selection_policy=selection_policy,
+                    )
+                    adaptive_metric = compute_metrics(
+                        test_rows,
+                        adaptive_result.predictions,
+                        target=target,
+                        subset_name=subset,
+                        run_scope="primary",
+                        split_name=split_name,
+                        heldout_fold=heldout_fold,
+                        model_level=ADAPTIVE_MODEL_LEVEL,
+                        feature_group=feature_group,
+                        train_rows=train_rows,
+                    )
+                    adaptive_metric.update(
+                        {
+                            "schema_version": ADAPTIVE_SCHEMA_VERSION,
+                            "model_setting_id": ADAPTIVE_MODEL_SETTING_ID,
+                            "weight_strength": adaptive_result.selected_weight_strength,
+                            "selected_variant": adaptive_result.selected_variant,
+                            "selected_weight_strength": adaptive_result.selected_weight_strength,
+                            "selection_mean_gain": adaptive_result.selection_mean_gain,
+                            "selection_max_relative_degradation": adaptive_result.selection_max_relative_degradation,
+                            "internal_validation_metric": adaptive_result.internal_validation_metric,
+                            "internal_validation_condition_mean_mae": (
+                                adaptive_result.internal_validation_condition_mean_mae
+                            ),
+                        }
+                    )
+                    metrics.append(adaptive_metric)
+                    predictions.extend(
+                        _adaptive_prediction_rows(
+                            test_rows,
+                            adaptive_result.predictions,
+                            subset_name=subset,
+                            split_name=split_name,
+                            heldout_fold=heldout_fold,
+                            model_level=ADAPTIVE_MODEL_LEVEL,
+                            feature_group=feature_group,
+                            target=target,
+                            model_setting_id=ADAPTIVE_MODEL_SETTING_ID,
+                            selected_weight_strength=adaptive_result.selected_weight_strength,
+                            selection_mean_gain=adaptive_result.selection_mean_gain,
+                            selection_max_relative_degradation=(
+                                adaptive_result.selection_max_relative_degradation
+                            ),
+                        )
+                    )
+                    for row in adaptive_result.selection_rows or []:
+                        selection_rows.append(
+                            {
+                                **row,
+                                "outer_split_name": split_name,
+                                "outer_heldout_fold": heldout_fold,
+                                "target": target,
+                                "feature_group": feature_group,
+                            }
+                        )
+
+    if not metrics:
+        raise ValueError("No metrics were generated.")
+    report_dir = out_dir or _default_report_dir(out_path)
+    predictions_out_path.parent.mkdir(parents=True, exist_ok=True)
+    pq.write_table(
+        pa.Table.from_pylist(predictions).replace_schema_metadata(
+            {b"schema_version": ADAPTIVE_SCHEMA_VERSION.encode()}
+        ),
+        predictions_out_path,
+    )
+    leaderboard = pareto_leaderboard_rows(metrics)
+    paired = pareto_paired_condition_gain_rows(predictions)
+    frontier = pareto_frontier_rows(leaderboard, paired)
+    claim = stressor_robust_adaptive_claim_readiness(frontier)
+    report = {
+        "status": "passed",
+        "schema_version": ADAPTIVE_SCHEMA_VERSION,
+        "generated_at_utc": datetime.now(UTC).isoformat(),
+        "inputs": {
+            "interval_table": str(interval_table_path),
+            "interval_subsets": str(interval_subsets_path),
+            "stress_features": str(stress_features_path) if stress_features_path else None,
+        },
+        "outputs": {
+            "report": str(out_path),
+            "predictions": str(predictions_out_path),
+            "out_dir": str(report_dir),
+        },
+        "subset": subset,
+        "seed": seed,
+        "hgb_max_iter": hgb_max_iter,
+        "feature_groups": selected_feature_groups,
+        "targets": selected_targets,
+        "split_views": selected_splits,
+        "weight_strengths": selected_weight_strengths,
+        "selection_split_views": selected_selection_splits,
+        "selection_policy": selection_policy,
+        "row_counts": {
+            "full_interval_rows": len(all_rows),
+            "selected_subset_rows": len(subset_rows),
+            "metrics": len(metrics),
+            "predictions": len(predictions),
+            "selection_rows": len(selection_rows),
+        },
+        "leakage_policy": (
+            "Adaptive weights are selected only from inner grouped validation splits "
+            "inside each outer training fold. Held-out outer test rows are never used "
+            "to choose the weight strength."
+        ),
+        "claim_readiness": claim,
+        "metrics": metrics,
+        "selection_rows": selection_rows,
+    }
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    render_stressor_robust_adaptive_artifacts(
+        report,
+        leaderboard,
+        paired,
+        frontier,
+        selection_rows,
+        claim,
+        report_dir,
+    )
+    return report
+
+
 def predict_stressor_robust_capacity_target(
     *,
     model_level: str,
@@ -466,6 +736,258 @@ def predict_stressor_robust_capacity_target(
         weight_strength=weight_strength,
     )
     return RobustPredictionResult(predictions=predictions)
+
+
+def predict_adaptive_stressor_robust_capacity_target(
+    *,
+    feature_group: str,
+    train_rows: list[dict[str, Any]],
+    test_rows: list[dict[str, Any]],
+    target: str,
+    split_name: str,
+    heldout_fold: int,
+    seed: int,
+    hgb_max_iter: int,
+    weight_strengths: list[float],
+    selection_split_views: list[str],
+    selection_policy: str = "max_gain_guarded",
+) -> RobustPredictionResult:
+    """Select R2 weight strength using train-only inner grouped validation."""
+    selection_rows = adaptive_weight_selection_rows(
+        train_rows=train_rows,
+        feature_group=feature_group,
+        target=target,
+        split_name=split_name,
+        heldout_fold=heldout_fold,
+        seed=seed,
+        hgb_max_iter=hgb_max_iter,
+        weight_strengths=weight_strengths,
+        selection_split_views=selection_split_views,
+        selection_policy=selection_policy,
+    )
+    selected = select_adaptive_weight_strength(selection_rows, policy=selection_policy)
+    selected_strength = float(selected["weight_strength"])
+    predictions = _fit_predict_hgb_variant(
+        "R2_stressor_balanced_hgb",
+        feature_group=feature_group,
+        train_rows=train_rows,
+        test_rows=test_rows,
+        target=target,
+        split_name=split_name,
+        heldout_fold=heldout_fold,
+        seed=seed,
+        hgb_max_iter=hgb_max_iter,
+        bag_count=1,
+        weight_strength=selected_strength,
+    )
+    return RobustPredictionResult(
+        predictions=predictions,
+        selected_variant=f"R2_stressor_balanced_hgb__w{_slug_float(selected_strength)}",
+        selected_weight_strength=selected_strength,
+        selection_mean_gain=_as_float(selected["mean_gain_vs_r0"]),
+        selection_max_relative_degradation=_as_float(selected["max_relative_degradation"]),
+        internal_validation_metric=_as_float(selected["selection_score"]),
+        internal_validation_condition_mean_mae=_as_float(selected["mean_candidate_condition_mae"]),
+        selection_rows=selection_rows,
+    )
+
+
+def adaptive_weight_selection_rows(
+    *,
+    train_rows: list[dict[str, Any]],
+    feature_group: str,
+    target: str,
+    split_name: str,
+    heldout_fold: int,
+    seed: int,
+    hgb_max_iter: int,
+    weight_strengths: list[float],
+    selection_split_views: list[str],
+    selection_policy: str = "max_gain_guarded",
+) -> list[dict[str, Any]]:
+    """Score weight strengths on inner grouped splits from outer train rows only."""
+    raw_rows: list[dict[str, Any]] = []
+    for selection_split in selection_split_views:
+        try:
+            inner_instances = iter_split_instances(train_rows, selection_split)
+        except ValueError:
+            continue
+        for inner_heldout_fold, inner_train, inner_validation in inner_instances:
+            if not inner_train or not inner_validation:
+                continue
+            assert_no_parameter_set_leakage(
+                inner_train,
+                inner_validation,
+                f"adaptive_{selection_split}",
+                inner_heldout_fold,
+            )
+            reference_predictions = _fit_predict_hgb_variant(
+                "R0_reference_hgb50",
+                feature_group=feature_group,
+                train_rows=inner_train,
+                test_rows=inner_validation,
+                target=target,
+                split_name=selection_split,
+                heldout_fold=inner_heldout_fold,
+                seed=seed,
+                hgb_max_iter=hgb_max_iter,
+                bag_count=1,
+                weight_strength=0.0,
+            )
+            reference_metric = compute_metrics(
+                inner_validation,
+                reference_predictions,
+                target=target,
+                subset_name="adaptive_inner_validation",
+                run_scope="adaptive_inner_validation",
+                split_name=selection_split,
+                heldout_fold=inner_heldout_fold,
+                model_level="R0_reference_hgb50",
+                feature_group=feature_group,
+                train_rows=inner_train,
+            )
+            reference_mae = float(reference_metric["condition_mean_mae"])
+            for strength in weight_strengths:
+                candidate_predictions = _fit_predict_hgb_variant(
+                    "R2_stressor_balanced_hgb",
+                    feature_group=feature_group,
+                    train_rows=inner_train,
+                    test_rows=inner_validation,
+                    target=target,
+                    split_name=selection_split,
+                    heldout_fold=inner_heldout_fold,
+                    seed=seed,
+                    hgb_max_iter=hgb_max_iter,
+                    bag_count=1,
+                    weight_strength=float(strength),
+                )
+                candidate_metric = compute_metrics(
+                    inner_validation,
+                    candidate_predictions,
+                    target=target,
+                    subset_name="adaptive_inner_validation",
+                    run_scope="adaptive_inner_validation",
+                    split_name=selection_split,
+                    heldout_fold=inner_heldout_fold,
+                    model_level="R2_stressor_balanced_hgb",
+                    feature_group=feature_group,
+                    train_rows=inner_train,
+                )
+                candidate_mae = float(candidate_metric["condition_mean_mae"])
+                raw_rows.append(
+                    {
+                        "schema_version": ADAPTIVE_SCHEMA_VERSION,
+                        "outer_split_name_for_seed": split_name,
+                        "outer_heldout_fold_for_seed": heldout_fold,
+                        "selection_split_name": selection_split,
+                        "selection_heldout_fold": inner_heldout_fold,
+                        "weight_strength": float(strength),
+                        "reference_condition_mean_mae": reference_mae,
+                        "candidate_condition_mean_mae": candidate_mae,
+                        "condition_mean_mae_gain": reference_mae - candidate_mae,
+                        "relative_degradation": (
+                            (candidate_mae - reference_mae) / reference_mae if reference_mae > 0 else None
+                        ),
+                    }
+                )
+    return aggregate_adaptive_weight_selection_rows(raw_rows, selection_policy=selection_policy)
+
+
+def aggregate_adaptive_weight_selection_rows(
+    rows: list[dict[str, Any]],
+    *,
+    selection_policy: str = "max_gain_guarded",
+) -> list[dict[str, Any]]:
+    grouped: dict[float, list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        grouped[float(row["weight_strength"])].append(row)
+    output = []
+    for strength, group in sorted(grouped.items()):
+        relative_values = [
+            _as_float(row["relative_degradation"])
+            for row in group
+            if row.get("relative_degradation") is not None
+            and math.isfinite(_as_float(row["relative_degradation"]))
+        ]
+        mean_gain = _mean([float(row["condition_mean_mae_gain"]) for row in group])
+        mean_candidate = _mean([float(row["candidate_condition_mean_mae"]) for row in group])
+        max_degradation = max(relative_values) if relative_values else None
+        passes_guardrail = (
+            max_degradation is not None
+            and max_degradation <= ADAPTIVE_NON_DEGRADATION_THRESHOLD
+            and mean_gain > 0
+        )
+        output.append(
+            {
+                "schema_version": ADAPTIVE_SCHEMA_VERSION,
+                "model_level": "R2_stressor_balanced_hgb",
+                "model_setting_id": f"R2_stressor_balanced_hgb__w{_slug_float(strength)}",
+                "weight_strength": strength,
+                "inner_validation_rows": len(group),
+                "mean_gain_vs_r0": mean_gain,
+                "mean_candidate_condition_mae": mean_candidate,
+                "max_relative_degradation": max_degradation,
+                "passes_inner_guardrail": passes_guardrail,
+                "selection_policy": selection_policy,
+                "selection_score": _adaptive_selection_score(mean_gain, max_degradation),
+                "selected_by_train_only_rule": False,
+            }
+        )
+    if not output:
+        raise ValueError("Adaptive selection produced no inner-validation rows.")
+    selected = select_adaptive_weight_strength(output, policy=selection_policy)
+    for row in output:
+        row["selected_by_train_only_rule"] = row["weight_strength"] == selected["weight_strength"]
+    return output
+
+
+def select_adaptive_weight_strength(rows: list[dict[str, Any]], *, policy: str = "max_gain_guarded") -> dict[str, Any]:
+    if not rows:
+        raise ValueError("Cannot select an adaptive weight from no rows.")
+    if policy not in {"max_gain_guarded", "conservative_guarded"}:
+        raise ValueError("policy must be 'max_gain_guarded' or 'conservative_guarded'.")
+    guarded = [row for row in rows if bool(row.get("passes_inner_guardrail"))]
+    if policy == "conservative_guarded":
+        if guarded:
+            return min(
+                guarded,
+                key=lambda row: (
+                    _as_float(row["weight_strength"]),
+                    _finite_or(row.get("max_relative_degradation"), math.inf),
+                    -_finite_or(row.get("mean_gain_vs_r0"), -math.inf),
+                ),
+            )
+        return min(
+            rows,
+            key=lambda row: (
+                _as_float(row["weight_strength"]),
+                _finite_or(row.get("max_relative_degradation"), math.inf),
+                -_finite_or(row.get("mean_gain_vs_r0"), -math.inf),
+            ),
+        )
+    if guarded:
+        return max(
+            guarded,
+            key=lambda row: (
+                _finite_or(row.get("mean_gain_vs_r0"), -math.inf),
+                -_finite_or(row.get("max_relative_degradation"), math.inf),
+                -_as_float(row["weight_strength"]),
+            ),
+        )
+    return min(
+        rows,
+        key=lambda row: (
+            _finite_or(row.get("max_relative_degradation"), math.inf),
+            -_finite_or(row.get("mean_gain_vs_r0"), -math.inf),
+            _as_float(row["weight_strength"]),
+        ),
+    )
+
+
+def _adaptive_selection_score(mean_gain: float, max_degradation: float | None) -> float:
+    degradation = _finite_or(max_degradation, math.inf)
+    excess = max(0.0, degradation - ADAPTIVE_NON_DEGRADATION_THRESHOLD)
+    return mean_gain - excess
 
 
 def condition_balanced_weights(rows: list[dict[str, Any]], *, strength: float = 1.0) -> list[float]:
@@ -1283,6 +1805,38 @@ def stressor_robust_pareto_claim_readiness(frontier: list[dict[str, Any]]) -> di
     }
 
 
+def stressor_robust_adaptive_claim_readiness(frontier: list[dict[str, Any]]) -> dict[str, Any]:
+    adaptive = next(
+        (
+            row
+            for row in frontier
+            if row["model_setting_id"] == ADAPTIVE_MODEL_SETTING_ID
+            and row["feature_group"] == PREDECLARED_PARETO_FEATURE_GROUP
+        ),
+        None,
+    )
+    adaptive_passes = bool(adaptive and _pareto_candidate_passes(adaptive, max_degradation_threshold=0.05))
+    return {
+        "stressor_robust_adaptive_claim": "supported_for_diagnostics" if adaptive_passes else "not_supported",
+        "adaptive_setting_id": adaptive["model_setting_id"] if adaptive else None,
+        "adaptive_passes_5pct": adaptive_passes,
+        "c_rate_gain_vs_f4": adaptive["gain_vs_f4"] if adaptive else None,
+        "c_rate_gain_vs_stress_reference": adaptive["gain_vs_stress_reference"] if adaptive else None,
+        "paired_p05_vs_f4": adaptive["paired_p05_vs_f4"] if adaptive else None,
+        "paired_p05_vs_stress_reference": adaptive["paired_p05_vs_stress_reference"] if adaptive else None,
+        "max_other_split_relative_degradation": (
+            adaptive["max_other_split_relative_degradation"] if adaptive else None
+        ),
+        "architecture_readiness": "blocked",
+        "policy_ranking": "blocked",
+        "claim_rule": (
+            "Support requires the train-only adaptive selector on F8 to retain positive C-rate delta gains "
+            "versus F4 and stress references, paired p05 above zero for both references, and <=5% "
+            "outside-C-rate degradation. Outer held-out rows must not be used for weight selection."
+        ),
+    }
+
+
 def _robust_prediction_rows(
     test_rows: list[dict[str, Any]],
     predictions: list[dict[str, float | None]],
@@ -1355,6 +1909,46 @@ def _pareto_prediction_rows(
                 "model_setting_id": model_setting_id,
                 "weight_strength": weight_strength,
                 "bag_count": bag_count,
+            }
+        )
+    return rows
+
+
+def _adaptive_prediction_rows(
+    test_rows: list[dict[str, Any]],
+    predictions: list[dict[str, float | None]],
+    *,
+    subset_name: str,
+    split_name: str,
+    heldout_fold: int,
+    model_level: str,
+    feature_group: str,
+    target: str,
+    model_setting_id: str,
+    selected_weight_strength: float | None,
+    selection_mean_gain: float | None,
+    selection_max_relative_degradation: float | None,
+) -> list[dict[str, Any]]:
+    rows = _pareto_prediction_rows(
+        test_rows,
+        predictions,
+        subset_name=subset_name,
+        split_name=split_name,
+        heldout_fold=heldout_fold,
+        model_level=model_level,
+        feature_group=feature_group,
+        target=target,
+        model_setting_id=model_setting_id,
+        weight_strength=selected_weight_strength if selected_weight_strength is not None else 0.0,
+        bag_count=1,
+    )
+    for row in rows:
+        row.update(
+            {
+                "schema_version": ADAPTIVE_SCHEMA_VERSION,
+                "selected_weight_strength": selected_weight_strength,
+                "selection_mean_gain": selection_mean_gain,
+                "selection_max_relative_degradation": selection_max_relative_degradation,
             }
         )
     return rows
@@ -1730,6 +2324,29 @@ def render_stressor_robust_pareto_artifacts(
     _write_pareto_claim_readiness_md(report, claim, frontier, out_dir / "stressor_robust_pareto_claim_readiness.md")
 
 
+def render_stressor_robust_adaptive_artifacts(
+    report: dict[str, Any],
+    leaderboard: list[dict[str, Any]],
+    paired: list[dict[str, Any]],
+    frontier: list[dict[str, Any]],
+    selection_rows: list[dict[str, Any]],
+    claim: dict[str, Any],
+    out_dir: Path,
+) -> None:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    _write_csv(out_dir / "robustness_leaderboard.csv", leaderboard)
+    _write_csv(out_dir / "paired_condition_gains.csv", paired)
+    _write_csv(out_dir / "adaptive_selection_summary.csv", selection_rows)
+    _write_csv(out_dir / "plots" / "adaptive_frontier.csv", frontier)
+    _write_adaptive_claim_readiness_md(
+        report,
+        claim,
+        frontier,
+        selection_rows,
+        out_dir / "stressor_robust_adaptive_claim_readiness.md",
+    )
+
+
 def _write_stressor_forensics_md(
     split_degradation: list[dict[str, Any]],
     worst_conditions: list[dict[str, Any]],
@@ -1781,6 +2398,58 @@ def _write_stressor_forensics_md(
         [
             "",
             "Decision: use this for forensics only. Do not relax the 5% gate based on this report.",
+        ]
+    )
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _write_adaptive_claim_readiness_md(
+    report: dict[str, Any],
+    claim: dict[str, Any],
+    frontier: list[dict[str, Any]],
+    selection_rows: list[dict[str, Any]],
+    path: Path,
+) -> None:
+    selected_counts = defaultdict(int)
+    for row in selection_rows:
+        if bool(row.get("selected_by_train_only_rule")):
+            selected_counts[str(row["weight_strength"])] += 1
+    selected_summary = ", ".join(
+        f"w={strength}: {count}" for strength, count in sorted(selected_counts.items())
+    ) or "none"
+    lines = [
+        "# Stressor-Robust Adaptive Claim Readiness",
+        "",
+        "| Claim area | Status | Evidence |",
+        "|---|---|---|",
+        f"| Adaptive robust-selection diagnostic | `{claim['stressor_robust_adaptive_claim']}` | Train-only adaptive setting passes 5% gate: `{claim['adaptive_passes_5pct']}`. |",
+        f"| C-rate gain | `diagnostic` | Gain vs F4 `{_fmt(claim['c_rate_gain_vs_f4'])}`; gain vs stress reference `{_fmt(claim['c_rate_gain_vs_stress_reference'])}`. |",
+        f"| Paired support | `diagnostic` | p05 vs F4 `{_fmt(claim['paired_p05_vs_f4'])}`; p05 vs stress `{_fmt(claim['paired_p05_vs_stress_reference'])}`. |",
+        f"| Other split non-degradation | `{'supported_for_diagnostics' if claim['adaptive_passes_5pct'] else 'not_supported'}` | Max outside-C-rate degradation `{_fmt(claim['max_other_split_relative_degradation'])}`. |",
+        f"| Architecture readiness | `{claim['architecture_readiness']}` | This is a non-neural train-only selector. |",
+        f"| Policy ranking | `{claim['policy_ranking']}` | No calibrated risk or intervention task is tested. |",
+        "",
+        claim["claim_rule"],
+        "",
+        f"Selected weight counts from inner validation: {selected_summary}.",
+        "",
+        "## Frontier Rows",
+        "",
+        "| Setting | Model | Feature | Gain vs F4 | Gain vs stress | Max outside-C-rate degradation |",
+        "|---|---|---|---:|---:|---:|",
+    ]
+    for row in frontier[:20]:
+        lines.append(
+            "| "
+            f"`{row['model_setting_id']}` | `{row['model_level']}` | `{row['feature_group']}` | "
+            f"`{_fmt(row['gain_vs_f4'])}` | `{_fmt(row['gain_vs_stress_reference'])}` | "
+            f"`{_fmt(row['max_other_split_relative_degradation'])}` |"
+        )
+    lines.extend(
+        [
+            "",
+            f"Metric rows evaluated: `{report['row_counts']['metrics']}`.",
+            "Decision: this supports only an adaptive robust-selection diagnostic if the strict outer guardrail passes.",
         ]
     )
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")

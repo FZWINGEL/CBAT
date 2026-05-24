@@ -1,14 +1,15 @@
 # Codex Next Work
 
-Current recommended branch: synthesis/release maintenance, or a narrow
-stressor-robustness forensics pass only if explicitly requested.
+Current recommended branch: synthesis/release maintenance, or a predeclared
+replication check for the adaptive stressor-robust selector only if explicitly
+requested.
 
 ## Current Phase
 
-Milestone 5.3 is a calibration and stressor-robustness correctness-hardening
-gate. It fixes silent readiness-gate failure modes, empty-run guards,
-calibration schema metadata, Platt/logistic convention drift, and
-stressor-robust bagging/selection hygiene. It is not a new modeling,
+Milestone 5.5 is a train-only adaptive stressor-robust selection gate. It
+tests whether inner grouped validation on outer-training rows can choose a
+conservative R2 stressor-balanced HGB weight that passes the unchanged outer
+C-rate gain and outside-C-rate non-degradation guardrail. It is not a new
 architecture, calibration-claim, or policy-ranking branch.
 
 ## Current Result
@@ -21,17 +22,18 @@ the guardrail (`0.167653` fixed-width; `0.176185` equal-frequency). Capacity
 uncertainty also remains blocked: raw noncrossing q10-q90 mean coverage is
 `0.701398`, and C-rate coverage remains below target.
 
-Milestone 5.1 remains a useful diagnostic robustness result: stressor-balanced
-HGB with `F8_timestamp_weighted_stress` improves C-rate `delta_capacity_Ah`,
-but the global robust-capacity claim remains `not_supported` because the
-outside-C-rate non-degradation guardrail fails.
+Milestone 5.5 supports a narrow diagnostic robustness result: conservative
+train-only adaptive R2 selection with `F8_timestamp_weighted_stress` improves
+C-rate `delta_capacity_Ah` while passing the 5% outside-C-rate
+non-degradation guardrail. The result is target-specific and diagnostic only;
+it does not solve C-rate fade globally or justify architecture work.
 
 ## Optional Technical Branch
 
 No broader technical branch is currently justified. Future technical work, if
-opened, should be a narrow voltage-window/stressor-robustness forensics pass,
-release automation task, or documentation synthesis task, not CBAT, policy
-ranking, sequence modeling, or new modality expansion.
+opened, should be a predeclared replication check, release automation task, or
+documentation synthesis task, not CBAT, policy ranking, sequence modeling, or
+new modality expansion.
 
 ## Blocked Branches
 
@@ -81,6 +83,8 @@ Allowed current wording:
 - L3 capacity quantile noncrossing is hygiene only, not calibrated uncertainty
 - stressor-balanced HGB improves C-rate delta diagnostics but does not support
   a global robust-capacity claim
+- conservative train-only adaptive R2 selection supports a narrow diagnostic
+  C-rate `delta_capacity_Ah` robustness result
 
 Forbidden current wording:
 

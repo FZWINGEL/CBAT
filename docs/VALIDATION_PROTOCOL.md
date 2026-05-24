@@ -239,6 +239,17 @@ new feature engineering, neural or sequence models, CBAT, DRT, EIS embeddings,
 policy ranking, calibrated-risk wording, calibrated-uncertainty wording,
 causal claims, same-cell counterfactual claims, robust-capacity support unless
 the predeclared setting passes, or broad multimodal claims.
+Milestone 5.5 authorizes only train-only adaptive stressor-robust selection
+inside the existing non-neural R2 stressor-balanced HGB family and existing
+F4/F8 feature groups. It may use inner grouped validation on the outer training
+rows to select a reweighting strength, then evaluate the selected setting on
+the untouched outer held-out rows. It must keep the 5% outside-C-rate
+non-degradation guardrail unchanged and must report both max-gain and
+conservative selection policies if evaluated. It does not authorize new
+feature engineering, neural or sequence models, CBAT, DRT, EIS embeddings,
+policy ranking, calibrated-risk wording, calibrated-uncertainty wording,
+causal claims, same-cell counterfactual claims, C-rate fade-solved wording, or
+broad multimodal claims.
 
 Required split discipline:
 
@@ -355,6 +366,32 @@ Milestone 5.4 claim rules:
   support blocked even if the miss is narrow.
 - Architecture, policy, causal, calibrated-risk, calibrated-uncertainty,
   sequence/neural, and CBAT claims remain blocked.
+
+Required Milestone 5.5 train-only adaptive stressor-robust artifacts:
+
+- `mbp baseline run-stressor-robust-adaptive`
+- `reports/baselines/capacity_stressor_robust_adaptive_report.json`
+- `reports/baselines/capacity_stressor_robust_adaptive/stressor_robust_adaptive_claim_readiness.md`
+- `reports/baselines/capacity_stressor_robust_adaptive/plots/adaptive_frontier.csv`
+- `reports/baselines/capacity_stressor_robust_adaptive/adaptive_selection_summary.csv`
+- `reports/baselines/capacity_stressor_robust_adaptive_conservative_report.json`
+- `reports/baselines/capacity_stressor_robust_adaptive_conservative/stressor_robust_adaptive_claim_readiness.md`
+- `reports/baselines/capacity_stressor_robust_adaptive_conservative/plots/adaptive_frontier.csv`
+- `reports/baselines/capacity_stressor_robust_adaptive_conservative/adaptive_selection_summary.csv`
+- `docs/experiments/2026-05-24_train_only_stressor_robust_adaptive_selection.md`
+
+Milestone 5.5 claim rules:
+
+- If the outer held-out conservative train-only adaptive selector on F8 has
+  positive C-rate `delta_capacity_Ah` gain versus F4 and stress R0 references,
+  paired p05 above zero for both references, and <=5% outside-C-rate
+  degradation, a narrow adaptive robust-selection diagnostic claim may be
+  supported.
+- If a max-gain selector improves C-rate but fails the 5% guardrail, report it
+  as a failed high-gain policy, not as a supported robustness result.
+- A passing adaptive diagnostic does not imply that C-rate fade is solved
+  globally, that probability/risk outputs are calibrated, that policy ranking
+  is valid, or that architecture work is justified.
 
 Required Milestone 4.0 manuscript-integration artifacts:
 

@@ -202,10 +202,17 @@ fails the 5% outside-C-rate guardrail at `0.0528343`. Two lighter
 non-predeclared frontier settings pass the 5% threshold diagnostically, but
 they do not authorize the predeclared robust-capacity claim.
 
-Decision: report the stressor-balanced C-rate improvement as diagnostic
-robustness evidence only. Do not claim C-rate fade is solved, do not open
-architecture work, and do not use this result for policy ranking or causal
-claims.
+Milestone 5.5 then converted that Pareto signal into a train-only adaptive
+selection test. The max-gain selector failed the outer guardrail with max
+outside-C-rate degradation `0.0645764`. The conservative selector passed
+diagnostically: C-rate gains are `0.0200436` versus F4 and `0.0214266` versus
+the stress R0 reference, paired p05 values are positive, and max outside-C-rate
+degradation is `0.0279117`.
+
+Decision: report the conservative adaptive selector as a narrow diagnostic
+robustness result for `delta_capacity_Ah`. Do not claim C-rate fade is solved,
+do not open architecture work, and do not use this result for policy ranking
+or causal claims.
 
 ## Milestone 3.0 Blocked-Claim Refresh
 
@@ -215,9 +222,9 @@ The v2 synthesis keeps the following negative boundaries active:
 - threshold-warning calibrated-risk wording remains unsupported after the
   Milestone 5.0 calibration gate and Milestone 5.2 equal-frequency ECE
   sensitivity;
-- stressor-robust HGB improves C-rate delta diagnostically, but the
-  predeclared Pareto setting still does not pass the global non-degradation
-  guardrail;
+- conservative train-only stressor-robust HGB improves C-rate delta
+  diagnostically and passes the outside-split guardrail for `delta_capacity_Ah`,
+  but broad C-rate fade-solved and architecture claims remain blocked;
 - sequence models remain blocked by the order-vs-aggregate and
   order-vs-shuffled negative result;
 - calibrated uncertainty remains blocked by C-rate coverage failure even after

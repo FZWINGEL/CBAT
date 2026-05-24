@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 5.4: Stressor-robust Pareto forensics and claim finalization**.
+The repository is in **Milestone 5.5: Train-only adaptive stressor-robust selection gate**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -138,6 +138,15 @@ Pareto grid over existing non-neural robust HGB variants. The predeclared
 R2/F8 full-strength setting still improves C-rate `delta_capacity_Ah`, but it
 fails the 5% outside-C-rate non-degradation guardrail at `0.0528343`, so the
 robust-capacity claim remains diagnostic-only/not supported.
+Milestone 5.5 tests whether train-only inner grouped validation can choose a
+conservative stressor-balanced weight that keeps the C-rate `delta_capacity_Ah`
+gain while satisfying the unchanged 5% outside-C-rate guardrail. The
+max-gain adaptive selector improves C-rate but fails the guardrail at
+`0.0645764`; the conservative selector passes diagnostically with C-rate gains
+of `0.0200436` versus F4 and `0.0214266` versus the stress R0 reference,
+paired p05 values above zero, and max outside-C-rate degradation `0.0279117`.
+This supports only a narrow train-only adaptive robust-selection diagnostic,
+not a claim that C-rate fade is solved or that architecture work is justified.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -146,8 +155,8 @@ improvement claims have been started.
 
 Current state:
 
-- Milestone 5.4 is a bounded forensics and Pareto diagnostic gate for the
-  existing stressor-robust capacity branch. It does not add feature
+- Milestone 5.5 is a train-only adaptive stressor-robust selection gate for the
+  existing non-neural stressor-balanced HGB family. It does not add feature
   engineering, neural/sequence models, CBAT, policy ranking, calibrated-risk
   claims, calibrated-uncertainty claims, or architecture claims.
 - `mbp baseline diagnose-stressor-robust-forensics` adds split/condition
@@ -163,6 +172,13 @@ Current state:
 - Two lighter non-predeclared frontier settings pass the 5% threshold
   diagnostically, but they are not enough to support the predeclared
   robust-capacity claim.
+- `mbp baseline run-stressor-robust-adaptive` evaluated R0 and a train-only
+  adaptive R2 selector over 3,827 intervals for `delta_capacity_Ah`, producing
+  48 metric rows and 41,460 ignored prediction rows per selection policy.
+  The max-gain policy fails the unchanged guardrail with max outside-C-rate
+  degradation `0.0645764`; the conservative policy passes the outer diagnostic
+  rule with max outside-C-rate degradation `0.0279117` and positive C-rate
+  paired support.
 - Milestone 5.3 remains a correctness-hardening gate for existing calibration
   and stressor-robustness reports. It does not add models, features, or claims.
 - Milestone 5.2 added `ece_10_bin_equal_freq` alongside the existing
@@ -1877,10 +1893,13 @@ The previous `datetime.utcnow()` deprecation warning in
 
 ## Recommended Next Step
 
-Treat Milestone 5.4 as the stressor-robustness follow-up result: useful
-diagnostic C-rate gains exist, but the predeclared robust-capacity claim is not
-supported under the 5% outside-C-rate non-degradation guardrail. The default
-next technical step is synthesis/release maintenance. Do not open knee
-prediction models, neural models, sequence models, CBAT, DRT, EIS embeddings,
-policy ranking, capacity+PULSE+EIS multimodal models, calibrated-risk claims,
-or broad causal/mechanistic claims.
+Treat Milestone 5.5 as a narrow successful diagnostic follow-up to the
+stressor-robustness near miss: conservative train-only adaptive R2 selection
+passes the strict outer C-rate gain and outside-C-rate non-degradation
+guardrail for `delta_capacity_Ah`. The broad fade-solved, calibrated-risk,
+policy, architecture, and causal claims remain blocked. The default next
+technical step is synthesis/release maintenance or a predeclared replication
+check, not broader modeling. Do not open knee prediction models, neural models,
+sequence models, CBAT, DRT, EIS embeddings, policy ranking,
+capacity+PULSE+EIS multimodal models, calibrated-risk claims, or broad
+causal/mechanistic claims.

@@ -5,9 +5,9 @@ Status: `passed`
 ## Summary
 
 - Required files checked: 10
-- Tracked artifacts checked: 35
-- Ignored artifacts checked: 16
-- Claim matrix rows checked: 21
+- Tracked artifacts checked: 40
+- Ignored artifacts checked: 18
+- Claim matrix rows checked: 22
 
 ## Errors
 
@@ -91,6 +91,7 @@ Status: `passed`
 - run-pipeline
 - run-pulse
 - run-semi-empirical
+- run-stressor-robust-adaptive
 - run-stressor-robust-capacity
 - run-stressor-robust-pareto
 - run-threshold-warning
