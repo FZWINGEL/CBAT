@@ -12,7 +12,7 @@
 | Broad EIS improvement | EIS support is diagnostic/narrow profile-split only. | `docs/experiments/2026-05-23_eis_claim_hardening.md` |
 | Prior PULSE strongest-baseline dominance | Prior PULSE does not beat strongest non-PULSE HGB baselines. | `docs/experiments/2026-05-23_prior_pulse_vs_best_nonpulse.md` |
 | Fade-rate solved | LOG_AGE stress, prior PULSE, and prior EIS do not solve C-rate `delta_capacity_Ah`. | `reports/synthesis/negative_results.md` |
-| Stressor-robust training solves C-rate fade globally | Milestone 5.5 supports a narrow conservative train-only adaptive R2/F8 diagnostic for `delta_capacity_Ah`, but this is not a global solved-fade claim. The earlier fixed-weight predeclared R2/F8/weight=1.0 setting still fails the 5% guardrail at `0.0528343`; the adaptive result is target-specific, non-neural, and diagnostic only. | `docs/experiments/2026-05-24_train_only_stressor_robust_adaptive_selection.md` |
+| Stressor-robust training solves C-rate fade globally | Milestone 5.6 supports a narrow replicated conservative train-only adaptive R2/F8 diagnostic for `delta_capacity_Ah`, but this is not a global solved-fade claim. The earlier fixed-weight predeclared R2/F8/weight=1.0 setting still fails the 5% guardrail at `0.0528343`; the max-gain adaptive policy still fails at `0.0645764`; the conservative result is target-specific, non-neural, and diagnostic only. | `docs/experiments/2026-05-24_adaptive_stressor_robust_replication.md` |
 | Same-cell counterfactual claims | No same-cell intervention or counterfactual design exists. | `docs/PROJECT_CHARTER.md` |
 | DRT or learned EIS embeddings | EIS is gated; current evidence does not justify high-choice feature paths. | `docs/EIS_FEATURE_POLICY.md` |
 

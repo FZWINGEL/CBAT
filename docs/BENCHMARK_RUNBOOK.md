@@ -89,9 +89,12 @@ mbp baseline run-semi-empirical --interval-table data/interim/interval_table.par
 mbp baseline run-stressor-robust-capacity --interval-table data/interim/interval_table.parquet --interval-subsets data/splits/interval_subset_registry_v1.parquet --stress-features data/interim/interval_stress_features_v1_1.parquet --out reports/baselines/capacity_stressor_robust_hgb50_report.json --predictions-out data/processed/capacity_stressor_robust_hgb50_predictions.parquet
 mbp baseline run-stressor-robust-pareto --interval-table data/interim/interval_table.parquet --interval-subsets data/splits/interval_subset_registry_v1.parquet --stress-features data/interim/interval_stress_features_v1_1.parquet --out reports/baselines/capacity_stressor_robust_pareto_report.json --predictions-out data/processed/capacity_stressor_robust_pareto_predictions.parquet --out-dir reports/baselines/capacity_stressor_robust_pareto
 mbp baseline run-stressor-robust-adaptive --interval-table data/interim/interval_table.parquet --interval-subsets data/splits/interval_subset_registry_v1.parquet --stress-features data/interim/interval_stress_features_v1_1.parquet --out reports/baselines/capacity_stressor_robust_adaptive_conservative_report.json --predictions-out data/processed/capacity_stressor_robust_adaptive_conservative_predictions.parquet --out-dir reports/baselines/capacity_stressor_robust_adaptive_conservative --selection-policy conservative_guarded
+mbp baseline replicate-stressor-robust-adaptive --interval-table data/interim/interval_table.parquet --interval-subsets data/splits/interval_subset_registry_v1.parquet --stress-features data/interim/interval_stress_features_v1_1.parquet --out-dir reports/baselines/capacity_stressor_robust_adaptive_replication
 ```
 
 Outputs: tracked JSON/CSV/Markdown reports and ignored prediction Parquets.
+The adaptive replication command emits tracked reports only and records
+deterministic seed reuse explicitly for the HGB/no-bagging path.
 
 ## 7. Diagnostics
 

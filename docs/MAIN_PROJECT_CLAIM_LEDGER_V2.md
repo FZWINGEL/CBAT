@@ -1,6 +1,6 @@
 # Main Project Claim Ledger v2
 
-This ledger is the post-Milestone 5.5 technical source of truth. It extends
+This ledger is the post-Milestone 5.6 technical source of truth. It extends
 the paper claim ledger with main-project gate decisions and next actions.
 
 | ID | Claim | Status | Source artifact | Allowed wording | Forbidden wording | Next action |
@@ -26,12 +26,12 @@ the paper claim ledger with main-project gate decisions and next actions.
 | C19 | Non-neural baselines can forecast the 80% threshold event under grouped validation. | `supported_for_diagnostics` | `docs/experiments/2026-05-23_threshold_warning_censoring_finalization.md` | Non-neural baselines forecast the 80% threshold event diagnostically beyond proximity and under verified-only sensitivity. | Calibrated risk, causal warning, detector-knee prediction, policy ranking, or CBAT are authorized. | Lock diagnostic claim; optional calibration branch only. |
 | C20 | Threshold-warning probabilities are calibrated risk estimates. | `not_supported` | `docs/experiments/2026-05-24_calibration_robustness_correctness_hardening.md` | Post-hoc calibration improves mean reliability and equal-frequency ECE sensitivity is reported, but policy-specific C-rate calibration remains insufficient; probabilities are diagnostic scores. | Threshold-warning probabilities are calibrated risk estimates. | Keep calibrated-risk and policy-ranking claims blocked. |
 | C21 | Stressor-axis robust HGB solves the C-rate capacity-fade generalization problem without other split regressions. | `not_supported` | `docs/experiments/2026-05-24_stressor_robust_pareto_forensics.md` | Stressor-balanced HGB gives diagnostic C-rate `delta_capacity_Ah` gains, but fixed-weight robust-capacity support remains too narrow and post-hoc fixed-weight wins are diagnostic only. | Stressor-robust training solves C-rate fade or justifies architecture work. | Keep the broad solved-fade claim blocked; use C22 for the narrower adaptive diagnostic. |
-| C22 | Conservative train-only adaptive stressor-balanced HGB passes the C-rate gain and outside-C-rate guardrail for `delta_capacity_Ah`. | `supported_for_diagnostics` | `docs/experiments/2026-05-24_train_only_stressor_robust_adaptive_selection.md` | Conservative train-only adaptive R2 selection supports a narrow diagnostic C-rate `delta_capacity_Ah` robustness result under the unchanged 5% outside-C-rate guardrail. | C-rate fade is solved globally, architecture work is justified, or policy ranking is ready. | Treat as a narrow diagnostic robustness result; optionally replicate before manuscript integration. |
+| C22 | Conservative train-only adaptive stressor-balanced HGB passes the C-rate gain and outside-C-rate guardrail for `delta_capacity_Ah` and replicates across the deterministic seed interface. | `supported_for_diagnostics` | `docs/experiments/2026-05-24_adaptive_stressor_robust_replication.md` | Conservative train-only adaptive R2 selection supports a narrow diagnostic C-rate `delta_capacity_Ah` robustness result under the unchanged 5% outside-C-rate guardrail; the Milestone 5.6 replication records deterministic HGB/no-bagging seed reuse explicitly. | C-rate fade is solved globally, architecture work is justified, calibrated risk is available, or policy ranking is ready. | Lock as a narrow diagnostic robustness result; do not broaden without a new gated milestone. |
 
 ## Next Action
 
-Return to benchmark/manuscript integration, release maintenance, or a narrow
-replication check for the adaptive stressor-robust selector. Milestone 5.5
-supports only C22's train-only adaptive diagnostic; it does not authorize
-calibrated-risk, calibrated-uncertainty, broad robust-capacity, architecture,
-policy, or causal claims.
+Return to benchmark/manuscript integration or release maintenance. Milestone
+5.6 locks C22 as a narrow replicated diagnostic for the conservative
+train-only adaptive selector; it does not authorize calibrated-risk,
+calibrated-uncertainty, broad robust-capacity, architecture, policy, or causal
+claims.

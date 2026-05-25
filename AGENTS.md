@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 5.5: Train-only adaptive stressor-robust selection gate.
+Milestone 5.6: Adaptive stressor-robust replication and generalization gate.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -49,12 +49,14 @@ Current state:
   non-degradation guardrail failed and evaluated a small bounded Pareto grid of
   existing non-neural robust HGB settings. The predeclared R2/F8 full-strength
   setting still failed the 5% guardrail.
-- The current main-project track is a train-only adaptive stressor-robust
-  selection gate. It evaluates whether inner grouped validation on outer
-  training rows can choose a conservative stressor-balanced weight that passes
-  the unchanged outer C-rate gain and outside-C-rate non-degradation guardrail.
-  It must not relax the 5% guardrail or convert a narrow diagnostic selector
-  into a broad C-rate-solved, architecture, policy, or causal claim.
+- Milestone 5.5 tested train-only adaptive stressor-robust selection. The
+  conservative selector passed diagnostically, while the max-gain selector
+  failed the unchanged outside-C-rate non-degradation guardrail.
+- The current main-project track replicates that adaptive stressor-robust
+  result across the deterministic HGB/no-bagging seed interface and finalizes
+  the generalization claim posture. It must not relax the 5% guardrail or
+  convert a narrow diagnostic selector into a broad C-rate-solved,
+  architecture, policy, or causal claim.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
@@ -80,6 +82,8 @@ Allowed work:
 - train-only adaptive stressor-balanced weight selection using inner grouped
   validation on outer training rows only
 - conservative adaptive robust-selection claim-readiness reporting
+- adaptive stressor-robust replication across deterministic seeds
+- adaptive selector leakage and seed-reuse diagnostics
 - grouped threshold-warning probability calibration
 - Platt/logistic and isotonic post-hoc calibration fitted on calibration
   conditions only
@@ -154,10 +158,10 @@ Allowed work:
 - small tests with synthetic fixtures
 
 Forbidden work:
-- new model training outside the scoped train-only stressor-robust adaptive
-  selection gate
-- new feature engineering outside the scoped train-only stressor-robust
-  adaptive selection gate
+- new model training outside the scoped adaptive stressor-robust replication
+  gate
+- new feature engineering outside the scoped adaptive stressor-robust
+  replication gate
 - knee prediction models
 - neural models
 - sequence models

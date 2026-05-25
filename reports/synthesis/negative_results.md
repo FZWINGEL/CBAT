@@ -209,6 +209,11 @@ diagnostically: C-rate gains are `0.0200436` versus F4 and `0.0214266` versus
 the stress R0 reference, paired p05 values are positive, and max outside-C-rate
 degradation is `0.0279117`.
 
+Milestone 5.6 replicated the conservative adaptive selector across five
+logical seeds and recorded deterministic HGB/no-bagging seed reuse explicitly.
+All conservative logical seeds pass the same diagnostic guardrail, while the
+max-gain selector still fails outside-C-rate non-degradation at `0.0645764`.
+
 Decision: report the conservative adaptive selector as a narrow diagnostic
 robustness result for `delta_capacity_Ah`. Do not claim C-rate fade is solved,
 do not open architecture work, and do not use this result for policy ranking
@@ -223,8 +228,9 @@ The v2 synthesis keeps the following negative boundaries active:
   Milestone 5.0 calibration gate and Milestone 5.2 equal-frequency ECE
   sensitivity;
 - conservative train-only stressor-robust HGB improves C-rate delta
-  diagnostically and passes the outside-split guardrail for `delta_capacity_Ah`,
-  but broad C-rate fade-solved and architecture claims remain blocked;
+  diagnostically, replicates under deterministic seed reuse, and passes the
+  outside-split guardrail for `delta_capacity_Ah`, but broad C-rate
+  fade-solved and architecture claims remain blocked;
 - sequence models remain blocked by the order-vs-aggregate and
   order-vs-shuffled negative result;
 - calibrated uncertainty remains blocked by C-rate coverage failure even after

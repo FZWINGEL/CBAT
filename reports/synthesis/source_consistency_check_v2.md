@@ -69,9 +69,10 @@ The synthesis does not authorize:
 The threshold-warning diagnostic result is strong enough for diagnostic
 forecasting wording, but its probabilities remain uncalibrated after
 equal-frequency ECE sensitivity. Capacity quantile endpoints are now
-noncrossing, but capacity uncertainty remains undercovered. Milestone 5.5 adds
-a narrow conservative train-only adaptive stressor-balanced diagnostic that
-passes the C-rate gain and outside-C-rate non-degradation gate for
-`delta_capacity_Ah`, but the broad C-rate fade-solved claim remains blocked.
+noncrossing, but capacity uncertainty remains undercovered. Milestone 5.6
+locks a narrow conservative train-only adaptive stressor-balanced diagnostic
+that replicates across deterministic logical seeds and passes the C-rate gain
+and outside-C-rate non-degradation gate for `delta_capacity_Ah`, but the broad
+C-rate fade-solved claim remains blocked.
 Any future calibrated-risk, calibrated-uncertainty, policy, architecture, or
 broad robust-capacity claim requires a separate gated milestone.

@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 5.5: Train-only adaptive stressor-robust selection gate**.
+The repository is in **Milestone 5.6: Adaptive stressor-robust replication and generalization gate**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -147,6 +147,12 @@ of `0.0200436` versus F4 and `0.0214266` versus the stress R0 reference,
 paired p05 values above zero, and max outside-C-rate degradation `0.0279117`.
 This supports only a narrow train-only adaptive robust-selection diagnostic,
 not a claim that C-rate fade is solved or that architecture work is justified.
+Milestone 5.6 replicates that adaptive selector result under the deterministic
+HGB/no-bagging seed interface. The conservative selector passes all five
+logical seeds with deterministic seed reuse recorded explicitly; the max-gain
+policy still fails the unchanged outside-C-rate guardrail. The replicated
+result supports only the narrow diagnostic C-rate `delta_capacity_Ah`
+robust-selection claim.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -155,10 +161,11 @@ improvement claims have been started.
 
 Current state:
 
-- Milestone 5.5 is a train-only adaptive stressor-robust selection gate for the
-  existing non-neural stressor-balanced HGB family. It does not add feature
-  engineering, neural/sequence models, CBAT, policy ranking, calibrated-risk
-  claims, calibrated-uncertainty claims, or architecture claims.
+- Milestone 5.6 is an adaptive stressor-robust replication and generalization
+  gate for the existing non-neural stressor-balanced HGB family. It adds no
+  feature engineering, neural/sequence models, CBAT, policy ranking,
+  calibrated-risk claims, calibrated-uncertainty claims, or architecture
+  claims.
 - `mbp baseline diagnose-stressor-robust-forensics` adds split/condition
   regression diagnostics for the Milestone 5.1 robust-capacity run. The largest
   regressions are concentrated in non-C-rate views, including profile and
@@ -179,6 +186,15 @@ Current state:
   degradation `0.0645764`; the conservative policy passes the outer diagnostic
   rule with max outside-C-rate degradation `0.0279117` and positive C-rate
   paired support.
+- `mbp baseline replicate-stressor-robust-adaptive` replicates the adaptive
+  selector claim across five logical seeds. Because the evaluated HGB path has
+  no bagging and is deterministic for the represented sample sizes, the report
+  records `deterministic_hgb_no_bagging_reuse` with effective fit seed `42`.
+  Conservative guarded selection passes all five logical seeds with min C-rate
+  gains `0.0200436` versus F4 and `0.0214266` versus stress R0, paired p05
+  floors `0.00749857` and `0.00465696`, and max outside-C-rate degradation
+  `0.0279117`. Max-gain guarded selection fails with outside-C-rate
+  degradation `0.0645764`.
 - Milestone 5.3 remains a correctness-hardening gate for existing calibration
   and stressor-robustness reports. It does not add models, features, or claims.
 - Milestone 5.2 added `ece_10_bin_equal_freq` alongside the existing
@@ -1893,13 +1909,12 @@ The previous `datetime.utcnow()` deprecation warning in
 
 ## Recommended Next Step
 
-Treat Milestone 5.5 as a narrow successful diagnostic follow-up to the
-stressor-robustness near miss: conservative train-only adaptive R2 selection
-passes the strict outer C-rate gain and outside-C-rate non-degradation
-guardrail for `delta_capacity_Ah`. The broad fade-solved, calibrated-risk,
-policy, architecture, and causal claims remain blocked. The default next
-technical step is synthesis/release maintenance or a predeclared replication
-check, not broader modeling. Do not open knee prediction models, neural models,
-sequence models, CBAT, DRT, EIS embeddings, policy ranking,
-capacity+PULSE+EIS multimodal models, calibrated-risk claims, or broad
-causal/mechanistic claims.
+Treat Milestone 5.6 as the final narrow stressor-robustness hardening pass:
+conservative train-only adaptive R2 selection replicated across the
+deterministic seed interface and passes the strict outer C-rate gain plus
+outside-C-rate non-degradation guardrail for `delta_capacity_Ah`. The broad
+fade-solved, calibrated-risk, policy, architecture, and causal claims remain
+blocked. The default next technical step is synthesis/release maintenance, not
+broader modeling. Do not open knee prediction models, neural models, sequence
+models, CBAT, DRT, EIS embeddings, policy ranking, capacity+PULSE+EIS
+multimodal models, calibrated-risk claims, or broad causal/mechanistic claims.

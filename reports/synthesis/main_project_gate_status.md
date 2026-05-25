@@ -4,7 +4,7 @@
 |---|---|---|---|---|
 | Capacity | Supported benchmark foundation | C-rate remains hardest: `capacity_Ah_k1` MAE `0.125186`, `delta_capacity_Ah` MAE `0.101133`. | Uniform generalization. | Use as central benchmark story. |
 | LOG_AGE stress | Mixed / partially supported | Stress features help some views but C-rate delta best stress row `0.102516` is worse than F4 `0.101133`. | Stress features solve C-rate fade. | Keep as mixed result. |
-| Stressor-robust capacity | Narrow adaptive diagnostic supported / broad solved-fade claim blocked | Fixed-weight stressor-balanced HGB improves C-rate delta but the predeclared R2/F8/w1 setting fails outside-C-rate degradation at `0.0528343`; conservative train-only adaptive R2/F8 selection passes with C-rate gains `0.0200436` vs F4 and `0.0214266` vs stress R0, paired p05 above zero, and max outside-C-rate degradation `0.0279117`. | C-rate fade solved; architecture justified. | Treat as narrow diagnostic; optionally replicate before manuscript integration. |
+| Stressor-robust capacity | Narrow replicated adaptive diagnostic supported / broad solved-fade claim blocked | Fixed-weight stressor-balanced HGB improves C-rate delta but the predeclared R2/F8/w1 setting fails outside-C-rate degradation at `0.0528343`; conservative train-only adaptive R2/F8 selection replicates across five logical deterministic seeds with C-rate gains `0.0200436` vs F4 and `0.0214266` vs stress R0, paired p05 above zero, and max outside-C-rate degradation `0.0279117`. Max-gain selection still fails at `0.0645764`. | C-rate fade solved; architecture justified. | Lock as a narrow diagnostic; return to synthesis/release maintenance. |
 | PULSE | Supported for diagnostics | Canonical RT/50 PULSE target robustness and scalar baselines pass. | Broad multimodal claims. | Include scalar endpoint only. |
 | Capacity-PULSE coupling | Explanatory diagnostic | C-rate residual correlations remain strong after robustness checks. | Causal or predictive capacity+PULSE claim. | Use as explanatory diagnostic. |
 | EIS | Diagnostic / partially supported | QA, masks, scalar endpoints, and narrow profile prior-EIS signals pass; C-rate and fade claims fail. | Broad EIS improvement, DRT, embeddings. | Keep diagnostic unless new gate is opened. |
@@ -21,9 +21,10 @@
 ## Summary Decision
 
 The main technical program has reached a coherent benchmark checkpoint.
-Milestone 5.5 adds one narrow positive diagnostic: conservative train-only
-adaptive stressor-balanced selection passes the C-rate gain and outside-C-rate
-non-degradation gate for `delta_capacity_Ah`. It does not authorize
+Milestone 5.6 locks one narrow positive diagnostic: conservative train-only
+adaptive stressor-balanced selection replicates across the deterministic seed
+interface and passes the C-rate gain and outside-C-rate non-degradation gate
+for `delta_capacity_Ah`. It does not authorize
 calibrated-risk, calibrated-uncertainty, broad robust-capacity, policy,
 architecture, causal, or broad multimodal claims.
 Further modeling should not be opened without a new gated technical rationale.

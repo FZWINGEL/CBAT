@@ -1,16 +1,16 @@
 # Codex Next Work
 
-Current recommended branch: synthesis/release maintenance, or a predeclared
-replication check for the adaptive stressor-robust selector only if explicitly
-requested.
+Current recommended branch: synthesis/release maintenance. The adaptive
+stressor-robust replication check has been run and should not be broadened
+without a fresh gated question.
 
 ## Current Phase
 
-Milestone 5.5 is a train-only adaptive stressor-robust selection gate. It
-tests whether inner grouped validation on outer-training rows can choose a
-conservative R2 stressor-balanced HGB weight that passes the unchanged outer
-C-rate gain and outside-C-rate non-degradation guardrail. It is not a new
-architecture, calibration-claim, or policy-ranking branch.
+Milestone 5.6 is an adaptive stressor-robust replication and generalization
+gate. It replicates the Milestone 5.5 conservative R2 stressor-balanced HGB
+selector across the deterministic HGB/no-bagging seed interface and keeps the
+unchanged outer C-rate gain plus outside-C-rate non-degradation guardrail. It
+is not a new architecture, calibration-claim, or policy-ranking branch.
 
 ## Current Result
 
@@ -22,18 +22,20 @@ the guardrail (`0.167653` fixed-width; `0.176185` equal-frequency). Capacity
 uncertainty also remains blocked: raw noncrossing q10-q90 mean coverage is
 `0.701398`, and C-rate coverage remains below target.
 
-Milestone 5.5 supports a narrow diagnostic robustness result: conservative
-train-only adaptive R2 selection with `F8_timestamp_weighted_stress` improves
-C-rate `delta_capacity_Ah` while passing the 5% outside-C-rate
-non-degradation guardrail. The result is target-specific and diagnostic only;
-it does not solve C-rate fade globally or justify architecture work.
+Milestone 5.6 supports a narrow replicated diagnostic robustness result:
+conservative train-only adaptive R2 selection with
+`F8_timestamp_weighted_stress` improves C-rate `delta_capacity_Ah` while
+passing the 5% outside-C-rate non-degradation guardrail across five logical
+deterministic seeds. The report records deterministic seed reuse explicitly
+with effective fit seed `42`. The result is target-specific and diagnostic
+only; it does not solve C-rate fade globally or justify architecture work.
 
 ## Optional Technical Branch
 
 No broader technical branch is currently justified. Future technical work, if
-opened, should be a predeclared replication check, release automation task, or
-documentation synthesis task, not CBAT, policy ranking, sequence modeling, or
-new modality expansion.
+opened, should be release automation or documentation synthesis unless a fresh
+predeclared question is created. Do not open CBAT, policy ranking, sequence
+modeling, or new modality expansion from the Milestone 5.6 result.
 
 ## Blocked Branches
 

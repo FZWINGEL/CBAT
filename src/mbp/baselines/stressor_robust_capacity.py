@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 from collections import defaultdict
 import csv
 from dataclasses import dataclass
@@ -40,6 +41,7 @@ from mbp.baselines.capacity import _training_target_value
 SCHEMA_VERSION = "gate51.stressor_robust_capacity.v1"
 PARETO_SCHEMA_VERSION = "gate54.stressor_robust_pareto.v1"
 ADAPTIVE_SCHEMA_VERSION = "gate55.stressor_robust_adaptive.v1"
+ADAPTIVE_REPLICATION_SCHEMA_VERSION = "gate56.stressor_robust_adaptive_replication.v1"
 ROBUST_MODEL_LEVELS = (
     "R0_reference_hgb50",
     "R1_condition_balanced_hgb",
@@ -77,6 +79,8 @@ DEFAULT_ADAPTIVE_SELECTION_SPLITS = (
     "c_rate_holdout_fold",
 )
 ADAPTIVE_NON_DEGRADATION_THRESHOLD = 0.05
+DEFAULT_ADAPTIVE_REPLICATION_SEEDS = (42, 101, 202, 303, 404)
+DEFAULT_ADAPTIVE_REPLICATION_POLICIES = ("conservative_guarded", "max_gain_guarded")
 
 
 @dataclass(frozen=True)
@@ -499,6 +503,9 @@ def run_stressor_robust_adaptive(
     for split_name in selected_splits:
         for heldout_fold, train_rows, test_rows in iter_split_instances(subset_rows, split_name):
             assert_no_parameter_set_leakage(train_rows, test_rows, split_name, heldout_fold)
+            outer_train_sets = {int(row["parameter_set"]) for row in train_rows}
+            outer_test_sets = {int(row["parameter_set"]) for row in test_rows}
+            outer_overlap_count = len(outer_train_sets & outer_test_sets)
             for feature_group in selected_feature_groups:
                 for target in selected_targets:
                     reference_predictions = predict_stressor_robust_capacity_target(
@@ -621,6 +628,9 @@ def run_stressor_robust_adaptive(
                                 **row,
                                 "outer_split_name": split_name,
                                 "outer_heldout_fold": heldout_fold,
+                                "outer_train_condition_count": len(outer_train_sets),
+                                "outer_test_condition_count": len(outer_test_sets),
+                                "outer_train_test_overlap_count": outer_overlap_count,
                                 "target": target,
                                 "feature_group": feature_group,
                             }
@@ -689,6 +699,326 @@ def run_stressor_robust_adaptive(
         selection_rows,
         claim,
         report_dir,
+    )
+    return report
+
+
+def replicate_stressor_robust_adaptive(
+    interval_table_path: Path,
+    interval_subsets_path: Path,
+    out_dir: Path,
+    *,
+    stress_features_path: Path | None = None,
+    subset: str = "baseline_clean_tolerant",
+    seeds: list[int] | None = None,
+    hgb_max_iter: int = DEFAULT_HGB_MAX_ITER,
+    feature_groups: list[str] | None = None,
+    targets: list[str] | None = None,
+    split_views: list[str] | None = None,
+    weight_strengths: list[float] | None = None,
+    selection_split_views: list[str] | None = None,
+    selection_policies: list[str] | None = None,
+    recompute_seeds: bool = False,
+) -> dict[str, Any]:
+    """Replicate adaptive stressor-robust selection across deterministic seeds."""
+    if hgb_max_iter <= 0:
+        raise ValueError("hgb_max_iter must be positive.")
+    selected_seeds = list(DEFAULT_ADAPTIVE_REPLICATION_SEEDS if seeds is None else seeds)
+    if not selected_seeds:
+        raise ValueError("At least one replication seed is required.")
+    selected_policies = _normalize_selection(
+        selection_policies,
+        list(DEFAULT_ADAPTIVE_REPLICATION_POLICIES),
+        "selection policy",
+        default=list(DEFAULT_ADAPTIVE_REPLICATION_POLICIES),
+    )
+    for policy in selected_policies:
+        if policy not in DEFAULT_ADAPTIVE_REPLICATION_POLICIES:
+            raise ValueError(f"Unknown selection policy: {policy}")
+    selected_feature_groups = _normalize_selection(
+        feature_groups,
+        DEFAULT_ROBUST_FEATURE_GROUPS,
+        "feature group",
+        default=DEFAULT_ROBUST_FEATURE_GROUPS,
+    )
+    selected_targets = _normalize_selection(targets, DIRECT_TARGETS, "target", default=[PRIMARY_TARGET])
+    selected_splits = _normalize_selection(split_views, SPLIT_COLUMNS, "split view")
+    selected_weight_strengths = _normalize_float_grid(
+        weight_strengths,
+        DEFAULT_PARETO_WEIGHT_STRENGTHS,
+        "weight strength",
+    )
+    selected_selection_splits = _normalize_selection(
+        selection_split_views,
+        SPLIT_COLUMNS,
+        "selection split view",
+        default=DEFAULT_ADAPTIVE_SELECTION_SPLITS,
+    )
+    if STRESS_FEATURE_GROUPS & set(selected_feature_groups) and stress_features_path is None:
+        raise ValueError("Stress feature groups require --stress-features.")
+    _import_sklearn_stack()
+    effective_fit_seeds = selected_seeds if recompute_seeds else [selected_seeds[0]]
+    seed_reuse_mode = "recomputed_each_seed" if recompute_seeds else "deterministic_hgb_no_bagging_reuse"
+
+    all_rows, subset_rows = load_baseline_rows(
+        interval_table_path,
+        interval_subsets_path,
+        subset,
+        stress_features_path=stress_features_path,
+    )
+    if not subset_rows:
+        raise ValueError("Selected interval subset is empty.")
+
+    policy_metrics: dict[tuple[int, str], list[dict[str, Any]]] = defaultdict(list)
+    policy_predictions: dict[tuple[int, str], list[dict[str, Any]]] = defaultdict(list)
+    policy_selection_rows: dict[tuple[int, str], list[dict[str, Any]]] = defaultdict(list)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    for seed in effective_fit_seeds:
+        for split_name in selected_splits:
+            for heldout_fold, train_rows, test_rows in iter_split_instances(subset_rows, split_name):
+                assert_no_parameter_set_leakage(train_rows, test_rows, split_name, heldout_fold)
+                outer_train_sets = {int(row["parameter_set"]) for row in train_rows}
+                outer_test_sets = {int(row["parameter_set"]) for row in test_rows}
+                outer_overlap_count = len(outer_train_sets & outer_test_sets)
+                for feature_group in selected_feature_groups:
+                    for target in selected_targets:
+                        reference_result = predict_stressor_robust_capacity_target(
+                            model_level="R0_reference_hgb50",
+                            feature_group=feature_group,
+                            train_rows=train_rows,
+                            test_rows=test_rows,
+                            target=target,
+                            split_name=split_name,
+                            heldout_fold=heldout_fold,
+                            seed=int(seed),
+                            hgb_max_iter=hgb_max_iter,
+                            bag_count=1,
+                        )
+                        reference_metric = compute_metrics(
+                            test_rows,
+                            reference_result.predictions,
+                            target=target,
+                            subset_name=subset,
+                            run_scope="primary",
+                            split_name=split_name,
+                            heldout_fold=heldout_fold,
+                            model_level="R0_reference_hgb50",
+                            feature_group=feature_group,
+                            train_rows=train_rows,
+                        )
+                        reference_metric.update(
+                            {
+                                "schema_version": ADAPTIVE_REPLICATION_SCHEMA_VERSION,
+                                "model_setting_id": "R0_reference_hgb50",
+                                "weight_strength": 0.0,
+                                "selected_variant": None,
+                                "selected_weight_strength": None,
+                                "selection_mean_gain": None,
+                                "selection_max_relative_degradation": None,
+                                "internal_validation_metric": None,
+                                "internal_validation_condition_mean_mae": None,
+                            }
+                        )
+                        reference_rows = _adaptive_prediction_rows(
+                            test_rows,
+                            reference_result.predictions,
+                            subset_name=subset,
+                            split_name=split_name,
+                            heldout_fold=heldout_fold,
+                            model_level="R0_reference_hgb50",
+                            feature_group=feature_group,
+                            target=target,
+                            model_setting_id="R0_reference_hgb50",
+                            selected_weight_strength=None,
+                            selection_mean_gain=None,
+                            selection_max_relative_degradation=None,
+                        )
+                        raw_selection_rows = raw_adaptive_weight_selection_rows(
+                            train_rows=train_rows,
+                            feature_group=feature_group,
+                            target=target,
+                            split_name=split_name,
+                            heldout_fold=heldout_fold,
+                            seed=int(seed),
+                            hgb_max_iter=hgb_max_iter,
+                            weight_strengths=selected_weight_strengths,
+                            selection_split_views=selected_selection_splits,
+                        )
+                        for policy in selected_policies:
+                            key = (int(seed), policy)
+                            policy_metrics[key].append(dict(reference_metric))
+                            policy_predictions[key].extend(reference_rows)
+                            selection_rows = aggregate_adaptive_weight_selection_rows(
+                                raw_selection_rows,
+                                selection_policy=policy,
+                            )
+                            selected = select_adaptive_weight_strength(selection_rows, policy=policy)
+                            selected_strength = float(selected["weight_strength"])
+                            adaptive_predictions = _fit_predict_hgb_variant(
+                                "R2_stressor_balanced_hgb",
+                                feature_group=feature_group,
+                                train_rows=train_rows,
+                                test_rows=test_rows,
+                                target=target,
+                                split_name=split_name,
+                                heldout_fold=heldout_fold,
+                                seed=int(seed),
+                                hgb_max_iter=hgb_max_iter,
+                                bag_count=1,
+                                weight_strength=selected_strength,
+                            )
+                            adaptive_metric = compute_metrics(
+                                test_rows,
+                                adaptive_predictions,
+                                target=target,
+                                subset_name=subset,
+                                run_scope="primary",
+                                split_name=split_name,
+                                heldout_fold=heldout_fold,
+                                model_level=ADAPTIVE_MODEL_LEVEL,
+                                feature_group=feature_group,
+                                train_rows=train_rows,
+                            )
+                            adaptive_metric.update(
+                                {
+                                    "schema_version": ADAPTIVE_REPLICATION_SCHEMA_VERSION,
+                                    "model_setting_id": ADAPTIVE_MODEL_SETTING_ID,
+                                    "weight_strength": selected_strength,
+                                    "selected_variant": f"R2_stressor_balanced_hgb__w{_slug_float(selected_strength)}",
+                                    "selected_weight_strength": selected_strength,
+                                    "selection_mean_gain": _as_float(selected["mean_gain_vs_r0"]),
+                                    "selection_max_relative_degradation": _as_float(
+                                        selected["max_relative_degradation"]
+                                    ),
+                                    "internal_validation_metric": _as_float(selected["selection_score"]),
+                                    "internal_validation_condition_mean_mae": _as_float(
+                                        selected["mean_candidate_condition_mae"]
+                                    ),
+                                }
+                            )
+                            policy_metrics[key].append(adaptive_metric)
+                            policy_predictions[key].extend(
+                                _adaptive_prediction_rows(
+                                    test_rows,
+                                    adaptive_predictions,
+                                    subset_name=subset,
+                                    split_name=split_name,
+                                    heldout_fold=heldout_fold,
+                                    model_level=ADAPTIVE_MODEL_LEVEL,
+                                    feature_group=feature_group,
+                                    target=target,
+                                    model_setting_id=ADAPTIVE_MODEL_SETTING_ID,
+                                    selected_weight_strength=selected_strength,
+                                    selection_mean_gain=_as_float(selected["mean_gain_vs_r0"]),
+                                    selection_max_relative_degradation=_as_float(
+                                        selected["max_relative_degradation"]
+                                    ),
+                                )
+                            )
+                            for row in selection_rows:
+                                policy_selection_rows[key].append(
+                                    {
+                                        **row,
+                                        "seed": int(seed),
+                                        "outer_split_name": split_name,
+                                        "outer_heldout_fold": heldout_fold,
+                                        "outer_train_condition_count": len(outer_train_sets),
+                                        "outer_test_condition_count": len(outer_test_sets),
+                                        "outer_train_test_overlap_count": outer_overlap_count,
+                                        "target": target,
+                                        "feature_group": feature_group,
+                                    }
+                                )
+
+    computed_run_reports = []
+    for (seed, policy), metrics in sorted(policy_metrics.items()):
+        predictions = policy_predictions[(seed, policy)]
+        selection_rows = policy_selection_rows[(seed, policy)]
+        leaderboard = pareto_leaderboard_rows(metrics)
+        paired = pareto_paired_condition_gain_rows(predictions)
+        frontier = pareto_frontier_rows(leaderboard, paired)
+        claim = stressor_robust_adaptive_claim_readiness(frontier)
+        run_report = {
+            "status": "passed",
+            "schema_version": ADAPTIVE_REPLICATION_SCHEMA_VERSION,
+            "seed": seed,
+            "computed_seed": seed,
+            "seed_reuse_mode": "recomputed_each_seed",
+            "selection_policy": policy,
+            "row_counts": {
+                "full_interval_rows": len(all_rows),
+                "selected_subset_rows": len(subset_rows),
+                "metrics": len(metrics),
+                "predictions": len(predictions),
+                "selection_rows": len(selection_rows),
+            },
+            "claim_readiness": claim,
+            "selection_rows": selection_rows,
+        }
+        computed_run_reports.append(run_report)
+
+    run_reports = _expand_adaptive_replication_seed_reports(
+        computed_run_reports,
+        requested_seeds=selected_seeds,
+        selection_policies=selected_policies,
+        seed_reuse_mode=seed_reuse_mode,
+    )
+    replication_rows = [_adaptive_replication_row(report) for report in run_reports]
+
+    leakage_audit = adaptive_replication_leakage_audit(run_reports)
+    policy_rows = adaptive_replication_policy_rows(replication_rows)
+    degradation_rows = adaptive_replication_degradation_rows(replication_rows)
+    claim = adaptive_replication_claim_readiness(
+        replication_rows,
+        expected_seeds=selected_seeds,
+        primary_policy="conservative_guarded",
+        leakage_audit=leakage_audit,
+    )
+    report = {
+        "status": "passed",
+        "schema_version": ADAPTIVE_REPLICATION_SCHEMA_VERSION,
+        "generated_at_utc": datetime.now(UTC).isoformat(),
+        "inputs": {
+            "interval_table": str(interval_table_path),
+            "interval_subsets": str(interval_subsets_path),
+            "stress_features": str(stress_features_path) if stress_features_path else None,
+        },
+        "outputs": {
+            "out_dir": str(out_dir),
+            "summary": str(out_dir / "replication_summary.json"),
+        },
+        "subset": subset,
+        "seeds": selected_seeds,
+        "effective_fit_seeds": effective_fit_seeds,
+        "seed_reuse_mode": seed_reuse_mode,
+        "recompute_seeds": recompute_seeds,
+        "selection_policies": selected_policies,
+        "hgb_max_iter": hgb_max_iter,
+        "feature_groups": selected_feature_groups,
+        "targets": selected_targets,
+        "split_views": selected_splits,
+        "weight_strengths": selected_weight_strengths,
+        "selection_split_views": selected_selection_splits,
+        "row_counts": {
+            "replication_rows": len(replication_rows),
+            "policy_rows": len(policy_rows),
+            "degradation_rows": len(degradation_rows),
+            "run_reports": len(run_reports),
+        },
+        "leakage_audit": leakage_audit,
+        "claim_readiness": claim,
+        "replication_rows": replication_rows,
+        "policy_rows": policy_rows,
+        "degradation_rows": degradation_rows,
+    }
+    render_stressor_robust_adaptive_replication_artifacts(
+        report,
+        replication_rows,
+        policy_rows,
+        degradation_rows,
+        claim,
+        out_dir,
     )
     return report
 
@@ -806,6 +1136,33 @@ def adaptive_weight_selection_rows(
     selection_policy: str = "max_gain_guarded",
 ) -> list[dict[str, Any]]:
     """Score weight strengths on inner grouped splits from outer train rows only."""
+    raw_rows = raw_adaptive_weight_selection_rows(
+        train_rows=train_rows,
+        feature_group=feature_group,
+        target=target,
+        split_name=split_name,
+        heldout_fold=heldout_fold,
+        seed=seed,
+        hgb_max_iter=hgb_max_iter,
+        weight_strengths=weight_strengths,
+        selection_split_views=selection_split_views,
+    )
+    return aggregate_adaptive_weight_selection_rows(raw_rows, selection_policy=selection_policy)
+
+
+def raw_adaptive_weight_selection_rows(
+    *,
+    train_rows: list[dict[str, Any]],
+    feature_group: str,
+    target: str,
+    split_name: str,
+    heldout_fold: int,
+    seed: int,
+    hgb_max_iter: int,
+    weight_strengths: list[float],
+    selection_split_views: list[str],
+) -> list[dict[str, Any]]:
+    """Return unaggregated inner grouped validation rows for adaptive weight selection."""
     raw_rows: list[dict[str, Any]] = []
     for selection_split in selection_split_views:
         try:
@@ -821,6 +1178,8 @@ def adaptive_weight_selection_rows(
                 f"adaptive_{selection_split}",
                 inner_heldout_fold,
             )
+            inner_train_sets = {int(row["parameter_set"]) for row in inner_train}
+            inner_validation_sets = {int(row["parameter_set"]) for row in inner_validation}
             reference_predictions = _fit_predict_hgb_variant(
                 "R0_reference_hgb50",
                 feature_group=feature_group,
@@ -881,6 +1240,11 @@ def adaptive_weight_selection_rows(
                         "outer_heldout_fold_for_seed": heldout_fold,
                         "selection_split_name": selection_split,
                         "selection_heldout_fold": inner_heldout_fold,
+                        "inner_train_condition_count": len(inner_train_sets),
+                        "inner_validation_condition_count": len(inner_validation_sets),
+                        "inner_train_validation_overlap_count": len(
+                            inner_train_sets & inner_validation_sets
+                        ),
                         "weight_strength": float(strength),
                         "reference_condition_mean_mae": reference_mae,
                         "candidate_condition_mean_mae": candidate_mae,
@@ -890,7 +1254,7 @@ def adaptive_weight_selection_rows(
                         ),
                     }
                 )
-    return aggregate_adaptive_weight_selection_rows(raw_rows, selection_policy=selection_policy)
+    return raw_rows
 
 
 def aggregate_adaptive_weight_selection_rows(
@@ -912,6 +1276,9 @@ def aggregate_adaptive_weight_selection_rows(
         mean_gain = _mean([float(row["condition_mean_mae_gain"]) for row in group])
         mean_candidate = _mean([float(row["candidate_condition_mean_mae"]) for row in group])
         max_degradation = max(relative_values) if relative_values else None
+        max_inner_overlap = max(
+            int(row.get("inner_train_validation_overlap_count", 0)) for row in group
+        )
         passes_guardrail = (
             max_degradation is not None
             and max_degradation <= ADAPTIVE_NON_DEGRADATION_THRESHOLD
@@ -927,6 +1294,7 @@ def aggregate_adaptive_weight_selection_rows(
                 "mean_gain_vs_r0": mean_gain,
                 "mean_candidate_condition_mae": mean_candidate,
                 "max_relative_degradation": max_degradation,
+                "max_inner_train_validation_overlap_count": max_inner_overlap,
                 "passes_inner_guardrail": passes_guardrail,
                 "selection_policy": selection_policy,
                 "selection_score": _adaptive_selection_score(mean_gain, max_degradation),
@@ -1837,6 +2205,200 @@ def stressor_robust_adaptive_claim_readiness(frontier: list[dict[str, Any]]) -> 
     }
 
 
+def _expand_adaptive_replication_seed_reports(
+    computed_run_reports: list[dict[str, Any]],
+    *,
+    requested_seeds: list[int],
+    selection_policies: list[str],
+    seed_reuse_mode: str,
+) -> list[dict[str, Any]]:
+    if seed_reuse_mode == "recomputed_each_seed":
+        return computed_run_reports
+    if not computed_run_reports:
+        return []
+    output: list[dict[str, Any]] = []
+    by_policy = {str(report["selection_policy"]): report for report in computed_run_reports}
+    missing_policies = sorted(set(selection_policies) - set(by_policy))
+    if missing_policies:
+        raise ValueError(f"Missing computed replication reports for policies: {missing_policies}")
+    for policy in selection_policies:
+        base = by_policy[policy]
+        computed_seed = int(base["computed_seed"])
+        for seed in requested_seeds:
+            cloned = copy.deepcopy(base)
+            cloned["seed"] = int(seed)
+            cloned["computed_seed"] = computed_seed
+            cloned["seed_reuse_mode"] = seed_reuse_mode
+            for row in cloned.get("selection_rows", []):
+                row["seed"] = int(seed)
+                row["computed_seed"] = computed_seed
+                row["seed_reuse_mode"] = seed_reuse_mode
+            output.append(cloned)
+    return output
+
+
+def adaptive_replication_leakage_audit(run_reports: list[dict[str, Any]]) -> dict[str, Any]:
+    outer_overlaps: list[int] = []
+    inner_overlaps: list[int] = []
+    for report in run_reports:
+        for row in report.get("selection_rows", []):
+            outer_overlaps.append(int(row.get("outer_train_test_overlap_count", 0)))
+            inner_overlaps.append(int(row.get("max_inner_train_validation_overlap_count", 0)))
+    max_outer = max(outer_overlaps, default=0)
+    max_inner = max(inner_overlaps, default=0)
+    status = "passed" if max_outer == 0 and max_inner == 0 and run_reports else "failed"
+    return {
+        "status": status,
+        "run_reports_checked": len(run_reports),
+        "selection_rows_checked": len(outer_overlaps),
+        "max_outer_train_test_overlap_count": max_outer,
+        "max_inner_train_validation_overlap_count": max_inner,
+        "rule": (
+            "Adaptive weight selection must use only outer-training rows. "
+            "Inner fit/validation conditions and outer train/test conditions must not overlap."
+        ),
+    }
+
+
+def adaptive_replication_claim_readiness(
+    rows: list[dict[str, Any]],
+    *,
+    expected_seeds: list[int],
+    primary_policy: str = "conservative_guarded",
+    leakage_audit: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    primary_rows = [row for row in rows if row["selection_policy"] == primary_policy]
+    observed_seeds = sorted({int(row["seed"]) for row in primary_rows})
+    expected_seed_set = {int(seed) for seed in expected_seeds}
+    missing_seeds = sorted(expected_seed_set - set(observed_seeds))
+    failing_rows = [
+        row
+        for row in primary_rows
+        if int(row["seed"]) in expected_seed_set and not bool(row["adaptive_passes_5pct"])
+    ]
+    leakage_passes = (leakage_audit or {}).get("status") == "passed"
+    all_pass = (
+        bool(expected_seed_set)
+        and not missing_seeds
+        and len(primary_rows) >= len(expected_seed_set)
+        and not failing_rows
+        and leakage_passes
+    )
+    any_pass = any(bool(row["adaptive_passes_5pct"]) for row in primary_rows)
+    status = "supported_for_diagnostics" if all_pass else ("partially_supported" if any_pass else "not_supported")
+    required_rows = [row for row in primary_rows if int(row["seed"]) in expected_seed_set]
+    return {
+        "adaptive_replication_claim": status,
+        "primary_policy": primary_policy,
+        "required_seed_count": len(expected_seed_set),
+        "observed_seed_count": len(observed_seeds),
+        "missing_seeds": ",".join(str(seed) for seed in missing_seeds),
+        "failing_seeds": ",".join(str(row["seed"]) for row in failing_rows),
+        "all_required_seeds_pass": all_pass,
+        "passing_seed_count": sum(1 for row in required_rows if bool(row["adaptive_passes_5pct"])),
+        "min_c_rate_gain_vs_f4": min(
+            (_as_float(row["c_rate_gain_vs_f4"]) for row in required_rows),
+            default=None,
+        ),
+        "min_c_rate_gain_vs_stress_reference": min(
+            (_as_float(row["c_rate_gain_vs_stress_reference"]) for row in required_rows),
+            default=None,
+        ),
+        "min_paired_p05_vs_f4": min(
+            (_as_float(row["paired_p05_vs_f4"]) for row in required_rows),
+            default=None,
+        ),
+        "min_paired_p05_vs_stress_reference": min(
+            (_as_float(row["paired_p05_vs_stress_reference"]) for row in required_rows),
+            default=None,
+        ),
+        "max_other_split_relative_degradation": max(
+            (_as_float(row["max_other_split_relative_degradation"]) for row in required_rows),
+            default=None,
+        ),
+        "leakage_audit": (leakage_audit or {}).get("status", "not_run"),
+        "architecture_readiness": "blocked",
+        "policy_ranking": "blocked",
+        "claim_rule": (
+            "Support requires every required conservative_guarded seed to pass C-rate gains versus F4 "
+            "and stress references, paired p05 above zero, <=5% outside-C-rate degradation, and a "
+            "passed leakage audit. Any seed failure blocks replicated support."
+        ),
+    }
+
+
+def adaptive_replication_policy_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        grouped[str(row["selection_policy"])].append(row)
+    output = []
+    for policy, group in sorted(grouped.items()):
+        output.append(
+            {
+                "schema_version": ADAPTIVE_REPLICATION_SCHEMA_VERSION,
+                "selection_policy": policy,
+                "seed_count": len(group),
+                "passing_seed_count": sum(1 for row in group if bool(row["adaptive_passes_5pct"])),
+                "min_c_rate_gain_vs_f4": min(_as_float(row["c_rate_gain_vs_f4"]) for row in group),
+                "min_c_rate_gain_vs_stress_reference": min(
+                    _as_float(row["c_rate_gain_vs_stress_reference"]) for row in group
+                ),
+                "min_paired_p05_vs_f4": min(_as_float(row["paired_p05_vs_f4"]) for row in group),
+                "min_paired_p05_vs_stress_reference": min(
+                    _as_float(row["paired_p05_vs_stress_reference"]) for row in group
+                ),
+                "max_other_split_relative_degradation": max(
+                    _as_float(row["max_other_split_relative_degradation"]) for row in group
+                ),
+            }
+        )
+    return output
+
+
+def adaptive_replication_degradation_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "schema_version": ADAPTIVE_REPLICATION_SCHEMA_VERSION,
+            "seed": row["seed"],
+            "selection_policy": row["selection_policy"],
+            "max_other_split_relative_degradation": row["max_other_split_relative_degradation"],
+            "adaptive_passes_5pct": row["adaptive_passes_5pct"],
+        }
+        for row in rows
+    ]
+
+
+def _adaptive_replication_row(report: dict[str, Any]) -> dict[str, Any]:
+    claim = report["claim_readiness"]
+    selected_counts = _selected_weight_count_string(report.get("selection_rows", []))
+    return {
+        "schema_version": ADAPTIVE_REPLICATION_SCHEMA_VERSION,
+        "seed": int(report["seed"]),
+        "computed_seed": int(report.get("computed_seed", report["seed"])),
+        "seed_reuse_mode": str(report.get("seed_reuse_mode", "recomputed_each_seed")),
+        "selection_policy": str(report["selection_policy"]),
+        "adaptive_claim": claim["stressor_robust_adaptive_claim"],
+        "adaptive_passes_5pct": bool(claim["adaptive_passes_5pct"]),
+        "c_rate_gain_vs_f4": claim["c_rate_gain_vs_f4"],
+        "c_rate_gain_vs_stress_reference": claim["c_rate_gain_vs_stress_reference"],
+        "paired_p05_vs_f4": claim["paired_p05_vs_f4"],
+        "paired_p05_vs_stress_reference": claim["paired_p05_vs_stress_reference"],
+        "max_other_split_relative_degradation": claim["max_other_split_relative_degradation"],
+        "metric_rows": report["row_counts"]["metrics"],
+        "prediction_rows": report["row_counts"]["predictions"],
+        "selection_rows": report["row_counts"]["selection_rows"],
+        "selected_weight_counts": selected_counts,
+    }
+
+
+def _selected_weight_count_string(selection_rows: list[dict[str, Any]]) -> str:
+    counts: dict[str, int] = defaultdict(int)
+    for row in selection_rows:
+        if bool(row.get("selected_by_train_only_rule")):
+            counts[str(row["weight_strength"])] += 1
+    return ";".join(f"{weight}:{counts[weight]}" for weight in sorted(counts))
+
+
 def _robust_prediction_rows(
     test_rows: list[dict[str, Any]],
     predictions: list[dict[str, float | None]],
@@ -2347,6 +2909,30 @@ def render_stressor_robust_adaptive_artifacts(
     )
 
 
+def render_stressor_robust_adaptive_replication_artifacts(
+    report: dict[str, Any],
+    replication_rows: list[dict[str, Any]],
+    policy_rows: list[dict[str, Any]],
+    degradation_rows: list[dict[str, Any]],
+    claim: dict[str, Any],
+    out_dir: Path,
+) -> None:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / "replication_summary.json").write_text(
+        json.dumps(report, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    _write_csv(out_dir / "plots" / "seed_sensitivity.csv", replication_rows)
+    _write_csv(out_dir / "plots" / "policy_sensitivity.csv", policy_rows)
+    _write_csv(out_dir / "plots" / "outside_split_degradation.csv", degradation_rows)
+    _write_adaptive_replication_claim_readiness_md(
+        report,
+        claim,
+        policy_rows,
+        out_dir / "adaptive_replication_claim_readiness.md",
+    )
+
+
 def _write_stressor_forensics_md(
     split_degradation: list[dict[str, Any]],
     worst_conditions: list[dict[str, Any]],
@@ -2398,6 +2984,54 @@ def _write_stressor_forensics_md(
         [
             "",
             "Decision: use this for forensics only. Do not relax the 5% gate based on this report.",
+        ]
+    )
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _write_adaptive_replication_claim_readiness_md(
+    report: dict[str, Any],
+    claim: dict[str, Any],
+    policy_rows: list[dict[str, Any]],
+    path: Path,
+) -> None:
+    lines = [
+        "# Adaptive Stressor-Robust Replication Claim Readiness",
+        "",
+        "| Claim area | Status | Evidence |",
+        "|---|---|---|",
+        f"| Replicated adaptive robust-selection diagnostic | `{claim['adaptive_replication_claim']}` | All required seeds pass: `{claim['all_required_seeds_pass']}`. |",
+        f"| Required seed coverage | `diagnostic` | Observed `{claim['observed_seed_count']}` of `{claim['required_seed_count']}` required seeds; missing `{claim['missing_seeds'] or 'none'}`. |",
+        f"| C-rate gain floor | `diagnostic` | Min gain vs F4 `{_fmt(claim['min_c_rate_gain_vs_f4'])}`; min gain vs stress `{_fmt(claim['min_c_rate_gain_vs_stress_reference'])}`. |",
+        f"| Paired support floor | `diagnostic` | Min p05 vs F4 `{_fmt(claim['min_paired_p05_vs_f4'])}`; min p05 vs stress `{_fmt(claim['min_paired_p05_vs_stress_reference'])}`. |",
+        f"| Other split non-degradation | `{'supported_for_diagnostics' if claim['all_required_seeds_pass'] else 'not_supported'}` | Max outside-C-rate degradation across required seeds `{_fmt(claim['max_other_split_relative_degradation'])}`. |",
+        f"| Leakage audit | `{claim['leakage_audit']}` | Outer held-out rows must not enter inner selection. |",
+        f"| Architecture readiness | `{claim['architecture_readiness']}` | This remains a non-neural diagnostic. |",
+        f"| Policy ranking | `{claim['policy_ranking']}` | No calibrated risk or intervention task is tested. |",
+        "",
+        claim["claim_rule"],
+        "",
+        f"Seed reuse mode: `{report.get('seed_reuse_mode', 'recomputed_each_seed')}`; "
+        f"effective fit seeds: `{','.join(str(seed) for seed in report.get('effective_fit_seeds', []))}`.",
+        "",
+        "## Policy Sensitivity",
+        "",
+        "| Policy | Seeds | Passing seeds | Min gain vs F4 | Min gain vs stress | Max outside-C-rate degradation |",
+        "|---|---:|---:|---:|---:|---:|",
+    ]
+    for row in policy_rows:
+        lines.append(
+            "| "
+            f"`{row['selection_policy']}` | `{row['seed_count']}` | `{row['passing_seed_count']}` | "
+            f"`{_fmt(row['min_c_rate_gain_vs_f4'])}` | "
+            f"`{_fmt(row['min_c_rate_gain_vs_stress_reference'])}` | "
+            f"`{_fmt(row['max_other_split_relative_degradation'])}` |"
+        )
+    lines.extend(
+        [
+            "",
+            f"Replication rows evaluated: `{report['row_counts']['replication_rows']}`.",
+            "Decision: replicated support is narrow and diagnostic only. Do not claim C-rate fade is solved globally.",
         ]
     )
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")

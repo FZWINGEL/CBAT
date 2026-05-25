@@ -9,9 +9,11 @@ import pytest
 from mbp.baselines.capacity import BASELINE_PREDICTION_SCHEMA
 from mbp.baselines import stressor_robust_capacity as robust_module
 from mbp.baselines.stressor_robust_capacity import (
+    ADAPTIVE_REPLICATION_SCHEMA_VERSION,
     ADAPTIVE_SCHEMA_VERSION,
     PARETO_SCHEMA_VERSION,
     SELECTION_TIE_BREAK_ORDER,
+    adaptive_replication_claim_readiness,
     aggregate_adaptive_weight_selection_rows,
     _condition_bagged_predictions,
     condition_balanced_weights,
@@ -23,6 +25,7 @@ from mbp.baselines.stressor_robust_capacity import (
     paired_condition_gain_rows,
     pareto_frontier_rows,
     pareto_model_settings,
+    replicate_stressor_robust_adaptive,
     run_stressor_robust_adaptive,
     run_stressor_robust_capacity,
     run_stressor_robust_pareto,
@@ -499,6 +502,41 @@ def test_adaptive_claim_readiness_requires_outer_guardrail() -> None:
     assert claim["adaptive_passes_5pct"] is True
 
 
+def test_adaptive_replication_claim_requires_all_seeds_and_leakage_pass() -> None:
+    rows = [
+        {
+            "seed": 1,
+            "selection_policy": "conservative_guarded",
+            "adaptive_passes_5pct": True,
+            "c_rate_gain_vs_f4": 0.02,
+            "c_rate_gain_vs_stress_reference": 0.01,
+            "paired_p05_vs_f4": 0.002,
+            "paired_p05_vs_stress_reference": 0.001,
+            "max_other_split_relative_degradation": 0.03,
+        },
+        {
+            "seed": 2,
+            "selection_policy": "conservative_guarded",
+            "adaptive_passes_5pct": False,
+            "c_rate_gain_vs_f4": 0.02,
+            "c_rate_gain_vs_stress_reference": 0.01,
+            "paired_p05_vs_f4": 0.002,
+            "paired_p05_vs_stress_reference": 0.001,
+            "max_other_split_relative_degradation": 0.06,
+        },
+    ]
+
+    claim = adaptive_replication_claim_readiness(
+        rows,
+        expected_seeds=[1, 2],
+        leakage_audit={"status": "passed"},
+    )
+
+    assert claim["adaptive_replication_claim"] == "partially_supported"
+    assert claim["all_required_seeds_pass"] is False
+    assert claim["failing_seeds"] == "2"
+
+
 def test_degradation_by_split_target_feature_rows() -> None:
     rows = degradation_by_split_target_feature_rows(
         [
@@ -637,3 +675,34 @@ def test_stressor_robust_adaptive_runner_smoke(tmp_path: Path) -> None:
     assert (out_dir / "adaptive_selection_summary.csv").exists()
     assert (out_dir / "plots" / "adaptive_frontier.csv").exists()
     assert (out_dir / "stressor_robust_adaptive_claim_readiness.md").exists()
+
+
+def test_stressor_robust_adaptive_replication_runner_smoke(tmp_path: Path) -> None:
+    interval_path, subset_path = _write_capacity_fixture(tmp_path)
+    out_dir = tmp_path / "stressor_robust_adaptive_replication"
+
+    report = replicate_stressor_robust_adaptive(
+        interval_path,
+        subset_path,
+        out_dir,
+        seeds=[1, 2],
+        selection_policies=["conservative_guarded"],
+        feature_groups=["F4_state_log_age_scalar"],
+        targets=["delta_capacity_Ah"],
+        split_views=["condition_fold"],
+        weight_strengths=[0.5, 1.0],
+        selection_split_views=["condition_fold"],
+        hgb_max_iter=2,
+    )
+
+    assert report["status"] == "passed"
+    assert report["schema_version"] == ADAPTIVE_REPLICATION_SCHEMA_VERSION
+    assert report["seed_reuse_mode"] == "deterministic_hgb_no_bagging_reuse"
+    assert report["effective_fit_seeds"] == [1]
+    assert report["row_counts"]["replication_rows"] == 2
+    assert {row["computed_seed"] for row in report["replication_rows"]} == {1}
+    assert report["leakage_audit"]["status"] == "passed"
+    assert (out_dir / "replication_summary.json").exists()
+    assert (out_dir / "plots" / "seed_sensitivity.csv").exists()
+    assert (out_dir / "plots" / "policy_sensitivity.csv").exists()
+    assert (out_dir / "adaptive_replication_claim_readiness.md").exists()

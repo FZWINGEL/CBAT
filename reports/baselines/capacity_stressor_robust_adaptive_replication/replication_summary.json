@@ -1,0 +1,370 @@
+{
+  "claim_readiness": {
+    "adaptive_replication_claim": "supported_for_diagnostics",
+    "all_required_seeds_pass": true,
+    "architecture_readiness": "blocked",
+    "claim_rule": "Support requires every required conservative_guarded seed to pass C-rate gains versus F4 and stress references, paired p05 above zero, <=5% outside-C-rate degradation, and a passed leakage audit. Any seed failure blocks replicated support.",
+    "failing_seeds": "",
+    "leakage_audit": "passed",
+    "max_other_split_relative_degradation": 0.027911712329013853,
+    "min_c_rate_gain_vs_f4": 0.02004362031279852,
+    "min_c_rate_gain_vs_stress_reference": 0.021426637333536835,
+    "min_paired_p05_vs_f4": 0.007498572292517876,
+    "min_paired_p05_vs_stress_reference": 0.00465695560847858,
+    "missing_seeds": "",
+    "observed_seed_count": 5,
+    "passing_seed_count": 5,
+    "policy_ranking": "blocked",
+    "primary_policy": "conservative_guarded",
+    "required_seed_count": 5
+  },
+  "degradation_rows": [
+    {
+      "adaptive_passes_5pct": true,
+      "max_other_split_relative_degradation": 0.027911712329013853,
+      "schema_version": "gate56.stressor_robust_adaptive_replication.v1",
+      "seed": 42,
+      "selection_policy": "conservative_guarded"
+    },
+    {
+      "adaptive_passes_5pct": true,
+      "max_other_split_relative_degradation": 0.027911712329013853,
+      "schema_version": "gate56.stressor_robust_adaptive_replication.v1",
+      "seed": 101,
+      "selection_policy": "conservative_guarded"
+    },
+    {
+      "adaptive_passes_5pct": true,
+      "max_other_split_relative_degradation": 0.027911712329013853,
+      "schema_version": "gate56.stressor_robust_adaptive_replication.v1",
+      "seed": 202,
+      "selection_policy": "conservative_guarded"
+    },
+    {
+      "adaptive_passes_5pct": true,
+      "max_other_split_relative_degradation": 0.027911712329013853,
+      "schema_version": "gate56.stressor_robust_adaptive_replication.v1",
+      "seed": 303,
+      "selection_policy": "conservative_guarded"
+    },
+    {
+      "adaptive_passes_5pct": true,
+      "max_other_split_relative_degradation": 0.027911712329013853,
+      "schema_version": "gate56.stressor_robust_adaptive_replication.v1",
+      "seed": 404,
+      "selection_policy": "conservative_guarded"
+    },
+    {
+      "adaptive_passes_5pct": false,
+      "max_other_split_relative_degradation": 0.06457637725484183,
+      "schema_version": "gate56.stressor_robust_adaptive_replication.v1",
+      "seed": 42,
+      "selection_policy": "max_gain_guarded"
+    },
+    {
+      "adaptive_passes_5pct": false,
+      "max_other_split_relative_degradation": 0.06457637725484183,
+      "schema_version": "gate56.stressor_robust_adaptive_replication.v1",
+      "seed": 101,
+      "selection_policy": "max_gain_guarded"
+    },
+    {
+      "adaptive_passes_5pct": false,
+      "max_other_split_relative_degradation": 0.06457637725484183,
+      "schema_version": "gate56.stressor_robust_adaptive_replication.v1",
+      "seed": 202,
+      "selection_policy": "max_gain_guarded"
+    },
+    {
+      "adaptive_passes_5pct": false,
+      "max_other_split_relative_degradation": 0.06457637725484183,
+      "schema_version": "gate56.stressor_robust_adaptive_replication.v1",
+      "seed": 303,
+      "selection_policy": "max_gain_guarded"
+    },
+    {
+      "adaptive_passes_5pct": false,
+      "max_other_split_relative_degradation": 0.06457637725484183,
+      "schema_version": "gate56.stressor_robust_adaptive_replication.v1",
+      "seed": 404,
+      "selection_policy": "max_gain_guarded"
+    }
+  ],
+  "effective_fit_seeds": [
+    42
+  ],
+  "feature_groups": [
+    "F4_state_log_age_scalar",
+    "F8_timestamp_weighted_stress"
+  ],
+  "generated_at_utc": "2026-05-24T23:02:23.799457+00:00",
+  "hgb_max_iter": 50,
+  "inputs": {
+    "interval_subsets": "data/splits/interval_subset_registry_v1.parquet",
+    "interval_table": "data/interim/interval_table.parquet",
+    "stress_features": "data/interim/interval_stress_features_v1_1.parquet"
+  },
+  "leakage_audit": {
+    "max_inner_train_validation_overlap_count": 0,
+    "max_outer_train_test_overlap_count": 0,
+    "rule": "Adaptive weight selection must use only outer-training rows. Inner fit/validation conditions and outer train/test conditions must not overlap.",
+    "run_reports_checked": 10,
+    "selection_rows_checked": 960,
+    "status": "passed"
+  },
+  "outputs": {
+    "out_dir": "reports/baselines/capacity_stressor_robust_adaptive_replication",
+    "summary": "reports/baselines/capacity_stressor_robust_adaptive_replication/replication_summary.json"
+  },
+  "policy_rows": [
+    {
+      "max_other_split_relative_degradation": 0.027911712329013853,
+      "min_c_rate_gain_vs_f4": 0.02004362031279852,
+      "min_c_rate_gain_vs_stress_reference": 0.021426637333536835,
+      "min_paired_p05_vs_f4": 0.007498572292517876,
+      "min_paired_p05_vs_stress_reference": 0.00465695560847858,
+      "passing_seed_count": 5,
+      "schema_version": "gate56.stressor_robust_adaptive_replication.v1",
+      "seed_count": 5,
+      "selection_policy": "conservative_guarded"
+    },
+    {
+      "max_other_split_relative_degradation": 0.06457637725484183,
+      "min_c_rate_gain_vs_f4": 0.031217714474352315,
+      "min_c_rate_gain_vs_stress_reference": 0.03260073149509063,
+      "min_paired_p05_vs_f4": 0.019455749542004533,
+      "min_paired_p05_vs_stress_reference": 0.012278230730529601,
+      "passing_seed_count": 0,
+      "schema_version": "gate56.stressor_robust_adaptive_replication.v1",
+      "seed_count": 5,
+      "selection_policy": "max_gain_guarded"
+    }
+  ],
+  "recompute_seeds": false,
+  "replication_rows": [
+    {
+      "adaptive_claim": "supported_for_diagnostics",
+      "adaptive_passes_5pct": true,
+      "c_rate_gain_vs_f4": 0.02004362031279852,
+      "c_rate_gain_vs_stress_reference": 0.021426637333536835,
+      "computed_seed": 42,
+      "max_other_split_relative_degradation": 0.027911712329013853,
+      "metric_rows": 48,
+      "paired_p05_vs_f4": 0.007498572292517876,
+      "paired_p05_vs_stress_reference": 0.00465695560847858,
+      "prediction_rows": 41460,
+      "schema_version": "gate56.stressor_robust_adaptive_replication.v1",
+      "seed": 42,
+      "seed_reuse_mode": "deterministic_hgb_no_bagging_reuse",
+      "selected_weight_counts": "0.25:23;0.75:1",
+      "selection_policy": "conservative_guarded",
+      "selection_rows": 96
+    },
+    {
+      "adaptive_claim": "supported_for_diagnostics",
+      "adaptive_passes_5pct": true,
+      "c_rate_gain_vs_f4": 0.02004362031279852,
+      "c_rate_gain_vs_stress_reference": 0.021426637333536835,
+      "computed_seed": 42,
+      "max_other_split_relative_degradation": 0.027911712329013853,
+      "metric_rows": 48,
+      "paired_p05_vs_f4": 0.007498572292517876,
+      "paired_p05_vs_stress_reference": 0.00465695560847858,
+      "prediction_rows": 41460,
+      "schema_version": "gate56.stressor_robust_adaptive_replication.v1",
+      "seed": 101,
+      "seed_reuse_mode": "deterministic_hgb_no_bagging_reuse",
+      "selected_weight_counts": "0.25:23;0.75:1",
+      "selection_policy": "conservative_guarded",
+      "selection_rows": 96
+    },
+    {
+      "adaptive_claim": "supported_for_diagnostics",
+      "adaptive_passes_5pct": true,
+      "c_rate_gain_vs_f4": 0.02004362031279852,
+      "c_rate_gain_vs_stress_reference": 0.021426637333536835,
+      "computed_seed": 42,
+      "max_other_split_relative_degradation": 0.027911712329013853,
+      "metric_rows": 48,
+      "paired_p05_vs_f4": 0.007498572292517876,
+      "paired_p05_vs_stress_reference": 0.00465695560847858,
+      "prediction_rows": 41460,
+      "schema_version": "gate56.stressor_robust_adaptive_replication.v1",
+      "seed": 202,
+      "seed_reuse_mode": "deterministic_hgb_no_bagging_reuse",
+      "selected_weight_counts": "0.25:23;0.75:1",
+      "selection_policy": "conservative_guarded",
+      "selection_rows": 96
+    },
+    {
+      "adaptive_claim": "supported_for_diagnostics",
+      "adaptive_passes_5pct": true,
+      "c_rate_gain_vs_f4": 0.02004362031279852,
+      "c_rate_gain_vs_stress_reference": 0.021426637333536835,
+      "computed_seed": 42,
+      "max_other_split_relative_degradation": 0.027911712329013853,
+      "metric_rows": 48,
+      "paired_p05_vs_f4": 0.007498572292517876,
+      "paired_p05_vs_stress_reference": 0.00465695560847858,
+      "prediction_rows": 41460,
+      "schema_version": "gate56.stressor_robust_adaptive_replication.v1",
+      "seed": 303,
+      "seed_reuse_mode": "deterministic_hgb_no_bagging_reuse",
+      "selected_weight_counts": "0.25:23;0.75:1",
+      "selection_policy": "conservative_guarded",
+      "selection_rows": 96
+    },
+    {
+      "adaptive_claim": "supported_for_diagnostics",
+      "adaptive_passes_5pct": true,
+      "c_rate_gain_vs_f4": 0.02004362031279852,
+      "c_rate_gain_vs_stress_reference": 0.021426637333536835,
+      "computed_seed": 42,
+      "max_other_split_relative_degradation": 0.027911712329013853,
+      "metric_rows": 48,
+      "paired_p05_vs_f4": 0.007498572292517876,
+      "paired_p05_vs_stress_reference": 0.00465695560847858,
+      "prediction_rows": 41460,
+      "schema_version": "gate56.stressor_robust_adaptive_replication.v1",
+      "seed": 404,
+      "seed_reuse_mode": "deterministic_hgb_no_bagging_reuse",
+      "selected_weight_counts": "0.25:23;0.75:1",
+      "selection_policy": "conservative_guarded",
+      "selection_rows": 96
+    },
+    {
+      "adaptive_claim": "not_supported",
+      "adaptive_passes_5pct": false,
+      "c_rate_gain_vs_f4": 0.031217714474352315,
+      "c_rate_gain_vs_stress_reference": 0.03260073149509063,
+      "computed_seed": 42,
+      "max_other_split_relative_degradation": 0.06457637725484183,
+      "metric_rows": 48,
+      "paired_p05_vs_f4": 0.019455749542004533,
+      "paired_p05_vs_stress_reference": 0.012278230730529601,
+      "prediction_rows": 41460,
+      "schema_version": "gate56.stressor_robust_adaptive_replication.v1",
+      "seed": 42,
+      "seed_reuse_mode": "deterministic_hgb_no_bagging_reuse",
+      "selected_weight_counts": "0.25:13;0.5:3;0.75:4;1.0:4",
+      "selection_policy": "max_gain_guarded",
+      "selection_rows": 96
+    },
+    {
+      "adaptive_claim": "not_supported",
+      "adaptive_passes_5pct": false,
+      "c_rate_gain_vs_f4": 0.031217714474352315,
+      "c_rate_gain_vs_stress_reference": 0.03260073149509063,
+      "computed_seed": 42,
+      "max_other_split_relative_degradation": 0.06457637725484183,
+      "metric_rows": 48,
+      "paired_p05_vs_f4": 0.019455749542004533,
+      "paired_p05_vs_stress_reference": 0.012278230730529601,
+      "prediction_rows": 41460,
+      "schema_version": "gate56.stressor_robust_adaptive_replication.v1",
+      "seed": 101,
+      "seed_reuse_mode": "deterministic_hgb_no_bagging_reuse",
+      "selected_weight_counts": "0.25:13;0.5:3;0.75:4;1.0:4",
+      "selection_policy": "max_gain_guarded",
+      "selection_rows": 96
+    },
+    {
+      "adaptive_claim": "not_supported",
+      "adaptive_passes_5pct": false,
+      "c_rate_gain_vs_f4": 0.031217714474352315,
+      "c_rate_gain_vs_stress_reference": 0.03260073149509063,
+      "computed_seed": 42,
+      "max_other_split_relative_degradation": 0.06457637725484183,
+      "metric_rows": 48,
+      "paired_p05_vs_f4": 0.019455749542004533,
+      "paired_p05_vs_stress_reference": 0.012278230730529601,
+      "prediction_rows": 41460,
+      "schema_version": "gate56.stressor_robust_adaptive_replication.v1",
+      "seed": 202,
+      "seed_reuse_mode": "deterministic_hgb_no_bagging_reuse",
+      "selected_weight_counts": "0.25:13;0.5:3;0.75:4;1.0:4",
+      "selection_policy": "max_gain_guarded",
+      "selection_rows": 96
+    },
+    {
+      "adaptive_claim": "not_supported",
+      "adaptive_passes_5pct": false,
+      "c_rate_gain_vs_f4": 0.031217714474352315,
+      "c_rate_gain_vs_stress_reference": 0.03260073149509063,
+      "computed_seed": 42,
+      "max_other_split_relative_degradation": 0.06457637725484183,
+      "metric_rows": 48,
+      "paired_p05_vs_f4": 0.019455749542004533,
+      "paired_p05_vs_stress_reference": 0.012278230730529601,
+      "prediction_rows": 41460,
+      "schema_version": "gate56.stressor_robust_adaptive_replication.v1",
+      "seed": 303,
+      "seed_reuse_mode": "deterministic_hgb_no_bagging_reuse",
+      "selected_weight_counts": "0.25:13;0.5:3;0.75:4;1.0:4",
+      "selection_policy": "max_gain_guarded",
+      "selection_rows": 96
+    },
+    {
+      "adaptive_claim": "not_supported",
+      "adaptive_passes_5pct": false,
+      "c_rate_gain_vs_f4": 0.031217714474352315,
+      "c_rate_gain_vs_stress_reference": 0.03260073149509063,
+      "computed_seed": 42,
+      "max_other_split_relative_degradation": 0.06457637725484183,
+      "metric_rows": 48,
+      "paired_p05_vs_f4": 0.019455749542004533,
+      "paired_p05_vs_stress_reference": 0.012278230730529601,
+      "prediction_rows": 41460,
+      "schema_version": "gate56.stressor_robust_adaptive_replication.v1",
+      "seed": 404,
+      "seed_reuse_mode": "deterministic_hgb_no_bagging_reuse",
+      "selected_weight_counts": "0.25:13;0.5:3;0.75:4;1.0:4",
+      "selection_policy": "max_gain_guarded",
+      "selection_rows": 96
+    }
+  ],
+  "row_counts": {
+    "degradation_rows": 10,
+    "policy_rows": 2,
+    "replication_rows": 10,
+    "run_reports": 10
+  },
+  "schema_version": "gate56.stressor_robust_adaptive_replication.v1",
+  "seed_reuse_mode": "deterministic_hgb_no_bagging_reuse",
+  "seeds": [
+    42,
+    101,
+    202,
+    303,
+    404
+  ],
+  "selection_policies": [
+    "conservative_guarded",
+    "max_gain_guarded"
+  ],
+  "selection_split_views": [
+    "condition_fold",
+    "temperature_holdout_fold",
+    "profile_holdout_fold",
+    "voltage_window_holdout_fold",
+    "c_rate_holdout_fold"
+  ],
+  "split_views": [
+    "condition_fold",
+    "temperature_holdout_fold",
+    "c_rate_holdout_fold",
+    "profile_holdout_fold",
+    "voltage_window_holdout_fold"
+  ],
+  "status": "passed",
+  "subset": "baseline_clean_tolerant",
+  "targets": [
+    "delta_capacity_Ah"
+  ],
+  "weight_strengths": [
+    0.25,
+    0.5,
+    0.75,
+    1.0
+  ]
+}

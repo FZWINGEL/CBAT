@@ -250,6 +250,17 @@ feature engineering, neural or sequence models, CBAT, DRT, EIS embeddings,
 policy ranking, calibrated-risk wording, calibrated-uncertainty wording,
 causal claims, same-cell counterfactual claims, C-rate fade-solved wording, or
 broad multimodal claims.
+Milestone 5.6 authorizes only replication and final claim hardening for the
+Milestone 5.5 adaptive stressor-robust selector. It may replicate the
+conservative and max-gain selector policies across deterministic seeds, record
+deterministic seed reuse when the HGB/no-bagging path is seed-invariant, audit
+outer train/test and inner train/validation condition separation, and render
+seed/policy sensitivity tables. It must keep the unchanged 5% outside-C-rate
+non-degradation guardrail and must not introduce new feature engineering,
+new model families, neural or sequence models, CBAT, DRT, EIS embeddings,
+policy ranking, calibrated-risk wording, calibrated-uncertainty wording,
+causal claims, same-cell counterfactual claims, C-rate fade-solved wording, or
+broad multimodal claims.
 
 Required split discipline:
 
@@ -392,6 +403,32 @@ Milestone 5.5 claim rules:
 - A passing adaptive diagnostic does not imply that C-rate fade is solved
   globally, that probability/risk outputs are calibrated, that policy ranking
   is valid, or that architecture work is justified.
+
+Required Milestone 5.6 adaptive replication artifacts:
+
+- `mbp baseline replicate-stressor-robust-adaptive`
+- `reports/baselines/capacity_stressor_robust_adaptive_replication/replication_summary.json`
+- `reports/baselines/capacity_stressor_robust_adaptive_replication/adaptive_replication_claim_readiness.md`
+- `reports/baselines/capacity_stressor_robust_adaptive_replication/plots/seed_sensitivity.csv`
+- `reports/baselines/capacity_stressor_robust_adaptive_replication/plots/policy_sensitivity.csv`
+- `reports/baselines/capacity_stressor_robust_adaptive_replication/plots/outside_split_degradation.csv`
+- `docs/experiments/2026-05-24_adaptive_stressor_robust_replication.md`
+
+Milestone 5.6 claim rules:
+
+- Replicated diagnostic support requires every required conservative guarded
+  logical seed to pass positive C-rate gain versus F4 and stress R0
+  references, positive paired p05 against both references, <=5%
+  outside-C-rate degradation, and a passed leakage audit.
+- Deterministic seed reuse is permitted only when recorded explicitly and when
+  the evaluated path has no stochastic bagging or held-out-data-dependent
+  selection. The report must list the effective fit seed and logical seeds.
+- If the max-gain selector improves C-rate but fails the 5% guardrail, it is a
+  failed high-gain policy, not a supported robustness result.
+- Replicated diagnostic support remains target-specific to
+  `delta_capacity_Ah` and does not authorize C-rate fade-solved, architecture,
+  calibrated-risk, calibrated-uncertainty, policy, causal, or broad
+  multimodal claims.
 
 Required Milestone 4.0 manuscript-integration artifacts:
 

@@ -5,7 +5,7 @@ Status: `passed`
 ## Summary
 
 - Required files checked: 10
-- Tracked artifacts checked: 40
+- Tracked artifacts checked: 46
 - Ignored artifacts checked: 18
 - Claim matrix rows checked: 22
 
@@ -83,6 +83,7 @@ Status: `passed`
 - pulse-capacity-robustness
 - qa
 - raw-log-archives
+- replicate-stressor-robust-adaptive
 - replicate-uncertainty
 - report
 - run-capacity
