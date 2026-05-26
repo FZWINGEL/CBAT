@@ -42,6 +42,7 @@ SCHEMA_VERSION = "gate51.stressor_robust_capacity.v1"
 PARETO_SCHEMA_VERSION = "gate54.stressor_robust_pareto.v1"
 ADAPTIVE_SCHEMA_VERSION = "gate55.stressor_robust_adaptive.v1"
 ADAPTIVE_REPLICATION_SCHEMA_VERSION = "gate56.stressor_robust_adaptive_replication.v1"
+ATTRIBUTION_SCHEMA_VERSION = "gate57.stressor_robust_attribution.v1"
 ROBUST_MODEL_LEVELS = (
     "R0_reference_hgb50",
     "R1_condition_balanced_hgb",
@@ -81,6 +82,39 @@ DEFAULT_ADAPTIVE_SELECTION_SPLITS = (
 ADAPTIVE_NON_DEGRADATION_THRESHOLD = 0.05
 DEFAULT_ADAPTIVE_REPLICATION_SEEDS = (42, 101, 202, 303, 404)
 DEFAULT_ADAPTIVE_REPLICATION_POLICIES = ("conservative_guarded", "max_gain_guarded")
+ATTRIBUTION_ARMS = (
+    "D0_R0_F4_reference",
+    "D1_R0_F8_stress_reference",
+    "D2_adaptive_R2_F4_conservative",
+    "D3_adaptive_R2_F8_conservative",
+)
+ATTRIBUTION_COMPARISONS = (
+    (
+        "reweighting_only",
+        "D2_adaptive_R2_F4_conservative",
+        "D0_R0_F4_reference",
+    ),
+    (
+        "raw_f8_stress_feature_value",
+        "D1_R0_F8_stress_reference",
+        "D0_R0_F4_reference",
+    ),
+    (
+        "incremental_f8_under_adaptive",
+        "D3_adaptive_R2_F8_conservative",
+        "D2_adaptive_R2_F4_conservative",
+    ),
+    (
+        "combined_adaptive_f8_vs_f4",
+        "D3_adaptive_R2_F8_conservative",
+        "D0_R0_F4_reference",
+    ),
+    (
+        "adaptive_f8_vs_raw_f8",
+        "D3_adaptive_R2_F8_conservative",
+        "D1_R0_F8_stress_reference",
+    ),
+)
 
 
 @dataclass(frozen=True)
@@ -1019,6 +1053,255 @@ def replicate_stressor_robust_adaptive(
         degradation_rows,
         claim,
         out_dir,
+    )
+    return report
+
+
+def run_stressor_robust_attribution(
+    interval_table_path: Path,
+    interval_subsets_path: Path,
+    out_path: Path,
+    predictions_out_path: Path,
+    *,
+    stress_features_path: Path | None = None,
+    out_dir: Path | None = None,
+    subset: str = "baseline_clean_tolerant",
+    seed: int = 42,
+    hgb_max_iter: int = DEFAULT_HGB_MAX_ITER,
+    targets: list[str] | None = None,
+    split_views: list[str] | None = None,
+    weight_strengths: list[float] | None = None,
+    selection_split_views: list[str] | None = None,
+) -> dict[str, Any]:
+    """Decompose adaptive stressor-robust gains into reweighting and F8 feature value."""
+    if hgb_max_iter <= 0:
+        raise ValueError("hgb_max_iter must be positive.")
+    selected_targets = _normalize_selection(
+        targets,
+        DIRECT_TARGETS,
+        "target",
+        default=[PRIMARY_TARGET, "capacity_Ah_k1"],
+    )
+    selected_splits = _normalize_selection(split_views, SPLIT_COLUMNS, "split view")
+    selected_weight_strengths = _normalize_float_grid(
+        weight_strengths,
+        DEFAULT_PARETO_WEIGHT_STRENGTHS,
+        "weight strength",
+    )
+    selected_selection_splits = _normalize_selection(
+        selection_split_views,
+        SPLIT_COLUMNS,
+        "selection split view",
+        default=DEFAULT_ADAPTIVE_SELECTION_SPLITS,
+    )
+    if stress_features_path is None:
+        raise ValueError("Stressor-robust attribution requires --stress-features for F8.")
+    _import_sklearn_stack()
+
+    all_rows, subset_rows = load_baseline_rows(
+        interval_table_path,
+        interval_subsets_path,
+        subset,
+        stress_features_path=stress_features_path,
+    )
+    if not subset_rows:
+        raise ValueError("Selected interval subset is empty.")
+
+    metrics: list[dict[str, Any]] = []
+    predictions: list[dict[str, Any]] = []
+    selection_rows: list[dict[str, Any]] = []
+    for split_name in selected_splits:
+        for heldout_fold, train_rows, test_rows in iter_split_instances(subset_rows, split_name):
+            assert_no_parameter_set_leakage(train_rows, test_rows, split_name, heldout_fold)
+            outer_train_sets = {int(row["parameter_set"]) for row in train_rows}
+            outer_test_sets = {int(row["parameter_set"]) for row in test_rows}
+            outer_overlap_count = len(outer_train_sets & outer_test_sets)
+            for target in selected_targets:
+                arm_results = {
+                    "D0_R0_F4_reference": predict_stressor_robust_capacity_target(
+                        model_level="R0_reference_hgb50",
+                        feature_group="F4_state_log_age_scalar",
+                        train_rows=train_rows,
+                        test_rows=test_rows,
+                        target=target,
+                        split_name=split_name,
+                        heldout_fold=heldout_fold,
+                        seed=seed,
+                        hgb_max_iter=hgb_max_iter,
+                        bag_count=1,
+                    ),
+                    "D1_R0_F8_stress_reference": predict_stressor_robust_capacity_target(
+                        model_level="R0_reference_hgb50",
+                        feature_group="F8_timestamp_weighted_stress",
+                        train_rows=train_rows,
+                        test_rows=test_rows,
+                        target=target,
+                        split_name=split_name,
+                        heldout_fold=heldout_fold,
+                        seed=seed,
+                        hgb_max_iter=hgb_max_iter,
+                        bag_count=1,
+                    ),
+                    "D2_adaptive_R2_F4_conservative": predict_adaptive_stressor_robust_capacity_target(
+                        feature_group="F4_state_log_age_scalar",
+                        train_rows=train_rows,
+                        test_rows=test_rows,
+                        target=target,
+                        split_name=split_name,
+                        heldout_fold=heldout_fold,
+                        seed=seed,
+                        hgb_max_iter=hgb_max_iter,
+                        weight_strengths=selected_weight_strengths,
+                        selection_split_views=selected_selection_splits,
+                        selection_policy="conservative_guarded",
+                    ),
+                    "D3_adaptive_R2_F8_conservative": predict_adaptive_stressor_robust_capacity_target(
+                        feature_group="F8_timestamp_weighted_stress",
+                        train_rows=train_rows,
+                        test_rows=test_rows,
+                        target=target,
+                        split_name=split_name,
+                        heldout_fold=heldout_fold,
+                        seed=seed,
+                        hgb_max_iter=hgb_max_iter,
+                        weight_strengths=selected_weight_strengths,
+                        selection_split_views=selected_selection_splits,
+                        selection_policy="conservative_guarded",
+                    ),
+                }
+                for arm_id, result in arm_results.items():
+                    model_level, feature_group = _attribution_arm_model_feature(arm_id)
+                    metric = compute_metrics(
+                        test_rows,
+                        result.predictions,
+                        target=target,
+                        subset_name=subset,
+                        run_scope="primary",
+                        split_name=split_name,
+                        heldout_fold=heldout_fold,
+                        model_level=model_level,
+                        feature_group=feature_group,
+                        train_rows=train_rows,
+                    )
+                    metric.update(
+                        {
+                            "schema_version": ATTRIBUTION_SCHEMA_VERSION,
+                            "attribution_arm_id": arm_id,
+                            "model_setting_id": arm_id,
+                            "weight_strength": result.selected_weight_strength
+                            if result.selected_weight_strength is not None
+                            else 0.0,
+                            "selected_variant": result.selected_variant,
+                            "selected_weight_strength": result.selected_weight_strength,
+                            "selection_mean_gain": result.selection_mean_gain,
+                            "selection_max_relative_degradation": result.selection_max_relative_degradation,
+                            "internal_validation_metric": result.internal_validation_metric,
+                            "internal_validation_condition_mean_mae": (
+                                result.internal_validation_condition_mean_mae
+                            ),
+                        }
+                    )
+                    metrics.append(metric)
+                    predictions.extend(
+                        _attribution_prediction_rows(
+                            test_rows,
+                            result.predictions,
+                            subset_name=subset,
+                            split_name=split_name,
+                            heldout_fold=heldout_fold,
+                            model_level=model_level,
+                            feature_group=feature_group,
+                            target=target,
+                            attribution_arm_id=arm_id,
+                            selected_weight_strength=result.selected_weight_strength,
+                            selection_mean_gain=result.selection_mean_gain,
+                            selection_max_relative_degradation=result.selection_max_relative_degradation,
+                        )
+                    )
+                    for row in result.selection_rows or []:
+                        selection_rows.append(
+                            {
+                                **row,
+                                "schema_version": ATTRIBUTION_SCHEMA_VERSION,
+                                "attribution_arm_id": arm_id,
+                                "outer_split_name": split_name,
+                                "outer_heldout_fold": heldout_fold,
+                                "outer_train_condition_count": len(outer_train_sets),
+                                "outer_test_condition_count": len(outer_test_sets),
+                                "outer_train_test_overlap_count": outer_overlap_count,
+                                "target": target,
+                                "feature_group": feature_group,
+                            }
+                        )
+
+    if not metrics:
+        raise ValueError("No metrics were generated.")
+    report_dir = out_dir or _default_report_dir(out_path)
+    predictions_out_path.parent.mkdir(parents=True, exist_ok=True)
+    pq.write_table(
+        pa.Table.from_pylist(predictions).replace_schema_metadata(
+            {b"schema_version": ATTRIBUTION_SCHEMA_VERSION.encode()}
+        ),
+        predictions_out_path,
+    )
+    leaderboard = pareto_leaderboard_rows(metrics)
+    comparison_rows = attribution_comparison_rows(metrics, predictions)
+    outside_rows = attribution_outside_degradation_rows(comparison_rows)
+    leakage_audit = attribution_leakage_audit(selection_rows)
+    claim = stressor_robust_attribution_claim_readiness(
+        comparison_rows,
+        outside_rows,
+        leakage_audit=leakage_audit,
+    )
+    report = {
+        "status": "passed",
+        "schema_version": ATTRIBUTION_SCHEMA_VERSION,
+        "generated_at_utc": datetime.now(UTC).isoformat(),
+        "inputs": {
+            "interval_table": str(interval_table_path),
+            "interval_subsets": str(interval_subsets_path),
+            "stress_features": str(stress_features_path),
+        },
+        "outputs": {
+            "report": str(out_path),
+            "predictions": str(predictions_out_path),
+            "out_dir": str(report_dir),
+        },
+        "subset": subset,
+        "seed": seed,
+        "hgb_max_iter": hgb_max_iter,
+        "targets": selected_targets,
+        "split_views": selected_splits,
+        "weight_strengths": selected_weight_strengths,
+        "selection_split_views": selected_selection_splits,
+        "selection_policy": "conservative_guarded",
+        "attribution_arms": list(ATTRIBUTION_ARMS),
+        "row_counts": {
+            "full_interval_rows": len(all_rows),
+            "selected_subset_rows": len(subset_rows),
+            "metrics": len(metrics),
+            "predictions": len(predictions),
+            "selection_rows": len(selection_rows),
+            "comparison_rows": len(comparison_rows),
+            "outside_degradation_rows": len(outside_rows),
+        },
+        "leakage_audit": leakage_audit,
+        "claim_readiness": claim,
+        "metrics": metrics,
+        "comparison_rows": comparison_rows,
+        "outside_degradation_rows": outside_rows,
+        "selection_rows": selection_rows,
+    }
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    render_stressor_robust_attribution_artifacts(
+        report,
+        leaderboard,
+        comparison_rows,
+        outside_rows,
+        selection_rows,
+        claim,
+        report_dir,
     )
     return report
 
@@ -2399,6 +2682,253 @@ def _selected_weight_count_string(selection_rows: list[dict[str, Any]]) -> str:
     return ";".join(f"{weight}:{counts[weight]}" for weight in sorted(counts))
 
 
+def attribution_comparison_rows(
+    metrics: list[dict[str, Any]],
+    predictions: list[dict[str, Any]],
+    *,
+    bootstrap_resamples: int = 1000,
+    seed: int = 42,
+) -> list[dict[str, Any]]:
+    leaderboard = pareto_leaderboard_rows(metrics)
+    leaderboard_by_key = {
+        (
+            str(row["run_scope"]),
+            str(row["split_name"]),
+            str(row["target"]),
+            str(row["model_setting_id"]),
+        ): row
+        for row in leaderboard
+    }
+    condition_errors = _condition_mae_by_attribution_arm(predictions)
+    output: list[dict[str, Any]] = []
+    split_targets = sorted({(str(row["split_name"]), str(row["target"])) for row in metrics})
+    for split_name, target in split_targets:
+        for comparison_id, candidate_arm, reference_arm in ATTRIBUTION_COMPARISONS:
+            paired_gains = []
+            paired_keys = [
+                key
+                for key in condition_errors
+                if key[0] == "primary"
+                and key[1] == split_name
+                and key[2] == target
+                and key[3] == candidate_arm
+            ]
+            for key in paired_keys:
+                _run_scope, _split_name, _target, _arm, fold, parameter_set = key
+                reference_key = ("primary", split_name, target, reference_arm, fold, parameter_set)
+                if reference_key not in condition_errors:
+                    continue
+                paired_gains.append(condition_errors[reference_key] - condition_errors[key])
+            candidate = leaderboard_by_key.get(("primary", split_name, target, candidate_arm))
+            reference = leaderboard_by_key.get(("primary", split_name, target, reference_arm))
+            if candidate is None or reference is None:
+                continue
+            reference_mae = _as_float(reference["condition_mean_mae"])
+            candidate_mae = _as_float(candidate["condition_mean_mae"])
+            output.append(
+                {
+                    "schema_version": ATTRIBUTION_SCHEMA_VERSION,
+                    "comparison_id": comparison_id,
+                    "candidate_arm": candidate_arm,
+                    "reference_arm": reference_arm,
+                    "target": target,
+                    "split_name": split_name,
+                    "candidate_condition_mean_mae": candidate_mae,
+                    "reference_condition_mean_mae": reference_mae,
+                    "condition_mean_mae_gain": reference_mae - candidate_mae,
+                    "relative_degradation": (
+                        (candidate_mae - reference_mae) / reference_mae if reference_mae > 0 else None
+                    ),
+                    "paired_condition_count": len(paired_gains),
+                    "paired_mean_gain": _mean(paired_gains) if paired_gains else None,
+                    "paired_p05": _bootstrap_mean_p05(
+                        paired_gains,
+                        resamples=bootstrap_resamples,
+                        seed=seed,
+                    ),
+                }
+            )
+    return output
+
+
+def attribution_outside_degradation_rows(comparison_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    output = []
+    comparisons = sorted({str(row["comparison_id"]) for row in comparison_rows})
+    for comparison_id in comparisons:
+        rows = [
+            row
+            for row in comparison_rows
+            if row["comparison_id"] == comparison_id
+            and row["target"] == PRIMARY_TARGET
+            and row["split_name"] != PRIMARY_SPLIT
+            and row.get("relative_degradation") is not None
+        ]
+        max_degradation = max((_as_float(row["relative_degradation"]) for row in rows), default=None)
+        output.append(
+            {
+                "schema_version": ATTRIBUTION_SCHEMA_VERSION,
+                "comparison_id": comparison_id,
+                "target": PRIMARY_TARGET,
+                "max_other_split_relative_degradation": max_degradation,
+                "passes_5pct": (
+                    max_degradation is not None
+                    and max_degradation <= ADAPTIVE_NON_DEGRADATION_THRESHOLD
+                ),
+                "outside_split_rows": len(rows),
+            }
+        )
+    return output
+
+
+def attribution_leakage_audit(selection_rows: list[dict[str, Any]]) -> dict[str, Any]:
+    outer_overlaps = [int(row.get("outer_train_test_overlap_count", 0)) for row in selection_rows]
+    inner_overlaps = [
+        int(row.get("max_inner_train_validation_overlap_count", 0)) for row in selection_rows
+    ]
+    max_outer = max(outer_overlaps, default=0)
+    max_inner = max(inner_overlaps, default=0)
+    return {
+        "status": "passed" if selection_rows and max_outer == 0 and max_inner == 0 else "failed",
+        "selection_rows_checked": len(selection_rows),
+        "max_outer_train_test_overlap_count": max_outer,
+        "max_inner_train_validation_overlap_count": max_inner,
+        "rule": (
+            "Attribution arms D2/D3 must select weights only from outer-training rows; "
+            "outer train/test and inner train/validation condition sets must not overlap."
+        ),
+    }
+
+
+def stressor_robust_attribution_claim_readiness(
+    comparison_rows: list[dict[str, Any]],
+    outside_rows: list[dict[str, Any]],
+    *,
+    leakage_audit: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    incremental = _find_attribution_comparison(
+        comparison_rows,
+        "incremental_f8_under_adaptive",
+        PRIMARY_TARGET,
+        PRIMARY_SPLIT,
+    )
+    reweighting = _find_attribution_comparison(
+        comparison_rows,
+        "reweighting_only",
+        PRIMARY_TARGET,
+        PRIMARY_SPLIT,
+    )
+    raw_f8 = _find_attribution_comparison(
+        comparison_rows,
+        "raw_f8_stress_feature_value",
+        PRIMARY_TARGET,
+        PRIMARY_SPLIT,
+    )
+    combined = _find_attribution_comparison(
+        comparison_rows,
+        "combined_adaptive_f8_vs_f4",
+        PRIMARY_TARGET,
+        PRIMARY_SPLIT,
+    )
+    outside = next(
+        (
+            row
+            for row in outside_rows
+            if row["comparison_id"] == "incremental_f8_under_adaptive"
+        ),
+        None,
+    )
+    leakage_passes = (leakage_audit or {}).get("status") == "passed"
+    incremental_gain = incremental["condition_mean_mae_gain"] if incremental else None
+    incremental_p05 = incremental["paired_p05"] if incremental else None
+    max_degradation = outside["max_other_split_relative_degradation"] if outside else None
+    attribution_passes = (
+        incremental_gain is not None
+        and incremental_p05 is not None
+        and max_degradation is not None
+        and _as_float(incremental_gain) > 0
+        and _as_float(incremental_p05) > 0
+        and _as_float(max_degradation) <= ADAPTIVE_NON_DEGRADATION_THRESHOLD
+        and leakage_passes
+    )
+    positive_incremental = (
+        incremental_gain is not None
+        and incremental_p05 is not None
+        and _as_float(incremental_gain) > 0
+        and _as_float(incremental_p05) > 0
+    )
+    status = "supported_for_diagnostics" if attribution_passes else (
+        "diagnostic_only" if positive_incremental else "not_supported"
+    )
+    return {
+        "stressor_feature_attribution_claim": status,
+        "incremental_f8_gain_vs_adaptive_f4": incremental_gain,
+        "incremental_f8_paired_p05": incremental_p05,
+        "incremental_f8_max_other_split_relative_degradation": max_degradation,
+        "reweighting_only_c_rate_gain": reweighting["condition_mean_mae_gain"] if reweighting else None,
+        "reweighting_only_paired_p05": reweighting["paired_p05"] if reweighting else None,
+        "raw_f8_c_rate_gain": raw_f8["condition_mean_mae_gain"] if raw_f8 else None,
+        "raw_f8_paired_p05": raw_f8["paired_p05"] if raw_f8 else None,
+        "combined_adaptive_f8_gain_vs_f4": combined["condition_mean_mae_gain"] if combined else None,
+        "combined_adaptive_f8_paired_p05": combined["paired_p05"] if combined else None,
+        "leakage_audit": (leakage_audit or {}).get("status", "not_run"),
+        "architecture_readiness": "blocked",
+        "policy_ranking": "blocked",
+        "claim_rule": (
+            "Support requires D3 adaptive R2/F8 to beat D2 adaptive R2/F4 on C-rate "
+            "delta capacity with paired p05 above zero, <=5% outside-C-rate degradation, "
+            "and a passed leakage audit. If D2 explains the gain, attribute the result to "
+            "train-only reweighting rather than F8 stress features."
+        ),
+    }
+
+
+def _find_attribution_comparison(
+    rows: list[dict[str, Any]],
+    comparison_id: str,
+    target: str,
+    split_name: str,
+) -> dict[str, Any] | None:
+    return next(
+        (
+            row
+            for row in rows
+            if row["comparison_id"] == comparison_id
+            and row["target"] == target
+            and row["split_name"] == split_name
+        ),
+        None,
+    )
+
+
+def _condition_mae_by_attribution_arm(
+    predictions: list[dict[str, Any]],
+) -> dict[tuple[str, str, str, str, int, int], float]:
+    grouped: dict[tuple[str, str, str, str, int, int], list[float]] = defaultdict(list)
+    for row in predictions:
+        key = (
+            str(row["run_scope"]),
+            str(row["split_name"]),
+            str(row["target"]),
+            str(row["attribution_arm_id"]),
+            int(row["heldout_fold"]),
+            int(row["parameter_set"]),
+        )
+        grouped[key].append(abs(_as_float(row["y_pred"]) - _as_float(row["y_true"])))
+    return {key: _mean(values) for key, values in grouped.items()}
+
+
+def _attribution_arm_model_feature(arm_id: str) -> tuple[str, str]:
+    if arm_id == "D0_R0_F4_reference":
+        return "R0_reference_hgb50", "F4_state_log_age_scalar"
+    if arm_id == "D1_R0_F8_stress_reference":
+        return "R0_reference_hgb50", "F8_timestamp_weighted_stress"
+    if arm_id == "D2_adaptive_R2_F4_conservative":
+        return ADAPTIVE_MODEL_LEVEL, "F4_state_log_age_scalar"
+    if arm_id == "D3_adaptive_R2_F8_conservative":
+        return ADAPTIVE_MODEL_LEVEL, "F8_timestamp_weighted_stress"
+    raise ValueError(f"Unknown attribution arm: {arm_id}")
+
+
 def _robust_prediction_rows(
     test_rows: list[dict[str, Any]],
     predictions: list[dict[str, float | None]],
@@ -2513,6 +3043,41 @@ def _adaptive_prediction_rows(
                 "selection_max_relative_degradation": selection_max_relative_degradation,
             }
         )
+    return rows
+
+
+def _attribution_prediction_rows(
+    test_rows: list[dict[str, Any]],
+    predictions: list[dict[str, float | None]],
+    *,
+    subset_name: str,
+    split_name: str,
+    heldout_fold: int,
+    model_level: str,
+    feature_group: str,
+    target: str,
+    attribution_arm_id: str,
+    selected_weight_strength: float | None,
+    selection_mean_gain: float | None,
+    selection_max_relative_degradation: float | None,
+) -> list[dict[str, Any]]:
+    rows = _adaptive_prediction_rows(
+        test_rows,
+        predictions,
+        subset_name=subset_name,
+        split_name=split_name,
+        heldout_fold=heldout_fold,
+        model_level=model_level,
+        feature_group=feature_group,
+        target=target,
+        model_setting_id=attribution_arm_id,
+        selected_weight_strength=selected_weight_strength,
+        selection_mean_gain=selection_mean_gain,
+        selection_max_relative_degradation=selection_max_relative_degradation,
+    )
+    for row in rows:
+        row["schema_version"] = ATTRIBUTION_SCHEMA_VERSION
+        row["attribution_arm_id"] = attribution_arm_id
     return rows
 
 
@@ -2933,6 +3498,41 @@ def render_stressor_robust_adaptive_replication_artifacts(
     )
 
 
+def render_stressor_robust_attribution_artifacts(
+    report: dict[str, Any],
+    leaderboard: list[dict[str, Any]],
+    comparison_rows: list[dict[str, Any]],
+    outside_rows: list[dict[str, Any]],
+    selection_rows: list[dict[str, Any]],
+    claim: dict[str, Any],
+    out_dir: Path,
+) -> None:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    _write_csv(out_dir / "attribution_leaderboard.csv", leaderboard)
+    _write_csv(out_dir / "attribution_comparisons.csv", comparison_rows)
+    _write_csv(out_dir / "adaptive_selection_summary.csv", selection_rows)
+    _write_csv(
+        out_dir / "plots" / "c_rate_attribution.csv",
+        [
+            row
+            for row in comparison_rows
+            if row["target"] == PRIMARY_TARGET and row["split_name"] == PRIMARY_SPLIT
+        ],
+    )
+    _write_csv(
+        out_dir / "plots" / "f4_vs_f8_adaptive_gain.csv",
+        [row for row in comparison_rows if row["comparison_id"] == "incremental_f8_under_adaptive"],
+    )
+    _write_csv(out_dir / "plots" / "outside_split_degradation.csv", outside_rows)
+    _write_attribution_claim_readiness_md(
+        report,
+        claim,
+        comparison_rows,
+        outside_rows,
+        out_dir / "attribution_claim_readiness.md",
+    )
+
+
 def _write_stressor_forensics_md(
     split_degradation: list[dict[str, Any]],
     worst_conditions: list[dict[str, Any]],
@@ -3032,6 +3632,71 @@ def _write_adaptive_replication_claim_readiness_md(
             "",
             f"Replication rows evaluated: `{report['row_counts']['replication_rows']}`.",
             "Decision: replicated support is narrow and diagnostic only. Do not claim C-rate fade is solved globally.",
+        ]
+    )
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _write_attribution_claim_readiness_md(
+    report: dict[str, Any],
+    claim: dict[str, Any],
+    comparison_rows: list[dict[str, Any]],
+    outside_rows: list[dict[str, Any]],
+    path: Path,
+) -> None:
+    primary_rows = [
+        row
+        for row in comparison_rows
+        if row["target"] == PRIMARY_TARGET and row["split_name"] == PRIMARY_SPLIT
+    ]
+    lines = [
+        "# Stressor-Robust Attribution Claim Readiness",
+        "",
+        "| Claim area | Status | Evidence |",
+        "|---|---|---|",
+        f"| Incremental F8 value under adaptive selection | `{claim['stressor_feature_attribution_claim']}` | Gain vs adaptive F4 `{_fmt(claim['incremental_f8_gain_vs_adaptive_f4'])}`; paired p05 `{_fmt(claim['incremental_f8_paired_p05'])}`. |",
+        f"| Outside-C-rate non-degradation | `{'supported_for_diagnostics' if claim['incremental_f8_max_other_split_relative_degradation'] is not None and _as_float(claim['incremental_f8_max_other_split_relative_degradation']) <= ADAPTIVE_NON_DEGRADATION_THRESHOLD else 'not_supported'}` | Max outside-C-rate degradation for D3 vs D2 `{_fmt(claim['incremental_f8_max_other_split_relative_degradation'])}`. |",
+        f"| Reweighting-only diagnostic | `diagnostic` | D2 vs D0 C-rate gain `{_fmt(claim['reweighting_only_c_rate_gain'])}`; paired p05 `{_fmt(claim['reweighting_only_paired_p05'])}`. |",
+        f"| Raw F8 diagnostic | `diagnostic` | D1 vs D0 C-rate gain `{_fmt(claim['raw_f8_c_rate_gain'])}`; paired p05 `{_fmt(claim['raw_f8_paired_p05'])}`. |",
+        f"| Combined adaptive F8 diagnostic | `diagnostic` | D3 vs D0 C-rate gain `{_fmt(claim['combined_adaptive_f8_gain_vs_f4'])}`; paired p05 `{_fmt(claim['combined_adaptive_f8_paired_p05'])}`. |",
+        f"| Leakage audit | `{claim['leakage_audit']}` | Adaptive attribution arms use outer-training rows only for selection. |",
+        f"| Architecture readiness | `{claim['architecture_readiness']}` | This remains a non-neural decomposition gate. |",
+        f"| Policy ranking | `{claim['policy_ranking']}` | No calibrated risk or intervention task is tested. |",
+        "",
+        claim["claim_rule"],
+        "",
+        "## Primary C-rate Comparisons",
+        "",
+        "| Comparison | Candidate | Reference | Gain | Paired p05 | Relative degradation |",
+        "|---|---|---|---:|---:|---:|",
+    ]
+    for row in primary_rows:
+        lines.append(
+            "| "
+            f"`{row['comparison_id']}` | `{row['candidate_arm']}` | `{row['reference_arm']}` | "
+            f"`{_fmt(row['condition_mean_mae_gain'])}` | `{_fmt(row['paired_p05'])}` | "
+            f"`{_fmt(row['relative_degradation'])}` |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Outside-Split Degradation",
+            "",
+            "| Comparison | Max outside-C-rate degradation | Passes 5% |",
+            "|---|---:|---:|",
+        ]
+    )
+    for row in outside_rows:
+        lines.append(
+            "| "
+            f"`{row['comparison_id']}` | `{_fmt(row['max_other_split_relative_degradation'])}` | "
+            f"`{row['passes_5pct']}` |"
+        )
+    lines.extend(
+        [
+            "",
+            f"Comparison rows evaluated: `{report['row_counts']['comparison_rows']}`.",
+            "Decision: attribution support is diagnostic only and does not authorize a broad C-rate fade-solved claim.",
         ]
     )
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")

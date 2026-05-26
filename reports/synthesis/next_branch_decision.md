@@ -26,7 +26,8 @@ The project has completed the major baseline-first charter gates:
 - calibration and robustness gate correctness hardening;
 - stressor-robust Pareto forensics and claim finalization;
 - train-only adaptive stressor-robust selection;
-- adaptive stressor-robust replication and final claim hardening.
+- adaptive stressor-robust replication and final claim hardening;
+- stressor-robust attribution and reweighting decomposition.
 
 The strongest contribution is now a rigorous grouped-validation benchmark that
 documents which battery-degradation signals are supported, diagnostic-only,
@@ -39,6 +40,10 @@ Milestone 5.6 locks the narrow positive diagnostic for conservative train-only
 adaptive stressor-balanced selection after deterministic-seed replication, but
 it does not change the blocked status of broad fade-solved, policy,
 architecture, calibrated-risk, or causal claims.
+Milestone 5.7 keeps that result narrow: F8 adds C-rate delta signal under
+adaptive selection, but the incremental F8 comparison fails outside-C-rate
+non-degradation, so independent stress-feature attribution remains
+diagnostic-only.
 
 ## Recommended Path
 
@@ -68,7 +73,9 @@ conservative train-only adaptive selector now replicates diagnostically for
 `delta_capacity_Ah` with max outside-C-rate degradation `0.0279117`; the
 max-gain policy still fails at `0.0645764`. Further work here is lower value
 than synthesis/release maintenance unless a fresh predeclared question is
-needed.
+needed. The Milestone 5.7 attribution decomposition does not create that next
+question: reweighting-only and adaptive F8 both contribute C-rate delta signal,
+but F8 attribution fails the outside-split guardrail.
 
 ## Explicitly Rejected Branches
 

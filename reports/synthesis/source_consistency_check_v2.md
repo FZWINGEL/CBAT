@@ -1,6 +1,6 @@
 # Source Consistency Check v2
 
-Date: 2026-05-24
+Date: 2026-05-27
 
 ## Scope
 
@@ -13,11 +13,12 @@ This check covers the Milestone 3.0 synthesis artifacts:
 - `reports/synthesis/blocked_claims_v2.md`
 - `reports/synthesis/next_branch_decision.md`
 
-It has been refreshed after Milestones 5.0, 5.1, 5.2, 5.3, 5.4, and 5.5 to
+It has been refreshed after Milestones 5.0, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6,
+and 5.7 to
 include threshold-warning probability calibration, stressor-axis robust
 capacity, calibration/quantile hygiene, calibration/robustness
 correctness-hardening, Pareto forensics, and train-only adaptive robust
-selection results.
+selection, replication, and attribution-decomposition results.
 
 ## Source Artifact Existence
 
@@ -44,6 +45,8 @@ blocked or not supported:
 - prior-PULSE strongest-baseline dominance;
 - fade-rate solved;
 - stressor-robust training solves C-rate fade globally;
+- adaptive stressor-robust gain is independently attributable to F8 stress
+  features;
 - adaptive stressor-robust diagnostics justify architecture or policy;
 - quantile noncrossing validates calibrated uncertainty;
 - equal-frequency ECE validates calibrated risk;
@@ -73,6 +76,8 @@ noncrossing, but capacity uncertainty remains undercovered. Milestone 5.6
 locks a narrow conservative train-only adaptive stressor-balanced diagnostic
 that replicates across deterministic logical seeds and passes the C-rate gain
 and outside-C-rate non-degradation gate for `delta_capacity_Ah`, but the broad
-C-rate fade-solved claim remains blocked.
+C-rate fade-solved claim remains blocked. Milestone 5.7 shows incremental F8
+value under adaptive selection for C-rate delta, but that attribution fails
+outside-C-rate non-degradation and remains diagnostic-only.
 Any future calibrated-risk, calibrated-uncertainty, policy, architecture, or
 broad robust-capacity claim requires a separate gated milestone.

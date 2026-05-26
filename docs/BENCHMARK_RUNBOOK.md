@@ -90,11 +90,14 @@ mbp baseline run-stressor-robust-capacity --interval-table data/interim/interval
 mbp baseline run-stressor-robust-pareto --interval-table data/interim/interval_table.parquet --interval-subsets data/splits/interval_subset_registry_v1.parquet --stress-features data/interim/interval_stress_features_v1_1.parquet --out reports/baselines/capacity_stressor_robust_pareto_report.json --predictions-out data/processed/capacity_stressor_robust_pareto_predictions.parquet --out-dir reports/baselines/capacity_stressor_robust_pareto
 mbp baseline run-stressor-robust-adaptive --interval-table data/interim/interval_table.parquet --interval-subsets data/splits/interval_subset_registry_v1.parquet --stress-features data/interim/interval_stress_features_v1_1.parquet --out reports/baselines/capacity_stressor_robust_adaptive_conservative_report.json --predictions-out data/processed/capacity_stressor_robust_adaptive_conservative_predictions.parquet --out-dir reports/baselines/capacity_stressor_robust_adaptive_conservative --selection-policy conservative_guarded
 mbp baseline replicate-stressor-robust-adaptive --interval-table data/interim/interval_table.parquet --interval-subsets data/splits/interval_subset_registry_v1.parquet --stress-features data/interim/interval_stress_features_v1_1.parquet --out-dir reports/baselines/capacity_stressor_robust_adaptive_replication
+mbp baseline run-stressor-robust-attribution --interval-table data/interim/interval_table.parquet --interval-subsets data/splits/interval_subset_registry_v1.parquet --stress-features data/interim/interval_stress_features_v1_1.parquet --out reports/baselines/capacity_stressor_robust_attribution_report.json --predictions-out data/processed/capacity_stressor_robust_attribution_predictions.parquet --out-dir reports/baselines/capacity_stressor_robust_attribution
 ```
 
 Outputs: tracked JSON/CSV/Markdown reports and ignored prediction Parquets.
 The adaptive replication command emits tracked reports only and records
 deterministic seed reuse explicitly for the HGB/no-bagging path.
+The attribution command emits tracked decomposition reports and an ignored
+prediction Parquet.
 
 ## 7. Diagnostics
 

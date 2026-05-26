@@ -1,16 +1,16 @@
 # Codex Next Work
 
 Current recommended branch: synthesis/release maintenance. The adaptive
-stressor-robust replication check has been run and should not be broadened
-without a fresh gated question.
+stressor-robust replication and attribution checks have been run and should
+not be broadened without a fresh gated question.
 
 ## Current Phase
 
-Milestone 5.6 is an adaptive stressor-robust replication and generalization
-gate. It replicates the Milestone 5.5 conservative R2 stressor-balanced HGB
-selector across the deterministic HGB/no-bagging seed interface and keeps the
-unchanged outer C-rate gain plus outside-C-rate non-degradation guardrail. It
-is not a new architecture, calibration-claim, or policy-ranking branch.
+Milestone 5.7 is a stressor-robust attribution and reweighting decomposition
+gate. It compares R0/F4, R0/F8, adaptive R2/F4, and adaptive R2/F8 arms to
+separate F8 timestamp-weighted stress-feature value from train-only
+reweighting. It is not a new architecture, calibration-claim, or
+policy-ranking branch.
 
 ## Current Result
 
@@ -30,12 +30,20 @@ deterministic seeds. The report records deterministic seed reuse explicitly
 with effective fit seed `42`. The result is target-specific and diagnostic
 only; it does not solve C-rate fade globally or justify architecture work.
 
+Milestone 5.7 keeps F8 attribution diagnostic-only. Reweighting-only improves
+C-rate `delta_capacity_Ah` by `0.0106361` versus R0/F4, raw F8 does not help
+that row (`-0.00138302`), and incremental F8 under adaptive selection improves
+C-rate delta by `0.00940756` with paired p05 `6.06012e-05`. The incremental
+F8 comparison fails outside-C-rate non-degradation (`0.717391`), so the
+adaptive result must not be described as independently explained by F8 stress
+features.
+
 ## Optional Technical Branch
 
 No broader technical branch is currently justified. Future technical work, if
 opened, should be release automation or documentation synthesis unless a fresh
 predeclared question is created. Do not open CBAT, policy ranking, sequence
-modeling, or new modality expansion from the Milestone 5.6 result.
+modeling, or new modality expansion from the Milestone 5.6/5.7 results.
 
 ## Blocked Branches
 
@@ -87,6 +95,8 @@ Allowed current wording:
   a global robust-capacity claim
 - conservative train-only adaptive R2 selection supports a narrow diagnostic
   C-rate `delta_capacity_Ah` robustness result
+- F8 stress-feature attribution remains diagnostic-only because incremental F8
+  under adaptive selection fails outside-C-rate non-degradation
 
 Forbidden current wording:
 

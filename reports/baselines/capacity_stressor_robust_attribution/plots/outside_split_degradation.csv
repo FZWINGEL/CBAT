@@ -1,0 +1,6 @@
+comparison_id,max_other_split_relative_degradation,outside_split_rows,passes_5pct,schema_version,target
+adaptive_f8_vs_raw_f8,0.027911712329013853,4,True,gate57.stressor_robust_attribution.v1,delta_capacity_Ah
+combined_adaptive_f8_vs_f4,0.8364788237685331,4,False,gate57.stressor_robust_attribution.v1,delta_capacity_Ah
+incremental_f8_under_adaptive,0.7173905908647323,4,False,gate57.stressor_robust_attribution.v1,delta_capacity_Ah
+raw_f8_stress_feature_value,0.786611439232938,4,False,gate57.stressor_robust_attribution.v1,delta_capacity_Ah
+reweighting_only,0.06934254416977916,4,False,gate57.stressor_robust_attribution.v1,delta_capacity_Ah

@@ -214,10 +214,19 @@ logical seeds and recorded deterministic HGB/no-bagging seed reuse explicitly.
 All conservative logical seeds pass the same diagnostic guardrail, while the
 max-gain selector still fails outside-C-rate non-degradation at `0.0645764`.
 
+Milestone 5.7 decomposed the adaptive result into R0/F4, R0/F8, adaptive
+R2/F4, and adaptive R2/F8 arms. Reweighting-only improves C-rate
+`delta_capacity_Ah` by `0.0106361` versus R0/F4 with paired p05 `0.00594397`.
+Raw F8 does not improve the same row versus F4 (`-0.00138302`). Incremental F8
+under adaptive selection does improve C-rate delta by `0.00940756` with paired
+p05 `6.06012e-05`, but it fails the outside-C-rate guardrail because maximum
+outside-split degradation is `0.717391`.
+
 Decision: report the conservative adaptive selector as a narrow diagnostic
-robustness result for `delta_capacity_Ah`. Do not claim C-rate fade is solved,
-do not open architecture work, and do not use this result for policy ranking
-or causal claims.
+robustness result for `delta_capacity_Ah`. Report F8 stress-feature
+attribution as diagnostic-only rather than independently supported. Do not
+claim C-rate fade is solved, do not open architecture work, and do not use this
+result for policy ranking or causal claims.
 
 ## Milestone 3.0 Blocked-Claim Refresh
 
@@ -231,6 +240,9 @@ The v2 synthesis keeps the following negative boundaries active:
   diagnostically, replicates under deterministic seed reuse, and passes the
   outside-split guardrail for `delta_capacity_Ah`, but broad C-rate
   fade-solved and architecture claims remain blocked;
+- F8 stress-feature attribution remains diagnostic-only because incremental F8
+  under adaptive selection fails outside-C-rate non-degradation despite a
+  positive C-rate delta gain;
 - sequence models remain blocked by the order-vs-aggregate and
   order-vs-shuffled negative result;
 - calibrated uncertainty remains blocked by C-rate coverage failure even after

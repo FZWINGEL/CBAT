@@ -11,9 +11,11 @@ from mbp.baselines import stressor_robust_capacity as robust_module
 from mbp.baselines.stressor_robust_capacity import (
     ADAPTIVE_REPLICATION_SCHEMA_VERSION,
     ADAPTIVE_SCHEMA_VERSION,
+    ATTRIBUTION_SCHEMA_VERSION,
     PARETO_SCHEMA_VERSION,
     SELECTION_TIE_BREAK_ORDER,
     adaptive_replication_claim_readiness,
+    attribution_outside_degradation_rows,
     aggregate_adaptive_weight_selection_rows,
     _condition_bagged_predictions,
     condition_balanced_weights,
@@ -26,6 +28,7 @@ from mbp.baselines.stressor_robust_capacity import (
     pareto_frontier_rows,
     pareto_model_settings,
     replicate_stressor_robust_adaptive,
+    run_stressor_robust_attribution,
     run_stressor_robust_adaptive,
     run_stressor_robust_capacity,
     run_stressor_robust_pareto,
@@ -33,6 +36,7 @@ from mbp.baselines.stressor_robust_capacity import (
     select_adaptive_weight_strength,
     stressor_balanced_weights,
     stressor_robust_adaptive_claim_readiness,
+    stressor_robust_attribution_claim_readiness,
     stressor_robust_pareto_claim_readiness,
     stressor_robust_claim_readiness,
 )
@@ -537,6 +541,76 @@ def test_adaptive_replication_claim_requires_all_seeds_and_leakage_pass() -> Non
     assert claim["failing_seeds"] == "2"
 
 
+def test_attribution_claim_requires_incremental_f8_gain_and_guardrail() -> None:
+    comparison_rows = [
+        {
+            "comparison_id": "incremental_f8_under_adaptive",
+            "target": "delta_capacity_Ah",
+            "split_name": "c_rate_holdout_fold",
+            "condition_mean_mae_gain": 0.01,
+            "paired_p05": 0.002,
+        },
+        {
+            "comparison_id": "reweighting_only",
+            "target": "delta_capacity_Ah",
+            "split_name": "c_rate_holdout_fold",
+            "condition_mean_mae_gain": 0.02,
+            "paired_p05": 0.004,
+        },
+        {
+            "comparison_id": "raw_f8_stress_feature_value",
+            "target": "delta_capacity_Ah",
+            "split_name": "c_rate_holdout_fold",
+            "condition_mean_mae_gain": -0.01,
+            "paired_p05": -0.002,
+        },
+        {
+            "comparison_id": "combined_adaptive_f8_vs_f4",
+            "target": "delta_capacity_Ah",
+            "split_name": "c_rate_holdout_fold",
+            "condition_mean_mae_gain": 0.03,
+            "paired_p05": 0.006,
+        },
+    ]
+    outside_rows = [
+        {
+            "comparison_id": "incremental_f8_under_adaptive",
+            "max_other_split_relative_degradation": 0.02,
+        }
+    ]
+
+    claim = stressor_robust_attribution_claim_readiness(
+        comparison_rows,
+        outside_rows,
+        leakage_audit={"status": "passed"},
+    )
+
+    assert claim["stressor_feature_attribution_claim"] == "supported_for_diagnostics"
+    assert claim["incremental_f8_gain_vs_adaptive_f4"] == 0.01
+
+
+def test_attribution_outside_degradation_rows_use_non_c_rate_only() -> None:
+    rows = [
+        {
+            "comparison_id": "incremental_f8_under_adaptive",
+            "target": "delta_capacity_Ah",
+            "split_name": "c_rate_holdout_fold",
+            "relative_degradation": 0.2,
+        },
+        {
+            "comparison_id": "incremental_f8_under_adaptive",
+            "target": "delta_capacity_Ah",
+            "split_name": "profile_holdout_fold",
+            "relative_degradation": 0.03,
+        },
+    ]
+
+    outside = attribution_outside_degradation_rows(rows)
+
+    assert outside[0]["max_other_split_relative_degradation"] == 0.03
+    assert outside[0]["passes_5pct"] is True
+
+
 def test_degradation_by_split_target_feature_rows() -> None:
     rows = degradation_by_split_target_feature_rows(
         [
@@ -706,3 +780,33 @@ def test_stressor_robust_adaptive_replication_runner_smoke(tmp_path: Path) -> No
     assert (out_dir / "plots" / "seed_sensitivity.csv").exists()
     assert (out_dir / "plots" / "policy_sensitivity.csv").exists()
     assert (out_dir / "adaptive_replication_claim_readiness.md").exists()
+
+
+def test_stressor_robust_attribution_runner_smoke(tmp_path: Path) -> None:
+    interval_path, subset_path = _write_capacity_fixture(tmp_path)
+    report_path = tmp_path / "stressor_robust_attribution_report.json"
+    predictions_path = tmp_path / "stressor_robust_attribution_predictions.parquet"
+    out_dir = tmp_path / "stressor_robust_attribution"
+
+    report = run_stressor_robust_attribution(
+        interval_path,
+        subset_path,
+        report_path,
+        predictions_path,
+        stress_features_path=interval_path,
+        out_dir=out_dir,
+        targets=["delta_capacity_Ah"],
+        split_views=["condition_fold"],
+        weight_strengths=[0.5, 1.0],
+        selection_split_views=["condition_fold"],
+        hgb_max_iter=2,
+    )
+
+    metadata = pq.read_table(predictions_path).schema.metadata or {}
+    assert report["status"] == "passed"
+    assert report["schema_version"] == ATTRIBUTION_SCHEMA_VERSION
+    assert report["row_counts"]["comparison_rows"] > 0
+    assert metadata[b"schema_version"] == ATTRIBUTION_SCHEMA_VERSION.encode()
+    assert (out_dir / "attribution_claim_readiness.md").exists()
+    assert (out_dir / "attribution_comparisons.csv").exists()
+    assert (out_dir / "plots" / "c_rate_attribution.csv").exists()

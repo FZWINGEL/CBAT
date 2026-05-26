@@ -1,6 +1,6 @@
 # Repository Status
 
-Last updated: 2026-05-24
+Last updated: 2026-05-27
 
 Current branch: `main`
 
@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 5.6: Adaptive stressor-robust replication and generalization gate**.
+The repository is in **Milestone 5.7: Stressor-robust attribution and reweighting decomposition gate**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -153,6 +153,15 @@ logical seeds with deterministic seed reuse recorded explicitly; the max-gain
 policy still fails the unchanged outside-C-rate guardrail. The replicated
 result supports only the narrow diagnostic C-rate `delta_capacity_Ah`
 robust-selection claim.
+Milestone 5.7 decomposes the replicated adaptive result into F4/F8 and R0/R2
+attribution arms to test whether the C-rate `delta_capacity_Ah` gain comes from
+timestamp-weighted stress features, train-only reweighting, or their
+combination. F8 adds incremental C-rate delta signal under adaptive selection
+(`0.00940756`, paired p05 `6.06012e-05`), and the combined adaptive F8 arm
+keeps the Milestone 5.6 C-rate gain (`0.0200436` versus F4), but the
+incremental F8 comparison fails the outside-C-rate non-degradation guardrail
+because voltage-window `delta_capacity_Ah` degrades heavily
+(`0.717391`). The result is attribution-diagnostic only.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -161,11 +170,10 @@ improvement claims have been started.
 
 Current state:
 
-- Milestone 5.6 is an adaptive stressor-robust replication and generalization
-  gate for the existing non-neural stressor-balanced HGB family. It adds no
-  feature engineering, neural/sequence models, CBAT, policy ranking,
-  calibrated-risk claims, calibrated-uncertainty claims, or architecture
-  claims.
+- Milestone 5.7 is an attribution and reweighting decomposition gate for the
+  existing non-neural stressor-balanced HGB family. It adds no feature
+  engineering, neural/sequence models, CBAT, policy ranking, calibrated-risk
+  claims, calibrated-uncertainty claims, or architecture claims.
 - `mbp baseline diagnose-stressor-robust-forensics` adds split/condition
   regression diagnostics for the Milestone 5.1 robust-capacity run. The largest
   regressions are concentrated in non-C-rate views, including profile and
@@ -195,6 +203,15 @@ Current state:
   floors `0.00749857` and `0.00465696`, and max outside-C-rate degradation
   `0.0279117`. Max-gain guarded selection fails with outside-C-rate
   degradation `0.0645764`.
+- `mbp baseline run-stressor-robust-attribution` compares four arms:
+  D0 R0/F4, D1 R0/F8, D2 adaptive R2/F4, and D3 adaptive R2/F8. The
+  reweighting-only D2-vs-D0 C-rate delta gain is `0.0106361` with paired p05
+  `0.00594397`; raw F8 does not help C-rate delta versus F4 (`-0.00138302`);
+  and incremental F8 under adaptive selection improves C-rate delta by
+  `0.00940756` with paired p05 above zero. However, incremental F8 fails the
+  unchanged outside-C-rate guardrail with max degradation `0.717391`, so F8
+  stress-feature attribution remains diagnostic-only and broad fade-solved
+  wording remains blocked.
 - Milestone 5.3 remains a correctness-hardening gate for existing calibration
   and stressor-robustness reports. It does not add models, features, or claims.
 - Milestone 5.2 added `ece_10_bin_equal_freq` alongside the existing

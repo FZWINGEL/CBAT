@@ -261,6 +261,17 @@ new model families, neural or sequence models, CBAT, DRT, EIS embeddings,
 policy ranking, calibrated-risk wording, calibrated-uncertainty wording,
 causal claims, same-cell counterfactual claims, C-rate fade-solved wording, or
 broad multimodal claims.
+Milestone 5.7 authorizes only stressor-robust attribution decomposition over
+the existing non-neural R0/R2 HGB family and existing F4/F8 feature groups. It
+may compare R0/F4, R0/F8, adaptive R2/F4, and adaptive R2/F8 arms under the
+existing grouped splits, decompose reweighting-only versus F8
+timestamp-weighted stress-feature gains, and audit that adaptive selections use
+only outer-training rows. It must keep the unchanged 5% outside-C-rate
+non-degradation guardrail. It does not authorize new feature engineering, new
+model families, neural or sequence models, CBAT, DRT, EIS embeddings, policy
+ranking, calibrated-risk wording, calibrated-uncertainty wording, causal
+claims, same-cell counterfactual claims, C-rate fade-solved wording, or broad
+multimodal claims.
 
 Required split discipline:
 
@@ -429,6 +440,33 @@ Milestone 5.6 claim rules:
   `delta_capacity_Ah` and does not authorize C-rate fade-solved, architecture,
   calibrated-risk, calibrated-uncertainty, policy, causal, or broad
   multimodal claims.
+
+Required Milestone 5.7 stressor-robust attribution artifacts:
+
+- `mbp baseline run-stressor-robust-attribution`
+- `reports/baselines/capacity_stressor_robust_attribution_report.json`
+- `reports/baselines/capacity_stressor_robust_attribution/attribution_claim_readiness.md`
+- `reports/baselines/capacity_stressor_robust_attribution/attribution_leaderboard.csv`
+- `reports/baselines/capacity_stressor_robust_attribution/attribution_comparisons.csv`
+- `reports/baselines/capacity_stressor_robust_attribution/adaptive_selection_summary.csv`
+- `reports/baselines/capacity_stressor_robust_attribution/plots/c_rate_attribution.csv`
+- `reports/baselines/capacity_stressor_robust_attribution/plots/f4_vs_f8_adaptive_gain.csv`
+- `reports/baselines/capacity_stressor_robust_attribution/plots/outside_split_degradation.csv`
+- `docs/experiments/2026-05-27_stressor_robust_attribution_gate.md`
+
+Milestone 5.7 claim rules:
+
+- Stress-feature attribution support requires adaptive R2/F8 to beat adaptive
+  R2/F4 on C-rate `delta_capacity_Ah`, paired p05 above zero, <=5%
+  outside-C-rate degradation for that incremental comparison, and a passed
+  leakage audit.
+- If adaptive R2/F8 improves C-rate but fails outside-C-rate
+  non-degradation, the result is attribution-diagnostic only.
+- If adaptive R2/F4 explains most or all of the C-rate gain, attribute the
+  result to train-only reweighting/selection rather than F8 stress features.
+- No Milestone 5.7 outcome authorizes C-rate fade-solved, architecture,
+  calibrated-risk, calibrated-uncertainty, policy, causal, sequence/neural,
+  CBAT, or broad multimodal claims.
 
 Required Milestone 4.0 manuscript-integration artifacts:
 
@@ -823,6 +861,17 @@ Milestone 5.3 validation commands:
 - `mbp report check-release-candidate`
 - `git diff --check`
 - generated prediction Parquets under `data/processed/` must remain untracked
+
+Milestone 5.7 validation commands:
+
+- focused tests for stressor-robust attribution helpers
+- `mbp baseline run-stressor-robust-attribution`
+- `ruff check . --no-cache`
+- `pytest -p no:cacheprovider`
+- `mbp report check-release-candidate`
+- `git diff --check`
+- generated attribution prediction Parquets under `data/processed/` must
+  remain untracked
 
 Milestone 2.1 EIS validation commands:
 

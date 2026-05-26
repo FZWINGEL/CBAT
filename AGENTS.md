@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 5.6: Adaptive stressor-robust replication and generalization gate.
+Milestone 5.7: Stressor-robust attribution and reweighting decomposition gate.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -52,11 +52,15 @@ Current state:
 - Milestone 5.5 tested train-only adaptive stressor-robust selection. The
   conservative selector passed diagnostically, while the max-gain selector
   failed the unchanged outside-C-rate non-degradation guardrail.
-- The current main-project track replicates that adaptive stressor-robust
-  result across the deterministic HGB/no-bagging seed interface and finalizes
-  the generalization claim posture. It must not relax the 5% guardrail or
-  convert a narrow diagnostic selector into a broad C-rate-solved,
-  architecture, policy, or causal claim.
+- Milestone 5.6 replicated the conservative adaptive stressor-robust result
+  across the deterministic HGB/no-bagging seed interface and locked only a
+  narrow diagnostic `delta_capacity_Ah` robustness claim.
+- The current main-project track decomposes whether the Milestone 5.6 gain is
+  attributable to F8 timestamp-weighted stress features, train-only
+  reweighting, or their combination. It must not relax the 5% guardrail or
+  convert a diagnostic attribution result into a broad C-rate-solved,
+  architecture, policy, calibrated-risk, calibrated-uncertainty, or causal
+  claim.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
@@ -84,6 +88,9 @@ Allowed work:
 - conservative adaptive robust-selection claim-readiness reporting
 - adaptive stressor-robust replication across deterministic seeds
 - adaptive selector leakage and seed-reuse diagnostics
+- stressor-robust attribution decomposition over existing F4/F8 and R0/R2 arms
+- train-only reweighting-only versus stress-feature attribution diagnostics
+- attribution leakage audits using only outer-training rows for selection
 - grouped threshold-warning probability calibration
 - Platt/logistic and isotonic post-hoc calibration fitted on calibration
   conditions only
@@ -158,10 +165,8 @@ Allowed work:
 - small tests with synthetic fixtures
 
 Forbidden work:
-- new model training outside the scoped adaptive stressor-robust replication
-  gate
-- new feature engineering outside the scoped adaptive stressor-robust
-  replication gate
+- new model training outside the scoped stressor-robust attribution gate
+- new feature engineering outside the scoped stressor-robust attribution gate
 - knee prediction models
 - neural models
 - sequence models
