@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 8.0: Support-aware selective reliability gate.
+Milestone 8.1: Non-neural diagnostic-state distillation gate.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -114,11 +114,25 @@ Current state:
   retrained, no predictor features are added, and support filtering remains an
   abstention/reliability diagnostic rather than policy recommendation,
   calibrated risk, deployment support, CBAT readiness, or causal evidence.
+- Milestone 8.1 tests charter Q2/H3 with a leakage-safe non-neural
+  diagnostic-state distillation gate. Stage A predicts current PULSE/EIS
+  scalar diagnostic state from check-up-k capacity/state/time/nominal fields
+  using train-only inner grouped out-of-fold predictions. Stage B feeds only
+  those predicted diagnostic-state features into non-neural capacity-horizon
+  and threshold-warning baselines. The real-data result does not support
+  downstream multimodal-state gains, so capacity+PULSE+EIS architecture, CBAT,
+  calibrated risk, policy ranking, sequence/neural branches, and causal claims
+  remain blocked.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
 Allowed work:
 - support-distance diagnostics over existing grouped prediction artifacts
+- non-neural diagnostic-state distillation with predicted PULSE/EIS state
+- train-only inner grouped out-of-fold auxiliary diagnostic predictions
+- capacity-horizon and threshold-warning downstream ablations using predicted
+  diagnostic-state features only
+- diagnostic-state leakage audits and claim-readiness reports
 - support-aware selective retention curves for capacity-horizon forecasts
 - support-aware selective retention curves for threshold-warning scores
 - support-aware selective retention curves for supported policy contrasts

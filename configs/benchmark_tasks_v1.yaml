@@ -308,3 +308,21 @@ tasks:
     allowed_wording: train-only support distances can audit existing prediction artifacts and selective retention remains diagnostic-only
     forbidden_wording: support filtering validates deployment reliability calibrated risk policy recommendation causal effects same-cell counterfactuals CBAT or architecture readiness
     decision: keep as an abstention and support audit; do not proceed to policy or deployment claims
+  - task_id: T18_diagnostic_state_distillation
+    task_name: non-neural diagnostic-state distillation gate
+    area: diagnostic_state
+    question_id: Q2
+    primary_claim_id: C33
+    claim_ids: [C10, C33]
+    status: not_supported
+    targets: [capacity_Ah_kh, delta_capacity_Ah_h, event_within_3_checkups, pulse_1s_resistance_k, pulse_10ms_resistance_k, eis_z_abs_1kHz_k, eis_phase_1kHz_k, nyquist_im_peak_abs_k, nyquist_semicircle_width_proxy_k]
+    split_views: [condition_fold, temperature_holdout_fold, c_rate_holdout_fold, profile_holdout_fold, voltage_window_holdout_fold]
+    primary_metric: D3 predicted diagnostic-state gain versus D0 capacity-state reference under grouped HGB-50 plus auxiliary MAE gain versus train-mean reference
+    primary_result: auxiliary surrogates beat train mean in 12 of 12 rows but D3 worsens primary all-split downstream rows; best all-split capacity primary relative gain is -0.00790693 and all-split threshold-warning Brier relative gain is -0.0620807 while C-rate non-collapse fails
+    best_reference: D0 capacity-state reference downstream baseline and train-mean auxiliary reference
+    baseline_families: [auxiliary_ridge_surrogate, hgb_downstream_capacity_horizon, hgb_downstream_threshold_warning, predicted_diagnostic_state_ablation]
+    source_artifacts: [docs/experiments/2026-05-27_diagnostic_state_distillation_gate.md, reports/baselines/diagnostic_state_distillation/diagnostic_state_distillation_claim_readiness.md]
+    local_data_artifacts: [data/interim/capacity_horizon_table_v1.parquet, data/interim/threshold_warning_table_v1.parquet, data/interim/pulse_target_table.parquet, data/interim/eis_target_table_v1.parquet, data/processed/diagnostic_state_distillation_predictions.parquet]
+    allowed_wording: predicted PULSE/EIS diagnostic-state surrogates are learnable but do not improve downstream capacity-horizon or threshold-warning enough for a multimodal-state claim
+    forbidden_wording: capacity plus PULSE plus EIS architecture CBAT broad multimodal learning calibrated risk calibrated uncertainty policy ranking causal effects or same-cell counterfactuals are authorized
+    decision: close broad diagnostic-state distillation as a negative gate and keep PULSE/EIS auxiliary only

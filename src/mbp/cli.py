@@ -2647,6 +2647,82 @@ def baseline_run_capacity_horizon(
     )
 
 
+@baseline_app.command("run-diagnostic-state-distillation")
+def baseline_run_diagnostic_state_distillation(
+    capacity_horizon_table: Path = typer.Option(
+        ...,
+        "--capacity-horizon-table",
+        help="Path to capacity_horizon_table_v1.parquet.",
+    ),
+    threshold_warning_table: Path = typer.Option(
+        ...,
+        "--threshold-warning-table",
+        help="Path to threshold_warning_table_v1.parquet.",
+    ),
+    pulse_target_table: Path = typer.Option(
+        ...,
+        "--pulse-target-table",
+        help="Path to pulse_target_table.parquet.",
+    ),
+    eis_target_table: Path = typer.Option(
+        ...,
+        "--eis-target-table",
+        help="Path to eis_target_table_v1.parquet.",
+    ),
+    out: Path = typer.Option(..., "--out", help="Output JSON report path."),
+    predictions_out: Path = typer.Option(..., "--predictions-out", help="Output prediction Parquet path."),
+    out_dir: Path | None = typer.Option(None, "--out-dir", help="Output directory for diagnostics."),
+    seed: int = typer.Option(42, "--seed", help="Deterministic model seed."),
+    hgb_max_iter: int = typer.Option(50, "--hgb-max-iter", min=1, help="HGB max_iter for stage-A and stage-B models."),
+    tasks: str | None = typer.Option(None, "--tasks", help="Comma-separated tasks: capacity_horizon,threshold_warning."),
+    capacity_targets: str | None = typer.Option(None, "--capacity-targets", help="Comma-separated capacity horizon targets."),
+    warning_targets: str | None = typer.Option(None, "--warning-targets", help="Comma-separated threshold-warning targets."),
+    model_levels: str | None = typer.Option(None, "--model-levels", help="Comma-separated diagnostic-state model levels."),
+    feature_groups: str | None = typer.Option(None, "--feature-groups", help="Comma-separated D0-D3 feature groups."),
+    split_views: str | None = typer.Option(None, "--split-views", help="Comma-separated split views."),
+    horizons: str | None = typer.Option(None, "--horizons", help="Comma-separated check-up horizons."),
+    warning_label_policy: str = typer.Option(
+        "verified_only",
+        "--warning-label-policy",
+        help="Threshold-warning label policy: all_rows, verified_only, or censored_as_negative.",
+    ),
+    inner_folds: int = typer.Option(5, "--inner-folds", min=2, help="Inner grouped folds for stage-A train OOF predictions."),
+    auxiliary_model_level: str = typer.Option(
+        "A0_ridge",
+        "--auxiliary-model-level",
+        help="Stage-A auxiliary surrogate model: A0_ridge or A1_hist_gradient_boosting.",
+    ),
+) -> None:
+    """Run non-neural diagnostic-state distillation baselines."""
+    from mbp.baselines.diagnostic_state_distillation import run_diagnostic_state_distillation
+
+    report = run_diagnostic_state_distillation(
+        capacity_horizon_table,
+        threshold_warning_table,
+        pulse_target_table,
+        eis_target_table,
+        out,
+        predictions_out,
+        out_dir,
+        seed=seed,
+        hgb_max_iter=hgb_max_iter,
+        tasks=_comma_values(tasks) if tasks else None,
+        capacity_targets=_comma_values(capacity_targets) if capacity_targets else None,
+        warning_targets=_comma_values(warning_targets) if warning_targets else None,
+        model_levels=_comma_values(model_levels) if model_levels else None,
+        feature_groups=_comma_values(feature_groups) if feature_groups else None,
+        split_views=_comma_values(split_views) if split_views else None,
+        horizons=_comma_ints(horizons) if horizons else None,
+        warning_label_policy=warning_label_policy,
+        inner_folds=inner_folds,
+        auxiliary_model_level=auxiliary_model_level,
+    )
+    typer.echo(
+        "Diagnostic-state distillation report generated: "
+        f"{report['row_counts']['metrics']} metric rows written to {out}"
+    )
+
+
 @baseline_app.command("diagnose-capacity-horizon-trajectory")
 def baseline_diagnose_capacity_horizon_trajectory(
     report: Path = typer.Option(..., "--report", help="Capacity horizon trajectory JSON report."),

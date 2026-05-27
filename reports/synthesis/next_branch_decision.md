@@ -99,6 +99,12 @@ but primary capacity and threshold-warning metrics worsen at 50% retention and
 C-rate support reliability is not supported. This keeps support filtering as
 an abstention diagnostic, not a deployment, calibrated-risk, policy, causal, or
 CBAT result.
+Milestone 8.1 then tests whether predicted PULSE/EIS diagnostic-state
+surrogates add downstream value without using true diagnostic values as
+features. Auxiliary PULSE/EIS state is learnable from check-up-k state and
+nominal fields, but D3 predicted PULSE+EIS state worsens the primary all-split
+capacity-horizon and threshold-warning rows and fails C-rate non-collapse. This
+closes the broad diagnostic-state distillation branch as a negative gate.
 
 ## Recommended Path
 
@@ -120,6 +126,9 @@ CBAT result.
    diagnostic-only forensics and also survives the Milestone 8.0
    support-reliability limitation. Do not treat Milestone 7.2, 7.3, 7.4, or
    8.0 as a policy result.
+5. Do not open capacity+PULSE+EIS architecture or broad multimodal-state work
+   from Milestone 8.1. Predicted diagnostic-state surrogates remain auxiliary
+   diagnostics because they do not improve the downstream gates.
 
 ## Optional Technical Branch
 
@@ -176,6 +185,12 @@ as a branch-opening result.
 The contrast-ordering failure-forensics gate has also been run. It decomposes
 the failure by effect size and rank metric, but large-effect and rank
 diagnostics remain diagnostic-only.
+
+The diagnostic-state distillation gate has also been run. It establishes that
+PULSE/EIS scalar diagnostic state is predictable enough to beat train-mean
+auxiliary references, but predicted diagnostic-state features do not improve
+downstream capacity-horizon or threshold-warning baselines under the
+predeclared grouped controls. This is not an architecture-opening result.
 
 ## Explicitly Rejected Branches
 

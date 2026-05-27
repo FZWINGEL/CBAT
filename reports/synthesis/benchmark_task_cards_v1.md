@@ -258,3 +258,18 @@ These cards freeze the benchmark task definitions and current claim posture. The
 - Forbidden wording: support filtering validates deployment reliability calibrated risk policy recommendation causal effects same-cell counterfactuals CBAT or architecture readiness
 - Decision: keep as an abstention and support audit; do not proceed to policy or deployment claims
 - Source artifacts: docs/experiments/2026-05-27_support_aware_selective_reliability_gate.md, reports/analysis/support_reliability/support_reliability_claim_readiness.md
+
+## T18_diagnostic_state_distillation - non-neural diagnostic-state distillation gate
+
+- Area: diagnostic_state
+- Primary claim: C33
+- Status: `not_supported`
+- Targets: capacity_Ah_kh, delta_capacity_Ah_h, event_within_3_checkups, pulse_1s_resistance_k, pulse_10ms_resistance_k, eis_z_abs_1kHz_k, eis_phase_1kHz_k, nyquist_im_peak_abs_k, nyquist_semicircle_width_proxy_k
+- Split views: condition_fold, temperature_holdout_fold, c_rate_holdout_fold, profile_holdout_fold, voltage_window_holdout_fold
+- Primary metric: D3 predicted diagnostic-state gain versus D0 capacity-state reference under grouped HGB-50 plus auxiliary MAE gain versus train-mean reference
+- Primary result: auxiliary surrogates beat train mean in 12 of 12 rows but D3 worsens primary all-split downstream rows; best all-split capacity primary relative gain is -0.00790693 and all-split threshold-warning Brier relative gain is -0.0620807 while C-rate non-collapse fails
+- Best reference: D0 capacity-state reference downstream baseline and train-mean auxiliary reference
+- Allowed wording: predicted PULSE/EIS diagnostic-state surrogates are learnable but do not improve downstream capacity-horizon or threshold-warning enough for a multimodal-state claim
+- Forbidden wording: capacity plus PULSE plus EIS architecture CBAT broad multimodal learning calibrated risk calibrated uncertainty policy ranking causal effects or same-cell counterfactuals are authorized
+- Decision: close broad diagnostic-state distillation as a negative gate and keep PULSE/EIS auxiliary only
+- Source artifacts: docs/experiments/2026-05-27_diagnostic_state_distillation_gate.md, reports/baselines/diagnostic_state_distillation/diagnostic_state_distillation_claim_readiness.md

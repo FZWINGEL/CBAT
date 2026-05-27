@@ -2,6 +2,12 @@
 
 These cards summarize model families already evaluated in the frozen benchmark. They are not new model claims.
 
+## auxiliary_ridge_surrogate
+
+- Used in tasks: T18_diagnostic_state_distillation
+- Task statuses: not_supported
+- Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
+
 ## capacity_persistence
 
 - Used in tasks: T01_capacity_next_checkup
@@ -42,6 +48,18 @@ These cards summarize model families already evaluated in the frozen benchmark. 
 
 - Used in tasks: T01_capacity_next_checkup
 - Task statuses: supported
+- Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
+
+## hgb_downstream_capacity_horizon
+
+- Used in tasks: T18_diagnostic_state_distillation
+- Task statuses: not_supported
+- Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
+
+## hgb_downstream_threshold_warning
+
+- Used in tasks: T18_diagnostic_state_distillation
+- Task statuses: not_supported
 - Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
 
 ## hgb_horizon
@@ -120,6 +138,12 @@ These cards summarize model families already evaluated in the frozen benchmark. 
 
 - Used in tasks: T16_policy_ranking_failure_forensics
 - Task statuses: diagnostic_only
+- Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
+
+## predicted_diagnostic_state_ablation
+
+- Used in tasks: T18_diagnostic_state_distillation
+- Task statuses: not_supported
 - Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
 
 ## prior_eis_hgb

@@ -413,6 +413,17 @@ The v2 synthesis keeps the following negative boundaries active:
   rows at 50% retention and C-rate support reliability is not supported. This
   keeps deployment reliability, calibrated-risk, policy, causal, and CBAT
   claims blocked.
+- Milestone 8.1 adds train-only diagnostic-state distillation from
+  check-up-k capacity/state/time/nominal fields to current PULSE/EIS scalar
+  diagnostic-state surrogates. The auxiliary state is learnable (`12/12`
+  auxiliary rows beat train-mean baselines), but predicted diagnostic-state
+  features do not improve downstream capacity-horizon or threshold-warning
+  baselines enough to pass the gate. The best D3 all-split capacity primary
+  relative gain is `-0.00790693`, the all-split threshold-warning relative
+  Brier gain is `-0.0620807`, and C-rate non-collapse fails. This blocks
+  capacity+PULSE+EIS architecture, CBAT, broad multimodal state-learning,
+  calibrated-risk/uncertainty, policy, causal, and same-cell counterfactual
+  claims from the diagnostic-state path.
 
 Decision: return to synthesis/release maintenance unless a new narrow
 calibration-method diagnostic is explicitly justified.

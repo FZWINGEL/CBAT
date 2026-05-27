@@ -17,6 +17,7 @@
 | Supported contrast-ordering feasibility | Milestone 7.3 uses existing out-of-fold multi-horizon predictions and finds partial signal: HGB K2 `delta_capacity_Ah_h` C-rate horizon-2/3 sign accuracy is `0.826923`/`0.888889`. | The strict bootstrap reference gate fails versus prior slope (`0/10` primary checks pass), and there is still no calibrated risk, intervention design, or causal/same-cell counterfactual evidence. | High if overclaimed as recommendation; moderate if kept as diagnostic. | Complete as partial diagnostic evidence; do not open recommendation or causal branches. |
 | Contrast-ordering failure forensics | Milestone 7.4 decomposes the 7.3 failure by effect-size threshold, HGB-vs-prior failure bin, rank correlation, and top-k/regret diagnostics. | The strict prior-slope gate still fails (`0/10`), C-rate medium/large pass rows are only `1/4`, and the result remains diagnostic-only. | High if used to rationalize policy recommendation after a failed gate. | Complete as failure forensics; do not open policy ranking unless a future predeclared large-effect gate is explicitly requested. |
 | Support-aware selective reliability | Milestone 8.0 computes train-only support distances and selective retention curves over existing capacity-horizon, threshold-warning, and supported contrast-ordering artifacts. | Primary capacity and threshold-warning metrics worsen at 50% retention, and C-rate support reliability is not supported. | High if misread as deployment reliability or policy safety. | Complete as abstention/support audit only; do not use as policy, calibrated-risk, or deployment evidence. |
+| Diagnostic-state distillation | Milestone 8.1 shows PULSE/EIS scalar diagnostic-state surrogates are learnable from check-up-k state and nominal fields: 12/12 auxiliary rows beat train-mean references. | Predicted PULSE+EIS state does not improve downstream capacity-horizon or threshold-warning baselines under the predeclared D3 gate; best all-split capacity primary relative gain is `-0.00790693`, threshold-warning all-split relative Brier gain is `-0.0620807`, and C-rate non-collapse fails. | High if misread as broad multimodal state learning or architecture readiness. | Complete as a negative Q2/H3 gate; keep PULSE/EIS as auxiliary diagnostics only. |
 | CBAT branch | Long-term charter includes architecture. | Calibration, sequence value, multimodal superiority, and policy gates do not support it. | Very high overclaim risk. | Do not open. |
 | Policy ranking branch | Observed matched support exists and Milestone 7.3 shows partial ordering signal. | HGB K2 fails the strict prior-slope bootstrap reference gate, and there is still no calibrated risk, causal evidence, or intervention validation. | Very high; scientifically unsafe if treated as recommendation. | Do not open as a claim branch. |
 
@@ -46,6 +47,10 @@ remain diagnostic-only.
 Milestone 8.0 adds support-aware selective reliability diagnostics, but support
 filtering does not improve the primary capacity or threshold-warning metrics
 and C-rate support reliability is not supported, so it remains an audit layer.
+Milestone 8.1 tests diagnostic-state distillation and closes it as a negative
+gate: auxiliary PULSE/EIS state can be predicted, but predicted diagnostic
+state does not improve downstream capacity-horizon or threshold-warning
+baselines enough to support architecture or broad multimodal claims.
 Additional robustness tuning would need a fresh predeclared question to avoid
 claim chasing.
 Milestone 5.2 calibration/quantile hygiene and

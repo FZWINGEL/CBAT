@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 8.0: Support-aware selective reliability gate**.
+The repository is in **Milestone 8.1: Non-neural diagnostic-state distillation gate**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -262,6 +262,20 @@ accuracy improves by only `0.0173861`. C-rate support reliability is
 `not_supported` because primary C-rate capacity MAE worsens by `0.0525537`.
 Policy recommendation, causal/same-cell counterfactual claims, calibrated risk,
 CBAT readiness, and deployment wording remain blocked.
+Milestone 8.1 tests charter Q2/H3 with a leakage-safe non-neural
+diagnostic-state distillation gate. Stage-A auxiliary models predict current
+PULSE/EIS scalar diagnostic state from check-up-k capacity/state/time/nominal
+fields using train-only inner grouped out-of-fold predictions; Stage-B
+downstream models receive only those predicted diagnostic-state features. The
+real-data run generates 480 downstream metric rows and 72 auxiliary metric
+rows. All 12 auxiliary leaderboard rows beat train-mean baselines, but D3
+predicted PULSE+EIS state does not improve the all-split primary downstream
+tasks: best all-split D3 capacity relative gain is `-0.00790693`, all-split
+threshold-warning relative Brier gain is `-0.0620807`, and C-rate
+non-collapse fails. Diagnostic-state distillation is therefore
+`not_supported`, and capacity+PULSE+EIS architecture, CBAT, calibrated risk,
+policy ranking, sequence/neural branches, and causal/same-cell
+counterfactual claims remain blocked.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, unscoped sequence models,
@@ -272,6 +286,15 @@ branch.
 
 Current state:
 
+- Milestone 8.1 is a non-neural diagnostic-state distillation gate over
+  existing capacity-horizon, threshold-warning, PULSE target, and EIS target
+  tables. It adds `mbp baseline run-diagnostic-state-distillation`,
+  `reports/baselines/diagnostic_state_distillation_report.json`, an ignored
+  prediction Parquet, diagnostic-state gain CSVs, auxiliary surrogate accuracy
+  CSVs, and claim-readiness markdown. The result is negative for downstream
+  Q2/H3 support: predicted diagnostic state is learnable but does not improve
+  the primary capacity-horizon or threshold-warning tasks and fails C-rate
+  non-collapse.
 - Milestone 8.0 is a report-only support-aware selective reliability gate over
   existing capacity-horizon, threshold-warning, and supported policy-contrast
   prediction artifacts. It adds
@@ -2156,12 +2179,16 @@ The previous `datetime.utcnow()` deprecation warning in
 
 ## Recommended Next Step
 
-Treat Milestone 5.6 as the final narrow stressor-robustness hardening pass:
-conservative train-only adaptive R2 selection replicated across the
-deterministic seed interface and passes the strict outer C-rate gain plus
-outside-C-rate non-degradation guardrail for `delta_capacity_Ah`. The broad
-fade-solved, calibrated-risk, policy, architecture, and causal claims remain
-blocked. The default next technical step is synthesis/release maintenance, not
-broader modeling. Do not open knee prediction models, neural models, sequence
-models, CBAT, DRT, EIS embeddings, policy ranking, capacity+PULSE+EIS
-multimodal models, calibrated-risk claims, or broad causal/mechanistic claims.
+Treat Milestone 8.1 as a negative Q2/H3 multimodal-state gate. Current
+PULSE/EIS scalar diagnostic state is learnable from check-up-k state and
+nominal metadata, but predicted diagnostic-state features do not improve the
+downstream capacity-horizon or threshold-warning baselines enough to support
+architecture, broad multimodal state-learning, policy, causal, calibrated-risk,
+or calibrated-uncertainty claims.
+
+The default next step is synthesis/release maintenance or a new, explicitly
+predeclared narrow ML gate only if it answers a charter question without
+weakening the current guardrails. Do not open knee prediction models, broad
+neural/sequence models, CBAT, DRT, EIS embeddings, policy ranking,
+capacity+PULSE+EIS multimodal architecture, calibrated-risk claims, or broad
+causal/mechanistic claims from the Milestone 8.1 result.
