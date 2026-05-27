@@ -1,0 +1,39 @@
+{
+  "finite_current_diagnostic_counts": {
+    "eis_phase_1kHz": 13462,
+    "eis_z_abs_1kHz": 13462,
+    "nyquist_im_peak_abs": 13462,
+    "nyquist_semicircle_width_proxy": 13462,
+    "pulse_10ms_resistance": 13474,
+    "pulse_1s_resistance": 13474
+  },
+  "generated_at_utc": "2026-05-27T18:36:42.280082+00:00",
+  "leakage_columns": [],
+  "outputs": {
+    "coverage": "reports/analysis/diagnostic_horizon/diagnostic_horizon_coverage.csv",
+    "report": "reports/analysis/diagnostic_horizon/diagnostic_horizon_qa_report.json"
+  },
+  "row_counts": {
+    "cells": 228,
+    "horizons": [
+      1,
+      2,
+      3,
+      5
+    ],
+    "parameter_sets": 76,
+    "rows": 80878,
+    "targets": 6
+  },
+  "schema_version": "gate82.diagnostic_horizon_table.v1",
+  "status": "passed",
+  "target_row_counts": {
+    "eis_phase_1kHz": 13482,
+    "eis_z_abs_1kHz": 13482,
+    "nyquist_im_peak_abs": 13482,
+    "nyquist_semicircle_width_proxy": 13482,
+    "pulse_10ms_resistance": 13475,
+    "pulse_1s_resistance": 13475
+  },
+  "warnings": []
+}

@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 8.1: Non-neural diagnostic-state distillation gate**.
+The repository is in **Milestone 8.2: Multi-horizon diagnostic endpoint forecasting gate**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -276,6 +276,18 @@ non-collapse fails. Diagnostic-state distillation is therefore
 `not_supported`, and capacity+PULSE+EIS architecture, CBAT, calibrated risk,
 policy ranking, sequence/neural branches, and causal/same-cell
 counterfactual claims remain blocked.
+Milestone 8.2 tests whether future PULSE/EIS scalar diagnostic endpoints can
+be forecast directly over 1/2/3/5-check-up horizons using only check-up-k
+capacity/state/time/nominal fields and current same-diagnostic state. The
+diagnostic-horizon table passes QA with 80,878 rows across 228 cells, 76
+parameter-set conditions, six scalar diagnostic targets, and four horizons.
+The grouped non-neural baseline run generates 2,880 metric rows and 2,176,320
+prediction rows. DH3 HGB with capacity plus current same-diagnostic state
+shows useful gains in many rows, but the strict claim gate is only
+`partially_supported`: 21/24 primary horizon-2/3 rows pass the 10% gain rule,
+while 22/24 C-rate rows avoid negative gain. CBAT, broad multimodal
+architecture, calibrated-risk/uncertainty, policy ranking, sequence/neural
+branches, and causal/same-cell counterfactual claims remain blocked.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, unscoped sequence models,
@@ -286,6 +298,16 @@ branch.
 
 Current state:
 
+- Milestone 8.2 is a non-neural multi-horizon diagnostic endpoint forecasting
+  gate over existing interval, PULSE target, and EIS target tables. It adds
+  `mbp analysis build-diagnostic-horizon-table`,
+  `mbp analysis diagnostic-horizon-qa`, and
+  `mbp baseline run-diagnostic-horizon`; creates an ignored
+  `diagnostic_horizon_table_v1.parquet`, an ignored prediction Parquet, a QA
+  report, coverage CSV, baseline JSON, leaderboard, reference-gain CSVs, and
+  claim-readiness markdown. The result is partial: current same-diagnostic
+  state helps many future diagnostic endpoint rows, but the full primary gain
+  and C-rate non-collapse rules do not pass.
 - Milestone 8.1 is a non-neural diagnostic-state distillation gate over
   existing capacity-horizon, threshold-warning, PULSE target, and EIS target
   tables. It adds `mbp baseline run-diagnostic-state-distillation`,
@@ -2179,16 +2201,15 @@ The previous `datetime.utcnow()` deprecation warning in
 
 ## Recommended Next Step
 
-Treat Milestone 8.1 as a negative Q2/H3 multimodal-state gate. Current
-PULSE/EIS scalar diagnostic state is learnable from check-up-k state and
-nominal metadata, but predicted diagnostic-state features do not improve the
-downstream capacity-horizon or threshold-warning baselines enough to support
-architecture, broad multimodal state-learning, policy, causal, calibrated-risk,
-or calibrated-uncertainty claims.
+Treat Milestone 8.2 as a partial diagnostic endpoint forecasting gate. Future
+PULSE/EIS scalar endpoints are forecastable in many grouped rows when current
+same-diagnostic state is available, but the full primary reference-gain rule
+and the C-rate non-collapse rule do not pass. This supports only cautious
+diagnostic endpoint-forecasting wording.
 
 The default next step is synthesis/release maintenance or a new, explicitly
 predeclared narrow ML gate only if it answers a charter question without
 weakening the current guardrails. Do not open knee prediction models, broad
 neural/sequence models, CBAT, DRT, EIS embeddings, policy ranking,
 capacity+PULSE+EIS multimodal architecture, calibrated-risk claims, or broad
-causal/mechanistic claims from the Milestone 8.1 result.
+causal/mechanistic claims from the Milestone 8.2 result.

@@ -5,9 +5,9 @@ Status: `passed`
 ## Summary
 
 - Required files checked: 10
-- Tracked artifacts checked: 147
-- Ignored artifacts checked: 30
-- Claim matrix rows checked: 33
+- Tracked artifacts checked: 154
+- Ignored artifacts checked: 32
+- Claim matrix rows checked: 34
 
 ## Errors
 
@@ -27,6 +27,7 @@ Status: `passed`
 - baseline
 - build-capacity-horizon-table
 - build-capacity-horizon-trajectory-features
+- build-diagnostic-horizon-table
 - build-event-sequences
 - build-features
 - build-knee-risk-labels
@@ -68,6 +69,7 @@ Status: `passed`
 - diagnose-support-reliability
 - diagnose-target-consistency
 - diagnose-threshold-warning
+- diagnostic-horizon-qa
 - eis
 - eis-claim-readiness
 - eis-hardening-sensitivity
@@ -103,6 +105,7 @@ Status: `passed`
 - report
 - run-capacity
 - run-capacity-horizon
+- run-diagnostic-horizon
 - run-diagnostic-state-distillation
 - run-eis
 - run-events-qa

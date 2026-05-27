@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 8.1: Non-neural diagnostic-state distillation gate.
+Milestone 8.2: Multi-horizon diagnostic endpoint forecasting gate.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -123,10 +123,22 @@ Current state:
   downstream multimodal-state gains, so capacity+PULSE+EIS architecture, CBAT,
   calibrated risk, policy ranking, sequence/neural branches, and causal claims
   remain blocked.
+- Milestone 8.2 tests whether future PULSE/EIS scalar diagnostic endpoints
+  can be forecast directly from check-up-k state, nominal metadata, and current
+  same-diagnostic state over 1/2/3/5-check-up horizons. The real-data table
+  passes QA with 80,878 rows. DH3 HGB has useful gains in many rows, but the
+  strict gate is only partially supported: 21/24 primary horizon-2/3 rows pass
+  the 10% gain rule and 22/24 C-rate rows avoid negative gain. This does not
+  authorize CBAT, broad multimodal architecture, calibrated risk/uncertainty,
+  policy ranking, sequence/neural branches, or causal claims.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
 Allowed work:
+- multi-horizon PULSE/EIS scalar diagnostic endpoint target tables
+- diagnostic-horizon QA and split coverage reports
+- non-neural grouped diagnostic endpoint baselines
+- diagnostic-horizon leakage audits and claim-readiness reports
 - support-distance diagnostics over existing grouped prediction artifacts
 - non-neural diagnostic-state distillation with predicted PULSE/EIS state
 - train-only inner grouped out-of-fold auxiliary diagnostic predictions

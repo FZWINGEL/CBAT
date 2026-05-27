@@ -129,6 +129,10 @@ closes the broad diagnostic-state distillation branch as a negative gate.
 5. Do not open capacity+PULSE+EIS architecture or broad multimodal-state work
    from Milestone 8.1. Predicted diagnostic-state surrogates remain auxiliary
    diagnostics because they do not improve the downstream gates.
+6. Do not open capacity+PULSE+EIS architecture or broad diagnostic endpoint
+   forecasting claims from Milestone 8.2. Future scalar PULSE/EIS endpoints
+   are forecastable in many rows, but the strict primary and C-rate guardrails
+   do not fully pass.
 
 ## Optional Technical Branch
 
@@ -191,6 +195,13 @@ PULSE/EIS scalar diagnostic state is predictable enough to beat train-mean
 auxiliary references, but predicted diagnostic-state features do not improve
 downstream capacity-horizon or threshold-warning baselines under the
 predeclared grouped controls. This is not an architecture-opening result.
+
+The diagnostic-horizon endpoint forecasting gate has also been run. The target
+table passes QA, and DH3 HGB has useful gains in many future PULSE/EIS endpoint
+rows, but only `21/24` primary horizon-2/3 rows pass the 10% gain rule and
+only `22/24` C-rate rows avoid negative gain. This is partial diagnostic
+endpoint evidence, not a broad endpoint, architecture, calibrated-risk, policy,
+or causal result.
 
 ## Explicitly Rejected Branches
 

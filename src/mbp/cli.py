@@ -2347,6 +2347,47 @@ def analysis_capacity_horizon_trajectory_qa(
     typer.echo(f"Capacity horizon trajectory QA {report['status']}: rows={report['row_counts']['rows']}")
 
 
+@analysis_app.command("build-diagnostic-horizon-table")
+def analysis_build_diagnostic_horizon_table(
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    pulse_target_table: Path = typer.Option(..., "--pulse-target-table", help="Path to pulse_target_table.parquet."),
+    eis_target_table: Path = typer.Option(..., "--eis-target-table", help="Path to eis_target_table_v1.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output path for diagnostic_horizon_table_v1.parquet."),
+    horizons: str | None = typer.Option(None, "--horizons", help="Comma-separated check-up horizons, e.g. 1,2,3,5."),
+    target_families: str | None = typer.Option(None, "--target-families", help="Comma-separated families: pulse,eis."),
+) -> None:
+    """Build observed multi-horizon PULSE/EIS diagnostic endpoint targets."""
+    from mbp.analysis.diagnostic_horizon import build_diagnostic_horizon_table
+
+    table = build_diagnostic_horizon_table(
+        interval_table,
+        pulse_target_table,
+        eis_target_table,
+        out,
+        horizons=_comma_ints(horizons) if horizons else None,
+        target_families=_comma_values(target_families) if target_families else None,
+    )
+    typer.echo(f"Diagnostic horizon table generated: {table.num_rows} rows written to {out}")
+
+
+@analysis_app.command("diagnostic-horizon-qa")
+def analysis_diagnostic_horizon_qa(
+    diagnostic_horizon_table: Path = typer.Option(
+        ...,
+        "--diagnostic-horizon-table",
+        help="Path to diagnostic_horizon_table_v1.parquet.",
+    ),
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output JSON QA report path."),
+    coverage_out: Path = typer.Option(..., "--coverage-out", help="Output horizon coverage CSV path."),
+) -> None:
+    """Write diagnostic endpoint horizon coverage and leakage QA."""
+    from mbp.analysis.diagnostic_horizon import write_diagnostic_horizon_qa
+
+    report = write_diagnostic_horizon_qa(diagnostic_horizon_table, interval_table, out, coverage_out)
+    typer.echo(f"Diagnostic horizon QA {report['status']}: rows={report['row_counts']['rows']}")
+
+
 @analysis_app.command("build-policy-contrast-registry")
 def analysis_build_policy_contrast_registry(
     interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
@@ -2719,6 +2760,46 @@ def baseline_run_diagnostic_state_distillation(
     )
     typer.echo(
         "Diagnostic-state distillation report generated: "
+        f"{report['row_counts']['metrics']} metric rows written to {out}"
+    )
+
+
+@baseline_app.command("run-diagnostic-horizon")
+def baseline_run_diagnostic_horizon(
+    diagnostic_horizon_table: Path = typer.Option(
+        ...,
+        "--diagnostic-horizon-table",
+        help="Path to diagnostic_horizon_table_v1.parquet.",
+    ),
+    out: Path = typer.Option(..., "--out", help="Output JSON report path."),
+    predictions_out: Path = typer.Option(..., "--predictions-out", help="Output prediction Parquet path."),
+    out_dir: Path | None = typer.Option(None, "--out-dir", help="Output directory for diagnostics."),
+    seed: int = typer.Option(42, "--seed", help="Deterministic model seed."),
+    hgb_max_iter: int = typer.Option(50, "--hgb-max-iter", min=1, help="HGB regressor max_iter."),
+    targets: str | None = typer.Option(None, "--targets", help="Comma-separated diagnostic endpoint targets."),
+    model_levels: str | None = typer.Option(None, "--model-levels", help="Comma-separated model levels."),
+    feature_groups: str | None = typer.Option(None, "--feature-groups", help="Comma-separated DH0-DH3 feature groups."),
+    split_views: str | None = typer.Option(None, "--split-views", help="Comma-separated split views."),
+    horizons: str | None = typer.Option(None, "--horizons", help="Comma-separated check-up horizons."),
+) -> None:
+    """Run non-neural grouped multi-horizon diagnostic endpoint baselines."""
+    from mbp.baselines.diagnostic_horizon import run_diagnostic_horizon_baselines
+
+    report = run_diagnostic_horizon_baselines(
+        diagnostic_horizon_table,
+        out,
+        predictions_out,
+        out_dir,
+        seed=seed,
+        hgb_max_iter=hgb_max_iter,
+        targets=_comma_values(targets) if targets else None,
+        model_levels=_comma_values(model_levels) if model_levels else None,
+        feature_groups=_comma_values(feature_groups) if feature_groups else None,
+        split_views=_comma_values(split_views) if split_views else None,
+        horizons=_comma_ints(horizons) if horizons else None,
+    )
+    typer.echo(
+        "Diagnostic horizon baseline report generated: "
         f"{report['row_counts']['metrics']} metric rows written to {out}"
     )
 

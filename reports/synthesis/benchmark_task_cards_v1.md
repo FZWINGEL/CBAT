@@ -273,3 +273,18 @@ These cards freeze the benchmark task definitions and current claim posture. The
 - Forbidden wording: capacity plus PULSE plus EIS architecture CBAT broad multimodal learning calibrated risk calibrated uncertainty policy ranking causal effects or same-cell counterfactuals are authorized
 - Decision: close broad diagnostic-state distillation as a negative gate and keep PULSE/EIS auxiliary only
 - Source artifacts: docs/experiments/2026-05-27_diagnostic_state_distillation_gate.md, reports/baselines/diagnostic_state_distillation/diagnostic_state_distillation_claim_readiness.md
+
+## T19_diagnostic_horizon_forecasting - multi-horizon scalar diagnostic endpoint forecasting gate
+
+- Area: diagnostic_horizon
+- Primary claim: C34
+- Status: `partially_supported`
+- Targets: pulse_1s_resistance, pulse_10ms_resistance, eis_z_abs_1kHz, eis_phase_1kHz, nyquist_im_peak_abs, nyquist_semicircle_width_proxy
+- Split views: condition_fold, temperature_holdout_fold, c_rate_holdout_fold, profile_holdout_fold, voltage_window_holdout_fold
+- Primary metric: DH3 HGB mean MAE gain versus persistence and capacity-state references for horizons 2 and 3
+- Primary result: diagnostic horizon table QA passed with 80878 rows; DH3 passes 21 of 24 primary 10pct gain rows and 22 of 24 C-rate non-collapse rows, so endpoint forecasting is only partially supported
+- Best reference: persistence and DH1 capacity-state HGB references
+- Allowed wording: future PULSE/EIS scalar diagnostic endpoints are forecastable in many grouped rows but broad endpoint and architecture claims remain unsupported
+- Forbidden wording: diagnostic endpoint forecasting is solved globally capacity plus PULSE plus EIS architecture CBAT calibrated risk calibrated uncertainty policy ranking causal effects or same-cell counterfactuals are authorized
+- Decision: keep as partial diagnostic endpoint-forecasting evidence and do not open architecture or broad multimodal branches
+- Source artifacts: docs/experiments/2026-05-27_diagnostic_horizon_forecasting_gate.md, reports/baselines/diagnostic_horizon_l0_l2/diagnostic_horizon_claim_readiness.md

@@ -790,6 +790,44 @@ EIS_TARGET_TABLE_V1_SCHEMA = pa.schema(
     ]
 )
 
+# 16. Diagnostic endpoint multi-horizon target table schema
+DIAGNOSTIC_HORIZON_TABLE_V1_SCHEMA = pa.schema(
+    [
+        ("cell_id", pa.string(), False),
+        ("parameter_set", pa.int32(), False),
+        ("replicate_id", pa.int32(), False),
+        ("checkup_k", pa.int32(), False),
+        ("target_checkup_k", pa.int32(), False),
+        ("horizon_checkups", pa.int32(), False),
+        ("diagnostic_family", pa.string(), False),
+        ("target_name", pa.string(), False),
+        ("diagnostic_value_k", pa.float64(), True),
+        ("diagnostic_value_kh", pa.float64(), False),
+        ("delta_diagnostic_value_h", pa.float64(), True),
+        ("capacity_Ah_k", pa.float64(), False),
+        ("soh_k", pa.float64(), True),
+        ("calendar_day_k", pa.float64(), True),
+        ("cumulative_efc_k", pa.float64(), True),
+        ("cumulative_q_Ah_k", pa.float64(), True),
+        ("prior_delta_capacity_Ah", pa.float64(), True),
+        ("prior_capacity_slope_per_day", pa.float64(), True),
+        ("nominal_temperature_C", pa.float64(), False),
+        ("voltage_window_family", pa.string(), False),
+        ("nominal_charge_C_rate", pa.float64(), False),
+        ("nominal_discharge_C_rate", pa.float64(), True),
+        ("profile_label", pa.string(), False),
+        ("aging_mode", pa.string(), False),
+        ("condition_fold", pa.int32(), False),
+        ("temperature_holdout_fold", pa.int32(), False),
+        ("c_rate_holdout_fold", pa.int32(), False),
+        ("profile_holdout_fold", pa.int32(), False),
+        ("voltage_window_holdout_fold", pa.int32(), False),
+        ("event_observed", pa.bool_(), False),
+        ("diagnostic_quality_flags", pa.string(), False),
+        ("schema_version", pa.string(), False),
+    ]
+)
+
 
 def validate_table(table: pa.Table, schema: pa.Schema, strict: bool = True) -> bool:
     """Validate that a pyarrow Table matches the expected schema.

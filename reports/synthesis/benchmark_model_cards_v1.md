@@ -86,6 +86,12 @@ These cards summarize model families already evaluated in the frozen benchmark. 
 - Task statuses: supported_for_diagnostics
 - Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
 
+## hist_gradient_boosting
+
+- Used in tasks: T19_diagnostic_horizon_forecasting
+- Task statuses: partially_supported
+- Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
+
 ## isotonic_calibration
 
 - Used in tasks: T05_threshold_warning_calibration
@@ -120,6 +126,12 @@ These cards summarize model families already evaluated in the frozen benchmark. 
 
 - Used in tasks: T07_temporal_order_falsification
 - Task statuses: not_supported
+- Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
+
+## persistence
+
+- Used in tasks: T19_diagnostic_horizon_forecasting
+- Task statuses: partially_supported
 - Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
 
 ## persistence_horizon
@@ -212,6 +224,12 @@ These cards summarize model families already evaluated in the frozen benchmark. 
 - Task statuses: diagnostic_only
 - Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
 
+## ridge
+
+- Used in tasks: T19_diagnostic_horizon_forecasting
+- Task statuses: partially_supported
+- Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
+
 ## ridge_capacity
 
 - Used in tasks: T01_capacity_next_checkup
@@ -234,6 +252,12 @@ These cards summarize model families already evaluated in the frozen benchmark. 
 
 - Used in tasks: T13_minimal_sequence_reopening
 - Task statuses: not_supported
+- Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
+
+## same_diagnostic_state_ablation
+
+- Used in tasks: T19_diagnostic_horizon_forecasting
+- Task statuses: partially_supported
 - Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
 
 ## selective_retention_diagnostic
@@ -288,6 +312,12 @@ These cards summarize model families already evaluated in the frozen benchmark. 
 
 - Used in tasks: T17_support_reliability
 - Task statuses: diagnostic_only
+- Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
+
+## train_mean
+
+- Used in tasks: T19_diagnostic_horizon_forecasting
+- Task statuses: partially_supported
 - Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
 
 ## train_only_adaptive_selector

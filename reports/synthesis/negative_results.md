@@ -424,6 +424,13 @@ The v2 synthesis keeps the following negative boundaries active:
   capacity+PULSE+EIS architecture, CBAT, broad multimodal state-learning,
   calibrated-risk/uncertainty, policy, causal, and same-cell counterfactual
   claims from the diagnostic-state path.
+- Milestone 8.2 adds direct future scalar diagnostic endpoint forecasting for
+  PULSE/EIS horizons 1/2/3/5. The table and leakage audit pass, but DH3 HGB
+  does not satisfy the strict broad endpoint gate: only `21/24` primary
+  horizon-2/3 rows pass the 10% reference-gain rule and only `22/24` C-rate
+  rows avoid negative gain. This keeps broad endpoint forecasting,
+  capacity+PULSE+EIS architecture, CBAT, calibrated-risk/uncertainty, policy,
+  sequence/neural, causal, and same-cell counterfactual claims blocked.
 
 Decision: return to synthesis/release maintenance unless a new narrow
 calibration-method diagnostic is explicitly justified.
