@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 8.4: C-rate generalization root-cause and repair gate.
+Milestone 8.5: C-rate repair feasibility finalization gate.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -151,6 +151,13 @@ Current state:
   metadata, and stress-feature sidecars only. It is report-only root-cause
   analysis before any new repair model; it does not authorize architecture,
   policy, calibrated-risk, or causal claims.
+- Milestone 8.5 finalizes C-rate repair feasibility by synthesizing the
+  Milestone 8.4 support/root-cause report with existing train-only adaptive
+  stressor-robust replication and targeted arm-router artifacts. It authorizes
+  only narrow diagnostic C-rate `delta_capacity_Ah` repair wording; broad
+  robust-capacity, solved C-rate fade, architecture, policy, calibrated-risk,
+  calibrated-uncertainty, neural/sequence, CBAT, and causal claims remain
+  blocked.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
@@ -169,6 +176,9 @@ Allowed work:
 - C-rate generalization root-cause diagnostics from existing predictions
 - C-rate condition-hotspot and train-only support-overlap reports
 - C-rate stress-feature error-association diagnostics labeled non-causal
+- C-rate repair feasibility synthesis from existing non-neural repair reports
+- narrow diagnostic train-only C-rate `delta_capacity_Ah` repair finalization
+- targeted stressor-family router claim-readiness reporting
 - persistence-ceiling and condition-hotspot diagnostics for scalar endpoints
 - support-distance diagnostics over existing grouped prediction artifacts
 - non-neural diagnostic-state distillation with predicted PULSE/EIS state

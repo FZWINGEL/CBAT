@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 8.4: C-rate generalization root-cause and repair gate**.
+The repository is in **Milestone 8.5: C-rate repair feasibility finalization gate**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -319,6 +319,16 @@ claim-readiness. The real-data diagnostic generated 336 condition-hotspot
 rows, 76 support-overlap rows, and 30 stress-error association rows. It found
 52 of 76 C-rate condition rows below the support-score threshold. This is
 root-cause evidence only and does not train or authorize a repair model.
+Milestone 8.5 finalizes the repair decision by synthesizing the Milestone 8.4
+C-rate support/root-cause report with the existing train-only adaptive
+stressor-robust replication result and targeted stressor-family arm-router
+result. `mbp analysis finalize-c-rate-repair-feasibility` generates a
+decision report and claim-readiness matrix. It supports only narrow diagnostic
+C-rate `delta_capacity_Ah` repair wording: train-only adaptive selection and
+targeted routing pass their existing non-neural guardrails, while broad robust
+capacity, solved C-rate fade, architecture, policy ranking, calibrated risk,
+calibrated uncertainty, neural/sequence branches, CBAT, and causal claims
+remain blocked.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, unscoped sequence models,
@@ -329,6 +339,13 @@ branch.
 
 Current state:
 
+- Milestone 8.5 is a report-only/non-retraining C-rate repair finalization
+  gate. It adds `mbp analysis finalize-c-rate-repair-feasibility`,
+  `reports/analysis/c_rate_repair_feasibility/c_rate_repair_feasibility_report.json`,
+  `c_rate_repair_decision.md`, `c_rate_repair_claim_readiness.md`,
+  `plots/c_rate_repair_evidence_matrix.csv`, and
+  `plots/c_rate_repair_support_summary.csv`. The gate supports narrow
+  diagnostic C-rate `delta_capacity_Ah` repair wording only.
 - Milestone 8.4 is a report-only C-rate generalization root-cause gate. It adds
   `mbp analysis diagnose-c-rate-generalization`,
   `reports/analysis/c_rate_generalization/c_rate_failure_report.json`,
@@ -2259,10 +2276,12 @@ The previous `datetime.utcnow()` deprecation warning in
 
 ## Recommended Next Step
 
-Use the Milestone 8.4 C-rate root-cause report to decide whether a separate
-predeclared non-neural C-rate repair run is worth opening. Do not treat the
-diagnostic as repair evidence by itself.
+Treat the Milestone 8.5 C-rate repair decision as a narrow diagnostic endpoint,
+not a reason to open architecture work. The safest next work is synthesis,
+benchmark maintenance, or a new explicitly scoped gate only if it answers a
+different charter question.
 Do not open knee prediction models, broad neural/sequence models, CBAT, DRT,
 EIS embeddings, policy ranking, capacity+PULSE+EIS multimodal architecture,
-calibrated-risk claims, or broad causal/mechanistic claims from the Milestone
-8.2/8.2.1/8.3/8.4 results.
+calibrated-risk claims, calibrated-uncertainty claims, solved C-rate fade
+claims, or broad causal/mechanistic claims from the Milestone 8.2/8.2.1/8.3/
+8.4/8.5 results.

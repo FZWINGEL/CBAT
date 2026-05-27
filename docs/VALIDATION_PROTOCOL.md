@@ -2004,3 +2004,43 @@ Validation rules:
   fields and must be labeled diagnostic/non-causal.
 - Claim-readiness must keep repair-model, architecture, policy, calibrated
   risk, calibrated uncertainty, and causal claims blocked.
+
+## Milestone 8.5 C-Rate Repair Feasibility Finalization Gate
+
+Milestone 8.5 authorizes report-only synthesis of C-rate root-cause diagnostics
+with existing non-neural repair artifacts. It does not train a new model, add
+features, relax the 5% outside-C-rate guardrail, recommend policies, or make
+causal, calibrated-risk, calibrated-uncertainty, neural/sequence, CBAT, or
+broad robust-capacity claims.
+
+Required command:
+
+```bash
+mbp analysis finalize-c-rate-repair-feasibility \
+  --c-rate-report reports/analysis/c_rate_generalization/c_rate_failure_report.json \
+  --support-overlap reports/analysis/c_rate_generalization/c_rate_support_overlap.csv \
+  --adaptive-replication-report reports/baselines/capacity_stressor_robust_adaptive_replication/replication_summary.json \
+  --arm-selector-report reports/baselines/capacity_stressor_robust_arm_selector_report.json \
+  --out-dir reports/analysis/c_rate_repair_feasibility
+```
+
+Required artifacts:
+
+- `reports/analysis/c_rate_repair_feasibility/c_rate_repair_feasibility_report.json`
+- `reports/analysis/c_rate_repair_feasibility/c_rate_repair_decision.md`
+- `reports/analysis/c_rate_repair_feasibility/c_rate_repair_claim_readiness.md`
+- `reports/analysis/c_rate_repair_feasibility/plots/c_rate_repair_evidence_matrix.csv`
+- `reports/analysis/c_rate_repair_feasibility/plots/c_rate_repair_support_summary.csv`
+
+Validation rules:
+
+- Support for repair wording requires the existing adaptive replication
+  readiness to pass leakage, positive C-rate gains versus both references,
+  positive paired p05 floors, and <=5% outside-C-rate degradation.
+- Support for targeted routing requires the existing arm-router readiness to
+  pass leakage, positive C-rate gain, positive paired p05, and <=5%
+  outside-C-rate degradation.
+- The only supported repair wording is narrow diagnostic C-rate
+  `delta_capacity_Ah` repair. Broad robust capacity, solved C-rate fade,
+  calibrated risk/uncertainty, policy ranking, architecture, CBAT,
+  neural/sequence, and causal claims remain blocked.

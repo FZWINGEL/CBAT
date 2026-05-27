@@ -1,0 +1,2 @@
+summary_area,rows,low_support_rows,low_support_fraction,mean_support_score,median_support_score,mean_nearest_distance,claim_scope
+c_rate_support_overlap,76,52,0.6842105263157895,0.4279439749867108,0.4002937283446035,1.5461363018473229,support_context_for_repair_interpretation

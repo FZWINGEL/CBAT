@@ -1,7 +1,7 @@
 # Codex Next Work
 
 Current recommended branch: benchmark release maintenance, task-registry
-reproducibility, or a separately predeclared feasibility gate. The adaptive
+reproducibility, synthesis, or a separately predeclared feasibility gate. The adaptive
 stressor-robust replication, attribution, stressor-family routing,
 hierarchical replicate, multi-horizon capacity, prior-trajectory, minimal
 sequence/neural reopening, observed policy-contrast support, supported
@@ -11,11 +11,12 @@ should not be broadened without a fresh gated question.
 
 ## Current Phase
 
-Milestone 8.0 is a report-only support-aware selective reliability gate. It
-uses existing capacity-horizon predictions, threshold-warning predictions, and
-Milestone 7.3 policy-pairwise CSV outputs only. It is not a model-training,
-policy-recommendation, causal, same-cell counterfactual, CBAT, transformer,
-architecture, sequence/neural, deployment, or calibration-claim branch.
+Milestone 8.5 is a report-only C-rate repair feasibility finalization gate. It
+synthesizes the Milestone 8.4 C-rate support/root-cause diagnostics with the
+existing adaptive stressor-robust replication and targeted arm-router reports.
+It is not a new model-training, feature-engineering, policy-recommendation,
+causal, same-cell counterfactual, CBAT, transformer, architecture,
+sequence/neural, deployment, or calibration-claim branch.
 
 ## Current Result
 
@@ -28,6 +29,13 @@ equal-frequency ECE is `0.0729286`, but C-rate verified-only ECE remains above
 the guardrail (`0.167653` fixed-width; `0.176185` equal-frequency). Capacity
 uncertainty also remains blocked: raw noncrossing q10-q90 mean coverage is
 `0.701398`, and C-rate coverage remains below target.
+
+Milestone 8.5 supports the same narrow C-rate repair posture with the newest
+root-cause/support context: 52 of 76 C-rate support rows are low-support, the
+adaptive conservative repair passes with min gain versus stress reference
+`0.0214266`, paired p05 `0.00465696`, and outside degradation `0.0279117`,
+and the targeted router passes with gain `0.0106361`, paired p05 `0.00594397`,
+and outside degradation `0`.
 
 Milestone 5.6 supports a narrow replicated diagnostic robustness result:
 conservative train-only adaptive R2 selection with

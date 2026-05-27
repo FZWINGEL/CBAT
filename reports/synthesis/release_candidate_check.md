@@ -5,8 +5,8 @@ Status: `passed`
 ## Summary
 
 - Required files checked: 10
-- Tracked artifacts checked: 164
-- Ignored artifacts checked: 32
+- Tracked artifacts checked: 185
+- Ignored artifacts checked: 34
 - Claim matrix rows checked: 34
 
 ## Errors
@@ -58,6 +58,7 @@ Status: `passed`
 - coupling
 - coverage
 - current-sign-audit
+- diagnose-c-rate-generalization
 - diagnose-capacity
 - diagnose-capacity-horizon
 - diagnose-capacity-horizon-trajectory
@@ -80,6 +81,7 @@ Status: `passed`
 - evidence-memo
 - feature-qa
 - features
+- finalize-c-rate-repair-feasibility
 - finalize-threshold-warning-claim
 - generate
 - ingest
@@ -128,3 +130,4 @@ Status: `passed`
 - target-qa
 - threshold-event-labels
 - threshold-warning-qa
+- validate-extraction

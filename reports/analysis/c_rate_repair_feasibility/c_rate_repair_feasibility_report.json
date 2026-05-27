@@ -1,0 +1,34 @@
+{
+  "claim_scope": "narrow_non_neural_c_rate_delta_repair_diagnostic_only",
+  "generated_at_utc": "2026-05-27T21:04:08.912759+00:00",
+  "guardrail_max_outside_degradation": 0.05,
+  "inputs": {
+    "adaptive_replication_report": "reports/baselines/capacity_stressor_robust_adaptive_replication/replication_summary.json",
+    "arm_selector_report": "reports/baselines/capacity_stressor_robust_arm_selector_report.json",
+    "c_rate_report": "reports/analysis/c_rate_generalization/c_rate_failure_report.json",
+    "support_overlap": "reports/analysis/c_rate_generalization/c_rate_support_overlap.csv"
+  },
+  "outputs": {
+    "claim_readiness": "reports/analysis/c_rate_repair_feasibility/c_rate_repair_claim_readiness.md",
+    "decision": "reports/analysis/c_rate_repair_feasibility/c_rate_repair_decision.md",
+    "evidence_matrix": "reports/analysis/c_rate_repair_feasibility/plots/c_rate_repair_evidence_matrix.csv",
+    "report": "reports/analysis/c_rate_repair_feasibility/c_rate_repair_feasibility_report.json",
+    "support_summary": "reports/analysis/c_rate_repair_feasibility/plots/c_rate_repair_support_summary.csv"
+  },
+  "primary_split": "c_rate_holdout_fold",
+  "primary_target": "delta_capacity_Ah",
+  "readiness": {
+    "C-rate failure and support diagnosis": "supported_for_diagnostics",
+    "architecture, policy, calibration, and causality": "blocked",
+    "broad robust capacity": "not_supported",
+    "targeted stressor-family routing": "supported_for_diagnostics",
+    "train-only adaptive C-rate delta repair": "supported_for_diagnostics"
+  },
+  "row_counts": {
+    "claim_readiness_rows": 5,
+    "evidence_rows": 4,
+    "support_summary_rows": 1
+  },
+  "schema_version": "gate85.c_rate_repair_feasibility.v1",
+  "status": "passed"
+}

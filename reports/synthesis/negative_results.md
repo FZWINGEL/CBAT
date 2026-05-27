@@ -439,6 +439,12 @@ The v2 synthesis keeps the following negative boundaries active:
   only selected endpoint diagnostic wording and still blocks broad endpoint
   forecasting, architecture, CBAT, calibrated risk/uncertainty, policy,
   causal, and same-cell counterfactual claims.
+- Milestone 8.5 finalizes C-rate repair feasibility by combining the 8.4
+  support/root-cause report with existing adaptive and router artifacts. It
+  supports only narrow diagnostic C-rate `delta_capacity_Ah` repair wording.
+  Broad robust capacity, solved C-rate fade, architecture, CBAT, policy
+  ranking, calibrated risk/uncertainty, sequence/neural, and causal claims
+  remain blocked.
 
 Decision: return to synthesis/release maintenance unless a new narrow
 calibration-method diagnostic is explicitly justified.

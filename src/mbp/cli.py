@@ -2763,6 +2763,46 @@ def analysis_diagnose_c_rate_generalization(
     )
 
 
+@analysis_app.command("finalize-c-rate-repair-feasibility")
+def analysis_finalize_c_rate_repair_feasibility(
+    c_rate_report: Path = typer.Option(
+        ...,
+        "--c-rate-report",
+        help="C-rate failure report from diagnose-c-rate-generalization.",
+    ),
+    adaptive_replication_report: Path = typer.Option(
+        ...,
+        "--adaptive-replication-report",
+        help="Adaptive stressor-robust replication summary JSON.",
+    ),
+    arm_selector_report: Path = typer.Option(
+        ...,
+        "--arm-selector-report",
+        help="Stressor-family arm-selector report JSON.",
+    ),
+    out_dir: Path = typer.Option(..., "--out-dir", help="Output directory for C-rate repair feasibility."),
+    support_overlap: Path | None = typer.Option(
+        None,
+        "--support-overlap",
+        help="Optional c_rate_support_overlap.csv for support-context summaries.",
+    ),
+) -> None:
+    """Finalize C-rate repair feasibility from existing non-neural artifacts."""
+    from mbp.analysis.c_rate_repair_feasibility import finalize_c_rate_repair_feasibility
+
+    report = finalize_c_rate_repair_feasibility(
+        c_rate_report,
+        adaptive_replication_report,
+        arm_selector_report,
+        out_dir,
+        support_overlap_path=support_overlap,
+    )
+    typer.echo(
+        "C-rate repair feasibility finalized: "
+        f"{report['row_counts']['claim_readiness_rows']} claim rows"
+    )
+
+
 @baseline_app.command("diagnose-capacity")
 def baseline_diagnose_capacity(
     report: Path = typer.Option(
