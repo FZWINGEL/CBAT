@@ -1460,3 +1460,32 @@ Claim rules:
   solved globally.
 - The gate does not authorize calibrated uncertainty, calibrated risk, policy
   ranking, sequence/neural models, CBAT, or causal claims.
+
+## Milestone 6.1 Multi-Horizon Error Forensics Gate
+
+Milestone 6.1 diagnoses the Milestone 6.0 partial multi-horizon result using
+existing report, prediction, and horizon-table artifacts only. It is not a
+model-training, feature-engineering, architecture, policy, or causal milestone.
+
+Required artifacts:
+
+- `reports/baselines/capacity_horizon_l0_l2/capacity_horizon_forensics_report.json`
+- `reports/baselines/capacity_horizon_l0_l2/multi_horizon_error_forensics.md`
+- `reports/baselines/capacity_horizon_l0_l2/multi_horizon_next_branch_readiness.md`
+- `reports/baselines/capacity_horizon_l0_l2/plots/horizon_reference_gain_by_split.csv`
+- `reports/baselines/capacity_horizon_l0_l2/plots/c_rate_condition_horizon_errors.csv`
+- `reports/baselines/capacity_horizon_l0_l2/plots/prior_slope_failure_modes.csv`
+- `reports/baselines/capacity_horizon_l0_l2/plots/oracle_exposure_gain_by_split.csv`
+- `reports/baselines/capacity_horizon_l0_l2/plots/prospective_feature_audit.csv`
+- `docs/experiments/2026-05-27_multi_horizon_error_forensics.md`
+
+Claim rules:
+
+- The diagnostics may narrow or explain the Milestone 6.0 claim posture, but
+  they do not create a new supported claim by themselves.
+- K3 oracle-exposure gains remain non-prospective, even if they improve MAE.
+- Any future feature branch must use only information available at or before
+  check-up `k`, or scheduled protocol metadata demonstrably known before the
+  forecast horizon.
+- Sequence/neural models, CBAT, policy ranking, causal claims, calibrated
+  risk, and calibrated uncertainty remain blocked.

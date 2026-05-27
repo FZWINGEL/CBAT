@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 6.0: Multi-horizon capacity forecasting gate.
+Milestone 6.1: Multi-horizon forecasting error forensics and prospective feature audit.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -69,6 +69,12 @@ Current state:
   charter-aligned Q1 extension. It separates prospective check-up-k state,
   time, history, and nominal-condition features from K3 oracle k-to-k+h
   exposure diagnostics, which are never valid early-forecasting inputs.
+- Milestone 6.1 diagnoses the Milestone 6.0 partial result using existing
+  reports and predictions only. It renders split/reference gains, C-rate
+  condition-level error hotspots, prior-slope failure bins, oracle-exposure
+  gain by split, and a prospective feature audit. It does not authorize new
+  model training, architecture work, policy ranking, causal claims, or broader
+  multi-horizon claims.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
@@ -79,6 +85,11 @@ Allowed work:
 - prospective prior-state/time/nominal multi-horizon feature groups
 - oracle future-exposure diagnostics clearly labeled as non-prospective
 - multi-horizon capacity claim-readiness reporting
+- multi-horizon error forensics from existing reports and predictions
+- C-rate condition-level horizon error diagnostics
+- prior-slope failure-mode diagnostics
+- oracle-exposure gain audits labeled non-prospective
+- prospective feature audits for possible future prior-trajectory work
 - additive equal-frequency ECE diagnostics alongside fixed-width ECE
 - L3 capacity quantile noncrossing post-sort hygiene
 - rerunning existing threshold-warning calibration and capacity calibration reports

@@ -1,0 +1,9 @@
+allowed_for_future_prospective_branch,artifact_status,claim_scope,feature_family,future_or_target_leakage_fields,policy
+True,implemented,prospective,K0_prior_capacity,,existing feature group
+True,implemented,prospective,K1_prior_state_time,,existing feature group
+True,implemented,prospective,K2_nominal_condition,,existing feature group
+False,implemented,oracle_diagnostic_only,K3_oracle_exposure_diagnostic,"horizon_calendar_days,horizon_duration_h,horizon_interval_count,horizon_log_age_delta_q_Ah,horizon_log_age_efc_delta,horizon_log_age_row_count",existing feature group
+True,not_implemented,prospective_candidate,candidate_prior_trajectory_shape,,may use capacity trajectory and slopes observed at or before check-up k only
+True,not_implemented,prospective_candidate_if_known_at_k,candidate_planned_protocol_metadata,,may use scheduled protocol metadata only if known before the forecast horizon
+False,forbidden_for_prospective,oracle_diagnostic_only,candidate_actual_horizon_exposure,"horizon_calendar_days,horizon_duration_h,horizon_interval_count,horizon_log_age_delta_q_Ah,horizon_log_age_efc_delta,horizon_log_age_row_count",actual k-to-k+h exposure cannot be used as an early forecasting input
+False,forbidden_for_prospective,leakage,candidate_future_diagnostics,"capacity_Ah_kh,delta_capacity_Ah_h,future_PULSE,future_EIS",future diagnostics and target values remain forbidden

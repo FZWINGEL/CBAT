@@ -5,7 +5,7 @@ Status: `passed`
 ## Summary
 
 - Required files checked: 10
-- Tracked artifacts checked: 61
+- Tracked artifacts checked: 69
 - Ignored artifacts checked: 23
 - Claim matrix rows checked: 26
 
@@ -53,6 +53,7 @@ Status: `passed`
 - coverage
 - current-sign-audit
 - diagnose-capacity
+- diagnose-capacity-horizon
 - diagnose-sequence-value
 - diagnose-stress-features
 - diagnose-stressor-robust-forensics

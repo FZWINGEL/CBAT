@@ -11,7 +11,8 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 6.0: Multi-horizon capacity forecasting gate**.
+The repository is in **Milestone 6.1: Multi-horizon forecasting error forensics
+and prospective feature audit**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -189,6 +190,14 @@ horizon-3 row narrowly misses the prior-slope baseline. Therefore the
 multi-horizon result is partially supported overall, C-rate multi-horizon and
 delta-capacity diagnostics are supported for diagnostics, and K3 future
 exposure remains oracle-diagnostic only.
+Milestone 6.1 diagnoses that partial result with report-based error forensics:
+HGB K2 still beats persistence and prior-slope references for the C-rate
+horizon-2/3 rows, but the all-split horizon-3 capacity-level row remains a
+near miss. The forensics identify prior-slope failure bins, C-rate condition
+hotspots, and K3 oracle gains while keeping K3 non-prospective. The only
+possible future technical branch is a predeclared prior-trajectory-shape audit;
+sequence/neural models, CBAT, policy ranking, causal claims, and calibrated
+risk/uncertainty remain blocked.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -197,6 +206,11 @@ improvement claims have been started.
 
 Current state:
 
+- Milestone 6.1 is a report-based multi-horizon error forensics gate. It
+  reads the Milestone 6.0 report, prediction Parquet, and horizon table to
+  render split/reference gains, C-rate condition hotspots, prior-slope failure
+  bins, oracle-exposure gains by split, and prospective feature-audit rows.
+  It adds no new model training, feature engineering, or claim support.
 - Milestone 6.0 is a non-neural multi-horizon capacity forecasting gate. It
   builds `capacity_horizon_table_v1.parquet`, runs persistence, prior-slope,
   Ridge, and HGB baselines under grouped splits, and labels K3 k-to-k+h
@@ -280,6 +294,13 @@ Current state:
   delta capacity, but horizon-3 capacity level is essentially tied and slightly
   worse than prior slope (`0.0935304` versus `0.0932329`), so the overall
   multi-horizon claim remains partially supported.
+- `mbp baseline diagnose-capacity-horizon` produced 48 split/reference gain
+  rows, 720 C-rate condition-error rows, 1,184 prior-slope failure-mode rows,
+  and 48 oracle-exposure gain rows from the existing Milestone 6.0 artifacts.
+  The next-branch readiness report keeps global multi-horizon forecasting
+  `partially_supported`, C-rate multi-horizon `supported_for_diagnostics`,
+  oracle exposure `oracle_diagnostic_only`, and recommends only a possible
+  `prior_trajectory_shape_audit` if technical work continues.
 - Milestone 5.3 remains a correctness-hardening gate for existing calibration
   and stressor-robustness reports. It does not add models, features, or claims.
 - Milestone 5.2 added `ece_10_bin_equal_freq` alongside the existing

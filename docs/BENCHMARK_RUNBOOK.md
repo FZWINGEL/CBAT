@@ -96,6 +96,7 @@ mbp baseline run-hierarchical-capacity --interval-table data/interim/interval_ta
 mbp analysis build-capacity-horizon-table --interval-table data/interim/interval_table.parquet --out data/interim/capacity_horizon_table_v1.parquet --horizons 1,2,3,5
 mbp analysis capacity-horizon-qa --horizon-table data/interim/capacity_horizon_table_v1.parquet --interval-table data/interim/interval_table.parquet --out reports/analysis/capacity_horizon/capacity_horizon_qa_report.json --coverage-out reports/analysis/capacity_horizon/capacity_horizon_coverage.csv
 mbp baseline run-capacity-horizon --horizon-table data/interim/capacity_horizon_table_v1.parquet --out reports/baselines/capacity_horizon_l0_l2_report.json --predictions-out data/processed/capacity_horizon_l0_l2_predictions.parquet --out-dir reports/baselines/capacity_horizon_l0_l2 --targets capacity_Ah_kh,delta_capacity_Ah_h --horizons 1,2,3,5 --split-views condition_fold,temperature_holdout_fold,c_rate_holdout_fold,profile_holdout_fold,voltage_window_holdout_fold --model-levels MH0_persistence,MH1_prior_slope_linear,MH2_ridge,MH3_hist_gradient_boosting --feature-groups K0_prior_capacity,K1_prior_state_time,K2_nominal_condition,K3_oracle_exposure_diagnostic --hgb-max-iter 50
+mbp baseline diagnose-capacity-horizon --report reports/baselines/capacity_horizon_l0_l2_report.json --predictions data/processed/capacity_horizon_l0_l2_predictions.parquet --horizon-table data/interim/capacity_horizon_table_v1.parquet --out-dir reports/baselines/capacity_horizon_l0_l2
 ```
 
 Outputs: tracked JSON/CSV/Markdown reports and ignored prediction Parquets.
@@ -106,8 +107,9 @@ prediction Parquet.
 The hierarchical command emits tracked L5 comparator reports and an ignored
 prediction Parquet.
 The capacity-horizon commands emit a tracked QA report, a tracked grouped
-baseline report, and ignored horizon/prediction Parquets. K3 horizon exposure
-features are oracle diagnostics, not prospective forecast inputs.
+baseline report, tracked forensics reports, and ignored horizon/prediction
+Parquets. K3 horizon exposure features are oracle diagnostics, not prospective
+forecast inputs.
 
 ## 7. Diagnostics
 

@@ -31,6 +31,7 @@ The project has completed the major baseline-first charter gates:
 - targeted stressor-family routing;
 - hierarchical replicate-aware capacity comparators;
 - multi-horizon capacity forecasting diagnostics.
+- multi-horizon error forensics and prospective feature audit.
 
 The strongest contribution is now a rigorous grouped-validation benchmark that
 documents which battery-degradation signals are supported, diagnostic-only,
@@ -56,7 +57,11 @@ pooling does not pass paired C-rate support and H5 intervals are undercovered.
 Milestone 6.0 adds a Q1 multi-horizon capacity forecasting diagnostic. C-rate
 and delta-capacity horizons 2/3 are positive for prospective HGB K2, but the
 all-split horizon-3 capacity-level row narrowly misses prior slope, so this is
-not a solved multi-step forecasting result.
+not a solved multi-step forecasting result. Milestone 6.1 diagnoses that result
+without new model training: the C-rate rows remain positive, K3 oracle exposure
+is useful only as a non-prospective diagnostic, and the only plausible future
+technical branch is a predeclared prior-trajectory-shape audit using information
+available at check-up `k`.
 
 ## Recommended Path
 
@@ -102,12 +107,12 @@ does not create a stronger next branch: the mean C-rate delta gain is tiny,
 paired p05 is negative, and interval coverage fails. Treat it as a completed
 charter comparator rather than a reason to tune more partial-pooling variants.
 
-The multi-horizon capacity branch has now also been run. It creates a useful
-diagnostic result, especially for C-rate horizons 2 and 3, but it does not
-justify sequence/neural models, policy ranking, or CBAT. If continued, the only
-defensible follow-up would be a predeclared error-analysis or prospective
-feature audit, not post-hoc tuning around the near-tied horizon-3
-capacity-level row.
+The multi-horizon capacity branch and its error forensics have now also been
+run. It creates a useful diagnostic result, especially for C-rate horizons 2
+and 3, but it does not justify sequence/neural models, policy ranking, or
+CBAT. If continued, the only defensible follow-up is a predeclared
+prior-trajectory-shape audit, not post-hoc tuning around the near-tied
+horizon-3 capacity-level row.
 
 ## Explicitly Rejected Branches
 

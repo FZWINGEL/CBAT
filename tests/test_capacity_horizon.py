@@ -13,7 +13,10 @@ from mbp.analysis.capacity_horizon import (
 from mbp.baselines.capacity_horizon import (
     CAPACITY_HORIZON_PREDICTION_SCHEMA,
     HorizonFeatureEncoder,
+    diagnose_capacity_horizon,
     leakage_audit,
+    prior_slope_failure_mode_rows,
+    prospective_feature_audit_rows,
     predict_capacity_horizon,
     run_capacity_horizon_baselines,
 )
@@ -136,6 +139,76 @@ def test_capacity_horizon_baseline_smoke(tmp_path: Path) -> None:
     assert prediction_table.schema.metadata[b"schema_version"] == b"gate60.capacity_horizon_predictions.v1"
     assert (tmp_path / "capacity_horizon" / "capacity_horizon_claim_readiness.md").exists()
     assert (tmp_path / "capacity_horizon" / "plots" / "horizon_performance.csv").exists()
+
+
+def test_capacity_horizon_diagnostics_render_forensics(tmp_path: Path) -> None:
+    interval_path = tmp_path / "interval.parquet"
+    horizon_path = tmp_path / "capacity_horizon.parquet"
+    report_path = tmp_path / "capacity_horizon_report.json"
+    predictions_path = tmp_path / "capacity_horizon_predictions.parquet"
+    out_dir = tmp_path / "capacity_horizon"
+    pq.write_table(pa.Table.from_pylist(_interval_rows()), interval_path)
+    build_capacity_horizon_table(interval_path, horizon_path, horizons=[2])
+    run_capacity_horizon_baselines(
+        horizon_path,
+        report_path,
+        predictions_path,
+        out_dir,
+        targets=["capacity_Ah_kh", "delta_capacity_Ah_h"],
+        model_levels=["MH0_persistence", "MH1_prior_slope_linear", "MH3_hist_gradient_boosting"],
+        feature_groups=["K2_nominal_condition", "K3_oracle_exposure_diagnostic"],
+        split_views=["c_rate_holdout_fold"],
+        horizons=[2],
+        hgb_max_iter=5,
+    )
+
+    report = diagnose_capacity_horizon(report_path, predictions_path, horizon_path, out_dir)
+
+    assert report["row_counts"]["gain_rows"] > 0
+    assert (out_dir / "multi_horizon_error_forensics.md").exists()
+    assert (out_dir / "multi_horizon_next_branch_readiness.md").exists()
+    assert (out_dir / "plots" / "c_rate_condition_horizon_errors.csv").exists()
+    assert report["readiness"]["sequence_or_neural_models"] == "blocked"
+
+
+def test_prior_slope_failure_modes_bin_hgb_vs_reference() -> None:
+    horizon_rows = build_capacity_horizon_rows_for_test(_interval_rows())
+    row = horizon_rows[0]
+    base = {
+        "schema_version": "test",
+        "run_scope": "primary",
+        "split_name": "condition_fold",
+        "heldout_fold": 0,
+        "target": "capacity_Ah_kh",
+        "cell_id": row["cell_id"],
+        "parameter_set": row["parameter_set"],
+        "replicate_id": row["replicate_id"],
+        "checkup_k": row["checkup_k"],
+        "target_checkup_k": row["target_checkup_k"],
+        "horizon_checkups": row["horizon_checkups"],
+        "y_true": 3.0,
+    }
+    predictions = [
+        base | {"model_level": "MH3_hist_gradient_boosting", "feature_group": "K2_nominal_condition", "y_pred": 2.8},
+        base | {"model_level": "MH1_prior_slope_linear", "feature_group": "prior_slope", "y_pred": 2.95},
+    ]
+
+    rows = prior_slope_failure_mode_rows(predictions, horizon_rows)
+
+    assert rows
+    assert rows[0]["hgb_minus_prior_slope_mae"] > 0
+    assert rows[0]["hgb_wins_fraction"] == 0.0
+
+
+def test_prospective_feature_audit_blocks_future_exposure_candidates() -> None:
+    rows = prospective_feature_audit_rows()
+    existing_oracle = next(row for row in rows if row["feature_family"] == "K3_oracle_exposure_diagnostic")
+    future_candidate = next(row for row in rows if row["feature_family"] == "candidate_actual_horizon_exposure")
+    prior_candidate = next(row for row in rows if row["feature_family"] == "candidate_prior_trajectory_shape")
+
+    assert existing_oracle["allowed_for_future_prospective_branch"] is False
+    assert future_candidate["claim_scope"] == "oracle_diagnostic_only"
+    assert prior_candidate["allowed_for_future_prospective_branch"] is True
 
 
 def build_capacity_horizon_rows_for_test(interval_rows: list[dict[str, object]]) -> list[dict[str, object]]:

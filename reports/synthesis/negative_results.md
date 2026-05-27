@@ -278,6 +278,14 @@ diagnostic positives, keep the overall multi-horizon capacity claim partial,
 and do not claim solved C-rate fade, architecture readiness, policy ranking,
 or prospective value from future exposure fields.
 
+Milestone 6.1 forensics keep this decision unchanged. The C-rate horizon-2/3
+rows remain diagnostic positives, but the global result remains partial. The
+largest HGB-versus-prior-slope regressions appear in specific prior-state bins,
+including late-life and low-SOH cases, and K3 oracle exposure improves many
+rows only by using non-prospective k-to-k+h exposure. If technical work
+continues, the only defensible branch is a predeclared prior-trajectory-shape
+audit using information available at check-up `k`.
+
 ## Milestone 3.0 Blocked-Claim Refresh
 
 The v2 synthesis keeps the following negative boundaries active:
@@ -299,7 +307,9 @@ The v2 synthesis keeps the following negative boundaries active:
   only because paired C-rate support and interval coverage fail;
 - multi-horizon capacity forecasting is only partially supported overall,
   despite positive C-rate and delta-capacity diagnostics, because all-split
-  horizon-3 capacity level narrowly misses the prior-slope baseline;
+  horizon-3 capacity level narrowly misses the prior-slope baseline; Milestone
+  6.1 forensics recommend only a possible prior-trajectory-shape audit, not
+  tuning, architecture, or future-exposure features;
 - sequence models remain blocked by the order-vs-aggregate and
   order-vs-shuffled negative result;
 - calibrated uncertainty remains blocked by C-rate coverage failure even after

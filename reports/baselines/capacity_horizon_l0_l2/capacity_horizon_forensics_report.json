@@ -1,0 +1,43 @@
+{
+  "generated_at_utc": "2026-05-27T12:33:28.215556+00:00",
+  "inputs": {
+    "horizon_table": "data/interim/capacity_horizon_table_v1.parquet",
+    "predictions": "data/processed/capacity_horizon_l0_l2_predictions.parquet",
+    "report": "reports/baselines/capacity_horizon_l0_l2_report.json"
+  },
+  "outputs": {
+    "c_rate_condition_horizon_errors": "reports/baselines/capacity_horizon_l0_l2/plots/c_rate_condition_horizon_errors.csv",
+    "error_forensics": "reports/baselines/capacity_horizon_l0_l2/multi_horizon_error_forensics.md",
+    "horizon_reference_gain_by_split": "reports/baselines/capacity_horizon_l0_l2/plots/horizon_reference_gain_by_split.csv",
+    "next_branch_readiness": "reports/baselines/capacity_horizon_l0_l2/multi_horizon_next_branch_readiness.md",
+    "oracle_exposure_gain_by_split": "reports/baselines/capacity_horizon_l0_l2/plots/oracle_exposure_gain_by_split.csv",
+    "out_dir": "reports/baselines/capacity_horizon_l0_l2",
+    "prior_slope_failure_modes": "reports/baselines/capacity_horizon_l0_l2/plots/prior_slope_failure_modes.csv",
+    "prospective_feature_audit": "reports/baselines/capacity_horizon_l0_l2/plots/prospective_feature_audit.csv"
+  },
+  "readiness": {
+    "c_rate_condition_count": 12,
+    "c_rate_multi_horizon_status": "supported_for_diagnostics",
+    "cbat_architecture": "blocked",
+    "claim_scope": "no new scientific claim; forensics only",
+    "multi_horizon_global_status": "partially_supported",
+    "oracle_exposure_status": "oracle_diagnostic_only",
+    "planned_protocol_feature_branch": "diagnostic_only",
+    "policy_ranking": "blocked",
+    "prior_slope_failure_bins": 390,
+    "prior_trajectory_shape_branch": "possible_next_gate",
+    "recommended_next_branch": "prior_trajectory_shape_audit",
+    "sequence_or_neural_models": "blocked"
+  },
+  "row_counts": {
+    "c_rate_condition_rows": 720,
+    "gain_rows": 48,
+    "horizon_rows": 13770,
+    "metrics": 960,
+    "oracle_gain_rows": 48,
+    "predictions": 743040,
+    "prior_slope_failure_rows": 1184
+  },
+  "schema_version": "gate61.capacity_horizon_forensics.v1",
+  "status": "passed"
+}

@@ -60,6 +60,7 @@ Layer 6: Diagnostics and hardening
   mbp analysis replicate-uncertainty
   mbp analysis calibrate-capacity
   mbp analysis capacity-horizon-qa
+  mbp baseline diagnose-capacity-horizon
   mbp baseline diagnose-sequence-value
   mbp baseline compare-prior-eis-pulse
   mbp baseline compare-prior-eis-capacity

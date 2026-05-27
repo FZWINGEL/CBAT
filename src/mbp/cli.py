@@ -2215,6 +2215,23 @@ def baseline_run_capacity_horizon(
     )
 
 
+@baseline_app.command("diagnose-capacity-horizon")
+def baseline_diagnose_capacity_horizon(
+    report: Path = typer.Option(..., "--report", help="Capacity horizon JSON report."),
+    predictions: Path = typer.Option(..., "--predictions", help="Capacity horizon prediction Parquet."),
+    horizon_table: Path = typer.Option(..., "--horizon-table", help="Path to capacity_horizon_table_v1.parquet."),
+    out_dir: Path = typer.Option(..., "--out-dir", help="Output directory for horizon diagnostics."),
+) -> None:
+    """Diagnose multi-horizon capacity forecast errors and next-branch readiness."""
+    from mbp.baselines.capacity_horizon import diagnose_capacity_horizon
+
+    result = diagnose_capacity_horizon(report, predictions, horizon_table, out_dir)
+    typer.echo(
+        "Capacity horizon diagnostics generated: "
+        f"{result['row_counts']['gain_rows']} gain rows written under {out_dir}"
+    )
+
+
 @baseline_app.command("calibrate-threshold-warning")
 def baseline_calibrate_threshold_warning(
     warning_table: Path = typer.Option(..., "--warning-table", help="Path to threshold_warning_table_v1.parquet."),
