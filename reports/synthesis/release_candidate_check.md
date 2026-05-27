@@ -5,7 +5,7 @@ Status: `passed`
 ## Summary
 
 - Required files checked: 10
-- Tracked artifacts checked: 86
+- Tracked artifacts checked: 99
 - Ignored artifacts checked: 25
 - Claim matrix rows checked: 27
 
@@ -40,6 +40,7 @@ Status: `passed`
 - calibrate-threshold-warning
 - capacity-horizon-qa
 - capacity-horizon-trajectory-qa
+- check-benchmark-tasks
 - check-manuscript
 - check-reader-manuscript
 - check-release-candidate

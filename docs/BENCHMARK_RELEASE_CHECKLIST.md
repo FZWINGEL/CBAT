@@ -5,6 +5,7 @@ Use this checklist before tagging or handing off a release candidate.
 - [ ] `ruff check . --no-cache` passes if code changed.
 - [ ] `pytest -p no:cacheprovider` passes if code changed.
 - [ ] `mbp report check-release-candidate` passes.
+- [ ] `mbp report check-benchmark-tasks` passes.
 - [ ] `git diff --check` passes.
 - [ ] `docs/RELEASE_NOTES_v0.1-rc1.md` exists.
 - [ ] If creating a reviewer-facing rc2 archive, `docs/RELEASE_NOTES_v0.1-rc2.md`
@@ -27,5 +28,9 @@ Use this checklist before tagging or handing off a release candidate.
 - [ ] The command DAG covers audit, ingestion, intervals, splits, feature
       sidecars, target sidecars, baselines, diagnostics, and synthesis.
 - [ ] `reports/synthesis/release_candidate_check.md` has been refreshed.
+- [ ] `reports/synthesis/benchmark_task_registry_check.md`,
+      `reports/synthesis/benchmark_leaderboard_v1.csv`,
+      `reports/synthesis/benchmark_task_cards_v1.md`, and
+      `reports/synthesis/benchmark_model_cards_v1.md` have been refreshed.
 - [ ] `docs/CODEX_NEXT_WORK.md` reflects the current recommended branch and
       blocked branches.

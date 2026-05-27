@@ -547,6 +547,80 @@ def report_check_release_candidate(
         raise typer.Exit(code=1)
 
 
+@report_app.command("check-benchmark-tasks")
+def report_check_benchmark_tasks(
+    task_registry: Path = typer.Option(
+        Path("configs/benchmark_tasks_v1.yaml"),
+        "--task-registry",
+        help="Frozen benchmark task registry.",
+    ),
+    claim_ledger: Path = typer.Option(
+        Path("docs/MAIN_PROJECT_CLAIM_LEDGER_V2.md"),
+        "--claim-ledger",
+        help="Main-project v2 claim ledger markdown file.",
+    ),
+    claim_matrix: Path = typer.Option(
+        Path("reports/synthesis/main_project_claim_matrix_v2.csv"),
+        "--claim-matrix",
+        help="Main-project v2 claim matrix CSV.",
+    ),
+    artifact_manifest: Path = typer.Option(
+        Path("reports/synthesis/artifact_manifest_v2.csv"),
+        "--artifact-manifest",
+        help="Benchmark release artifact manifest CSV.",
+    ),
+    out: Path = typer.Option(
+        Path("reports/synthesis/benchmark_task_registry_check.md"),
+        "--out",
+        help="Output Markdown task-registry check report.",
+    ),
+    leaderboard_out: Path = typer.Option(
+        Path("reports/synthesis/benchmark_leaderboard_v1.csv"),
+        "--leaderboard-out",
+        help="Output frozen task-level leaderboard CSV.",
+    ),
+    task_cards_out: Path = typer.Option(
+        Path("reports/synthesis/benchmark_task_cards_v1.md"),
+        "--task-cards-out",
+        help="Output benchmark task cards Markdown.",
+    ),
+    model_cards_out: Path = typer.Option(
+        Path("reports/synthesis/benchmark_model_cards_v1.md"),
+        "--model-cards-out",
+        help="Output benchmark model-family cards Markdown.",
+    ),
+) -> None:
+    """Check and render the frozen benchmark task registry."""
+    from mbp.reporting import (
+        benchmark_leaderboard_rows,
+        check_benchmark_tasks,
+        load_benchmark_task_registry,
+        write_benchmark_leaderboard,
+        write_benchmark_model_cards,
+        write_benchmark_task_cards,
+        write_benchmark_task_check,
+    )
+
+    registry = load_benchmark_task_registry(task_registry)
+    result = check_benchmark_tasks(
+        task_registry=task_registry,
+        claim_ledger=claim_ledger,
+        claim_matrix=claim_matrix,
+        artifact_manifest=artifact_manifest,
+    )
+    write_benchmark_task_check(result, out)
+    write_benchmark_leaderboard(benchmark_leaderboard_rows(registry), leaderboard_out)
+    write_benchmark_task_cards(registry, task_cards_out)
+    write_benchmark_model_cards(registry, model_cards_out)
+    typer.echo(f"Benchmark task registry check {result['status']}: {out}")
+    for warning in result["warnings"]:
+        typer.echo(f"warning: {warning}")
+    for failure in result["errors"]:
+        typer.echo(f"failure: {failure}")
+    if result["status"] != "passed":
+        raise typer.Exit(code=1)
+
+
 @ingest_app.command("run-pipeline")
 def ingest_run_pipeline(
     data_root: Path = typer.Option(

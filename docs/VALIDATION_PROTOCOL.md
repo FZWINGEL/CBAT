@@ -1522,3 +1522,33 @@ Claim rules:
   value only.
 - K3 actual k-to-k+h exposure remains oracle-only and cannot be used to
   justify prospective forecasting, architecture, policy, or causal claims.
+
+## Milestone 7.0 Benchmark Task Freeze Gate
+
+Milestone 7.0 freezes the completed benchmark evidence into a task registry and
+executable consistency check. It is a reproducibility and benchmark-interface
+gate, not a new modeling or feature-engineering milestone.
+
+Required artifacts:
+
+- `configs/benchmark_tasks_v1.yaml`
+- `reports/synthesis/benchmark_task_registry_check.md`
+- `reports/synthesis/benchmark_leaderboard_v1.csv`
+- `reports/synthesis/benchmark_task_cards_v1.md`
+- `reports/synthesis/benchmark_model_cards_v1.md`
+- `docs/experiments/2026-05-27_benchmark_task_freeze.md`
+
+Validation rules:
+
+- Every frozen task must identify a primary claim ID, status, source artifact,
+  target, split view, primary metric, allowed wording, forbidden wording, and
+  decision.
+- Task statuses must match the primary claim status in
+  `reports/synthesis/main_project_claim_matrix_v2.csv`.
+- Source artifacts must exist; generated Parquet data products may appear only
+  as ignored local artifacts under `data/raw/`, `data/interim/`,
+  `data/splits/`, or `data/processed/`.
+- Supported task wording must not mark CBAT, policy ranking, causal claims,
+  detector-knee prediction, calibrated risk, calibrated uncertainty, neural or
+  sequence models, DRT, EIS embeddings, or broad multimodal claims as
+  supported.

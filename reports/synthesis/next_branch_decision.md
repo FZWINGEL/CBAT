@@ -33,6 +33,7 @@ The project has completed the major baseline-first charter gates:
 - multi-horizon capacity forecasting diagnostics.
 - multi-horizon error forensics and prospective feature audit.
 - prior-trajectory shape multi-horizon diagnostic.
+- benchmark task freeze and leaderboard reproducibility.
 
 The strongest contribution is now a rigorous grouped-validation benchmark that
 documents which battery-degradation signals are supported, diagnostic-only,
@@ -65,6 +66,9 @@ technical branch is a predeclared prior-trajectory-shape audit using information
 available at check-up `k`. Milestone 6.2 runs that audit and keeps the branch
 partial/diagnostic: K5 does not repair all-split horizon-3 capacity and does
 not preserve every C-rate horizon-2/3 target row.
+Milestone 7.0 freezes the completed evidence base into 12 benchmark tasks, a
+task-level leaderboard, task cards, model-family cards, and an executable
+task-registry checker. It changes no claim status and adds no new model branch.
 
 ## Recommended Path
 
@@ -78,8 +82,8 @@ not preserve every C-rate horizon-2/3 target row.
    hierarchical comparator as a negative/diagnostic L5 baseline. Integrate
    Milestone 6.0 as a scoped multi-horizon diagnostic, not as architecture
    readiness.
-3. If engineering work resumes, prefer release automation or reproducibility
-   checks over new scientific expansion.
+3. If engineering work resumes, prefer release automation, task-registry
+   maintenance, or reproducibility checks over new scientific expansion.
 
 ## Optional Technical Branch
 

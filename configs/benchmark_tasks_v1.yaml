@@ -1,0 +1,220 @@
+schema_version: benchmark_tasks.v1
+benchmark_version: benchmark-task-freeze-v1
+created_date: 2026-05-27
+tasks:
+  - task_id: T01_capacity_next_checkup
+    task_name: next-check-up capacity generalization
+    area: capacity
+    question_id: Q1
+    primary_claim_id: C03
+    claim_ids: [C01, C02, C03, C12]
+    status: supported
+    targets: [capacity_Ah_k1, delta_capacity_Ah]
+    split_views: [condition_fold, temperature_holdout_fold, c_rate_holdout_fold, profile_holdout_fold, voltage_window_holdout_fold]
+    primary_metric: grouped MAE under held-out condition and stressor splits
+    primary_result: C-rate is the hardest capacity view with MAE 0.125186 for capacity_Ah_k1 and 0.101133 for delta_capacity_Ah
+    best_reference: grouped HGB F4/F8 capacity baseline family
+    baseline_families: [capacity_persistence, ridge_capacity, hgb_capacity, stress_feature_hgb]
+    source_artifacts: [docs/experiments/2026-05-22_capacity_baseline_synthesis.md]
+    local_data_artifacts: [data/interim/interval_table.parquet, data/splits/interval_subset_registry_v1.parquet, data/processed/capacity_hgb50_focused_predictions.parquet]
+    allowed_wording: C-rate is the dominant unresolved capacity generalization stressor under grouped validation
+    forbidden_wording: Random row splits are publishable evidence or stress features solve C-rate fade
+    decision: keep as core capacity benchmark task with C-rate difficulty highlighted
+  - task_id: T02_pulse_scalar_endpoint
+    task_name: PULSE RT/50 scalar diagnostic endpoint
+    area: PULSE
+    question_id: Q1
+    primary_claim_id: C04
+    claim_ids: [C04, C05, C06, C07, C08]
+    status: supported_for_diagnostics
+    targets: [pulse_1s_resistance_RT50, delta_pulse_1s_resistance]
+    split_views: [condition_fold, temperature_holdout_fold, c_rate_holdout_fold, profile_holdout_fold, voltage_window_holdout_fold]
+    primary_metric: grouped resistance MAE and capacity residual coupling diagnostics
+    primary_result: RT/50 PULSE is a usable scalar endpoint; prior PULSE value is narrow and selected-split only
+    best_reference: scalar PULSE and prior-PULSE non-neural baselines
+    baseline_families: [pulse_scalar_baseline, pulse_capacity_coupling, prior_pulse_hgb]
+    source_artifacts: [docs/experiments/2026-05-23_pulse_target_robustness_decision.md, docs/experiments/2026-05-23_capacity_pulse_coupling_robustness.md]
+    local_data_artifacts: [data/interim/interval_table.parquet]
+    allowed_wording: RT/50 PULSE supports scalar diagnostic endpoint and explanatory residual diagnostics
+    forbidden_wording: PULSE validates broad multimodal modeling or improves all capacity targets
+    decision: keep PULSE as diagnostic and narrow prior-state evidence only
+  - task_id: T03_eis_scalar_endpoint
+    task_name: gated EIS scalar diagnostic endpoint
+    area: EIS
+    question_id: Q2
+    primary_claim_id: C10
+    claim_ids: [C10]
+    status: partially_supported
+    targets: [eis_RT50_scalar_targets]
+    split_views: [condition_fold, temperature_holdout_fold, c_rate_holdout_fold, profile_holdout_fold, voltage_window_holdout_fold]
+    primary_metric: grouped scalar EIS target metrics and non-EIS improvement checks
+    primary_result: EIS is a scalar diagnostic endpoint with narrow profile-split signal; broad non-EIS improvement is unsupported
+    best_reference: EIS scalar L0-L3 diagnostics
+    baseline_families: [eis_scalar_baseline, prior_eis_hgb]
+    source_artifacts: [docs/experiments/2026-05-23_eis_claim_hardening.md, reports/baselines/eis_scalar_l0_l3_report.json]
+    local_data_artifacts: [data/interim/eis_feature_table_v1.parquet, data/interim/eis_target_table_v1.parquet]
+    allowed_wording: EIS is a gated scalar diagnostic endpoint with narrow signals
+    forbidden_wording: EIS broadly improves degradation prediction or authorizes learned embeddings
+    decision: keep EIS gated and auxiliary
+  - task_id: T04_threshold_warning
+    task_name: 80pct threshold-event forecasting diagnostic
+    area: threshold_warning
+    question_id: Q3
+    primary_claim_id: C19
+    claim_ids: [C18, C19, C20]
+    status: supported_for_diagnostics
+    targets: [event_within_1_checkup, event_within_2_checkups, event_within_3_checkups]
+    split_views: [condition_fold, temperature_holdout_fold, c_rate_holdout_fold, profile_holdout_fold, voltage_window_holdout_fold]
+    primary_metric: verified-only Brier, AUROC, AUPRC against event-rate and proximity references
+    primary_result: verified-only 3-checkup Brier improves from prior 0.178655 and proximity 0.168492 to HGB W2 0.090116
+    best_reference: HGB W2 threshold-warning classifier
+    baseline_families: [event_rate_prior, proximity_baseline, logistic_warning, hgb_warning]
+    source_artifacts: [docs/experiments/2026-05-23_threshold_warning_censoring_finalization.md, reports/baselines/threshold_warning_l0_l2/threshold_warning_final_claim_readiness.md]
+    local_data_artifacts: [data/interim/threshold_warning_table_v1.parquet, data/processed/threshold_warning_l0_l2_predictions.parquet]
+    allowed_wording: non-neural baselines forecast 80pct threshold events diagnostically beyond proximity under verified-only sensitivity
+    forbidden_wording: calibrated risk, causal early warning, detector-knee prediction, or policy ranking
+    decision: lock as diagnostic threshold-event forecasting task
+  - task_id: T05_threshold_warning_calibration
+    task_name: threshold-warning probability calibration
+    area: calibration
+    question_id: Q5
+    primary_claim_id: C20
+    claim_ids: [C20]
+    status: not_supported
+    targets: [event_within_3_checkups]
+    split_views: [condition_fold, c_rate_holdout_fold]
+    primary_metric: fixed-width and equal-frequency ECE under all-row and verified-only policies
+    primary_result: primary verified-only Platt ECE passes mean threshold but C-rate verified-only ECE remains 0.167653 fixed and 0.176185 equal-frequency
+    best_reference: Platt and isotonic post-hoc calibration diagnostics
+    baseline_families: [raw_hgb_probability, platt_logistic, isotonic_calibration]
+    source_artifacts: [docs/experiments/2026-05-24_calibration_robustness_correctness_hardening.md, reports/baselines/threshold_warning_calibration/threshold_warning_calibration_claim_readiness.md]
+    local_data_artifacts: [data/interim/threshold_warning_table_v1.parquet, data/processed/threshold_warning_calibrated_predictions.parquet]
+    allowed_wording: post-hoc calibration improves mean reliability but C-rate ECE keeps calibrated-risk blocked
+    forbidden_wording: threshold-warning probabilities are calibrated risk estimates
+    decision: keep as calibration negative result
+  - task_id: T06_capacity_uncertainty_calibration
+    task_name: grouped capacity uncertainty calibration
+    area: uncertainty
+    question_id: Q5
+    primary_claim_id: C15
+    claim_ids: [C09, C14, C15]
+    status: not_supported
+    targets: [capacity_Ah_k1, delta_capacity_Ah]
+    split_views: [condition_fold, c_rate_holdout_fold, stressor_family_holdout]
+    primary_metric: empirical interval coverage versus nominal target
+    primary_result: grouped conformal improves mean coverage but C-rate coverage remains below nominal target
+    best_reference: raw HGB quantile and grouped conformal diagnostics
+    baseline_families: [hgb_quantile, split_conformal, stressor_family_conformal, replicate_hybrid_interval]
+    source_artifacts: [docs/experiments/2026-05-23_grouped_calibration_replicate_uncertainty.md, reports/analysis/calibration_capacity/calibration_claim_readiness.md]
+    local_data_artifacts: [data/processed/capacity_hgb50_focused_predictions.parquet]
+    allowed_wording: calibrated capacity uncertainty remains blocked by C-rate coverage failure
+    forbidden_wording: conformal validates global uncertainty or HGB quantiles are calibrated
+    decision: keep uncertainty as blocked benchmark diagnostic
+  - task_id: T07_temporal_order_falsification
+    task_name: temporal order value falsification
+    area: temporal_order
+    question_id: Q7
+    primary_claim_id: C16
+    claim_ids: [C16]
+    status: not_supported
+    targets: [capacity_Ah_k1, delta_capacity_Ah]
+    split_views: [condition_fold, temperature_holdout_fold, c_rate_holdout_fold, profile_holdout_fold, voltage_window_holdout_fold]
+    primary_metric: order-aware versus aggregate and shuffled-order MAE gains
+    primary_result: order-aware mean gain is negative versus aggregate and shuffled controls
+    best_reference: aggregate event and shuffled-order controls
+    baseline_families: [event_aggregate_hgb, order_aware_hgb, shuffled_order_control]
+    source_artifacts: [docs/experiments/2026-05-23_temporal_history_value_gate.md, reports/baselines/capacity_sequence_value_hgb50/sequence_value_claim_readiness.md]
+    local_data_artifacts: [data/interim/run_event_table_v1.parquet, data/interim/interval_sequence_features_v1.parquet]
+    allowed_wording: ordered event structure does not justify sequence models
+    forbidden_wording: sequence models are justified by current temporal-order evidence
+    decision: keep as falsification gate and block sequence models
+  - task_id: T08_stressor_robust_delta_capacity
+    task_name: adaptive stressor-robust C-rate delta diagnostic
+    area: stressor_robustness
+    question_id: Q6
+    primary_claim_id: C22
+    claim_ids: [C21, C22, C23, C24]
+    status: supported_for_diagnostics
+    targets: [delta_capacity_Ah]
+    split_views: [c_rate_holdout_fold]
+    primary_metric: C-rate delta MAE gain with outside-C-rate non-degradation guardrail
+    primary_result: conservative adaptive R2 selection replicates with min C-rate gain 0.0200436 versus F4 and max outside-C-rate degradation 0.0279117
+    best_reference: conservative train-only adaptive stressor-balanced HGB
+    baseline_families: [stressor_balanced_hgb, train_only_adaptive_selector, stressor_family_router]
+    source_artifacts: [docs/experiments/2026-05-24_adaptive_stressor_robust_replication.md, reports/baselines/capacity_stressor_robust_adaptive_replication/adaptive_replication_claim_readiness.md]
+    local_data_artifacts: [data/processed/capacity_stressor_robust_adaptive_conservative_predictions.parquet]
+    allowed_wording: conservative train-only adaptive R2 selection supports a narrow diagnostic C-rate delta robustness result
+    forbidden_wording: C-rate fade is solved globally or architecture work is justified
+    decision: lock narrow diagnostic only
+  - task_id: T09_hierarchical_replicate_comparator
+    task_name: hierarchical replicate-aware capacity comparator
+    area: hierarchical_replicate
+    question_id: Q5
+    primary_claim_id: C25
+    claim_ids: [C25]
+    status: diagnostic_only
+    targets: [capacity_Ah_k1, delta_capacity_Ah]
+    split_views: [condition_fold, c_rate_holdout_fold]
+    primary_metric: C-rate MAE gain and replicate-variance interval coverage
+    primary_result: H4/F4 C-rate delta gain is 0.000100645 with negative paired p05 and H5 intervals are undercovered
+    best_reference: H4 residual partial-pooling comparator and H5 replicate interval diagnostic
+    baseline_families: [ridge_partial_pooling, hgb_residual_partial_pooling, replicate_variance_interval]
+    source_artifacts: [docs/experiments/2026-05-27_hierarchical_replicate_baseline_gate.md, reports/baselines/capacity_hierarchical_replicate/hierarchical_claim_readiness.md]
+    local_data_artifacts: [data/processed/capacity_hierarchical_replicate_predictions.parquet]
+    allowed_wording: hierarchical partial pooling is an L5 diagnostic comparator only
+    forbidden_wording: hierarchical partial pooling solves C-rate fade or validates calibrated uncertainty
+    decision: retain as charter-required comparator and negative uncertainty evidence
+  - task_id: T10_multi_horizon_capacity
+    task_name: multi-horizon capacity forecasting diagnostic
+    area: multi_horizon_capacity
+    question_id: Q1
+    primary_claim_id: C26
+    claim_ids: [C26, C27]
+    status: partially_supported
+    targets: [capacity_Ah_kh, delta_capacity_Ah_h]
+    split_views: [condition_fold, temperature_holdout_fold, c_rate_holdout_fold, profile_holdout_fold, voltage_window_holdout_fold]
+    primary_metric: grouped horizon MAE versus persistence and prior-slope references
+    primary_result: C-rate horizons 2 and 3 pass for capacity and delta; all-split horizon-3 capacity narrowly misses prior slope
+    best_reference: prospective HGB K2 nominal-condition model
+    baseline_families: [persistence_horizon, prior_slope_horizon, ridge_horizon, hgb_horizon]
+    source_artifacts: [docs/experiments/2026-05-27_multi_horizon_capacity_forecasting_gate.md, reports/baselines/capacity_horizon_l0_l2/multi_horizon_next_branch_readiness.md]
+    local_data_artifacts: [data/interim/capacity_horizon_table_v1.parquet, data/processed/capacity_horizon_l0_l2_predictions.parquet]
+    allowed_wording: prospective HGB K2 supports scoped C-rate and delta-capacity multi-horizon diagnostics
+    forbidden_wording: multi-horizon capacity forecasting is solved globally or K3 future exposure is prospective
+    decision: keep broad task partially supported only
+  - task_id: T11_prior_trajectory_shape
+    task_name: prior-trajectory shape horizon diagnostic
+    area: multi_horizon_capacity
+    question_id: Q1
+    primary_claim_id: C27
+    claim_ids: [C27]
+    status: partially_supported
+    targets: [capacity_Ah_kh, delta_capacity_Ah_h]
+    split_views: [condition_fold, c_rate_holdout_fold]
+    primary_metric: K4/K5 MAE gain versus K2, persistence, and prior-slope references
+    primary_result: K5 does not repair all-split horizon-3 capacity and improves only 2 of 4 C-rate horizon-2/3 primary rows
+    best_reference: K5 nominal-plus-prior-trajectory HGB diagnostic
+    baseline_families: [prior_trajectory_features, hgb_horizon]
+    source_artifacts: [docs/experiments/2026-05-27_prior_trajectory_shape_horizon_gate.md, reports/baselines/capacity_horizon_trajectory_l0_l2/trajectory_shape_claim_readiness.md]
+    local_data_artifacts: [data/interim/capacity_horizon_trajectory_features_v1.parquet, data/processed/capacity_horizon_trajectory_l0_l2_predictions.parquet]
+    allowed_wording: prior-only trajectory shape is leakage-safe with isolated diagnostic gains but does not pass the repair gate
+    forbidden_wording: prior-trajectory shape solves multi-horizon forecasting or justifies sequence/neural/CBAT/policy/causal claims
+    decision: close this branch as partial diagnostic evidence
+  - task_id: T12_semi_empirical_replicate_checks
+    task_name: semi-empirical comparator and replicate uncertainty checks
+    area: domain_comparators
+    question_id: Q2
+    primary_claim_id: C13
+    claim_ids: [C13, C14]
+    status: not_supported
+    targets: [capacity_Ah_k1, delta_capacity_Ah]
+    split_views: [condition_fold, c_rate_holdout_fold, profile_holdout_fold]
+    primary_metric: MAE gain versus HGB references and replicate spread diagnostics
+    primary_result: semi-empirical comparators are useful domain checks but weaker than strongest HGB/stress baselines in C-rate views
+    best_reference: semi-empirical ridge-style stress comparator and replicate spread diagnostics
+    baseline_families: [semi_empirical_ridge, replicate_spread_diagnostic]
+    source_artifacts: [docs/experiments/2026-05-23_semi_empirical_replicate_gate.md, reports/analysis/replicate_uncertainty/replicate_uncertainty_summary.md]
+    local_data_artifacts: [data/interim/interval_table.parquet]
+    allowed_wording: semi-empirical comparators and replicate spread are diagnostic checks only
+    forbidden_wording: semi-empirical models beat strongest HGB baselines or replicate diagnostics validate calibrated uncertainty
+    decision: keep as domain and uncertainty context, not as positive comparator claim

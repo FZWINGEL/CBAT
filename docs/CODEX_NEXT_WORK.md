@@ -1,20 +1,24 @@
 # Codex Next Work
 
-Current recommended branch: synthesis/release maintenance. The adaptive
-stressor-robust replication, attribution, stressor-family routing,
-hierarchical replicate, and multi-horizon capacity checks have been run and
-should not be broadened without a fresh gated question.
+Current recommended branch: benchmark release maintenance and task-registry
+reproducibility. The adaptive stressor-robust replication, attribution,
+stressor-family routing, hierarchical replicate, multi-horizon capacity, and
+prior-trajectory checks have been run and should not be broadened without a
+fresh gated question.
 
 ## Current Phase
 
-Milestone 6.0 is a multi-horizon capacity forecasting gate. It implements a
-prospective non-neural table/baseline for horizons 1, 2, 3, and 5 check-ups,
-plus a K3 oracle exposure diagnostic. It is not a sequence, architecture,
-calibration-claim, or policy-ranking branch.
+Milestone 7.0 is a benchmark task freeze and leaderboard reproducibility gate.
+It defines the official task registry in `configs/benchmark_tasks_v1.yaml`,
+checks it with `mbp report check-benchmark-tasks`, and renders a frozen
+task-level leaderboard plus task/model cards. It is not a modeling,
+architecture, calibration-claim, or policy-ranking branch.
 
 ## Current Result
 
-The correctness pass does not change the claim posture. Threshold-warning
+The task freeze does not change the claim posture. It organizes 12 completed
+benchmark tasks and verifies that their statuses match the v2 claim matrix.
+Threshold-warning
 probability calibration still blocks calibrated-risk wording: Platt
 verified-only primary-horizon mean fixed-width ECE is `0.0748136` and
 equal-frequency ECE is `0.0729286`, but C-rate verified-only ECE remains above
@@ -58,12 +62,22 @@ horizon-3 `capacity_Ah_kh` narrowly misses prior slope (`0.0935304` versus
 `0.0932329`), so broad multi-horizon capacity wording is not supported. K3
 future exposure is oracle-diagnostic only.
 
+Milestone 6.2 tested prior-only trajectory shape as the only authorized
+multi-horizon follow-up. The sidecar passed leakage/coverage QA, but K5 did not
+repair all-split horizon-3 `capacity_Ah_kh` and did not preserve all C-rate
+horizon-2/3 rows, so prior-trajectory shape is partial/diagnostic only.
+
+Milestone 7.0 freezes the completed evidence base into task cards and a
+leaderboard. It should be maintained as benchmark infrastructure, not treated
+as a reason to reopen model development.
+
 ## Optional Technical Branch
 
 No broader technical branch is currently justified. Future technical work, if
-opened, should be release automation or documentation synthesis unless a fresh
-predeclared question is created. Do not open CBAT, policy ranking, sequence
-modeling, or new modality expansion from the Milestone 5.6-6.0 results.
+opened, should be release automation, task-registry maintenance, or
+documentation synthesis unless a fresh predeclared question is created. Do not
+open CBAT, policy ranking, sequence modeling, or new modality expansion from
+the Milestone 5.6-7.0 results.
 
 ## Blocked Branches
 
@@ -123,6 +137,10 @@ Allowed current wording:
   and does not pass paired C-rate support or interval coverage
 - multi-horizon capacity forecasting is partially supported overall, with
   C-rate and delta-capacity horizon 2/3 diagnostics supported
+- prior-only trajectory shape is partial/diagnostic and does not repair the
+  multi-horizon capacity gap
+- the benchmark task registry freezes current task definitions and claim
+  posture without adding new results
 - K3 horizon exposure is oracle diagnostic only
 
 Forbidden current wording:

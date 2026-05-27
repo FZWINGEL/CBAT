@@ -3,6 +3,7 @@
 | Option | Evidence for | Evidence against | Risk | Recommendation |
 |---|---|---|---|---|
 | Stop modeling and return to manuscript/benchmark integration | Major charter gates are closed; claim posture is coherent; threshold-warning diagnostic is now hardened. | Some claims remain diagnostic rather than predictive. | Low; strongest path to publishable benchmark. | Recommended default. |
+| Benchmark task freeze and leaderboard reproducibility | Milestone 7.0 defines 12 frozen tasks, validates them against the v2 claim matrix, and renders task/model cards from tracked reports only. | Does not create new model performance. | Low; protects benchmark reproducibility and external handoff. | Complete and maintain as the benchmark interface. |
 | Threshold-warning diagnostic extension | 80% threshold warning survives proximity and verified-only sensitivity. | Lead-time remains exploratory and calibration is poor. | Moderate scope creep. | Allow only if tied to reporting, not new architectures. |
 | Threshold-warning calibration branch | Diagnostic scores are strong and post-hoc calibration improves mean ECE; Milestone 5.2 adds equal-frequency ECE sensitivity and Milestone 5.3 hardens readiness logic. | Policy-specific C-rate ECE remains above guardrail under fixed-width and equal-frequency binning. | Moderate; further tuning could chase calibration noise. | Do not extend unless a narrow diagnostic calibration question is explicitly needed. |
 | Quantile/calibration hygiene | Milestone 5.2 enforced noncrossing capacity quantile endpoints and added equal-frequency ECE. | The hygiene pass did not unblock calibrated risk or calibrated uncertainty. | Low if kept as maintenance; moderate if misread as a new claim. | Complete; keep as diagnostics only. |
@@ -27,6 +28,9 @@ pass paired C-rate support or interval coverage. Milestone 6.0 adds a scoped
 multi-horizon diagnostic, strongest in C-rate and delta-capacity rows, and
 Milestone 6.2 shows prior-trajectory shape does not repair the remaining
 capacity-level gap. This does not create architecture or policy readiness.
+Milestone 7.0 freezes the task registry and leaderboard so future work can
+build from a reproducible benchmark interface rather than reopening completed
+gates.
 Additional robustness tuning would need a fresh predeclared question to avoid
 claim chasing.
 Milestone 5.2 calibration/quantile hygiene and

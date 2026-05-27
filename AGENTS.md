@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 6.2: Prospective prior-trajectory shape baseline gate.
+Milestone 7.0: Benchmark task freeze and leaderboard reproducibility gate.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -81,10 +81,19 @@ Current state:
   all-split horizon-3 `capacity_Ah_kh` near miss and does not preserve all
   C-rate horizon-2/3 rows. Treat prior-trajectory shape as partial/diagnostic,
   not as a new supported forecasting claim.
+- Milestone 7.0 freezes the completed evidence base into a benchmark task
+  registry, executable registry checker, task-level leaderboard, task cards,
+  and model-family cards. It is release/reproducibility infrastructure for the
+  machine-learning benchmark, not a new modeling branch.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
 Allowed work:
+- benchmark task registry and task-card maintenance
+- benchmark leaderboard synthesis from existing tracked reports
+- executable benchmark task consistency checks
+- claim-ledger/task-registry consistency fixes
+- release and reproducibility maintenance
 - multi-horizon capacity target table construction from existing interval rows
 - multi-horizon capacity target QA and split coverage diagnostics
 - non-neural multi-horizon capacity baselines under grouped validation

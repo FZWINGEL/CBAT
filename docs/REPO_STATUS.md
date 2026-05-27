@@ -11,8 +11,8 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 6.2: Prospective prior-trajectory shape
-baseline gate**.
+The repository is in **Milestone 7.0: Benchmark task freeze and leaderboard
+reproducibility gate**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -205,6 +205,11 @@ arm is partially useful in a few rows, but it does not repair all-split
 horizon-3 `capacity_Ah_kh` (`0.0981241` versus K2 `0.0935304` and prior slope
 `0.0932329`) and does not preserve all C-rate horizon-2/3 target rows. The
 trajectory branch is therefore partial/diagnostic only.
+Milestone 7.0 freezes the completed evidence base into
+`configs/benchmark_tasks_v1.yaml`, validates it with
+`mbp report check-benchmark-tasks`, and renders the task-level leaderboard,
+task cards, and model-family cards from existing tracked reports only. It adds
+no new models, feature engineering, or scientific claims.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -213,6 +218,13 @@ improvement claims have been started.
 
 Current state:
 
+- Milestone 7.0 is a benchmark task freeze and leaderboard reproducibility
+  gate. It defines 12 frozen tasks spanning capacity, PULSE, EIS, threshold
+  warning, calibration, uncertainty, temporal order, stressor robustness,
+  hierarchical replicate comparison, multi-horizon capacity, prior-trajectory
+  shape, and semi-empirical/replicate checks. The checker passes and keeps the
+  task registry aligned with the claim ledger, claim matrix, and artifact
+  manifest.
 - Milestone 6.2 is a prospective prior-trajectory shape baseline gate. It
   builds a prior-only trajectory sidecar, joins K4/K5 feature groups into the
   existing non-neural capacity-horizon runner, and diagnoses trajectory gains

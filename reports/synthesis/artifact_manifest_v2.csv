@@ -14,7 +14,20 @@ docs/BENCHMARK_RELEASE_CHECKLIST.md,release_doc,tracked,manual release hardening
 docs/CODEX_NEXT_WORK.md,release_doc,tracked,manual release hardening,next_branch_decision.md,,n/a,next branch,future-agent operating guide
 reports/synthesis/reproducibility_gate_status.md,synthesis_report,tracked,manual release hardening,docs/BENCHMARK_REPRODUCIBILITY.md,,n/a,reproducibility,release gate status
 reports/synthesis/release_candidate_check.md,consistency_check,tracked,manual release hardening,artifact_manifest_v2.csv,,n/a,reproducibility,manual release-candidate check
+configs/benchmark_tasks_v1.yaml,config,tracked,manual task freeze,main_project_claim_matrix_v2.csv,12,benchmark_tasks.v1,benchmark task freeze,frozen benchmark task registry
+reports/synthesis/benchmark_task_registry_check.md,consistency_check,tracked,mbp report check-benchmark-tasks,configs/benchmark_tasks_v1.yaml,12,benchmark_tasks.v1,benchmark task freeze,executable task registry check
+reports/synthesis/benchmark_leaderboard_v1.csv,leaderboard,tracked,mbp report check-benchmark-tasks,configs/benchmark_tasks_v1.yaml,12,benchmark_tasks.v1,benchmark task freeze,frozen task-level benchmark leaderboard
+reports/synthesis/benchmark_task_cards_v1.md,synthesis_report,tracked,mbp report check-benchmark-tasks,configs/benchmark_tasks_v1.yaml,12,benchmark_tasks.v1,benchmark task freeze,human-readable task cards
+reports/synthesis/benchmark_model_cards_v1.md,synthesis_report,tracked,mbp report check-benchmark-tasks,configs/benchmark_tasks_v1.yaml,,benchmark_tasks.v1,benchmark task freeze,model-family cards for existing baselines
+docs/experiments/2026-05-27_benchmark_task_freeze.md,experiment_memo,tracked,mbp report check-benchmark-tasks,configs/benchmark_tasks_v1.yaml,,benchmark_tasks.v1,benchmark task freeze,records benchmark task freeze decision
 docs/experiments/2026-05-23_main_project_evidence_synthesis_v2.md,experiment_memo,tracked,manual synthesis,completed milestone reports,,n/a,all claims,v2 synthesis memo
+docs/experiments/2026-05-22_capacity_baseline_synthesis.md,experiment_memo,tracked,capacity baseline synthesis,capacity baseline reports,,n/a,capacity,capacity baseline synthesis source
+docs/experiments/2026-05-23_pulse_target_robustness_decision.md,experiment_memo,tracked,pulse target robustness,pulse target reports,,n/a,PULSE,PULSE scalar endpoint source
+docs/experiments/2026-05-23_capacity_pulse_coupling_robustness.md,experiment_memo,tracked,pulse-capacity coupling,pulse coupling reports,,n/a,PULSE coupling,PULSE residual coupling source
+docs/experiments/2026-05-23_eis_claim_hardening.md,experiment_memo,tracked,eis claim hardening,eis reports,,n/a,EIS,EIS scalar diagnostic source
+docs/experiments/2026-05-23_grouped_calibration_replicate_uncertainty.md,experiment_memo,tracked,capacity calibration diagnostics,calibration reports,,n/a,calibrated uncertainty,capacity uncertainty calibration source
+docs/experiments/2026-05-23_temporal_history_value_gate.md,experiment_memo,tracked,temporal history value gate,sequence value reports,,n/a,temporal order,temporal-order falsification source
+docs/experiments/2026-05-23_semi_empirical_replicate_gate.md,experiment_memo,tracked,semi-empirical and replicate gate,semi-empirical reports,,n/a,semi-empirical comparator,domain comparator source
 docs/experiments/2026-05-23_threshold_warning_censoring_finalization.md,experiment_memo,tracked,threshold-warning finalization,threshold_warning reports,,n/a,threshold warning,locks narrow diagnostic claim
 reports/baselines/threshold_warning_l0_l2/threshold_warning_final_claim_readiness.md,claim_readiness,tracked,mbp baseline finalize-threshold-warning-claim,threshold warning predictions,,n/a,threshold warning,final readiness report
 reports/baselines/threshold_warning_censoring_sensitivity/censoring_sensitivity_summary.md,diagnostic_report,tracked,mbp baseline compare-threshold-warning-censoring,all-row and verified-only reports,,n/a,threshold warning,censoring sensitivity summary

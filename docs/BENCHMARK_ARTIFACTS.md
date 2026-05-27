@@ -13,9 +13,21 @@ Tracked reports include:
 - synthesis reports under `reports/synthesis/`
 - experiment memos under `docs/experiments/`
 - claim ledgers and policy documents under `docs/`
+- benchmark task registry config under `configs/benchmark_tasks_v1.yaml`
 
 Tracked reports should be small enough for review and should preserve
 provenance, source paths, row counts, metrics, and claim-readiness decisions.
+
+Milestone 7.0 adds a frozen task-level benchmark interface:
+
+- `configs/benchmark_tasks_v1.yaml`
+- `reports/synthesis/benchmark_task_registry_check.md`
+- `reports/synthesis/benchmark_leaderboard_v1.csv`
+- `reports/synthesis/benchmark_task_cards_v1.md`
+- `reports/synthesis/benchmark_model_cards_v1.md`
+
+These artifacts summarize existing evidence only; they do not train models or
+change claim status.
 
 ## Ignored Generated Parquets
 

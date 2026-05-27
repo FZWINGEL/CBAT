@@ -80,6 +80,12 @@ Layer 7: Synthesis and release checks
   reports/synthesis/next_branch_decision.md
   reports/synthesis/artifact_manifest_v2.csv
   reports/synthesis/release_candidate_check.md
+  configs/benchmark_tasks_v1.yaml
+  mbp report check-benchmark-tasks
+  reports/synthesis/benchmark_task_registry_check.md
+  reports/synthesis/benchmark_leaderboard_v1.csv
+  reports/synthesis/benchmark_task_cards_v1.md
+  reports/synthesis/benchmark_model_cards_v1.md
 ```
 
 ## Key Dependency Rules

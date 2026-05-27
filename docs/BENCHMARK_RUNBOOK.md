@@ -157,3 +157,12 @@ The current synthesis artifacts are tracked under `docs/` and
 `reports/synthesis/`. Milestone 3.1 adds the release package documented in
 `docs/BENCHMARK_REPRODUCIBILITY.md`, `docs/COMMAND_DAG.md`, and
 `reports/synthesis/artifact_manifest_v2.csv`.
+
+```bash
+mbp report check-release-candidate
+mbp report check-benchmark-tasks --task-registry configs/benchmark_tasks_v1.yaml --out reports/synthesis/benchmark_task_registry_check.md --leaderboard-out reports/synthesis/benchmark_leaderboard_v1.csv --task-cards-out reports/synthesis/benchmark_task_cards_v1.md --model-cards-out reports/synthesis/benchmark_model_cards_v1.md
+```
+
+Outputs: tracked release/task consistency checks and frozen task-level
+benchmark synthesis artifacts. These commands do not train models or generate
+data products.
