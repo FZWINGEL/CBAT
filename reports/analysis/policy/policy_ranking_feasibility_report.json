@@ -1,0 +1,67 @@
+{
+  "claim_scope": "supported_observed_contrast_ordering_diagnostics_only_no_policy_recommendation",
+  "generated_at_utc": "2026-05-27T16:15:18.625403+00:00",
+  "inputs": {
+    "contrast_registry": "data/interim/policy_contrast_registry_v1.parquet",
+    "horizon_table": "data/interim/capacity_horizon_table_v1.parquet",
+    "predictions": "data/processed/capacity_horizon_l0_l2_predictions.parquet"
+  },
+  "outputs": {
+    "bootstrap": "reports/analysis/policy/policy_ranking_bootstrap.csv",
+    "by_family": "reports/analysis/policy/policy_ranking_by_family.csv",
+    "claim_readiness": "reports/analysis/policy/policy_ranking_claim_readiness.md",
+    "pairwise_metrics": "reports/analysis/policy/policy_ranking_pairwise_metrics.csv"
+  },
+  "readiness": {
+    "C-rate contrast ordering": "diagnostic_only",
+    "K3 oracle exposure ordering diagnostic": "diagnostic_only",
+    "calibrated policy risk or utility": "blocked",
+    "causal or same-cell counterfactual policy claims": "blocked",
+    "policy recommendation": "blocked",
+    "supported observed contrast ordering feasibility": "partially_supported"
+  },
+  "row_counts": {
+    "bootstrap_rows": 210,
+    "horizon_rows": 13770,
+    "joined_prediction_rows": 225744,
+    "pairwise_rows": 164100,
+    "prediction_rows": 743040,
+    "registry_rows": 234,
+    "summary_rows": 504,
+    "triplet_supported_contrasts": 234
+  },
+  "schema_version": "gate73.policy_contrast_ordering_feasibility.v1",
+  "selection": {
+    "bootstrap_count": 200,
+    "feature_groups": [
+      "persistence",
+      "prior_slope",
+      "K2_nominal_condition",
+      "K3_oracle_exposure_diagnostic"
+    ],
+    "horizons": [
+      2,
+      3
+    ],
+    "min_replicate_rows_per_arm": 2,
+    "model_levels": [
+      "MH0_persistence",
+      "MH1_prior_slope_linear",
+      "MH2_ridge",
+      "MH3_hist_gradient_boosting"
+    ],
+    "seed": 42,
+    "split_views": [
+      "condition_fold",
+      "temperature_holdout_fold",
+      "c_rate_holdout_fold",
+      "profile_holdout_fold",
+      "voltage_window_holdout_fold"
+    ],
+    "targets": [
+      "delta_capacity_Ah_h",
+      "capacity_Ah_kh"
+    ]
+  },
+  "status": "passed"
+}
