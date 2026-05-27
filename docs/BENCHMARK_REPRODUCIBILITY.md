@@ -48,6 +48,18 @@ git diff --check
 For a docs-only release-hardening change, `git diff --check` is the required
 minimum validation. Run `ruff` and `pytest` whenever code changes.
 
+Foundational extraction validation:
+
+```bash
+mbp audit validate-extraction --result-root data/raw/Result_Raw_Data_Version_2 --current-interim data/interim --rebuild-dir data/interim/extraction_validation_8_3 --out-dir reports/audit/extraction_validation --sample-cells P001_1,P038_2,P076_3
+```
+
+For full LOG_AGE rebuild validation, use the persistent ignored CSV cache
+documented in `docs/BENCHMARK_RUNBOOK.md`; do not commit the cache or rebuild
+Parquets. The Milestone 8.3 full validation passed by comparing the current and
+rebuilt `904,977,105`-row LOG_AGE Parquets with streaming pairwise value
+equality.
+
 ## Raw Data Placement
 
 Raw archives and generated Parquets remain local. The benchmark assumes the
@@ -67,6 +79,10 @@ Expected local generated products include:
 - `data/interim/knee_candidate_table_v1.parquet`
 - `data/interim/threshold_event_label_table_v1.parquet`
 - `data/interim/threshold_warning_table_v1.parquet`
+- `data/interim/extraction_validation_8_3/*.parquet` when running extraction
+  validation
+- `data/interim/log_age_csv_cache_v2/*.csv` when running full LOG_AGE
+  extraction validation
 - `data/processed/*_predictions.parquet`
 
 ## Artifact Policy

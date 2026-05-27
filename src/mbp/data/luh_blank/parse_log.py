@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import shutil
+import subprocess
 from pathlib import Path
 
 import pyarrow as pa
@@ -67,6 +68,11 @@ def ingest_log_age(
     exclusions_report_path: Path | None = None,
     skip_extract: bool = False,
     csv_block_size_bytes: int = DEFAULT_CSV_BLOCK_SIZE_BYTES,
+    csv_use_threads: bool = False,
+    prefer_external_7z: bool = False,
+    extract_dir: Path | None = None,
+    keep_extracted: bool = False,
+    expected_csv_count: int | None = None,
 ) -> pa.Table:
     """Extract and parse cell-level operating histories from cell_log_age_ultracompr.7z.
 
@@ -76,25 +82,40 @@ def ingest_log_age(
     if not archive_path.exists():
         raise FileNotFoundError(f"LOG_AGE archive not found at '{archive_path}'")
 
+    if csv_block_size_bytes <= 0:
+        raise ValueError("csv_block_size_bytes must be positive")
+    if expected_csv_count is not None and expected_csv_count <= 0:
+        raise ValueError("expected_csv_count must be positive when provided")
+
     out_dir.mkdir(parents=True, exist_ok=True)
     parquet_out = out_dir / "modality_table_log_age.parquet"
     if parquet_out.exists():
         parquet_out.unlink()
 
-    # 1. Create a workspace temporary extraction directory
-    temp_extract_dir = out_dir / "tmp_log_age_extracted"
-
-    if csv_block_size_bytes <= 0:
-        raise ValueError("csv_block_size_bytes must be positive")
+    # 1. Create or reuse an extraction directory. Supplying extract_dir with
+    # keep_extracted=True lets validation extract the 7z archive once and rebuild
+    # repeatedly from the CSV cache without repeating decompression.
+    temp_extract_dir = extract_dir or out_dir / "tmp_log_age_extracted"
 
     should_extract = True
     if skip_extract:
-        if temp_extract_dir.exists() and list(temp_extract_dir.glob("*.csv")):
+        csv_count = _count_csv_files(temp_extract_dir)
+        expected_satisfied = expected_csv_count is None or csv_count >= expected_csv_count
+        if csv_count and expected_satisfied:
             logger.info(
-                "skip_extract is True and CSV files found in '%s'. Skipping extraction.",
+                "skip_extract is True and %s CSV files found in '%s'. Skipping extraction.",
+                csv_count,
                 temp_extract_dir,
             )
             should_extract = False
+        elif csv_count:
+            logger.warning(
+                "skip_extract is True but only %s CSV files found in '%s' "
+                "(expected at least %s). Re-extracting archive.",
+                csv_count,
+                temp_extract_dir,
+                expected_csv_count,
+            )
         else:
             logger.info(
                 "skip_extract is True but no CSV files found in '%s'. Proceeding with extraction.",
@@ -108,9 +129,12 @@ def ingest_log_age(
             temp_extract_dir.mkdir(parents=True, exist_ok=True)
 
             logger.info("Extracting cell_log_age_ultracompr.7z to '%s'...", temp_extract_dir)
-            with py7zr.SevenZipFile(archive_path, mode="r") as z:
-                z.extractall(path=temp_extract_dir)
-            logger.info("Extraction complete!")
+            if prefer_external_7z and _extract_with_external_7z(archive_path, temp_extract_dir):
+                logger.info("Extraction complete using external 7z.")
+            else:
+                with py7zr.SevenZipFile(archive_path, mode="r") as z:
+                    z.extractall(path=temp_extract_dir)
+                logger.info("Extraction complete using py7zr.")
 
             # Ensure all extracted files are readable
             for path in temp_extract_dir.rglob("*.csv"):
@@ -121,12 +145,20 @@ def ingest_log_age(
                         pass
 
         # 2. Iterate over the uncompressed CSV files
-        csv_files = sorted(temp_extract_dir.glob("*.csv"))
+        csv_files = sorted(path for path in temp_extract_dir.rglob("*.csv") if path.is_file())
         logger.info(f"Found {len(csv_files)} log age CSV files to process.")
+        if expected_csv_count is not None and len(csv_files) < expected_csv_count:
+            raise ValueError(
+                f"Only {len(csv_files)} LOG_AGE CSV files found in '{temp_extract_dir}', "
+                f"expected at least {expected_csv_count}."
+            )
 
         exclusions = []
 
-        read_options = csv.ReadOptions(block_size=csv_block_size_bytes, use_threads=False)
+        read_options = csv.ReadOptions(
+            block_size=csv_block_size_bytes,
+            use_threads=csv_use_threads,
+        )
 
         # Custom PyArrow CSV parser options
         # We parse with semicolon delimiter and map literal "nan"/"NAN"/"NaN" to standard PyArrow nulls
@@ -229,6 +261,47 @@ def ingest_log_age(
 
     finally:
         # 6. Always clean up temporary uncompressed files if we extracted them
-        if should_extract and temp_extract_dir.exists():
+        if should_extract and temp_extract_dir.exists() and not keep_extracted:
             logger.info("Cleaning up temporary extracted log age files...")
             shutil.rmtree(temp_extract_dir)
+
+
+def _count_csv_files(path: Path) -> int:
+    if not path.exists():
+        return 0
+    return sum(1 for item in path.rglob("*.csv") if item.is_file())
+
+
+def _external_7z_binary() -> str | None:
+    """Return an available 7z-compatible binary, if one exists on PATH."""
+    for name in ("7zz", "7z", "7za"):
+        path = shutil.which(name)
+        if path:
+            return path
+    return None
+
+
+def _extract_with_external_7z(archive_path: Path, out_dir: Path) -> bool:
+    """Extract with a system 7z binary when available.
+
+    py7zr is portable and remains the fallback, but the system 7z binaries can
+    use native multithreaded decompression. This is an optimization only; a
+    missing binary or non-zero exit code falls back to py7zr so parser semantics
+    and test portability stay unchanged.
+    """
+    binary = _external_7z_binary()
+    if not binary:
+        return False
+    command = [binary, "x", "-y", f"-o{out_dir}", str(archive_path)]
+    try:
+        result = subprocess.run(command, check=False, capture_output=True, text=True)
+    except OSError:
+        return False
+    if result.returncode != 0:
+        logger.warning(
+            "External 7z extraction failed with code %s; falling back to py7zr. stderr=%s",
+            result.returncode,
+            result.stderr.strip()[:500],
+        )
+        return False
+    return True

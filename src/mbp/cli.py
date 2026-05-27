@@ -325,6 +325,127 @@ def audit_collection(
     typer.echo(f"Wrote unified collection manifest to {out}")
 
 
+@audit_app.command("validate-extraction")
+def audit_validate_extraction(
+    result_root: Path = typer.Option(
+        ...,
+        "--result-root",
+        help="Local Result_Raw_Data_Version_2 root containing cfg/eoc/pulse/eis zip files.",
+    ),
+    current_interim: Path = typer.Option(
+        Path("data/interim"),
+        "--current-interim",
+        help="Directory containing current canonical interim Parquet products.",
+    ),
+    rebuild_dir: Path = typer.Option(
+        Path("data/interim/extraction_validation_8_3"),
+        "--rebuild-dir",
+        help="Ignored directory where validation rebuild Parquets are written.",
+    ),
+    out_dir: Path = typer.Option(
+        Path("reports/audit/extraction_validation"),
+        "--out-dir",
+        help="Directory for tracked extraction-validation reports.",
+    ),
+    log_age_archive: Path | None = typer.Option(
+        None,
+        "--log-age-archive",
+        help="Optional cell_log_age_ultracompr.7z path for full LOG_AGE rebuild validation.",
+    ),
+    full_log_age: bool = typer.Option(
+        False,
+        "--full-log-age",
+        help="Also rebuild and semantically hash-compare the full LOG_AGE Parquet.",
+    ),
+    sample_cells: str = typer.Option(
+        "P001_1,P038_2,P076_3",
+        "--sample-cells",
+        help="Comma-separated preferred cells for raw-to-Parquet golden-record checks.",
+    ),
+    csv_block_size_bytes: int = typer.Option(
+        8 << 20,
+        "--csv-block-size-bytes",
+        min=1,
+        help="LOG_AGE Arrow CSV stream block size for validation rebuilds.",
+    ),
+    log_age_digest_batch_rows: int = typer.Option(
+        262_144,
+        "--log-age-digest-batch-rows",
+        min=1,
+        help="Batch size for streaming LOG_AGE semantic digest comparison.",
+    ),
+    csv_use_threads: bool = typer.Option(
+        True,
+        "--csv-use-threads/--no-csv-use-threads",
+        help="Use Arrow CSV parse threads for LOG_AGE validation rebuilds.",
+    ),
+    prefer_external_7z: bool = typer.Option(
+        True,
+        "--prefer-external-7z/--no-prefer-external-7z",
+        help="Use a system 7z/7zz binary for faster LOG_AGE extraction when available.",
+    ),
+    log_age_extract_dir: Path | None = typer.Option(
+        Path("data/interim/log_age_csv_cache_v2"),
+        "--log-age-extract-dir",
+        help="Persistent ignored directory for extracted LOG_AGE CSV cache.",
+    ),
+    keep_log_age_extracted: bool = typer.Option(
+        True,
+        "--keep-log-age-extracted/--discard-log-age-extracted",
+        help="Keep extracted LOG_AGE CSV cache after validation rebuild.",
+    ),
+    skip_log_age_extract: bool = typer.Option(
+        True,
+        "--skip-log-age-extract/--force-log-age-extract",
+        help="Reuse --log-age-extract-dir when it has enough CSV files; force re-extraction otherwise.",
+    ),
+    expected_log_age_csv_count: int = typer.Option(
+        228,
+        "--expected-log-age-csv-count",
+        min=1,
+        help="Minimum CSV count before --skip-log-age-extract trusts the LOG_AGE cache.",
+    ),
+) -> None:
+    """Rebuild early extraction products from raw archives and compare to current Parquets."""
+    from mbp.audit.extraction_validation import validate_extraction
+
+    selected_cells = [value.strip() for value in sample_cells.split(",") if value.strip()]
+    typer.echo("Running extraction reproducibility validation...")
+    typer.echo(f"  result root: {result_root}")
+    typer.echo(f"  rebuild dir: {rebuild_dir}")
+    typer.echo(f"  reports: {out_dir}")
+    if full_log_age:
+        typer.echo(
+            "  LOG_AGE full rebuild enabled "
+            f"(csv_block_size_bytes={csv_block_size_bytes}, "
+            f"csv_use_threads={csv_use_threads}, prefer_external_7z={prefer_external_7z})"
+        )
+    report = validate_extraction(
+        result_root=result_root,
+        log_age_archive=log_age_archive,
+        current_interim=current_interim,
+        rebuild_dir=rebuild_dir,
+        out_dir=out_dir,
+        full_log_age=full_log_age,
+        sample_cells=selected_cells,
+        csv_block_size_bytes=csv_block_size_bytes,
+        log_age_digest_batch_rows=log_age_digest_batch_rows,
+        csv_use_threads=csv_use_threads,
+        prefer_external_7z=prefer_external_7z,
+        log_age_extract_dir=log_age_extract_dir,
+        keep_log_age_extracted=keep_log_age_extracted,
+        skip_log_age_extract=skip_log_age_extract,
+        expected_log_age_csv_count=expected_log_age_csv_count,
+    )
+    typer.echo(f"Extraction validation {report['status']}: {out_dir / 'extraction_validation_report.json'}")
+    for warning in report["warnings"]:
+        typer.echo(f"warning: {warning}")
+    for failure in report["failures"]:
+        typer.echo(f"failure: {failure}")
+    if report["status"] != "passed":
+        raise typer.Exit(code=1)
+
+
 @report_app.command("evidence-memo")
 def report_evidence_memo(
     manifest_path: Path = typer.Option(
@@ -784,6 +905,31 @@ def ingest_log_age_cmd(
         min=1,
         help="Maximum PyArrow CSV stream block size. Lower values reduce peak memory.",
     ),
+    csv_use_threads: bool = typer.Option(
+        False,
+        "--csv-use-threads/--no-csv-use-threads",
+        help="Use Arrow CSV parse threads. Disabled by default to preserve historical ingest behavior.",
+    ),
+    prefer_external_7z: bool = typer.Option(
+        False,
+        "--prefer-external-7z/--no-prefer-external-7z",
+        help="Use a system 7z/7zz binary for faster extraction when available.",
+    ),
+    extract_dir: Path | None = typer.Option(
+        None,
+        "--extract-dir",
+        help="Optional persistent directory for extracted LOG_AGE CSV files.",
+    ),
+    keep_extracted: bool = typer.Option(
+        False,
+        "--keep-extracted",
+        help="Keep extracted LOG_AGE CSV files after the Parquet build.",
+    ),
+    expected_csv_count: int | None = typer.Option(
+        None,
+        "--expected-csv-count",
+        help="Optional minimum CSV count before --skip-extract trusts an existing extract directory.",
+    ),
 ) -> None:
     """Ingest cell operating logs from cell_log_age_ultracompr.7z into interim Parquet."""
     import pyarrow.parquet as pq
@@ -792,7 +938,8 @@ def ingest_log_age_cmd(
 
     typer.echo(
         "Ingesting LOG_AGE data from "
-        f"{archive} (skip_extract={skip_extract}, csv_block_size_bytes={csv_block_size_bytes})..."
+        f"{archive} (skip_extract={skip_extract}, csv_block_size_bytes={csv_block_size_bytes}, "
+        f"csv_use_threads={csv_use_threads}, prefer_external_7z={prefer_external_7z})..."
     )
     ingest_log_age(
         archive,
@@ -800,6 +947,11 @@ def ingest_log_age_cmd(
         exclusions_report_path=exclusions_report,
         skip_extract=skip_extract,
         csv_block_size_bytes=csv_block_size_bytes,
+        csv_use_threads=csv_use_threads,
+        prefer_external_7z=prefer_external_7z,
+        extract_dir=extract_dir,
+        keep_extracted=keep_extracted,
+        expected_csv_count=expected_csv_count,
     )
     parquet_out = out_dir / "modality_table_log_age.parquet"
     row_count = pq.ParquetFile(parquet_out).metadata.num_rows

@@ -1,0 +1,12 @@
+modality,contract_rule,contract,status,schema_version
+CFG,cohort_filter,outside 228 expected cell IDs are excluded,checked,gate83.extraction_validation.v1
+CFG,filename_consistency,filename parameter/replicate must match CSV,checked,gate83.extraction_validation.v1
+EOC,capacity_row_policy,discharge row is preferred for capacity/timestamp,checked,gate83.extraction_validation.v1
+EOC,energy_policy,discharge energy is absolute value; charge energy from charge row,checked,gate83.extraction_validation.v1
+PULSE,unit_conversion,10 ms and 1 s resistance are converted from mOhm to Ohm,checked,gate83.extraction_validation.v1
+PULSE,alignment,pulse rows align to nearest EOC check-up timestamp,checked,gate83.extraction_validation.v1
+EIS,unit_conversion,real/imag/absolute impedance are converted from mOhm to Ohm,checked,gate83.extraction_validation.v1
+EIS,modeling_mask,valid modeling mask applies frequency and NaN exclusions,checked,gate83.extraction_validation.v1
+EIS,alignment,EIS rows align to nearest EOC check-up timestamp,checked,gate83.extraction_validation.v1
+LOG_AGE,streaming_parse,LOG_AGE is parsed in CSV batches and written incrementally,checked,gate83.extraction_validation.v1
+LOG_AGE,null_policy,nan strings become null diagnostics in nullable columns,checked,gate83.extraction_validation.v1

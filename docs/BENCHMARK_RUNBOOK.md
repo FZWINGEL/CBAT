@@ -11,11 +11,25 @@ otherwise.
 mbp audit manifest --data-root data/raw --out reports/audit/DATASET_MANIFEST.json
 mbp audit result-data --data-root data/raw --out reports/audit/result_data_audit.json
 mbp audit split-registry --out reports/audit/split_registry_report.json
+mbp audit validate-extraction --result-root data/raw/Result_Raw_Data_Version_2 --current-interim data/interim --rebuild-dir data/interim/extraction_validation_8_3 --out-dir reports/audit/extraction_validation --sample-cells P001_1,P038_2,P076_3
 ```
 
 Inputs: local raw archives and metadata.
 
 Outputs: tracked audit JSON/CSV/Markdown reports.
+
+For full LOG_AGE extraction reproducibility, run `validate-extraction` with
+`--full-log-age` and a persistent ignored CSV cache:
+
+```bash
+mbp audit validate-extraction --result-root data/raw/Result_Raw_Data_Version_2 --log-age-archive data/raw/Log_Raw_Data_Version_2/10.35097-kww7jv8ajuvchcah/data/dataset/cell_log_age_ultracompr.7z --current-interim data/interim --rebuild-dir data/interim/extraction_validation_8_3 --out-dir reports/audit/extraction_validation --sample-cells P001_1,P038_2,P076_3 --full-log-age --log-age-extract-dir data/interim/log_age_csv_cache_v2 --skip-log-age-extract --keep-log-age-extracted --expected-log-age-csv-count 228 --csv-block-size-bytes 8388608 --log-age-digest-batch-rows 524288 --csv-use-threads
+```
+
+The first complete run extracts the archive into
+`data/interim/log_age_csv_cache_v2`; later runs rebuild from those CSVs and
+compare the full LOG_AGE Parquet by streaming pairwise value equality. If an
+interrupted run leaves fewer than 228 CSVs, the command re-extracts instead of
+trusting the partial cache.
 
 ## 1. Ingestion
 
