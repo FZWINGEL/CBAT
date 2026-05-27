@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 8.2.1: Diagnostic-horizon failure forensics and endpoint-specific claim finalization**.
+The repository is in **Milestone 8.4: C-rate generalization root-cause and repair gate**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -298,6 +298,27 @@ claim readiness. Endpoint-specific diagnostics are strongest for
 rows. `eis_phase_1kHz`, `nyquist_im_peak_abs`, and `pulse_1s_resistance`
 remain partial because at least one primary or C-rate guardrail fails. This
 finalizes the gate as selected scalar endpoint diagnostic evidence only.
+Milestone 8.3 re-audits the early extraction layer before trusting further ML
+results. `mbp audit validate-extraction` rebuilds CFG/EOC/PULSE/EIS products
+from raw result archives into an ignored validation directory, compares
+current and rebuilt Parquets by row count, schema, and semantic digest, and
+renders raw-to-Parquet golden-record checks plus parser-contract evidence. The
+full validation passed for `cell_condition_table`, `checkup_event_table`,
+canonical PULSE raw/summary, the legacy projected PULSE alias, EIS, EIS
+quality products, and LOG_AGE. Full LOG_AGE validation uses a persistent
+ignored CSV cache so the archive can be extracted once and reused for repeated
+rebuild checks; incomplete caches from stopped runs are rejected unless they
+contain at least the expected CSV count. The current and rebuilt LOG_AGE
+Parquets matched `904,977,105` rows by streaming pairwise value equality.
+Milestone 8.4 opens a report-only C-rate generalization diagnostic over
+existing capacity prediction artifacts. `mbp analysis diagnose-c-rate-generalization`
+reads the stress-feature HGB report, row-level predictions, interval metadata,
+and stress-feature sidecar, then renders C-rate condition hotspots, train-only
+support-overlap rows, stress-feature high-error associations, and conservative
+claim-readiness. The real-data diagnostic generated 336 condition-hotspot
+rows, 76 support-overlap rows, and 30 stress-error association rows. It found
+52 of 76 C-rate condition rows below the support-score threshold. This is
+root-cause evidence only and does not train or authorize a repair model.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, unscoped sequence models,
@@ -308,6 +329,25 @@ branch.
 
 Current state:
 
+- Milestone 8.4 is a report-only C-rate generalization root-cause gate. It adds
+  `mbp analysis diagnose-c-rate-generalization`,
+  `reports/analysis/c_rate_generalization/c_rate_failure_report.json`,
+  `c_rate_failure_summary.md`, `c_rate_condition_hotspots.csv`,
+  `c_rate_support_overlap.csv`, `plots/c_rate_stress_error_bins.csv`, and
+  `c_rate_claim_readiness.md`. The diagnostic supports C-rate failure
+  forensics only; new repair-model, architecture, policy, calibrated-risk, and
+  causal readiness remain blocked.
+- Milestone 8.3 is a foundational extraction reproducibility gate. It adds
+  `mbp audit validate-extraction`,
+  `reports/audit/extraction_validation/extraction_validation_report.json`,
+  `extraction_rebuild_hashes.csv`, `raw_to_parquet_golden_records.csv`,
+  `parser_contract_audit.csv`, and `extraction_validation_summary.md`. The
+  full rebuild passed against current interim products. LOG_AGE matched
+  `904,977,105` rows by streaming pairwise value equality while using
+  `data/interim/log_age_csv_cache_v2` as an ignored persistent cache with
+  `--skip-log-age-extract`, `--keep-log-age-extracted`, and
+  `--expected-log-age-csv-count 228` so a partial stopped extraction cannot be
+  reused silently.
 - Milestone 8.2.1 is a report-only diagnostic-horizon forensics gate over the
   existing 8.2 report, prediction Parquet, and target table. It adds
   `mbp baseline diagnose-diagnostic-horizon`,
@@ -2219,15 +2259,10 @@ The previous `datetime.utcnow()` deprecation warning in
 
 ## Recommended Next Step
 
-Treat Milestone 8.2.1 as the finalization of the diagnostic-horizon gate.
-Future PULSE/EIS scalar endpoints are forecastable in many grouped rows when
-current same-diagnostic state is available, and selected endpoints pass
-endpoint-specific diagnostic checks. The broad endpoint gate still does not
-fully pass because not every endpoint clears the primary and C-rate guardrails.
-
-The default next step is synthesis/release maintenance or a new, explicitly
-predeclared narrow ML gate only if it answers a charter question without
-weakening the current guardrails. Do not open knee prediction models, broad
-neural/sequence models, CBAT, DRT, EIS embeddings, policy ranking,
-capacity+PULSE+EIS multimodal architecture, calibrated-risk claims, or broad
-causal/mechanistic claims from the Milestone 8.2/8.2.1 result.
+Use the Milestone 8.4 C-rate root-cause report to decide whether a separate
+predeclared non-neural C-rate repair run is worth opening. Do not treat the
+diagnostic as repair evidence by itself.
+Do not open knee prediction models, broad neural/sequence models, CBAT, DRT,
+EIS embeddings, policy ranking, capacity+PULSE+EIS multimodal architecture,
+calibrated-risk claims, or broad causal/mechanistic claims from the Milestone
+8.2/8.2.1/8.3/8.4 results.

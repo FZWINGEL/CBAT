@@ -2735,6 +2735,34 @@ def analysis_diagnose_support_reliability(
     )
 
 
+@analysis_app.command("diagnose-c-rate-generalization")
+def analysis_diagnose_c_rate_generalization(
+    capacity_report: Path = typer.Option(..., "--capacity-report", help="Capacity baseline JSON report."),
+    predictions: Path = typer.Option(..., "--predictions", help="Capacity prediction Parquet."),
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    out_dir: Path = typer.Option(..., "--out-dir", help="Output directory for C-rate diagnostics."),
+    stress_features: Path | None = typer.Option(
+        None,
+        "--stress-features",
+        help="Optional interval_stress_features_v1_1.parquet sidecar for stress-error associations.",
+    ),
+) -> None:
+    """Diagnose C-rate capacity/fade generalization using existing artifacts only."""
+    from mbp.analysis.c_rate_generalization import diagnose_c_rate_generalization
+
+    report = diagnose_c_rate_generalization(
+        capacity_report,
+        predictions,
+        interval_table,
+        out_dir,
+        stress_features_path=stress_features,
+    )
+    typer.echo(
+        "C-rate generalization diagnostics generated: "
+        f"{report['row_counts']['condition_hotspot_rows']} condition-hotspot rows"
+    )
+
+
 @baseline_app.command("diagnose-capacity")
 def baseline_diagnose_capacity(
     report: Path = typer.Option(

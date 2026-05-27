@@ -1,0 +1,40 @@
+{
+  "claim_scope": "c_rate_root_cause_diagnostics_only_no_new_model_no_architecture_no_policy_no_causal_claim",
+  "generated_at_utc": "2026-05-27T20:47:09.855347+00:00",
+  "inputs": {
+    "capacity_report": "reports/baselines/capacity_stress_features_v1_1_hgb50_report.json",
+    "interval_table": "data/interim/interval_table.parquet",
+    "predictions": "data/processed/capacity_stress_features_v1_1_hgb50_predictions.parquet",
+    "stress_features": "data/interim/interval_stress_features_v1_1.parquet"
+  },
+  "outputs": {
+    "claim_readiness": "reports/analysis/c_rate_generalization/c_rate_claim_readiness.md",
+    "condition_hotspots": "reports/analysis/c_rate_generalization/c_rate_condition_hotspots.csv",
+    "report": "reports/analysis/c_rate_generalization/c_rate_failure_report.json",
+    "stress_error_bins": "reports/analysis/c_rate_generalization/plots/c_rate_stress_error_bins.csv",
+    "summary": "reports/analysis/c_rate_generalization/c_rate_failure_summary.md",
+    "support_overlap": "reports/analysis/c_rate_generalization/c_rate_support_overlap.csv"
+  },
+  "primary_feature_group": "F8_timestamp_weighted_stress",
+  "primary_split": "c_rate_holdout_fold",
+  "readiness": {
+    "C-rate root-cause diagnostics": "supported_for_diagnostics",
+    "architecture or policy readiness": "blocked",
+    "new C-rate repair model readiness": "blocked",
+    "stress-feature error association": "supported_for_diagnostics",
+    "train-only C-rate support overlap": "supported_for_diagnostics"
+  },
+  "row_counts": {
+    "condition_hotspot_rows": 336,
+    "interval_rows": 3827,
+    "metric_summary_rows": 28,
+    "metrics": 616,
+    "predictions": 462840,
+    "readiness_rows": 5,
+    "stress_error_rows": 30,
+    "stress_feature_rows": 3827,
+    "support_overlap_rows": 76
+  },
+  "schema_version": "gate84.c_rate_generalization.v1",
+  "status": "passed"
+}

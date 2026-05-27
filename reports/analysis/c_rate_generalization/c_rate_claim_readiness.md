@@ -1,0 +1,9 @@
+# C-Rate Generalization Claim Readiness
+
+| Claim area | Status | Evidence | Forbidden wording |
+|---|---|---|---|
+| C-rate root-cause diagnostics | `supported_for_diagnostics` | 336 condition-hotspot rows and 28 C-rate metric summary rows. | C-rate generalization is solved. |
+| train-only C-rate support overlap | `supported_for_diagnostics` | 52 of 76 C-rate condition rows have support_score < 0.5. | Support diagnostics prove out-of-distribution robustness. |
+| stress-feature error association | `supported_for_diagnostics` | 30 stress-feature high-error association rows. | Stress associations are causal mechanisms. |
+| new C-rate repair model readiness | `blocked` | This gate is report-only and trains no repair model. | A new repair model is authorized or validated by this report alone. |
+| architecture or policy readiness | `blocked` | The report contains no neural, sequence, CBAT, policy-ranking, or causal evidence. | CBAT, policy ranking, causal claims, or broad architecture work is justified. |

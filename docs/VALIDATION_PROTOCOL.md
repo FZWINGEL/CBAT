@@ -1895,3 +1895,112 @@ Validation rules:
 - The gate does not authorize CBAT, capacity+PULSE+EIS architecture,
   calibrated risk/uncertainty, policy ranking, sequence/neural branches,
   causal claims, or same-cell counterfactual claims.
+
+## Milestone 8.3 Foundational Data Extraction Reproducibility Gate
+
+Milestone 8.3 re-audits the earliest extraction layer required by the charter's
+hard audit and reproducibility rules. It is an extraction QA gate only. It does
+not authorize model training, feature engineering, new scientific claims,
+architecture work, CBAT, neural/sequence models, policy ranking, calibrated
+risk/uncertainty claims, causal claims, or same-cell counterfactual claims.
+
+Required result-data command:
+
+```bash
+mbp audit validate-extraction \
+  --result-root data/raw/Result_Raw_Data_Version_2 \
+  --current-interim data/interim \
+  --rebuild-dir data/interim/extraction_validation_8_3 \
+  --out-dir reports/audit/extraction_validation \
+  --sample-cells P001_1,P038_2,P076_3
+```
+
+Full LOG_AGE validation should use a persistent ignored CSV cache so the 7z
+archive is extracted once and subsequent rebuild/hash checks read those CSVs:
+
+```bash
+mbp audit validate-extraction \
+  --result-root data/raw/Result_Raw_Data_Version_2 \
+  --log-age-archive data/raw/Log_Raw_Data_Version_2/10.35097-kww7jv8ajuvchcah/data/dataset/cell_log_age_ultracompr.7z \
+  --current-interim data/interim \
+  --rebuild-dir data/interim/extraction_validation_8_3 \
+  --out-dir reports/audit/extraction_validation \
+  --sample-cells P001_1,P038_2,P076_3 \
+  --full-log-age \
+  --log-age-extract-dir data/interim/log_age_csv_cache_v2 \
+  --skip-log-age-extract \
+  --keep-log-age-extracted \
+  --expected-log-age-csv-count 228 \
+  --csv-block-size-bytes 8388608 \
+  --log-age-digest-batch-rows 524288 \
+  --csv-use-threads
+```
+
+Required artifacts:
+
+- `reports/audit/extraction_validation/extraction_validation_report.json`
+- `reports/audit/extraction_validation/extraction_validation_summary.md`
+- `reports/audit/extraction_validation/extraction_rebuild_hashes.csv`
+- `reports/audit/extraction_validation/raw_to_parquet_golden_records.csv`
+- `reports/audit/extraction_validation/parser_contract_audit.csv`
+- ignored rebuild products under `data/interim/extraction_validation_8_3/`
+- optional ignored LOG_AGE CSV cache under `data/interim/log_age_csv_cache_v2/`
+
+Validation rules:
+
+- Required CFG/EOC/PULSE/EIS products must match current Parquets by row count,
+  schema, and semantic digest after stable sorting.
+- LOG_AGE full validation must compare current and rebuilt Parquets by streaming
+  pairwise value equality without materializing the full 904M-row table. This
+  avoids false failures from row-group-layout differences between equivalent
+  Parquet outputs.
+- Raw-to-Parquet golden checks must verify representative parser contracts:
+  cohort filtering, CFG metadata mapping, EOC discharge-row preference,
+  PULSE/EIS nearest-EOC alignment, resistance/impedance unit conversion, EIS
+  valid-frequency masking, and LOG_AGE null handling when full LOG_AGE is run.
+- The persistent LOG_AGE CSV cache must not be trusted unless it contains at
+  least the expected CSV count. A stopped partial extraction must force
+  re-extraction rather than producing a false pass.
+- Known downstream data caveats such as LOG_AGE monotonicity violations and
+  PULSE/EIS alignment warnings remain QA caveats; matching parser output does
+  not erase those existing limitations.
+
+## Milestone 8.4 C-Rate Generalization Root-Cause Gate
+
+Milestone 8.4 authorizes report-only C-rate capacity/fade failure diagnostics
+over existing grouped prediction artifacts. It does not authorize new model
+training, feature engineering, neural/sequence models, CBAT, DRT, EIS
+embeddings, policy ranking, calibrated-risk claims, calibrated-uncertainty
+claims, causal claims, or same-cell counterfactual claims.
+
+Required command:
+
+```bash
+mbp analysis diagnose-c-rate-generalization \
+  --capacity-report reports/baselines/capacity_stress_features_v1_1_hgb50_report.json \
+  --predictions data/processed/capacity_stress_features_v1_1_hgb50_predictions.parquet \
+  --interval-table data/interim/interval_table.parquet \
+  --stress-features data/interim/interval_stress_features_v1_1.parquet \
+  --out-dir reports/analysis/c_rate_generalization
+```
+
+Required artifacts:
+
+- `reports/analysis/c_rate_generalization/c_rate_failure_report.json`
+- `reports/analysis/c_rate_generalization/c_rate_failure_summary.md`
+- `reports/analysis/c_rate_generalization/c_rate_condition_hotspots.csv`
+- `reports/analysis/c_rate_generalization/c_rate_support_overlap.csv`
+- `reports/analysis/c_rate_generalization/c_rate_claim_readiness.md`
+- `reports/analysis/c_rate_generalization/plots/c_rate_metric_summary.csv`
+- `reports/analysis/c_rate_generalization/plots/c_rate_stress_error_bins.csv`
+- `reports/analysis/c_rate_generalization/plots/c_rate_claim_readiness.csv`
+
+Validation rules:
+
+- The command must consume existing reports and prediction Parquets only.
+- Train-only support overlap must be computed without held-out condition
+  metadata entering model selection.
+- Stress-feature association rows must exclude target-derived capacity-rate
+  fields and must be labeled diagnostic/non-causal.
+- Claim-readiness must keep repair-model, architecture, policy, calibrated
+  risk, calibrated uncertainty, and causal claims blocked.

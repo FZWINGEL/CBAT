@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 8.2.1: Diagnostic-horizon failure forensics and endpoint-specific claim finalization.
+Milestone 8.4: C-rate generalization root-cause and repair gate.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -139,16 +139,36 @@ Current state:
   `nyquist_semicircle_width_proxy`, and `pulse_10ms_resistance`), while broad
   endpoint forecasting, architecture, calibrated risk/uncertainty, policy,
   causal, and same-cell counterfactual claims remain blocked.
+- Milestone 8.3 re-audits the foundational extraction layer before trusting
+  any later ML result. It adds an executable extraction-validation gate that
+  rebuilds CFG/EOC/PULSE/EIS/LOG_AGE products from raw archives or the
+  ignored LOG_AGE CSV cache, compares row counts, schemas, semantic hashes for
+  smaller products, and streaming pairwise value equality for the full LOG_AGE
+  Parquet. This is extraction QA only, not a modeling or claim-expansion
+  milestone.
+- Milestone 8.4 diagnoses the persistent C-rate capacity/fade generalization
+  blocker using existing capacity reports, prediction Parquets, interval
+  metadata, and stress-feature sidecars only. It is report-only root-cause
+  analysis before any new repair model; it does not authorize architecture,
+  policy, calibrated-risk, or causal claims.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
 Allowed work:
+- foundational extraction reproducibility audits
+- raw archive to Parquet rebuild comparisons
+- parser-contract and raw-to-Parquet golden-record checks
+- persistent ignored LOG_AGE CSV cache workflows
+- LOG_AGE streaming rebuild/value-equality comparison optimization
 - multi-horizon PULSE/EIS scalar diagnostic endpoint target tables
 - diagnostic-horizon QA and split coverage reports
 - non-neural grouped diagnostic endpoint baselines
 - diagnostic-horizon leakage audits and claim-readiness reports
 - report-only diagnostic-horizon failure forensics over existing predictions
 - endpoint-specific diagnostic-horizon claim finalization
+- C-rate generalization root-cause diagnostics from existing predictions
+- C-rate condition-hotspot and train-only support-overlap reports
+- C-rate stress-feature error-association diagnostics labeled non-causal
 - persistence-ceiling and condition-hotspot diagnostics for scalar endpoints
 - support-distance diagnostics over existing grouped prediction artifacts
 - non-neural diagnostic-state distillation with predicted PULSE/EIS state
