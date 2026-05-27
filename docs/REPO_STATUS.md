@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 8.5: C-rate repair feasibility finalization gate**.
+The repository is in **Milestone 8.6: C-rate repair boundary and transfer audit**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -329,6 +329,17 @@ targeted routing pass their existing non-neural guardrails, while broad robust
 capacity, solved C-rate fade, architecture, policy ranking, calibrated risk,
 calibrated uncertainty, neural/sequence branches, CBAT, and causal claims
 remain blocked.
+Milestone 8.6 tests the boundary of that narrow repair claim by rerunning the
+existing non-neural adaptive and targeted-router tools with both
+`delta_capacity_Ah` and `capacity_Ah_k1`, then diagnosing target transfer,
+outside-split guardrails, paired condition support, and support-stratified
+gains. The result keeps the claim narrow: `delta_capacity_Ah` repair still
+passes, but `capacity_Ah_k1` transfer is not supported. The adaptive R2/F8
+C-rate capacity-level row is worse than F4 (`-0.00527031`) and the stress
+reference (`-0.00801457`), and the targeted router gives zero C-rate
+capacity-level gain. Two-target C-rate repair, broad robust capacity, solved
+C-rate fade, architecture, policy ranking, calibrated risk/uncertainty,
+neural/sequence branches, CBAT, and causal claims remain blocked.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, unscoped sequence models,
@@ -338,6 +349,17 @@ minimal CUDA Torch MLP diagnostic as a falsification check, not an architecture
 branch.
 
 Current state:
+
+- Milestone 8.6 is a boundary audit over existing non-neural C-rate repair
+  machinery. It adds `mbp analysis diagnose-c-rate-repair-boundary`,
+  `reports/analysis/c_rate_repair_boundary/c_rate_repair_boundary_report.json`,
+  `c_rate_repair_boundary_decision.md`,
+  `c_rate_repair_boundary_claim_readiness.md`,
+  `plots/target_boundary_matrix.csv`,
+  `plots/split_guardrail_matrix.csv`, and
+  `plots/support_stratum_gain_matrix.csv`. It confirms that the C-rate repair
+  wording remains limited to diagnostic `delta_capacity_Ah`; capacity-level
+  transfer and two-target repair wording are not supported.
 
 - Milestone 8.5 is a report-only/non-retraining C-rate repair finalization
   gate. It adds `mbp analysis finalize-c-rate-repair-feasibility`,

@@ -5,9 +5,9 @@ Status: `passed`
 ## Summary
 
 - Required files checked: 10
-- Tracked artifacts checked: 185
-- Ignored artifacts checked: 34
-- Claim matrix rows checked: 34
+- Tracked artifacts checked: 194
+- Ignored artifacts checked: 36
+- Claim matrix rows checked: 35
 
 ## Errors
 
@@ -59,6 +59,7 @@ Status: `passed`
 - coverage
 - current-sign-audit
 - diagnose-c-rate-generalization
+- diagnose-c-rate-repair-boundary
 - diagnose-capacity
 - diagnose-capacity-horizon
 - diagnose-capacity-horizon-trajectory

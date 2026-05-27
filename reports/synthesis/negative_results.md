@@ -445,6 +445,13 @@ The v2 synthesis keeps the following negative boundaries active:
   Broad robust capacity, solved C-rate fade, architecture, CBAT, policy
   ranking, calibrated risk/uncertainty, sequence/neural, and causal claims
   remain blocked.
+- Milestone 8.6 audits whether that repair transfers to `capacity_Ah_k1`.
+  It does not: adaptive R2/F8 worsens C-rate `capacity_Ah_k1` versus F4
+  (`-0.00527031`) and versus the stress reference (`-0.00801457`), while the
+  targeted router gives zero C-rate capacity-level gain. Two-target C-rate
+  repair, capacity-level transfer, broad robust capacity, solved C-rate fade,
+  architecture, CBAT, policy ranking, calibrated risk/uncertainty,
+  sequence/neural, and causal claims remain blocked.
 
 Decision: return to synthesis/release maintenance unless a new narrow
 calibration-method diagnostic is explicitly justified.

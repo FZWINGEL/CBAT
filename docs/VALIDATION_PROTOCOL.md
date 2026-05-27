@@ -282,6 +282,16 @@ and must not be described as broad robust-capacity support, solved C-rate
 fade, F8 attribution support, architecture readiness, policy ranking,
 calibrated-risk wording, calibrated-uncertainty wording, causal claims,
 sequence/neural modeling, CBAT, or broad multimodal claims.
+Milestone 8.6 authorizes only a C-rate repair boundary audit over existing
+non-neural adaptive and targeted-router machinery. It may rerun those existing
+tools with both `delta_capacity_Ah` and `capacity_Ah_k1`, compute
+target-specific C-rate gains, paired condition bootstrap p05 values,
+outside-split non-degradation, and support-stratified gains. It must not add
+new features, new model families, neural or sequence models, CBAT, DRT, EIS
+embeddings, policy ranking, calibrated-risk wording, calibrated-uncertainty
+wording, causal claims, same-cell counterfactual claims, solved C-rate fade
+wording, or broad robust-capacity wording unless both targets pass the
+predeclared boundary checks.
 
 Required split discipline:
 
@@ -2044,3 +2054,73 @@ Validation rules:
   `delta_capacity_Ah` repair. Broad robust capacity, solved C-rate fade,
   calibrated risk/uncertainty, policy ranking, architecture, CBAT,
   neural/sequence, and causal claims remain blocked.
+
+## Milestone 8.6 C-Rate Repair Boundary and Transfer Audit
+
+Milestone 8.6 authorizes only a boundary audit for the Milestone 8.5 repair
+claim. It tests whether the existing non-neural C-rate repair evidence transfers
+from `delta_capacity_Ah` to `capacity_Ah_k1`. It does not authorize new model
+families, new feature engineering, neural/sequence models, CBAT, policy
+ranking, calibrated-risk claims, calibrated-uncertainty claims, causal claims,
+same-cell counterfactual claims, solved C-rate fade, or broad robust-capacity
+wording.
+
+Required commands:
+
+```bash
+mbp baseline run-stressor-robust-adaptive \
+  --interval-table data/interim/interval_table.parquet \
+  --interval-subsets data/splits/interval_subset_registry_v1.parquet \
+  --stress-features data/interim/interval_stress_features_v1_1.parquet \
+  --out reports/baselines/capacity_stressor_robust_adaptive_boundary_report.json \
+  --predictions-out data/processed/capacity_stressor_robust_adaptive_boundary_predictions.parquet \
+  --out-dir reports/baselines/capacity_stressor_robust_adaptive_boundary \
+  --targets capacity_Ah_k1,delta_capacity_Ah \
+  --selection-policy conservative_guarded \
+  --hgb-max-iter 50
+
+mbp baseline run-stressor-robust-arm-selector \
+  --interval-table data/interim/interval_table.parquet \
+  --interval-subsets data/splits/interval_subset_registry_v1.parquet \
+  --stress-features data/interim/interval_stress_features_v1_1.parquet \
+  --attribution-report reports/baselines/capacity_stressor_robust_attribution_report.json \
+  --attribution-predictions data/processed/capacity_stressor_robust_attribution_predictions.parquet \
+  --out reports/baselines/capacity_stressor_robust_arm_selector_boundary_report.json \
+  --predictions-out data/processed/capacity_stressor_robust_arm_selector_boundary_predictions.parquet \
+  --out-dir reports/baselines/capacity_stressor_robust_arm_selector_boundary \
+  --targets capacity_Ah_k1,delta_capacity_Ah \
+  --hgb-max-iter 50
+
+mbp analysis diagnose-c-rate-repair-boundary \
+  --adaptive-report reports/baselines/capacity_stressor_robust_adaptive_boundary_report.json \
+  --adaptive-predictions data/processed/capacity_stressor_robust_adaptive_boundary_predictions.parquet \
+  --arm-selector-report reports/baselines/capacity_stressor_robust_arm_selector_boundary_report.json \
+  --arm-selector-predictions data/processed/capacity_stressor_robust_arm_selector_boundary_predictions.parquet \
+  --support-overlap reports/analysis/c_rate_generalization/c_rate_support_overlap.csv \
+  --out-dir reports/analysis/c_rate_repair_boundary
+```
+
+Required artifacts:
+
+- `reports/baselines/capacity_stressor_robust_adaptive_boundary_report.json`
+- `reports/baselines/capacity_stressor_robust_adaptive_boundary/robustness_leaderboard.csv`
+- `reports/baselines/capacity_stressor_robust_arm_selector_boundary_report.json`
+- `reports/baselines/capacity_stressor_robust_arm_selector_boundary/selector_comparisons.csv`
+- `reports/analysis/c_rate_repair_boundary/c_rate_repair_boundary_report.json`
+- `reports/analysis/c_rate_repair_boundary/c_rate_repair_boundary_decision.md`
+- `reports/analysis/c_rate_repair_boundary/c_rate_repair_boundary_claim_readiness.md`
+- `reports/analysis/c_rate_repair_boundary/plots/target_boundary_matrix.csv`
+- `reports/analysis/c_rate_repair_boundary/plots/split_guardrail_matrix.csv`
+- `reports/analysis/c_rate_repair_boundary/plots/support_stratum_gain_matrix.csv`
+
+Validation rules:
+
+- `delta_capacity_Ah` repair remains supported only if adaptive R2/F8 and the
+  targeted router pass positive C-rate gains, positive paired condition p05,
+  <=5% outside-C-rate non-degradation, and leakage checks.
+- `capacity_Ah_k1` transfer is supported only if the same target-specific
+  boundary checks pass for both repair methods.
+- Two-target or broad robust-capacity wording is allowed only if both
+  `delta_capacity_Ah` and `capacity_Ah_k1` pass both repair-method boundaries.
+- Support-stratified gains are interpretation diagnostics only and do not prove
+  deployment reliability or causal stressor effects.

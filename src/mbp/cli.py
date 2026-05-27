@@ -2803,6 +2803,52 @@ def analysis_finalize_c_rate_repair_feasibility(
     )
 
 
+@analysis_app.command("diagnose-c-rate-repair-boundary")
+def analysis_diagnose_c_rate_repair_boundary(
+    adaptive_report: Path = typer.Option(
+        ...,
+        "--adaptive-report",
+        help="Dual-target train-only adaptive stressor-robust report JSON.",
+    ),
+    adaptive_predictions: Path = typer.Option(
+        ...,
+        "--adaptive-predictions",
+        help="Ignored dual-target adaptive prediction Parquet.",
+    ),
+    arm_selector_report: Path = typer.Option(
+        ...,
+        "--arm-selector-report",
+        help="Dual-target stressor-family arm-selector report JSON.",
+    ),
+    arm_selector_predictions: Path = typer.Option(
+        ...,
+        "--arm-selector-predictions",
+        help="Ignored dual-target arm-selector prediction Parquet.",
+    ),
+    out_dir: Path = typer.Option(..., "--out-dir", help="Output directory for C-rate repair boundary diagnostics."),
+    support_overlap: Path | None = typer.Option(
+        None,
+        "--support-overlap",
+        help="Optional c_rate_support_overlap.csv for support-stratified gain summaries.",
+    ),
+) -> None:
+    """Diagnose whether narrow C-rate repair transfers across capacity targets."""
+    from mbp.analysis.c_rate_repair_boundary import diagnose_c_rate_repair_boundary
+
+    report = diagnose_c_rate_repair_boundary(
+        adaptive_report,
+        adaptive_predictions,
+        arm_selector_report,
+        arm_selector_predictions,
+        out_dir,
+        support_overlap_path=support_overlap,
+    )
+    typer.echo(
+        "C-rate repair boundary diagnostics generated: "
+        f"{report['row_counts']['target_boundary_rows']} target-boundary rows"
+    )
+
+
 @baseline_app.command("diagnose-capacity")
 def baseline_diagnose_capacity(
     report: Path = typer.Option(

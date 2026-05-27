@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 8.5: C-rate repair feasibility finalization gate.
+Milestone 8.6: C-rate repair boundary and transfer audit.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -158,6 +158,13 @@ Current state:
   robust-capacity, solved C-rate fade, architecture, policy, calibrated-risk,
   calibrated-uncertainty, neural/sequence, CBAT, and causal claims remain
   blocked.
+- Milestone 8.6 tests whether that narrow repair transfers to
+  `capacity_Ah_k1`. It reruns only the existing non-neural adaptive and
+  targeted-router tools with both capacity targets, then diagnoses target
+  boundaries, outside-split guardrails, paired condition support, and
+  support-stratified gains. The result keeps repair wording limited to
+  diagnostic C-rate `delta_capacity_Ah`; capacity-level transfer and
+  two-target repair wording are not supported.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
@@ -179,6 +186,11 @@ Allowed work:
 - C-rate repair feasibility synthesis from existing non-neural repair reports
 - narrow diagnostic train-only C-rate `delta_capacity_Ah` repair finalization
 - targeted stressor-family router claim-readiness reporting
+- C-rate repair boundary audits over existing non-neural adaptive/router
+  artifacts
+- dual-target C-rate repair transfer diagnostics for `delta_capacity_Ah` and
+  `capacity_Ah_k1`
+- support-stratified C-rate repair gain summaries labeled diagnostic-only
 - persistence-ceiling and condition-hotspot diagnostics for scalar endpoints
 - support-distance diagnostics over existing grouped prediction artifacts
 - non-neural diagnostic-state distillation with predicted PULSE/EIS state
