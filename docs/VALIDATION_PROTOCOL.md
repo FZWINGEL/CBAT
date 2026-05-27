@@ -2170,3 +2170,49 @@ Validation rules:
   also pass.
 - If any repair method fails the capacity-from-delta direct-reference or
   outside-split guardrail, two-target C-rate repair wording remains blocked.
+
+## Milestone 8.8 Reconstruction Failure Forensics and C-Rate Branch Closure
+
+Milestone 8.8 authorizes only report-only forensics over the Milestone 8.7
+target-consistency reconstruction artifacts. It explains why
+capacity-from-delta reconstruction fails the outside-split direct-reference
+guardrail, decomposes the failure by split and condition, and decides whether
+the current capacity-level C-rate repair branch should close. It does not train
+models, tune repair weights, add features, relax the 5% guardrail, recommend
+policies, calibrate risk, or make neural/sequence, CBAT, causal,
+same-cell counterfactual, solved-fade, or broad robust-capacity claims.
+
+Required command:
+
+```bash
+mbp analysis diagnose-reconstruction-failure \
+  --reconstruction-report reports/analysis/target_consistency_reconstruction/target_consistency_reconstruction_report.json \
+  --reconstruction-dir reports/analysis/target_consistency_reconstruction \
+  --interval-table data/interim/interval_table.parquet \
+  --support-overlap reports/analysis/c_rate_generalization/c_rate_support_overlap.csv \
+  --out-dir reports/analysis/reconstruction_failure_forensics
+```
+
+Required artifacts:
+
+- `reports/analysis/reconstruction_failure_forensics/reconstruction_failure_report.json`
+- `reports/analysis/reconstruction_failure_forensics/reconstruction_failure_decision.md`
+- `reports/analysis/reconstruction_failure_forensics/reconstruction_failure_claim_readiness.md`
+- `reports/analysis/reconstruction_failure_forensics/plots/outside_failure_by_split.csv`
+- `reports/analysis/reconstruction_failure_forensics/plots/failing_condition_hotspots.csv`
+- `reports/analysis/reconstruction_failure_forensics/plots/path_error_decomposition.csv`
+- `docs/experiments/2026-05-28_reconstruction_failure_forensics.md`
+
+Validation rules:
+
+- A capacity-level reconstruction repair claim remains blocked if any
+  direct-reference outside-split comparison exceeds the unchanged 5%
+  relative-degradation guardrail.
+- QA flags may contextualize failing condition hotspots, but they do not let a
+  failed guardrail be ignored unless a separate explicit data-quality correction
+  gate is opened and passes.
+- Support-overlap diagnostics are interpretation context only. Missing support
+  coverage cannot be treated as evidence that the failed guardrail is harmless.
+- If failure spans multiple splits or many conditions, close the current
+  capacity-level reconstruction branch and retain only the narrow diagnostic
+  `delta_capacity_Ah` repair wording.

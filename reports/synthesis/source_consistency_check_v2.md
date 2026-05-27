@@ -14,7 +14,7 @@ This check covers the Milestone 3.0 synthesis artifacts:
 - `reports/synthesis/next_branch_decision.md`
 
 It has been refreshed after Milestones 5.0, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6,
-5.7, 5.8, 5.9, 6.0, 7.1, 7.2, 7.3, and 7.4 to
+5.7, 5.8, 5.9, 6.0, 7.1, 7.2, 7.3, 7.4, and 8.8 to
 include threshold-warning probability calibration, stressor-axis robust
 capacity, calibration/quantile hygiene, calibration/robustness
 correctness-hardening, Pareto forensics, and train-only adaptive robust
@@ -23,6 +23,8 @@ hierarchical replicate-aware capacity comparator results, multi-horizon
 capacity forecasting diagnostics, the minimal CUDA sequence reopening check,
 observed policy-contrast support diagnostics, and support-bounded
 contrast-ordering feasibility and failure-forensics diagnostics.
+It now also records reconstruction-failure forensics that close the current
+capacity-level C-rate repair branch.
 
 ## Source Artifact Existence
 
@@ -73,6 +75,10 @@ blocked or not supported:
 - support-aware selective reliability is diagnostic-only and does not authorize
   deployment reliability, calibrated risk, policy recommendation, causal
   effects, same-cell counterfactual effects, CBAT, or architecture readiness.
+- reconstruction failure forensics do not authorize ignoring the failed
+  outside-split guardrail, reopening capacity-level repair, two-target C-rate
+  repair, broad robust capacity, solved C-rate fade, architecture, policy,
+  calibrated-risk/uncertainty, neural/sequence, CBAT, or causal claims.
 
 ## Forbidden Wording Check
 
@@ -124,5 +130,9 @@ Milestone 8.0 adds support-aware selective reliability diagnostics, but support
 filtering worsens primary capacity and threshold-warning metrics at 50%
 retention and C-rate support reliability is not supported. It remains an audit
 and abstention diagnostic only.
+Milestone 8.8 explains the Milestone 8.7 reconstruction failure and closes the
+current capacity-level branch: two outside-split direct-reference comparisons
+fail, with 58 degrading condition hotspots. QA flags are context only, and
+support-overlap evidence is insufficient for the outside-split hotspots.
 Any future calibrated-risk, calibrated-uncertainty, policy, architecture, or
 broad robust-capacity claim requires a separate gated milestone.

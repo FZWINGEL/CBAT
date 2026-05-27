@@ -5,9 +5,9 @@ Status: `passed`
 ## Summary
 
 - Required files checked: 10
-- Tracked artifacts checked: 201
+- Tracked artifacts checked: 208
 - Ignored artifacts checked: 36
-- Claim matrix rows checked: 36
+- Claim matrix rows checked: 37
 
 ## Errors
 
@@ -65,6 +65,7 @@ Status: `passed`
 - diagnose-capacity-horizon-trajectory
 - diagnose-diagnostic-horizon
 - diagnose-policy-ranking-feasibility
+- diagnose-reconstruction-failure
 - diagnose-sequence-value
 - diagnose-stress-features
 - diagnose-stressor-robust-forensics

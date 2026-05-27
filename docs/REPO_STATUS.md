@@ -1,6 +1,6 @@
 # Repository Status
 
-Last updated: 2026-05-27
+Last updated: 2026-05-28
 
 Current branch: `main`
 
@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 8.7: target-consistency reconstruction audit**.
+The repository is in **Milestone 8.8: reconstruction failure forensics and C-rate branch closure**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -349,6 +349,16 @@ fails the outside-split guardrail with max degradation `0.293828`. The result
 keeps capacity-from-delta transfer, two-target repair, broad robust capacity,
 solved C-rate fade, architecture, policy ranking, calibrated risk/uncertainty,
 neural/sequence branches, CBAT, and causal claims blocked.
+Milestone 8.8 explains that failure with report-only forensics over the same
+existing prediction artifacts and interval metadata. It finds two failing
+direct-reference outside-split reconstruction comparisons: router-derived
+capacity fails the profile holdout (`0.293828` relative degradation), and the
+adaptive capacity-from-delta path fails against the direct F4 capacity
+reference in the voltage-window holdout (`0.344864`). There are 58 degrading
+condition hotspots, support overlap is not available for enough outside-split
+hotspots to reopen the branch, and QA flags are diagnostic context rather than
+a reason to ignore the guardrail. The capacity-level reconstruction branch is
+closed for the current evidence.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, unscoped sequence models,
@@ -358,6 +368,20 @@ minimal CUDA Torch MLP diagnostic as a falsification check, not an architecture
 branch.
 
 Current state:
+
+- Milestone 8.8 is a reconstruction failure forensics gate over existing
+  Milestone 8.7 prediction artifacts and interval metadata. It adds
+  `mbp analysis diagnose-reconstruction-failure`,
+  `reports/analysis/reconstruction_failure_forensics/reconstruction_failure_report.json`,
+  `reconstruction_failure_decision.md`,
+  `reconstruction_failure_claim_readiness.md`,
+  `plots/outside_failure_by_split.csv`,
+  `plots/failing_condition_hotspots.csv`, and
+  `plots/path_error_decomposition.csv`. It confirms that the
+  capacity-from-delta transfer failure is broad enough to close the current
+  capacity-level repair branch: two outside-split direct-reference comparisons
+  fail, 58 condition hotspots degrade, and support/QA context does not
+  authorize a repair claim.
 
 - Milestone 8.7 is a target-consistency reconstruction audit over existing
   non-neural C-rate repair predictions. It adds
@@ -2320,10 +2344,11 @@ The previous `datetime.utcnow()` deprecation warning in
 
 ## Recommended Next Step
 
-Treat the Milestone 8.5 C-rate repair decision as a narrow diagnostic endpoint,
-not a reason to open architecture work. The safest next work is synthesis,
-benchmark maintenance, or a new explicitly scoped gate only if it answers a
-different charter question.
+Treat the Milestone 8.5 C-rate repair decision as a narrow diagnostic
+`delta_capacity_Ah` endpoint, not a reason to open architecture work. Milestone
+8.8 closes the current capacity-level reconstruction repair branch. The safest
+next work is synthesis, benchmark maintenance, or a new explicitly scoped gate
+only if it answers a different charter question.
 Do not open knee prediction models, broad neural/sequence models, CBAT, DRT,
 EIS embeddings, policy ranking, capacity+PULSE+EIS multimodal architecture,
 calibrated-risk claims, calibrated-uncertainty claims, solved C-rate fade

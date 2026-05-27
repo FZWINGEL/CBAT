@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 8.7: target-consistency reconstruction audit for C-rate repair.
+Milestone 8.8: reconstruction failure forensics and C-rate branch closure.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -170,6 +170,12 @@ Current state:
   `capacity_Ah_k + predicted_delta`. Derived capacity improves the C-rate row,
   but the targeted-router derived capacity path fails the outside-split
   guardrail, so two-target and broad capacity repair remain unsupported.
+- Milestone 8.8 explains that reconstruction failure using existing
+  prediction artifacts and interval metadata only. It finds failing
+  direct-reference outside-split comparisons in profile and voltage-window
+  holdouts, with 58 degrading condition hotspots and no support-overlap basis
+  to reopen the repair. It closes the current capacity-level reconstruction
+  branch unless a future explicit data-quality correction gate is opened.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
@@ -200,6 +206,11 @@ Allowed work:
   predictions
 - direct-vs-derived capacity/delta target-path comparisons
 - capacity-from-delta claim-readiness reporting under unchanged guardrails
+- reconstruction failure forensics over existing target-consistency
+  prediction artifacts
+- outside-split and condition-level failure decomposition for
+  capacity-from-delta paths
+- C-rate repair branch closure documentation under unchanged guardrails
 - persistence-ceiling and condition-hotspot diagnostics for scalar endpoints
 - support-distance diagnostics over existing grouped prediction artifacts
 - non-neural diagnostic-state distillation with predicted PULSE/EIS state

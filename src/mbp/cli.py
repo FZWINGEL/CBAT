@@ -2889,6 +2889,50 @@ def analysis_diagnose_target_consistency_reconstruction(
     )
 
 
+@analysis_app.command("diagnose-reconstruction-failure")
+def analysis_diagnose_reconstruction_failure(
+    reconstruction_report: Path = typer.Option(
+        ...,
+        "--reconstruction-report",
+        help="Milestone 8.7 target-consistency reconstruction report JSON.",
+    ),
+    reconstruction_dir: Path = typer.Option(
+        ...,
+        "--reconstruction-dir",
+        help="Milestone 8.7 target-consistency reconstruction output directory.",
+    ),
+    interval_table: Path = typer.Option(
+        ...,
+        "--interval-table",
+        help="Interval table with capacity targets and interval QA fields.",
+    ),
+    out_dir: Path = typer.Option(
+        ...,
+        "--out-dir",
+        help="Output directory for reconstruction failure forensics.",
+    ),
+    support_overlap: Path | None = typer.Option(
+        None,
+        "--support-overlap",
+        help="Optional c_rate_support_overlap.csv for support-context fields when applicable.",
+    ),
+) -> None:
+    """Explain the failed capacity-from-delta reconstruction guardrail."""
+    from mbp.analysis.reconstruction_failure_forensics import diagnose_reconstruction_failure
+
+    report = diagnose_reconstruction_failure(
+        reconstruction_report,
+        reconstruction_dir,
+        interval_table,
+        out_dir,
+        support_overlap_path=support_overlap,
+    )
+    typer.echo(
+        "Reconstruction failure forensics generated: "
+        f"{report['row_counts']['failing_condition_hotspot_rows']} hotspot rows"
+    )
+
+
 @baseline_app.command("diagnose-capacity")
 def baseline_diagnose_capacity(
     report: Path = typer.Option(

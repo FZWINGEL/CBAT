@@ -458,6 +458,14 @@ The v2 synthesis keeps the following negative boundaries active:
   router-derived capacity path fails outside-split non-degradation with max
   degradation `0.293828`. Reconstruction remains target-path forensics, not
   capacity-level repair.
+- Milestone 8.8 explains that reconstruction failure rather than repairing it.
+  Two outside-split direct-reference reconstruction comparisons fail: router
+  profile degradation is `0.293828`, and adaptive voltage-window degradation
+  versus direct F4 is `0.344864`. The report finds 58 degrading condition
+  hotspots. QA flags are useful context, but they do not justify waiving the
+  guardrail, and support-overlap evidence is insufficient for the outside-split
+  hotspots. The capacity-level reconstruction branch is closed for current
+  evidence.
 
 Decision: return to synthesis/release maintenance unless a new narrow
 calibration-method diagnostic is explicitly justified.

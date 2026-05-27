@@ -176,9 +176,13 @@ narrow: adaptive R2/F8 worsens C-rate `capacity_Ah_k1` versus both F4 and
 stress references, and the targeted router gives zero C-rate capacity-level
 gain. Milestone 8.7 supplies the algebraic reconstruction check: derived
 capacity improves C-rate rows but the router-derived capacity path fails
-outside-split non-degradation at `0.293828`. Further C-rate repair work should
-start only with a fresh predeclared target, not by stretching the current
-delta-capacity result.
+outside-split non-degradation at `0.293828`. Milestone 8.8 explains that
+failure by split and condition: router profile holdout and adaptive
+voltage-window holdout versus direct F4 both fail direct-reference
+non-degradation, with 58 degrading hotspots. The current capacity-level
+reconstruction branch should be treated as closed. Further C-rate repair work
+should start only with a fresh predeclared target or a data-quality correction
+gate, not by stretching the current delta-capacity result.
 
 The hierarchical replicate-aware capacity branch has now also been run. It
 does not create a stronger next branch: the mean C-rate delta gain is tiny,
