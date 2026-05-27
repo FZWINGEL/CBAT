@@ -4,16 +4,16 @@ Current recommended branch: benchmark release maintenance, task-registry
 reproducibility, or a separately predeclared feasibility gate. The adaptive
 stressor-robust replication, attribution, stressor-family routing,
 hierarchical replicate, multi-horizon capacity, prior-trajectory, minimal
-sequence/neural reopening, and observed policy-contrast support checks have
-been run and should not be broadened without a fresh gated question.
+sequence/neural reopening, observed policy-contrast support, and supported
+contrast-ordering feasibility checks have been run and should not be broadened
+without a fresh gated question.
 
 ## Current Phase
 
-Milestone 7.2 is a policy-contrast support and observed ranking feasibility
-gate. It builds matched observed contrasts from existing interval rows and
-summarizes observed capacity-loss sign stability. It is not a policy-ranking,
-policy-recommendation, causal, same-cell counterfactual, CBAT, transformer,
-architecture, or calibration-claim branch.
+Milestone 7.3 is a support-bounded contrast-ordering feasibility gate. It uses
+existing out-of-fold multi-horizon capacity predictions and the Milestone 7.2
+contrast registry only. It is not a policy-recommendation, causal, same-cell
+counterfactual, CBAT, transformer, architecture, or calibration-claim branch.
 
 ## Current Result
 
@@ -84,14 +84,22 @@ capacity-loss rows sign-stable. Treat this as observed support diagnostics
 only. It does not authorize policy ranking, policy recommendation, causal
 effects, same-cell counterfactual effects, CBAT, or calibrated risk.
 
+Milestone 7.3 finds partial supported contrast-ordering signal from existing
+multi-horizon forecasts. HGB K2 primary `delta_capacity_Ah_h` sign accuracy
+averages 0.780 across the horizon-2/3 split rows, and C-rate rows reach
+0.826923/0.888889 for horizons 2/3, but the strict bootstrap gate fails
+against prior slope (`0/10` primary all-family checks pass). Treat this as
+partial diagnostic evidence only; policy recommendation, causal/counterfactual
+claims, calibrated policy risk/utility, CBAT, and sequence/neural branches
+remain blocked.
+
 ## Optional Technical Branch
 
 No broader technical branch is currently justified. Future technical work, if
 opened, should be release automation, task-registry maintenance, documentation
-synthesis, or a separately predeclared observed-contrast ranking-feasibility
-baseline with strict uncertainty/no-overclaim guardrails. Do not open CBAT,
-policy recommendations, transformers, broad sequence modeling, or new modality
-expansion from the Milestone 5.6-7.2 results.
+synthesis, or a separately predeclared support-bounded diagnostic objective.
+Do not open CBAT, policy recommendations, transformers, broad sequence
+modeling, or new modality expansion from the Milestone 5.6-7.3 results.
 
 ## Blocked Branches
 

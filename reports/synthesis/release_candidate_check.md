@@ -5,9 +5,9 @@ Status: `passed`
 ## Summary
 
 - Required files checked: 10
-- Tracked artifacts checked: 120
+- Tracked artifacts checked: 126
 - Ignored artifacts checked: 28
-- Claim matrix rows checked: 29
+- Claim matrix rows checked: 30
 
 ## Errors
 
@@ -70,6 +70,7 @@ Status: `passed`
 - eis-claim-readiness
 - eis-hardening-sensitivity
 - evaluate-observed-policy-contrasts
+- evaluate-policy-ranking-feasibility
 - event-sequences-qa
 - evidence-memo
 - feature-qa

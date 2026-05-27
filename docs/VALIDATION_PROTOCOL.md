@@ -1622,3 +1622,39 @@ Validation rules:
 - A future policy-ranking baseline can only be considered as a separate gate
   after observed support and stability are documented. Milestone 7.2 itself
   does not authorize policy ranking.
+
+## Milestone 7.3 Support-Bounded Contrast-Ordering Feasibility Gate
+
+Milestone 7.3 tests whether existing out-of-fold multi-horizon capacity
+predictions can order the Milestone 7.2 supported observed contrasts. It is a
+report-only feasibility gate: it may consume
+`capacity_horizon_l0_l2_predictions.parquet`, but it must not retrain models,
+add feature engineering, optimize policies, estimate causal effects, or create
+same-cell counterfactuals.
+
+Required artifacts:
+
+- `reports/analysis/policy/policy_ranking_feasibility_report.json`
+- `reports/analysis/policy/policy_ranking_pairwise_metrics.csv`
+- `reports/analysis/policy/policy_ranking_by_family.csv`
+- `reports/analysis/policy/policy_ranking_bootstrap.csv`
+- `reports/analysis/policy/policy_ranking_claim_readiness.md`
+- `docs/experiments/2026-05-27_policy_ranking_feasibility_gate.md`
+
+Validation rules:
+
+- Only `has_triplet_support=True` contrasts may enter pairwise metrics.
+- The primary prospective candidate is HGB K2
+  (`MH3_hist_gradient_boosting` / `K2_nominal_condition`) on
+  `delta_capacity_Ah_h` horizons 2 and 3.
+- Severity is positive degradation: `-delta_capacity_Ah_h` for delta targets
+  and `-capacity_Ah_kh` for capacity-level diagnostics.
+- K3 future-exposure rows must be labeled `oracle_diagnostic_only` and cannot
+  support prospective wording.
+- A diagnostic ordering claim requires HGB K2 to beat persistence and
+  prior-slope references with positive contrast-bootstrap lower bounds, at
+  least two contrast families passing, and no C-rate collapse.
+- If the reference/bootstrap gate fails, supported observed contrast ordering
+  remains partial or diagnostic only. Policy recommendation, causal claims,
+  same-cell counterfactual claims, calibrated policy risk/utility, CBAT, and
+  sequence/neural branches remain blocked.

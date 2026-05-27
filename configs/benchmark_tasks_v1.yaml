@@ -254,3 +254,21 @@ tasks:
     allowed_wording: observed matched policy contrasts support diagnostic degradation-order analysis
     forbidden_wording: policy ranking policy recommendation causal effects same-cell counterfactuals CBAT or calibrated risk are authorized
     decision: keep as observed support/stability diagnostic; separate predeclared gate required before any ranking baseline
+  - task_id: T15_supported_contrast_ordering
+    task_name: supported observed contrast ordering feasibility diagnostic
+    area: policy_support
+    question_id: Q4
+    primary_claim_id: C30
+    claim_ids: [C29, C30]
+    status: partially_supported
+    targets: [delta_capacity_Ah_h, capacity_Ah_kh]
+    split_views: [condition_fold, temperature_holdout_fold, c_rate_holdout_fold, profile_holdout_fold, voltage_window_holdout_fold]
+    primary_metric: pairwise observed-versus-predicted contrast sign accuracy and contrast-bootstrap gain versus references
+    primary_result: HGB K2 primary delta sign accuracy averages 0.780 and C-rate horizon-2/3 rows reach 0.826923/0.888889, but 0/10 primary all-family bootstrap checks beat prior slope with positive p05
+    best_reference: prospective HGB K2 multi-horizon predictions
+    baseline_families: [persistence_horizon, prior_slope_horizon, ridge_horizon, hgb_horizon, oracle_exposure_diagnostic]
+    source_artifacts: [docs/experiments/2026-05-27_policy_ranking_feasibility_gate.md, reports/analysis/policy/policy_ranking_claim_readiness.md]
+    local_data_artifacts: [data/interim/policy_contrast_registry_v1.parquet, data/interim/capacity_horizon_table_v1.parquet, data/processed/capacity_horizon_l0_l2_predictions.parquet]
+    allowed_wording: existing prospective forecasts can be evaluated for supported observed contrast-ordering diagnostics but the result is partial
+    forbidden_wording: policy ranking policy recommendation causal effects same-cell counterfactuals calibrated policy risk or utility CBAT or sequence neural branches are authorized
+    decision: keep as partial diagnostic evidence because the strict prior-slope bootstrap reference gate fails

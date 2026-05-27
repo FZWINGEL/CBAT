@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 7.2: Policy-contrast support and observed ranking feasibility gate.
+Milestone 7.3: Support-bounded contrast-ordering feasibility gate.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -96,6 +96,12 @@ Current state:
   feasibility gate. It builds an observed contrast registry and stability
   diagnostics only; it does not train a ranking model, recommend policies, or
   make causal/same-cell counterfactual claims.
+- Milestone 7.3 evaluates existing out-of-fold multi-horizon capacity
+  predictions on the supported Milestone 7.2 contrasts. It is a report-only
+  feasibility gate: no model is retrained, K3 future-exposure rows remain
+  oracle-diagnostic only, and policy recommendation, causal/same-cell
+  counterfactual, calibrated-risk, CBAT, and sequence/neural claims remain
+  blocked.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
@@ -103,6 +109,10 @@ Allowed work:
 - observed matched policy-contrast registry construction
 - policy-contrast support QA
 - observed capacity-loss sign-stability diagnostics
+- existing-prediction supported contrast-ordering diagnostics
+- pairwise observed-vs-predicted contrast sign and magnitude metrics
+- contrast-level bootstrap summaries over existing predictions
+- K3 oracle exposure ordering diagnostics labeled non-prospective
 - policy-contrast claim-readiness reporting
 - benchmark task registry and claim-ledger updates for observed support only
 - fixed-length LOG_AGE run-event sequence data products

@@ -213,3 +213,18 @@ These cards freeze the benchmark task definitions and current claim posture. The
 - Forbidden wording: policy ranking policy recommendation causal effects same-cell counterfactuals CBAT or calibrated risk are authorized
 - Decision: keep as observed support/stability diagnostic; separate predeclared gate required before any ranking baseline
 - Source artifacts: docs/experiments/2026-05-27_policy_contrast_support_gate.md, reports/analysis/policy/policy_claim_readiness.md
+
+## T15_supported_contrast_ordering - supported observed contrast ordering feasibility diagnostic
+
+- Area: policy_support
+- Primary claim: C30
+- Status: `partially_supported`
+- Targets: delta_capacity_Ah_h, capacity_Ah_kh
+- Split views: condition_fold, temperature_holdout_fold, c_rate_holdout_fold, profile_holdout_fold, voltage_window_holdout_fold
+- Primary metric: pairwise observed-versus-predicted contrast sign accuracy and contrast-bootstrap gain versus references
+- Primary result: HGB K2 primary delta sign accuracy averages 0.780 and C-rate horizon-2/3 rows reach 0.826923/0.888889, but 0/10 primary all-family bootstrap checks beat prior slope with positive p05
+- Best reference: prospective HGB K2 multi-horizon predictions
+- Allowed wording: existing prospective forecasts can be evaluated for supported observed contrast-ordering diagnostics but the result is partial
+- Forbidden wording: policy ranking policy recommendation causal effects same-cell counterfactuals calibrated policy risk or utility CBAT or sequence neural branches are authorized
+- Decision: keep as partial diagnostic evidence because the strict prior-slope bootstrap reference gate fails
+- Source artifacts: docs/experiments/2026-05-27_policy_ranking_feasibility_gate.md, reports/analysis/policy/policy_ranking_claim_readiness.md

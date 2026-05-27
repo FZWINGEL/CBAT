@@ -325,6 +325,27 @@ worked, but sequence/neural next-gate readiness remains blocked. Do not open
 transformers, CBAT, policy ranking, or broad neural architecture work from
 this result.
 
+## Supported Contrast Ordering Does Not Authorize Recommendations
+
+Milestone 7.3 joined the 234 triplet-supported observed contrasts from
+Milestone 7.2 to existing out-of-fold multi-horizon capacity predictions. It
+generated 164,100 pairwise contrast-ordering rows without retraining any
+model.
+
+The signal is useful but not decisive. HGB K2 reaches primary
+`delta_capacity_Ah_h` sign accuracy of `0.826923` for C-rate horizon 2 and
+`0.888889` for C-rate horizon 3, with mean primary sign accuracy `0.780`
+across horizon-2/3 split rows. However, the strict bootstrap reference gate
+fails: HGB K2 passes `0/10` all-family primary checks against the prior-slope
+reference with positive p05. C-rate horizon 2 is negative versus prior slope
+(`-0.0740741`, p05 `-0.190476`), and multiple non-C-rate rows are also
+negative.
+
+Decision: treat supported contrast ordering as partially supported diagnostic
+evidence only. Do not claim policy recommendations, causal effects, same-cell
+counterfactuals, calibrated policy risk/utility, CBAT readiness, or sequence
+and neural readiness.
+
 ## Milestone 3.0 Blocked-Claim Refresh
 
 The v2 synthesis keeps the following negative boundaries active:
@@ -362,6 +383,10 @@ The v2 synthesis keeps the following negative boundaries active:
   but policy ranking remains blocked because this is not calibrated risk, not
   causal evidence, not a same-cell counterfactual design, and not a policy
   recommendation model.
+- Milestone 7.3 adds partial existing-prediction contrast-ordering signal, but
+  it fails the strict prior-slope bootstrap reference gate and therefore still
+  blocks recommendation, causal, counterfactual, calibrated-risk, CBAT, and
+  sequence/neural claims.
 
 Decision: return to synthesis/release maintenance unless a new narrow
 calibration-method diagnostic is explicitly justified.

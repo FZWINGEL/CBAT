@@ -36,6 +36,7 @@ The project has completed the major baseline-first charter gates:
 - benchmark task freeze and leaderboard reproducibility.
 - minimal fixed-length event-sequence and CUDA Torch MLP reopening check.
 - observed policy-contrast support and sign-stability diagnostics.
+- support-bounded contrast-ordering feasibility diagnostics.
 
 The strongest contribution is now a rigorous grouped-validation benchmark that
 documents which battery-degradation signals are supported, diagnostic-only,
@@ -81,6 +82,11 @@ matched support. It does: 234 triplet-supported contrasts across four families
 and 0.916 observed sign-stable capacity-loss rows. This is useful support
 evidence, but it is not calibrated risk, not causal evidence, not an
 intervention test, and not a ranking model.
+Milestone 7.3 then uses existing multi-horizon predictions to test
+support-bounded contrast ordering. HGB K2 has partial diagnostic signal, but
+it fails the strict prior-slope bootstrap reference gate, so this is still not
+policy recommendation, causal evidence, calibrated risk, or a deployment
+ranking result.
 
 ## Recommended Path
 
@@ -96,9 +102,10 @@ intervention test, and not a ranking model.
    readiness.
 3. If engineering work resumes, prefer release automation, task-registry
    maintenance, or reproducibility checks over new scientific expansion.
-4. If ML research continues, the only policy-related next step should be a
-   separate predeclared ranking-feasibility baseline using observed contrasts
-   and uncertainty guardrails. Do not treat Milestone 7.2 as a policy result.
+4. If ML research continues, do not continue the policy branch unless a new
+   predeclared diagnostic objective is stronger than the already-failed
+   Milestone 7.3 prior-slope bootstrap gate. Do not treat Milestone 7.2 or 7.3
+   as a policy result.
 
 ## Optional Technical Branch
 
@@ -145,6 +152,12 @@ The observed policy-contrast support gate has also been run. It establishes
 that matched triplet contrasts exist and observed degradation ordering is often
 stable, but it does not authorize policy recommendation, causal intervention,
 same-cell counterfactual, or deployment ranking claims.
+
+The support-bounded contrast-ordering feasibility gate has also been run. It
+finds partial HGB K2 ordering signal from existing multi-horizon predictions,
+including strong C-rate sign accuracy, but it fails the strict bootstrap
+comparison against prior slope. Treat this as partial diagnostic evidence, not
+as a branch-opening result.
 
 ## Explicitly Rejected Branches
 

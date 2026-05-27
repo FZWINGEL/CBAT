@@ -46,7 +46,7 @@ These cards summarize model families already evaluated in the frozen benchmark. 
 
 ## hgb_horizon
 
-- Used in tasks: T10_multi_horizon_capacity, T11_prior_trajectory_shape
+- Used in tasks: T10_multi_horizon_capacity, T11_prior_trajectory_shape, T15_supported_contrast_ordering
 - Task statuses: partially_supported
 - Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
 
@@ -92,6 +92,12 @@ These cards summarize model families already evaluated in the frozen benchmark. 
 - Task statuses: supported_for_diagnostics
 - Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
 
+## oracle_exposure_diagnostic
+
+- Used in tasks: T15_supported_contrast_ordering
+- Task statuses: partially_supported
+- Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
+
 ## order_aware_hgb
 
 - Used in tasks: T07_temporal_order_falsification
@@ -100,7 +106,7 @@ These cards summarize model families already evaluated in the frozen benchmark. 
 
 ## persistence_horizon
 
-- Used in tasks: T10_multi_horizon_capacity
+- Used in tasks: T10_multi_horizon_capacity, T15_supported_contrast_ordering
 - Task statuses: partially_supported
 - Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
 
@@ -124,7 +130,7 @@ These cards summarize model families already evaluated in the frozen benchmark. 
 
 ## prior_slope_horizon
 
-- Used in tasks: T10_multi_horizon_capacity
+- Used in tasks: T10_multi_horizon_capacity, T15_supported_contrast_ordering
 - Task statuses: partially_supported
 - Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
 
@@ -184,7 +190,7 @@ These cards summarize model families already evaluated in the frozen benchmark. 
 
 ## ridge_horizon
 
-- Used in tasks: T10_multi_horizon_capacity
+- Used in tasks: T10_multi_horizon_capacity, T15_supported_contrast_ordering
 - Task statuses: partially_supported
 - Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
 

@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 7.2: Policy-contrast support and observed ranking feasibility gate**.
+The repository is in **Milestone 7.3: Support-bounded contrast-ordering feasibility gate**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -227,6 +227,18 @@ supports only an observed policy-contrast support diagnostic and a possible
 future ranking-feasibility gate. It does not authorize policy ranking, policy
 recommendations, causal/same-cell counterfactual claims, CBAT, sequence/neural
 models, or calibrated risk.
+Milestone 7.3 consumes the existing out-of-fold multi-horizon prediction table
+and the Milestone 7.2 contrast registry to test whether prospective HGB K2
+predictions can order supported observed contrasts. It generates 164,100
+pairwise contrast-ordering rows and finds useful but incomplete signal:
+primary HGB K2 `delta_capacity_Ah_h` sign accuracy averages 0.780 across
+primary horizon/split rows, with C-rate rows at 0.826923 for horizon 2 and
+0.888889 for horizon 3, but it fails the strict bootstrap reference gate versus
+the prior-slope baseline (`0/10` primary all-family reference checks pass).
+The result is therefore only `partially_supported` for supported observed
+contrast-ordering diagnostics. Policy recommendation, causal claims, same-cell
+counterfactual claims, calibrated risk/utility, CBAT, and sequence/neural
+branches remain blocked.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, unscoped sequence models,
@@ -237,19 +249,19 @@ branch.
 
 Current state:
 
-- Milestone 7.2 is an observed support/stability gate for policy contrasts, not
-  a policy-ranking or causal milestone. `policy_contrast_registry_v1.parquet`
-  contains 234 matched triplet-supported observed contrasts. QA passes across
-  all four supported contrast families: charge C-rate (36 contrasts), profile
-  (12), temperature (114), and voltage window (72). Observed capacity-loss
-  sign stability is high overall (`2943/3213 = 0.916` rows), with family-level
-  sign-stable fractions from `0.893985` to `0.954464`.
-- The Milestone 7.2 claim-readiness report marks matched observed
-  policy-contrast support and observed contrast sign stability as
-  `supported_for_diagnostics`, but only marks future policy-ranking baseline
-  readiness as `possible_next_gate`. Policy ranking itself, policy
-  recommendation, causal intervention claims, and same-cell counterfactual
-  claims remain blocked.
+- Milestone 7.3 is an existing-prediction feasibility gate for supported
+  observed contrast ordering, not a policy-recommendation or causal milestone.
+  It joins `policy_contrast_registry_v1.parquet`,
+  `capacity_horizon_table_v1.parquet`, and
+  `capacity_horizon_l0_l2_predictions.parquet`, writes 164,100 pairwise rows,
+  and marks supported observed contrast ordering as `partially_supported`.
+  HGB K2 is informative but does not beat the prior-slope reference under the
+  strict bootstrap rule, so recommendation, causal, counterfactual, calibrated
+  risk/utility, CBAT, and sequence/neural claims remain blocked.
+- Milestone 7.2 remains the observed support/stability basis for this gate:
+  `policy_contrast_registry_v1.parquet` contains 234 matched
+  triplet-supported observed contrasts, and observed capacity-loss sign
+  stability is high overall (`2943/3213 = 0.916` rows).
 
 - Milestone 7.1 is a minimal sequence/neural reopening gate. It builds
   `interval_event_sequence_table_v1.parquet` with 3,827 interval rows and

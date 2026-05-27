@@ -5,9 +5,9 @@ Status: `passed`
 ## Summary
 
 - Benchmark version: `benchmark-task-freeze-v1`
-- Tasks checked: 14
-- Claim matrix rows checked: 29
-- Artifact manifest rows checked: 148
+- Tasks checked: 15
+- Claim matrix rows checked: 30
+- Artifact manifest rows checked: 154
 
 ## Errors
 
@@ -33,3 +33,4 @@ Status: `passed`
 - T12_semi_empirical_replicate_checks
 - T13_minimal_sequence_reopening
 - T14_policy_contrast_support
+- T15_supported_contrast_ordering

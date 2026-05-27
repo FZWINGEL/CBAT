@@ -75,6 +75,7 @@ Layer 6: Diagnostics and hardening
   mbp baseline diagnose-stressor-robust-forensics
   mbp analysis policy-contrast-qa
   mbp analysis evaluate-observed-policy-contrasts
+  mbp analysis evaluate-policy-ranking-feasibility
     |
     v
 Layer 7: Synthesis and release checks
@@ -103,3 +104,5 @@ Layer 7: Synthesis and release checks
   threshold-warning features unless they are explicitly prior-only.
 - PULSE and EIS non-EIS target runs may use prior check-up `k` state only.
 - Prediction Parquets are local generated artifacts and must not be committed.
+- Supported contrast-ordering feasibility consumes existing horizon prediction
+  Parquets only; it must not train or tune a policy/ranking model.

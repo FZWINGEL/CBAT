@@ -108,6 +108,7 @@ mbp baseline diagnose-capacity-horizon-trajectory --report reports/baselines/cap
 mbp analysis build-policy-contrast-registry --interval-table data/interim/interval_table.parquet --out data/interim/policy_contrast_registry_v1.parquet
 mbp analysis policy-contrast-qa --contrast-registry data/interim/policy_contrast_registry_v1.parquet --interval-table data/interim/interval_table.parquet --out reports/analysis/policy/policy_contrast_support_report.json --registry-out reports/analysis/policy/policy_contrast_registry.csv --family-out reports/analysis/policy/policy_contrast_by_family.csv
 mbp analysis evaluate-observed-policy-contrasts --contrast-registry data/interim/policy_contrast_registry_v1.parquet --interval-table data/interim/interval_table.parquet --out-dir reports/analysis/policy
+mbp analysis evaluate-policy-ranking-feasibility --contrast-registry data/interim/policy_contrast_registry_v1.parquet --horizon-table data/interim/capacity_horizon_table_v1.parquet --predictions data/processed/capacity_horizon_l0_l2_predictions.parquet --out-dir reports/analysis/policy --targets delta_capacity_Ah_h,capacity_Ah_kh --horizons 2,3 --model-levels MH0_persistence,MH1_prior_slope_linear,MH2_ridge,MH3_hist_gradient_boosting --feature-groups persistence,prior_slope,K2_nominal_condition,K3_oracle_exposure_diagnostic --split-views condition_fold,temperature_holdout_fold,c_rate_holdout_fold,profile_holdout_fold,voltage_window_holdout_fold --bootstrap-count 200
 ```
 
 Outputs: tracked JSON/CSV/Markdown reports and ignored prediction Parquets.
@@ -127,7 +128,9 @@ forecast inputs. The trajectory commands emit a tracked QA report, tracked
 K4/K5 diagnostics, and ignored trajectory/prediction Parquets.
 The policy-contrast commands emit an ignored observed contrast registry and
 tracked support/stability diagnostics. They do not train a model or authorize
-policy recommendations.
+policy recommendations. The supported contrast-ordering feasibility command
+uses existing multi-horizon predictions only; it does not retrain models, and
+K3 rows remain oracle-diagnostic only.
 
 ## 7. Diagnostics
 

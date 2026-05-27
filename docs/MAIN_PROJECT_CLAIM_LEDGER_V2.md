@@ -34,12 +34,14 @@ the paper claim ledger with main-project gate decisions and next actions.
 | C27 | Prior-trajectory shape features repair the multi-horizon capacity forecast gap. | `partially_supported` | `docs/experiments/2026-05-27_prior_trajectory_shape_horizon_gate.md` | Prior-only trajectory shape is a leakage-safe diagnostic feature family with isolated gains, but it does not repair all-split horizon-3 `capacity_Ah_kh` and does not preserve all C-rate horizon-2/3 rows. | Prior-trajectory shape solves multi-horizon forecasting, justifies sequence/neural models, validates CBAT, or authorizes policy/causal/calibrated-risk claims. | Keep as partial/diagnostic evidence; do not continue this branch without a fresh predeclared question. |
 | C28 | Fixed-length event-sequence baselines reopen the sequence/neural model gate. | `not_supported` | `docs/experiments/2026-05-27_minimal_sequence_reopening_gate.md` | CUDA Torch MLP execution is now verified, but fixed-length true-sequence Ridge/MLP diagnostics still do not beat aggregate-event HGB or timestamp-stress HGB references and fail the C-rate delta reopening rule. | Sequence/neural models, CBAT, transformers, or policy ranking are justified by the current evidence. | Keep sequence/neural work blocked; treat the CUDA run as a negative H7 reopening check. |
 | C29 | Matched observed policy contrasts have enough support for diagnostic sign-stability analysis. | `supported_for_diagnostics` | `docs/experiments/2026-05-27_policy_contrast_support_gate.md`; `reports/analysis/policy/policy_claim_readiness.md` | Observed matched policy contrasts are available for support and degradation-order diagnostics: 234 triplet-supported contrasts across four families and 2,943/3,213 sign-stable capacity-loss rows. | Policy ranking, policy recommendation, same-cell counterfactual effects, causal intervention effects, CBAT, or calibrated risk are authorized. | Treat as observed support diagnostics only; any ranking feasibility baseline would require a separate predeclared gate. |
+| C30 | Existing prospective horizon forecasts can order supported observed contrasts well enough for a diagnostic feasibility signal, but not enough to support recommendations. | `partially_supported` | `docs/experiments/2026-05-27_policy_ranking_feasibility_gate.md`; `reports/analysis/policy/policy_ranking_claim_readiness.md` | HGB K2 shows partial supported contrast-ordering signal: primary `delta_capacity_Ah_h` sign accuracy averages 0.780 and C-rate horizon-2/3 rows reach 0.826923/0.888889. | Policy ranking, policy recommendation, causal policy effects, same-cell counterfactual effects, calibrated policy risk/utility, CBAT, or sequence/neural branches are authorized. | Keep as partial diagnostic evidence because the strict prior-slope bootstrap reference gate fails (`0/10` primary all-family checks pass). |
 
 ## Next Action
 
 Return to benchmark/manuscript integration or release maintenance unless a new
-explicitly scoped ML gate is opened. Milestone 7.2 adds C29 as an observed
-policy-contrast support diagnostic: matched triplet support and observed
-capacity-loss sign stability are available, but policy ranking, policy
-recommendation, same-cell counterfactual, causal, CBAT, sequence/neural, and
-calibrated-risk claims remain blocked.
+explicitly scoped ML gate is opened. Milestone 7.3 adds C30 as a partial
+supported-contrast ordering diagnostic from existing multi-horizon predictions:
+HGB K2 has useful sign signal, including C-rate rows, but it does not beat the
+prior-slope reference under the strict bootstrap gate. Policy recommendation,
+same-cell counterfactual, causal, CBAT, sequence/neural, and calibrated-risk
+claims remain blocked.
