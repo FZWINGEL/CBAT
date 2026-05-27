@@ -431,6 +431,14 @@ The v2 synthesis keeps the following negative boundaries active:
   rows avoid negative gain. This keeps broad endpoint forecasting,
   capacity+PULSE+EIS architecture, CBAT, calibrated-risk/uncertainty, policy,
   sequence/neural, causal, and same-cell counterfactual claims blocked.
+- Milestone 8.2.1 diagnoses that partial result with endpoint-specific
+  forensics. `eis_z_abs_1kHz`, `nyquist_semicircle_width_proxy`, and
+  `pulse_10ms_resistance` pass selected scalar endpoint diagnostic checks, but
+  `eis_phase_1kHz`, `nyquist_im_peak_abs`, and `pulse_1s_resistance` remain
+  partial because at least one primary or C-rate guardrail fails. This supports
+  only selected endpoint diagnostic wording and still blocks broad endpoint
+  forecasting, architecture, CBAT, calibrated risk/uncertainty, policy,
+  causal, and same-cell counterfactual claims.
 
 Decision: return to synthesis/release maintenance unless a new narrow
 calibration-method diagnostic is explicitly justified.

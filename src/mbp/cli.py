@@ -2804,6 +2804,27 @@ def baseline_run_diagnostic_horizon(
     )
 
 
+@baseline_app.command("diagnose-diagnostic-horizon")
+def baseline_diagnose_diagnostic_horizon(
+    report: Path = typer.Option(..., "--report", help="Diagnostic horizon JSON report."),
+    predictions: Path = typer.Option(..., "--predictions", help="Diagnostic horizon prediction Parquet."),
+    diagnostic_horizon_table: Path = typer.Option(
+        ...,
+        "--diagnostic-horizon-table",
+        help="Path to diagnostic_horizon_table_v1.parquet.",
+    ),
+    out_dir: Path = typer.Option(..., "--out-dir", help="Output directory for diagnostic-horizon forensics."),
+) -> None:
+    """Diagnose endpoint and C-rate failures for diagnostic horizon forecasts."""
+    from mbp.baselines.diagnostic_horizon import diagnose_diagnostic_horizon
+
+    result = diagnose_diagnostic_horizon(report, predictions, diagnostic_horizon_table, out_dir)
+    typer.echo(
+        "Diagnostic horizon forensics generated: "
+        f"{result['row_counts']['endpoint_failure_rows']} failure rows written under {out_dir}"
+    )
+
+
 @baseline_app.command("diagnose-capacity-horizon-trajectory")
 def baseline_diagnose_capacity_horizon_trajectory(
     report: Path = typer.Option(..., "--report", help="Capacity horizon trajectory JSON report."),

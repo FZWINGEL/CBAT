@@ -1,0 +1,28 @@
+{
+  "claim_scope": "failure_forensics_only_no_architecture_no_calibrated_risk_no_policy_no_causal_claim",
+  "generated_at_utc": "2026-05-27T18:59:17.540169+00:00",
+  "inputs": {
+    "diagnostic_horizon_table": "data/interim/diagnostic_horizon_table_v1.parquet",
+    "predictions": "data/processed/diagnostic_horizon_l0_l2_predictions.parquet",
+    "report": "reports/baselines/diagnostic_horizon_l0_l2_report.json"
+  },
+  "outputs": {
+    "endpoint_claim_readiness": "reports/baselines/diagnostic_horizon_l0_l2/diagnostic_horizon_endpoint_claim_readiness.md",
+    "forensics_markdown": "reports/baselines/diagnostic_horizon_l0_l2/diagnostic_horizon_forensics.md",
+    "plots_dir": "reports/baselines/diagnostic_horizon_l0_l2/plots",
+    "report": "reports/baselines/diagnostic_horizon_l0_l2/diagnostic_horizon_forensics_report.json"
+  },
+  "row_counts": {
+    "c_rate_failure_rows": 72,
+    "condition_hotspot_rows": 500,
+    "diagnostic_horizon_rows": 80878,
+    "endpoint_failure_rows": 432,
+    "endpoint_readiness_rows": 8,
+    "metrics": 2880,
+    "persistence_ceiling_rows": 24,
+    "predictions": 2176320,
+    "target_horizon_rows": 432
+  },
+  "schema_version": "gate821.diagnostic_horizon_forensics.v1",
+  "status": "passed"
+}

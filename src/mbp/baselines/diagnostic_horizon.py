@@ -18,6 +18,7 @@ import pyarrow.parquet as pq
 from mbp.baselines.capacity import SPLIT_COLUMNS, assert_no_parameter_set_leakage, iter_split_instances
 
 SCHEMA_VERSION = "gate82.diagnostic_horizon_baseline.v1"
+FORENSICS_SCHEMA_VERSION = "gate821.diagnostic_horizon_forensics.v1"
 PREDICTION_SCHEMA_VERSION = "gate82.diagnostic_horizon_predictions.v1"
 TARGETS = (
     "pulse_1s_resistance",
@@ -459,6 +460,97 @@ def render_diagnostic_horizon_artifacts(report: dict[str, Any], out_dir: Path) -
     _write_summary_md(report, leaderboard, out_dir / "diagnostic_horizon_summary.md")
 
 
+def diagnose_diagnostic_horizon(
+    report_path: Path,
+    predictions_path: Path,
+    diagnostic_horizon_table_path: Path,
+    out_dir: Path,
+) -> dict[str, Any]:
+    """Render report-only failure forensics for diagnostic endpoint horizon forecasting."""
+    if not report_path.exists():
+        raise FileNotFoundError(f"Missing diagnostic horizon report: {report_path}")
+    if not predictions_path.exists():
+        raise FileNotFoundError(f"Missing diagnostic horizon predictions: {predictions_path}")
+    if not diagnostic_horizon_table_path.exists():
+        raise FileNotFoundError(f"Missing diagnostic horizon table: {diagnostic_horizon_table_path}")
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    metrics = list(report.get("metrics", []))
+    if not metrics:
+        raise ValueError("Diagnostic horizon report has no metrics.")
+    predictions = pq.read_table(predictions_path).to_pylist()
+    horizon_rows = pq.read_table(diagnostic_horizon_table_path).to_pylist()
+    if not predictions:
+        raise ValueError("Diagnostic horizon prediction table is empty.")
+    if not horizon_rows:
+        raise ValueError("Diagnostic horizon table is empty.")
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    plots_dir = out_dir / "plots"
+    plots_dir.mkdir(parents=True, exist_ok=True)
+
+    gains = diagnostic_horizon_gain_rows(metrics)
+    endpoint_failure_rows = endpoint_reference_failure_rows(gains)
+    target_horizon_rows = target_horizon_gain_rows(gains)
+    c_rate_failure_rows = [row for row in endpoint_failure_rows if row["split_name"] == "c_rate_holdout_fold"]
+    persistence_rows = persistence_ceiling_rows(horizon_rows, metrics)
+    hotspot_rows = condition_error_hotspot_rows(predictions)
+    endpoint_readiness = diagnostic_horizon_endpoint_readiness_rows(gains)
+
+    _write_csv(plots_dir / "endpoint_reference_failure_matrix.csv", endpoint_failure_rows)
+    _write_csv(plots_dir / "target_horizon_gain_matrix.csv", target_horizon_rows)
+    _write_csv(plots_dir / "c_rate_endpoint_failure_matrix.csv", c_rate_failure_rows)
+    _write_csv(plots_dir / "persistence_ceiling_diagnostics.csv", persistence_rows)
+    _write_csv(plots_dir / "condition_error_hotspots.csv", hotspot_rows)
+    _write_csv(plots_dir / "diagnostic_horizon_endpoint_claim_readiness.csv", endpoint_readiness)
+    _write_diagnostic_horizon_forensics_md(
+        report,
+        endpoint_failure_rows,
+        target_horizon_rows,
+        c_rate_failure_rows,
+        persistence_rows,
+        hotspot_rows,
+        out_dir / "diagnostic_horizon_forensics.md",
+    )
+    _write_endpoint_claim_readiness_md(
+        endpoint_readiness,
+        out_dir / "diagnostic_horizon_endpoint_claim_readiness.md",
+    )
+
+    result = {
+        "status": "passed",
+        "schema_version": FORENSICS_SCHEMA_VERSION,
+        "generated_at_utc": datetime.now(UTC).isoformat(),
+        "inputs": {
+            "report": str(report_path),
+            "predictions": str(predictions_path),
+            "diagnostic_horizon_table": str(diagnostic_horizon_table_path),
+        },
+        "outputs": {
+            "report": str(out_dir / "diagnostic_horizon_forensics_report.json"),
+            "forensics_markdown": str(out_dir / "diagnostic_horizon_forensics.md"),
+            "endpoint_claim_readiness": str(out_dir / "diagnostic_horizon_endpoint_claim_readiness.md"),
+            "plots_dir": str(plots_dir),
+        },
+        "row_counts": {
+            "metrics": len(metrics),
+            "predictions": len(predictions),
+            "diagnostic_horizon_rows": len(horizon_rows),
+            "endpoint_failure_rows": len(endpoint_failure_rows),
+            "target_horizon_rows": len(target_horizon_rows),
+            "c_rate_failure_rows": len(c_rate_failure_rows),
+            "persistence_ceiling_rows": len(persistence_rows),
+            "condition_hotspot_rows": len(hotspot_rows),
+            "endpoint_readiness_rows": len(endpoint_readiness),
+        },
+        "claim_scope": "failure_forensics_only_no_architecture_no_calibrated_risk_no_policy_no_causal_claim",
+    }
+    (out_dir / "diagnostic_horizon_forensics_report.json").write_text(
+        json.dumps(result, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return result
+
+
 def leaderboard_rows(metrics: list[dict[str, Any]]) -> list[dict[str, Any]]:
     grouped: dict[tuple[str, int, str, str, str], list[dict[str, Any]]] = defaultdict(list)
     for row in metrics:
@@ -551,6 +643,261 @@ def diagnostic_horizon_gain_rows(metrics: list[dict[str, Any]]) -> list[dict[str
                 }
             )
     return sorted(output, key=lambda row: (row["split_name"], row["target_name"], row["horizon_checkups"], row["reference_name"]))
+
+
+def endpoint_reference_failure_rows(gains: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Annotate reference-gain rows with the Milestone 8.2 gate checks."""
+    output = []
+    for row in gains:
+        horizon = int(row["horizon_checkups"])
+        split_name = str(row["split_name"])
+        reference = str(row["reference_name"])
+        relative_gain = _as_float(row.get("relative_gain"))
+        gain = _as_float(row.get("gain"))
+        is_primary = split_name == "all" and horizon in {2, 3} and reference in {"persistence", "capacity_state"}
+        is_c_rate_gate = (
+            split_name == "c_rate_holdout_fold"
+            and horizon in {2, 3}
+            and reference in {"persistence", "capacity_state"}
+        )
+        passes_10pct_gain = math.isfinite(relative_gain) and relative_gain >= 0.10
+        passes_noncollapse = math.isfinite(gain) and gain >= 0.0
+        failure_reasons = []
+        if is_primary and not passes_10pct_gain:
+            failure_reasons.append("primary_gain_below_10pct")
+        if is_c_rate_gate and not passes_noncollapse:
+            failure_reasons.append("c_rate_negative_gain")
+        if not failure_reasons and (is_primary or is_c_rate_gate):
+            failure_reasons.append("passes_gate_row")
+        output.append(
+            {
+                **row,
+                "is_primary_gate_row": is_primary,
+                "is_c_rate_gate_row": is_c_rate_gate,
+                "passes_10pct_gain": passes_10pct_gain,
+                "passes_noncollapse": passes_noncollapse,
+                "failure_reason": ";".join(failure_reasons) if failure_reasons else "not_gate_row",
+            }
+        )
+    return output
+
+
+def target_horizon_gain_rows(gains: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Summarize gain behavior by endpoint, horizon, split, and reference."""
+    grouped: dict[tuple[str, int, str, str], list[dict[str, Any]]] = defaultdict(list)
+    for row in gains:
+        grouped[
+            (
+                str(row["target_name"]),
+                int(row["horizon_checkups"]),
+                str(row["split_name"]),
+                str(row["reference_name"]),
+            )
+        ].append(row)
+    output = []
+    for (target, horizon, split_name, reference), rows in sorted(grouped.items()):
+        gains_values = [_as_float(row.get("gain")) for row in rows]
+        rel_values = [_as_float(row.get("relative_gain")) for row in rows]
+        output.append(
+            {
+                "target_name": target,
+                "diagnostic_family": str(rows[0]["diagnostic_family"]),
+                "horizon_checkups": horizon,
+                "split_name": split_name,
+                "reference_name": reference,
+                "rows": len(rows),
+                "positive_gain_rows": sum(math.isfinite(value) and value > 0.0 for value in gains_values),
+                "nonnegative_gain_rows": sum(math.isfinite(value) and value >= 0.0 for value in gains_values),
+                "gain_10pct_rows": sum(math.isfinite(value) and value >= 0.10 for value in rel_values),
+                "mean_gain": _mean(gains_values),
+                "mean_relative_gain": _mean(rel_values),
+                "min_gain": min((value for value in gains_values if math.isfinite(value)), default=math.nan),
+                "min_relative_gain": min((value for value in rel_values if math.isfinite(value)), default=math.nan),
+                "max_relative_gain": max((value for value in rel_values if math.isfinite(value)), default=math.nan),
+            }
+        )
+    return output
+
+
+def persistence_ceiling_rows(
+    horizon_rows: list[dict[str, Any]],
+    metrics: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Report endpoint scale and persistence-baseline ceilings by target/horizon."""
+    grouped: dict[tuple[str, int], list[dict[str, Any]]] = defaultdict(list)
+    for row in horizon_rows:
+        grouped[(str(row["target_name"]), int(row["horizon_checkups"]))].append(row)
+    persistence_metrics = [
+        row
+        for row in leaderboard_rows(metrics)
+        if str(row["model_level"]) == "DM0_persistence" and str(row["feature_group"]) == "persistence"
+    ]
+    metric_lookup = {
+        (str(row["target_name"]), int(row["horizon_checkups"]), str(row["split_name"])): row
+        for row in persistence_metrics
+    }
+    output = []
+    for (target, horizon), rows in sorted(grouped.items()):
+        values = [_as_float(row.get("diagnostic_value_kh")) for row in rows]
+        current_values = [_as_float(row.get("diagnostic_value_k")) for row in rows]
+        deltas = [
+            _as_float(row.get("diagnostic_value_kh")) - _as_float(row.get("diagnostic_value_k"))
+            for row in rows
+            if math.isfinite(_as_float(row.get("diagnostic_value_kh")))
+            and math.isfinite(_as_float(row.get("diagnostic_value_k")))
+        ]
+        finite_values = [value for value in values if math.isfinite(value)]
+        finite_current = [value for value in current_values if math.isfinite(value)]
+        all_metric = metric_lookup.get((target, horizon, "all"))
+        c_rate_metric = metric_lookup.get((target, horizon, "c_rate_holdout_fold"))
+        output.append(
+            {
+                "target_name": target,
+                "diagnostic_family": str(rows[0]["diagnostic_family"]),
+                "horizon_checkups": horizon,
+                "rows": len(rows),
+                "finite_target_rows": len(finite_values),
+                "finite_current_rows": len(finite_current),
+                "target_mean": _mean(finite_values),
+                "target_std": _std(finite_values),
+                "target_range": (max(finite_values) - min(finite_values)) if finite_values else math.nan,
+                "mean_abs_delta_from_current": _mean([abs(value) for value in deltas]),
+                "median_abs_delta_from_current": _median([abs(value) for value in deltas]),
+                "all_split_persistence_mae": _as_float(all_metric.get("mean_mae")) if all_metric else math.nan,
+                "c_rate_persistence_mae": _as_float(c_rate_metric.get("mean_mae")) if c_rate_metric else math.nan,
+            }
+        )
+    return output
+
+
+def condition_error_hotspot_rows(predictions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Aggregate condition-level absolute errors for DH3 and key references."""
+    allowed = {
+        (PRIMARY_MODEL, PRIMARY_FEATURE),
+        ("DM0_persistence", "persistence"),
+        ("DM3_hist_gradient_boosting", "DH1_capacity_state"),
+        ("DM3_hist_gradient_boosting", "DH2_prior_same_diagnostic_state"),
+    }
+    grouped: dict[tuple[str, str, int, str, str, int], list[float]] = defaultdict(list)
+    for row in predictions:
+        model_key = (str(row["model_level"]), str(row["feature_group"]))
+        if model_key not in allowed:
+            continue
+        error = abs(_as_float(row.get("y_pred")) - _as_float(row.get("y_true")))
+        if not math.isfinite(error):
+            continue
+        grouped[
+            (
+                str(row["split_name"]),
+                str(row["target_name"]),
+                int(row["horizon_checkups"]),
+                str(row["model_level"]),
+                str(row["feature_group"]),
+                int(row["parameter_set"]),
+            )
+        ].append(error)
+    output = []
+    for (split_name, target, horizon, model_level, feature_group, parameter_set), values in grouped.items():
+        output.append(
+            {
+                "split_name": split_name,
+                "target_name": target,
+                "horizon_checkups": horizon,
+                "model_level": model_level,
+                "feature_group": feature_group,
+                "parameter_set": parameter_set,
+                "rows": len(values),
+                "mean_abs_error": _mean(values),
+                "median_abs_error": _median(values),
+                "max_abs_error": max(values),
+            }
+        )
+    return sorted(output, key=lambda row: (-float(row["mean_abs_error"]), row["split_name"], row["target_name"]))[:500]
+
+
+def diagnostic_horizon_endpoint_readiness_rows(gains: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Return endpoint-specific readiness rows for the Milestone 8.2 forensics gate."""
+    targets = sorted({str(row["target_name"]) for row in gains})
+    output = []
+    for target in targets:
+        target_rows = [row for row in gains if str(row["target_name"]) == target]
+        primary = [
+            row
+            for row in target_rows
+            if row["split_name"] == "all"
+            and int(row["horizon_checkups"]) in {2, 3}
+            and row["reference_name"] in {"persistence", "capacity_state"}
+        ]
+        c_rate = [
+            row
+            for row in target_rows
+            if row["split_name"] == "c_rate_holdout_fold"
+            and int(row["horizon_checkups"]) in {2, 3}
+            and row["reference_name"] in {"persistence", "capacity_state"}
+        ]
+        primary_pass_count = sum(_as_float(row.get("relative_gain")) >= 0.10 for row in primary)
+        c_rate_pass_count = sum(_as_float(row.get("gain")) >= 0.0 for row in c_rate)
+        any_gain = any(_as_float(row.get("gain")) > 0.0 for row in target_rows)
+        if primary and c_rate and primary_pass_count == len(primary) and c_rate_pass_count == len(c_rate):
+            status = "supported_for_diagnostics"
+        elif primary and (primary_pass_count >= len(primary) / 2 or c_rate_pass_count >= len(c_rate) / 2):
+            status = "partially_supported"
+        elif any_gain:
+            status = "diagnostic_only"
+        else:
+            status = "not_supported"
+        output.append(
+            {
+                "target_name": target,
+                "diagnostic_family": str(target_rows[0]["diagnostic_family"]) if target_rows else "",
+                "status": status,
+                "primary_rows": len(primary),
+                "primary_rows_passing_10pct_gain": primary_pass_count,
+                "c_rate_rows": len(c_rate),
+                "c_rate_rows_noncollapsed": c_rate_pass_count,
+                "best_primary_relative_gain": max((_as_float(row.get("relative_gain")) for row in primary), default=math.nan),
+                "min_primary_relative_gain": min((_as_float(row.get("relative_gain")) for row in primary), default=math.nan),
+                "best_c_rate_relative_gain": max((_as_float(row.get("relative_gain")) for row in c_rate), default=math.nan),
+                "min_c_rate_gain": min((_as_float(row.get("gain")) for row in c_rate), default=math.nan),
+                "allowed_wording": _endpoint_allowed_wording(status, target),
+                "forbidden_wording": "broad endpoint forecasting, architecture, CBAT, calibrated risk/uncertainty, policy ranking, causal claims, or same-cell counterfactuals are authorized",
+            }
+        )
+    output.extend(
+        [
+            {
+                "target_name": "capacity_plus_pulse_eis_architecture",
+                "diagnostic_family": "blocked_branch",
+                "status": "blocked",
+                "primary_rows": 0,
+                "primary_rows_passing_10pct_gain": 0,
+                "c_rate_rows": 0,
+                "c_rate_rows_noncollapsed": 0,
+                "best_primary_relative_gain": math.nan,
+                "min_primary_relative_gain": math.nan,
+                "best_c_rate_relative_gain": math.nan,
+                "min_c_rate_gain": math.nan,
+                "allowed_wording": "architecture remains blocked",
+                "forbidden_wording": "CBAT or broad multimodal architecture is authorized",
+            },
+            {
+                "target_name": "calibrated_risk_or_uncertainty",
+                "diagnostic_family": "blocked_branch",
+                "status": "blocked",
+                "primary_rows": 0,
+                "primary_rows_passing_10pct_gain": 0,
+                "c_rate_rows": 0,
+                "c_rate_rows_noncollapsed": 0,
+                "best_primary_relative_gain": math.nan,
+                "min_primary_relative_gain": math.nan,
+                "best_c_rate_relative_gain": math.nan,
+                "min_c_rate_gain": math.nan,
+                "allowed_wording": "calibration was not tested in this gate",
+                "forbidden_wording": "endpoint forecasts are calibrated risk or uncertainty",
+            },
+        ]
+    )
+    return output
 
 
 def diagnostic_horizon_claim_readiness(report: dict[str, Any]) -> dict[str, Any]:
@@ -675,6 +1022,159 @@ def _write_summary_md(report: dict[str, Any], leaderboard: list[dict[str, Any]],
     out.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def _write_diagnostic_horizon_forensics_md(
+    report: dict[str, Any],
+    endpoint_failure_rows: list[dict[str, Any]],
+    target_horizon_rows: list[dict[str, Any]],
+    c_rate_failure_rows: list[dict[str, Any]],
+    persistence_rows: list[dict[str, Any]],
+    hotspot_rows: list[dict[str, Any]],
+    out: Path,
+) -> None:
+    primary = [row for row in endpoint_failure_rows if row["is_primary_gate_row"]]
+    primary_pass = [row for row in primary if row["passes_10pct_gain"]]
+    c_rate = [row for row in endpoint_failure_rows if row["is_c_rate_gate_row"]]
+    c_rate_pass = [row for row in c_rate if row["passes_noncollapse"]]
+    weakest_primary = sorted(primary, key=lambda row: _as_float(row.get("relative_gain")))[:5]
+    weakest_c_rate = sorted(c_rate, key=lambda row: _as_float(row.get("gain")))[:5]
+    strongest_targets = sorted(
+        [row for row in target_horizon_rows if row["split_name"] == "all" and row["reference_name"] == "capacity_state"],
+        key=lambda row: _as_float(row.get("mean_relative_gain")),
+        reverse=True,
+    )[:5]
+    low_delta_targets = sorted(
+        persistence_rows,
+        key=lambda row: _as_float(row.get("median_abs_delta_from_current")),
+    )[:5]
+    lines = [
+        "# Diagnostic-Horizon Failure Forensics",
+        "",
+        "This report explains the Milestone 8.2 partial result using existing diagnostic-horizon artifacts only.",
+        "",
+        "## Inputs",
+        "",
+        f"- Metric rows: `{report['row_counts']['metrics']}`",
+        f"- Prediction rows: `{report['row_counts']['predictions']}`",
+        "",
+        "## Gate Summary",
+        "",
+        f"- Primary 10% gain rows passed: `{len(primary_pass)}/{len(primary)}`",
+        f"- C-rate non-collapse rows passed: `{len(c_rate_pass)}/{len(c_rate)}`",
+        "- Architecture, calibrated risk, policy, causal, same-cell counterfactual, and CBAT claims remain blocked.",
+        "",
+        "## Weakest Primary Rows",
+        "",
+        "| Target | Horizon | Reference | Relative gain | Gain | Reason |",
+        "|---|---:|---|---:|---:|---|",
+    ]
+    for row in weakest_primary:
+        lines.append(
+            f"| `{row['target_name']}` | `{row['horizon_checkups']}` | `{row['reference_name']}` | "
+            f"`{row['relative_gain']}` | `{row['gain']}` | `{row['failure_reason']}` |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Weakest C-Rate Rows",
+            "",
+            "| Target | Horizon | Reference | Relative gain | Gain | Reason |",
+            "|---|---:|---|---:|---:|---|",
+        ]
+    )
+    for row in weakest_c_rate:
+        lines.append(
+            f"| `{row['target_name']}` | `{row['horizon_checkups']}` | `{row['reference_name']}` | "
+            f"`{row['relative_gain']}` | `{row['gain']}` | `{row['failure_reason']}` |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Strongest Capacity-State Gains",
+            "",
+            "| Target | Horizon | Mean relative gain | Positive rows |",
+            "|---|---:|---:|---:|",
+        ]
+    )
+    for row in strongest_targets:
+        lines.append(
+            f"| `{row['target_name']}` | `{row['horizon_checkups']}` | "
+            f"`{row['mean_relative_gain']}` | `{row['positive_gain_rows']}/{row['rows']}` |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Low-Movement Endpoint Diagnostics",
+            "",
+            "| Target | Horizon | Median abs delta from current | Persistence MAE |",
+            "|---|---:|---:|---:|",
+        ]
+    )
+    for row in low_delta_targets:
+        lines.append(
+            f"| `{row['target_name']}` | `{row['horizon_checkups']}` | "
+            f"`{row['median_abs_delta_from_current']}` | `{row['all_split_persistence_mae']}` |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Condition Hotspots",
+            "",
+            "| Split | Target | Horizon | Model | Feature | Parameter set | Mean abs error |",
+            "|---|---|---:|---|---|---:|---:|",
+        ]
+    )
+    for row in hotspot_rows[:10]:
+        lines.append(
+            f"| `{row['split_name']}` | `{row['target_name']}` | `{row['horizon_checkups']}` | "
+            f"`{row['model_level']}` | `{row['feature_group']}` | `{row['parameter_set']}` | "
+            f"`{row['mean_abs_error']}` |"
+        )
+    lines.extend(
+        [
+            "",
+            "Decision: the Milestone 8.2 result remains partial diagnostic endpoint evidence. Do not broaden to architecture or calibrated-risk wording.",
+        ]
+    )
+    out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _write_endpoint_claim_readiness_md(readiness_rows: list[dict[str, Any]], out: Path) -> None:
+    lines = [
+        "# Diagnostic-Horizon Endpoint Claim Readiness",
+        "",
+        "Endpoint-specific statuses are conservative and do not override the overall Milestone 8.2 partial result.",
+        "",
+        "| Target | Status | Primary rows | C-rate rows | Allowed wording |",
+        "|---|---|---:|---:|---|",
+    ]
+    for row in readiness_rows:
+        lines.append(
+            f"| `{row['target_name']}` | `{row['status']}` | "
+            f"`{row['primary_rows_passing_10pct_gain']}/{row['primary_rows']}` | "
+            f"`{row['c_rate_rows_noncollapsed']}/{row['c_rate_rows']}` | "
+            f"{row['allowed_wording']} |"
+        )
+    lines.extend(
+        [
+            "",
+            "Forbidden wording remains: broad endpoint forecasting, capacity+PULSE+EIS architecture, CBAT, calibrated risk or uncertainty, policy ranking, causal effects, and same-cell counterfactuals.",
+        ]
+    )
+    out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _endpoint_allowed_wording(status: str, target: str) -> str:
+    if status == "supported_for_diagnostics":
+        return f"`{target}` supports endpoint-specific diagnostic forecasting under the Milestone 8.2 grouped checks"
+    if status == "partially_supported":
+        return f"`{target}` has partial endpoint-forecasting signal but misses at least one strict guardrail"
+    if status == "diagnostic_only":
+        return f"`{target}` has isolated diagnostic gains only"
+    if status == "not_supported":
+        return f"`{target}` endpoint forecasting is not supported by this gate"
+    return "blocked branch"
+
+
 def _condition_mae_rows(rows: list[dict[str, Any]], abs_errors: list[float]) -> list[dict[str, Any]]:
     grouped: dict[int, list[float]] = defaultdict(list)
     for row, error in zip(rows, abs_errors):
@@ -791,6 +1291,14 @@ def _median(values: list[float]) -> float:
     if len(finite) % 2:
         return finite[midpoint]
     return (finite[midpoint - 1] + finite[midpoint]) / 2.0
+
+
+def _std(values: list[float]) -> float:
+    finite = [float(value) for value in values if math.isfinite(float(value))]
+    if not finite:
+        return math.nan
+    mean = sum(finite) / len(finite)
+    return math.sqrt(sum((value - mean) ** 2 for value in finite) / len(finite))
 
 
 def _safe_ratio(numerator: Any, denominator: Any) -> float | None:

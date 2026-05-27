@@ -1850,3 +1850,48 @@ Validation rules:
   wording. They do not authorize CBAT, broad multimodal architecture,
   calibrated risk/uncertainty, policy ranking, sequence/neural branches,
   causal claims, or same-cell counterfactual claims.
+
+## Milestone 8.2.1 Diagnostic-Horizon Failure Forensics and Endpoint-Specific Claim Finalization
+
+Milestone 8.2.1 is a report-only follow-up to the partial Milestone 8.2 result.
+It explains which scalar PULSE/EIS endpoints and stressor views pass or fail
+the predeclared endpoint-forecasting guardrails. It uses only the existing
+diagnostic-horizon report, prediction Parquet, and diagnostic-horizon target
+table. It does not retrain models, add features, or change the 8.2 gate rules.
+
+Required command:
+
+```bash
+mbp baseline diagnose-diagnostic-horizon \
+  --report reports/baselines/diagnostic_horizon_l0_l2_report.json \
+  --predictions data/processed/diagnostic_horizon_l0_l2_predictions.parquet \
+  --diagnostic-horizon-table data/interim/diagnostic_horizon_table_v1.parquet \
+  --out-dir reports/baselines/diagnostic_horizon_l0_l2
+```
+
+Required artifacts:
+
+- `reports/baselines/diagnostic_horizon_l0_l2/diagnostic_horizon_forensics_report.json`
+- `reports/baselines/diagnostic_horizon_l0_l2/diagnostic_horizon_forensics.md`
+- `reports/baselines/diagnostic_horizon_l0_l2/diagnostic_horizon_endpoint_claim_readiness.md`
+- `reports/baselines/diagnostic_horizon_l0_l2/plots/endpoint_reference_failure_matrix.csv`
+- `reports/baselines/diagnostic_horizon_l0_l2/plots/target_horizon_gain_matrix.csv`
+- `reports/baselines/diagnostic_horizon_l0_l2/plots/c_rate_endpoint_failure_matrix.csv`
+- `reports/baselines/diagnostic_horizon_l0_l2/plots/persistence_ceiling_diagnostics.csv`
+- `reports/baselines/diagnostic_horizon_l0_l2/plots/condition_error_hotspots.csv`
+- `reports/baselines/diagnostic_horizon_l0_l2/plots/diagnostic_horizon_endpoint_claim_readiness.csv`
+
+Validation rules:
+
+- Endpoint-specific support requires all primary horizon-2/3 rows for that
+  endpoint to beat persistence and capacity-state references by at least 10%
+  and all C-rate horizon-2/3 rows to avoid negative gain.
+- Endpoint-specific support does not override the overall 8.2 partial result.
+  If any endpoint fails those checks, broad endpoint-forecasting wording remains
+  unsupported.
+- Persistence-ceiling diagnostics and condition error hotspots are explanatory
+  forensics only. They must not be used to relax the 10% primary-gain rule or
+  the C-rate non-collapse rule.
+- The gate does not authorize CBAT, capacity+PULSE+EIS architecture,
+  calibrated risk/uncertainty, policy ranking, sequence/neural branches,
+  causal claims, or same-cell counterfactual claims.

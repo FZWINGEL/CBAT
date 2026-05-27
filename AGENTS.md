@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 8.2: Multi-horizon diagnostic endpoint forecasting gate.
+Milestone 8.2.1: Diagnostic-horizon failure forensics and endpoint-specific claim finalization.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -131,6 +131,14 @@ Current state:
   the 10% gain rule and 22/24 C-rate rows avoid negative gain. This does not
   authorize CBAT, broad multimodal architecture, calibrated risk/uncertainty,
   policy ranking, sequence/neural branches, or causal claims.
+- Milestone 8.2.1 diagnoses that partial result using the existing 8.2 report,
+  prediction Parquet, and diagnostic-horizon table only. It renders endpoint
+  failure matrices, persistence-ceiling diagnostics, condition error hotspots,
+  and endpoint-specific claim readiness. The result supports selected scalar
+  endpoint forecasting diagnostics only (`eis_z_abs_1kHz`,
+  `nyquist_semicircle_width_proxy`, and `pulse_10ms_resistance`), while broad
+  endpoint forecasting, architecture, calibrated risk/uncertainty, policy,
+  causal, and same-cell counterfactual claims remain blocked.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
@@ -139,6 +147,9 @@ Allowed work:
 - diagnostic-horizon QA and split coverage reports
 - non-neural grouped diagnostic endpoint baselines
 - diagnostic-horizon leakage audits and claim-readiness reports
+- report-only diagnostic-horizon failure forensics over existing predictions
+- endpoint-specific diagnostic-horizon claim finalization
+- persistence-ceiling and condition-hotspot diagnostics for scalar endpoints
 - support-distance diagnostics over existing grouped prediction artifacts
 - non-neural diagnostic-state distillation with predicted PULSE/EIS state
 - train-only inner grouped out-of-fold auxiliary diagnostic predictions

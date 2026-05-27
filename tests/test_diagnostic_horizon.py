@@ -16,7 +16,11 @@ from mbp.baselines import diagnostic_horizon as baseline
 from mbp.baselines.diagnostic_horizon import (
     DIAGNOSTIC_HORIZON_PREDICTION_SCHEMA,
     DiagnosticHorizonFeatureEncoder,
+    diagnose_diagnostic_horizon,
+    diagnostic_horizon_endpoint_readiness_rows,
+    endpoint_reference_failure_rows,
     leakage_audit,
+    persistence_ceiling_rows,
     run_diagnostic_horizon_baselines,
 )
 from mbp.data.schema_contracts import (
@@ -215,8 +219,8 @@ def test_diagnostic_horizon_baseline_smoke(tmp_path: Path) -> None:
         tmp_path / "diagnostic_horizon_predictions.parquet",
         tmp_path / "diagnostic_horizon_reports",
         targets=["pulse_1s_resistance"],
-        model_levels=["DM0_persistence", "DM1_train_mean", "DM2_ridge"],
-        feature_groups=["DH0_time_nominal", "DH3_capacity_plus_prior_same_diagnostic"],
+        model_levels=["DM0_persistence", "DM1_train_mean", "DM2_ridge", "DM3_hist_gradient_boosting"],
+        feature_groups=["DH0_time_nominal", "DH1_capacity_state", "DH3_capacity_plus_prior_same_diagnostic"],
         split_views=["condition_fold"],
         horizons=[1, 2],
         hgb_max_iter=3,
@@ -228,6 +232,17 @@ def test_diagnostic_horizon_baseline_smoke(tmp_path: Path) -> None:
     assert any(row["split_name"] == "all" for row in baseline.leaderboard_rows(report["metrics"]))
     assert (tmp_path / "diagnostic_horizon_reports" / "diagnostic_horizon_claim_readiness.md").exists()
     assert (tmp_path / "diagnostic_horizon_reports" / "plots" / "diagnostic_horizon_reference_gains.csv").exists()
+
+    diagnostic = diagnose_diagnostic_horizon(
+        tmp_path / "diagnostic_horizon_report.json",
+        tmp_path / "diagnostic_horizon_predictions.parquet",
+        horizon_path,
+        tmp_path / "diagnostic_horizon_reports",
+    )
+    assert diagnostic["row_counts"]["endpoint_failure_rows"] > 0
+    assert (tmp_path / "diagnostic_horizon_reports" / "diagnostic_horizon_forensics.md").exists()
+    assert (tmp_path / "diagnostic_horizon_reports" / "diagnostic_horizon_endpoint_claim_readiness.md").exists()
+    assert (tmp_path / "diagnostic_horizon_reports" / "plots" / "persistence_ceiling_diagnostics.csv").exists()
 
 
 def test_diagnostic_horizon_feature_groups_are_prospective(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -264,3 +279,112 @@ def test_diagnostic_horizon_feature_groups_are_prospective(monkeypatch: pytest.M
     assert leakage_audit(["DH3_capacity_plus_prior_same_diagnostic"])["status"] == "failed"
     with pytest.raises(ValueError, match="forbidden future target"):
         DiagnosticHorizonFeatureEncoder.fit(rows, "DH3_capacity_plus_prior_same_diagnostic")
+
+
+def test_diagnostic_horizon_forensics_marks_gate_failures() -> None:
+    gains = [
+        {
+            "target_name": "pulse_1s_resistance",
+            "diagnostic_family": "pulse",
+            "horizon_checkups": 2,
+            "split_name": "all",
+            "reference_name": "persistence",
+            "gain": 0.01,
+            "relative_gain": 0.05,
+        },
+        {
+            "target_name": "pulse_1s_resistance",
+            "diagnostic_family": "pulse",
+            "horizon_checkups": 2,
+            "split_name": "all",
+            "reference_name": "capacity_state",
+            "gain": 0.02,
+            "relative_gain": 0.2,
+        },
+        {
+            "target_name": "pulse_1s_resistance",
+            "diagnostic_family": "pulse",
+            "horizon_checkups": 2,
+            "split_name": "c_rate_holdout_fold",
+            "reference_name": "persistence",
+            "gain": -0.001,
+            "relative_gain": -0.01,
+        },
+    ]
+
+    rows = endpoint_reference_failure_rows(gains)
+    primary_failure = next(row for row in rows if row["is_primary_gate_row"] and row["reference_name"] == "persistence")
+    c_rate_failure = next(row for row in rows if row["is_c_rate_gate_row"])
+    assert primary_failure["failure_reason"] == "primary_gain_below_10pct"
+    assert c_rate_failure["failure_reason"] == "c_rate_negative_gain"
+
+
+def test_diagnostic_horizon_endpoint_readiness_is_conservative() -> None:
+    gains = []
+    for target, relative_gain in (("eis_z_abs_1kHz", 0.2), ("nyquist_im_peak_abs", -0.1)):
+        for split_name in ("all", "c_rate_holdout_fold"):
+            for horizon in (2, 3):
+                for reference in ("persistence", "capacity_state"):
+                    gain = 0.01 if relative_gain > 0 else -0.01
+                    gains.append(
+                        {
+                            "target_name": target,
+                            "diagnostic_family": "eis",
+                            "horizon_checkups": horizon,
+                            "split_name": split_name,
+                            "reference_name": reference,
+                            "gain": gain,
+                            "relative_gain": relative_gain,
+                        }
+                    )
+
+    readiness = diagnostic_horizon_endpoint_readiness_rows(gains)
+    status_by_target = {row["target_name"]: row["status"] for row in readiness}
+    assert status_by_target["eis_z_abs_1kHz"] == "supported_for_diagnostics"
+    assert status_by_target["nyquist_im_peak_abs"] == "not_supported"
+    assert status_by_target["capacity_plus_pulse_eis_architecture"] == "blocked"
+
+
+def test_persistence_ceiling_uses_aggregate_leaderboard_metrics() -> None:
+    horizon_rows = [
+        {
+            "target_name": "pulse_1s_resistance",
+            "diagnostic_family": "pulse",
+            "horizon_checkups": 2,
+            "diagnostic_value_k": 0.1,
+            "diagnostic_value_kh": 0.2,
+        }
+    ]
+    metrics = [
+        {
+            "target_name": "pulse_1s_resistance",
+            "diagnostic_family": "pulse",
+            "horizon_checkups": 2,
+            "split_name": "condition_fold",
+            "model_level": "DM0_persistence",
+            "feature_group": "persistence",
+            "mae": 0.1,
+            "rmse": 0.1,
+            "condition_mean_mae": 0.1,
+            "worst_condition_mae": 0.1,
+            "n_test": 5,
+        },
+        {
+            "target_name": "pulse_1s_resistance",
+            "diagnostic_family": "pulse",
+            "horizon_checkups": 2,
+            "split_name": "c_rate_holdout_fold",
+            "model_level": "DM0_persistence",
+            "feature_group": "persistence",
+            "mae": 0.3,
+            "rmse": 0.3,
+            "condition_mean_mae": 0.3,
+            "worst_condition_mae": 0.3,
+            "n_test": 5,
+        },
+    ]
+
+    rows = persistence_ceiling_rows(horizon_rows, metrics)
+
+    assert rows[0]["all_split_persistence_mae"] == pytest.approx(0.2)
+    assert rows[0]["c_rate_persistence_mae"] == pytest.approx(0.3)

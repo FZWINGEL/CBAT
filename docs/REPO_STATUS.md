@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 8.2: Multi-horizon diagnostic endpoint forecasting gate**.
+The repository is in **Milestone 8.2.1: Diagnostic-horizon failure forensics and endpoint-specific claim finalization**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -288,6 +288,16 @@ shows useful gains in many rows, but the strict claim gate is only
 while 22/24 C-rate rows avoid negative gain. CBAT, broad multimodal
 architecture, calibrated-risk/uncertainty, policy ranking, sequence/neural
 branches, and causal/same-cell counterfactual claims remain blocked.
+Milestone 8.2.1 explains the partial result using the existing diagnostic
+horizon report, prediction Parquet, and target table only. It generates
+432 endpoint-reference forensics rows, target/horizon gain matrices,
+persistence-ceiling diagnostics, condition error hotspots, and endpoint-level
+claim readiness. Endpoint-specific diagnostics are strongest for
+`eis_z_abs_1kHz`, `nyquist_semicircle_width_proxy`, and
+`pulse_10ms_resistance`, which pass the strict endpoint-specific diagnostic
+rows. `eis_phase_1kHz`, `nyquist_im_peak_abs`, and `pulse_1s_resistance`
+remain partial because at least one primary or C-rate guardrail fails. This
+finalizes the gate as selected scalar endpoint diagnostic evidence only.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, unscoped sequence models,
@@ -298,6 +308,14 @@ branch.
 
 Current state:
 
+- Milestone 8.2.1 is a report-only diagnostic-horizon forensics gate over the
+  existing 8.2 report, prediction Parquet, and target table. It adds
+  `mbp baseline diagnose-diagnostic-horizon`,
+  `diagnostic_horizon_forensics.md`,
+  `diagnostic_horizon_endpoint_claim_readiness.md`, and plot-ready CSVs for
+  endpoint failures, target/horizon gains, C-rate failures, persistence
+  ceilings, and condition hotspots. It does not retrain models or create new
+  feature/data products.
 - Milestone 8.2 is a non-neural multi-horizon diagnostic endpoint forecasting
   gate over existing interval, PULSE target, and EIS target tables. It adds
   `mbp analysis build-diagnostic-horizon-table`,
@@ -2201,15 +2219,15 @@ The previous `datetime.utcnow()` deprecation warning in
 
 ## Recommended Next Step
 
-Treat Milestone 8.2 as a partial diagnostic endpoint forecasting gate. Future
-PULSE/EIS scalar endpoints are forecastable in many grouped rows when current
-same-diagnostic state is available, but the full primary reference-gain rule
-and the C-rate non-collapse rule do not pass. This supports only cautious
-diagnostic endpoint-forecasting wording.
+Treat Milestone 8.2.1 as the finalization of the diagnostic-horizon gate.
+Future PULSE/EIS scalar endpoints are forecastable in many grouped rows when
+current same-diagnostic state is available, and selected endpoints pass
+endpoint-specific diagnostic checks. The broad endpoint gate still does not
+fully pass because not every endpoint clears the primary and C-rate guardrails.
 
 The default next step is synthesis/release maintenance or a new, explicitly
 predeclared narrow ML gate only if it answers a charter question without
 weakening the current guardrails. Do not open knee prediction models, broad
 neural/sequence models, CBAT, DRT, EIS embeddings, policy ranking,
 capacity+PULSE+EIS multimodal architecture, calibrated-risk claims, or broad
-causal/mechanistic claims from the Milestone 8.2 result.
+causal/mechanistic claims from the Milestone 8.2/8.2.1 result.

@@ -130,9 +130,10 @@ closes the broad diagnostic-state distillation branch as a negative gate.
    from Milestone 8.1. Predicted diagnostic-state surrogates remain auxiliary
    diagnostics because they do not improve the downstream gates.
 6. Do not open capacity+PULSE+EIS architecture or broad diagnostic endpoint
-   forecasting claims from Milestone 8.2. Future scalar PULSE/EIS endpoints
-   are forecastable in many rows, but the strict primary and C-rate guardrails
-   do not fully pass.
+   forecasting claims from Milestone 8.2/8.2.1. Future scalar PULSE/EIS
+   endpoints are forecastable in many rows, and selected endpoints pass
+   endpoint-specific diagnostic checks, but the broad strict primary and
+   C-rate guardrails do not fully pass.
 
 ## Optional Technical Branch
 
