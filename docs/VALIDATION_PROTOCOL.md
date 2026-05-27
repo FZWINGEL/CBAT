@@ -272,6 +272,16 @@ model families, neural or sequence models, CBAT, DRT, EIS embeddings, policy
 ranking, calibrated-risk wording, calibrated-uncertainty wording, causal
 claims, same-cell counterfactual claims, C-rate fade-solved wording, or broad
 multimodal claims.
+Milestone 5.8 authorizes only a targeted stressor-family router over existing
+Milestone 5.7 attribution arms and predictions. The router may use D2
+adaptive R2/F4 for the C-rate transfer view when its train-only adaptive
+guardrail passes, and D0 R0/F4 for non-C-rate stressor views. It may
+recombine existing outer-fold attribution predictions to avoid redundant model
+fits. It must keep the unchanged 5% outside-C-rate non-degradation guardrail
+and must not be described as broad robust-capacity support, solved C-rate
+fade, F8 attribution support, architecture readiness, policy ranking,
+calibrated-risk wording, calibrated-uncertainty wording, causal claims,
+sequence/neural modeling, CBAT, or broad multimodal claims.
 
 Required split discipline:
 
@@ -467,6 +477,28 @@ Milestone 5.7 claim rules:
 - No Milestone 5.7 outcome authorizes C-rate fade-solved, architecture,
   calibrated-risk, calibrated-uncertainty, policy, causal, sequence/neural,
   CBAT, or broad multimodal claims.
+
+Required Milestone 5.8 stressor-family arm-router artifacts:
+
+- `mbp baseline run-stressor-robust-arm-selector`
+- `reports/baselines/capacity_stressor_robust_arm_selector_report.json`
+- `reports/baselines/capacity_stressor_robust_arm_selector/arm_selector_claim_readiness.md`
+- `reports/baselines/capacity_stressor_robust_arm_selector/arm_selection_summary.csv`
+- `reports/baselines/capacity_stressor_robust_arm_selector/plots/c_rate_selector_gain.csv`
+- `reports/baselines/capacity_stressor_robust_arm_selector/plots/outside_split_degradation.csv`
+- `docs/experiments/2026-05-27_stressor_robust_arm_selector_gate.md`
+
+Milestone 5.8 claim rules:
+
+- Targeted router support requires selector-vs-D0 C-rate `delta_capacity_Ah`
+  gain, paired p05 above zero, <=5% outside-C-rate degradation, and a passed
+  leakage audit.
+- A passing result authorizes only stressor-family routing wording: D2 for
+  known C-rate transfer and D0 elsewhere.
+- It does not authorize global robust-capacity wording, C-rate fade-solved
+  wording, stress-feature attribution, architecture, policy ranking,
+  calibrated-risk, calibrated-uncertainty, causal, sequence/neural, CBAT, or
+  broad multimodal claims.
 
 Required Milestone 4.0 manuscript-integration artifacts:
 
@@ -871,6 +903,17 @@ Milestone 5.7 validation commands:
 - `mbp report check-release-candidate`
 - `git diff --check`
 - generated attribution prediction Parquets under `data/processed/` must
+  remain untracked
+
+Milestone 5.8 validation commands:
+
+- focused tests for stressor-robust arm-selector helpers
+- `mbp baseline run-stressor-robust-arm-selector`
+- `ruff check . --no-cache`
+- `pytest -p no:cacheprovider`
+- `mbp report check-release-candidate`
+- `git diff --check`
+- generated arm-selector prediction Parquets under `data/processed/` must
   remain untracked
 
 Milestone 2.1 EIS validation commands:

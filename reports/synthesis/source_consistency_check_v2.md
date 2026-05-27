@@ -14,11 +14,12 @@ This check covers the Milestone 3.0 synthesis artifacts:
 - `reports/synthesis/next_branch_decision.md`
 
 It has been refreshed after Milestones 5.0, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6,
-and 5.7 to
+5.7, and 5.8 to
 include threshold-warning probability calibration, stressor-axis robust
 capacity, calibration/quantile hygiene, calibration/robustness
 correctness-hardening, Pareto forensics, and train-only adaptive robust
-selection, replication, and attribution-decomposition results.
+selection, replication, attribution-decomposition, and stressor-family routing
+results.
 
 ## Source Artifact Existence
 
@@ -47,6 +48,7 @@ blocked or not supported:
 - stressor-robust training solves C-rate fade globally;
 - adaptive stressor-robust gain is independently attributable to F8 stress
   features;
+- stressor-family routing is a global robust-capacity model;
 - adaptive stressor-robust diagnostics justify architecture or policy;
 - quantile noncrossing validates calibrated uncertainty;
 - equal-frequency ECE validates calibrated risk;
@@ -78,6 +80,8 @@ that replicates across deterministic logical seeds and passes the C-rate gain
 and outside-C-rate non-degradation gate for `delta_capacity_Ah`, but the broad
 C-rate fade-solved claim remains blocked. Milestone 5.7 shows incremental F8
 value under adaptive selection for C-rate delta, but that attribution fails
-outside-C-rate non-degradation and remains diagnostic-only.
+outside-C-rate non-degradation and remains diagnostic-only. Milestone 5.8
+adds targeted D2-for-C-rate/D0-elsewhere routing, but this is not a global
+robust-capacity model.
 Any future calibrated-risk, calibrated-uncertainty, policy, architecture, or
 broad robust-capacity claim requires a separate gated milestone.

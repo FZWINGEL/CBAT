@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 5.7: Stressor-robust attribution and reweighting decomposition gate.
+Milestone 5.8: Stressor-family arm-routing diagnostic gate.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -55,12 +55,16 @@ Current state:
 - Milestone 5.6 replicated the conservative adaptive stressor-robust result
   across the deterministic HGB/no-bagging seed interface and locked only a
   narrow diagnostic `delta_capacity_Ah` robustness claim.
-- The current main-project track decomposes whether the Milestone 5.6 gain is
-  attributable to F8 timestamp-weighted stress features, train-only
-  reweighting, or their combination. It must not relax the 5% guardrail or
-  convert a diagnostic attribution result into a broad C-rate-solved,
-  architecture, policy, calibrated-risk, calibrated-uncertainty, or causal
-  claim.
+- Milestone 5.7 decomposed whether the Milestone 5.6 gain is attributable to
+  F8 timestamp-weighted stress features, train-only reweighting, or their
+  combination. F8 attribution remains diagnostic-only because the incremental
+  F8 comparison fails outside-C-rate non-degradation.
+- The current main-project track evaluates a narrow stressor-family router over
+  existing attribution arms: use train-only D2 adaptive R2/F4 for C-rate
+  transfer when its inner guardrail passes, and route non-C-rate stressor views
+  to D0 R0/F4. It must not be described as broad robust capacity, solved
+  C-rate fade, architecture readiness, policy ranking, calibrated risk,
+  calibrated uncertainty, or causal evidence.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
@@ -91,6 +95,9 @@ Allowed work:
 - stressor-robust attribution decomposition over existing F4/F8 and R0/R2 arms
 - train-only reweighting-only versus stress-feature attribution diagnostics
 - attribution leakage audits using only outer-training rows for selection
+- stressor-family routing over existing D0/D2 attribution arms
+- report-based recombination of existing outer-fold attribution predictions
+- arm-router leakage audits and claim-readiness reporting
 - grouped threshold-warning probability calibration
 - Platt/logistic and isotonic post-hoc calibration fitted on calibration
   conditions only

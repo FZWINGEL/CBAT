@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pyarrow as pa
@@ -11,10 +12,12 @@ from mbp.baselines import stressor_robust_capacity as robust_module
 from mbp.baselines.stressor_robust_capacity import (
     ADAPTIVE_REPLICATION_SCHEMA_VERSION,
     ADAPTIVE_SCHEMA_VERSION,
+    ARM_SELECTOR_SCHEMA_VERSION,
     ATTRIBUTION_SCHEMA_VERSION,
     PARETO_SCHEMA_VERSION,
     SELECTION_TIE_BREAK_ORDER,
     adaptive_replication_claim_readiness,
+    arm_selector_candidate_rows,
     attribution_outside_degradation_rows,
     aggregate_adaptive_weight_selection_rows,
     _condition_bagged_predictions,
@@ -28,14 +31,17 @@ from mbp.baselines.stressor_robust_capacity import (
     pareto_frontier_rows,
     pareto_model_settings,
     replicate_stressor_robust_adaptive,
+    run_stressor_robust_arm_selector,
     run_stressor_robust_attribution,
     run_stressor_robust_adaptive,
     run_stressor_robust_capacity,
     run_stressor_robust_pareto,
     _sample_condition_rows,
+    select_stressor_robust_arm,
     select_adaptive_weight_strength,
     stressor_balanced_weights,
     stressor_robust_adaptive_claim_readiness,
+    stressor_robust_arm_selector_claim_readiness,
     stressor_robust_attribution_claim_readiness,
     stressor_robust_pareto_claim_readiness,
     stressor_robust_claim_readiness,
@@ -810,3 +816,317 @@ def test_stressor_robust_attribution_runner_smoke(tmp_path: Path) -> None:
     assert (out_dir / "attribution_claim_readiness.md").exists()
     assert (out_dir / "attribution_comparisons.csv").exists()
     assert (out_dir / "plots" / "c_rate_attribution.csv").exists()
+
+
+def test_arm_selector_prefers_highest_gain_guarded_candidate() -> None:
+    rows = [
+        {
+            "candidate_arm": "D0_R0_F4_reference",
+            "c_rate_condition_mean_mae_gain": 0.0,
+            "max_other_split_relative_degradation": 0.0,
+            "passes_inner_guardrail": False,
+        },
+        {
+            "candidate_arm": "D2_adaptive_R2_F4_conservative",
+            "c_rate_condition_mean_mae_gain": 0.01,
+            "max_other_split_relative_degradation": 0.02,
+            "passes_inner_guardrail": True,
+        },
+        {
+            "candidate_arm": "D3_adaptive_R2_F8_conservative",
+            "c_rate_condition_mean_mae_gain": 0.02,
+            "max_other_split_relative_degradation": 0.04,
+            "passes_inner_guardrail": True,
+        },
+    ]
+
+    selected = select_stressor_robust_arm(rows)
+
+    assert selected["candidate_arm"] == "D3_adaptive_R2_F8_conservative"
+
+
+def test_arm_selector_falls_back_to_d0_when_no_candidate_passes() -> None:
+    rows = [
+        {
+            "candidate_arm": "D0_R0_F4_reference",
+            "c_rate_condition_mean_mae_gain": 0.0,
+            "max_other_split_relative_degradation": 0.0,
+            "passes_inner_guardrail": False,
+        },
+        {
+            "candidate_arm": "D2_adaptive_R2_F4_conservative",
+            "c_rate_condition_mean_mae_gain": 0.02,
+            "max_other_split_relative_degradation": 0.20,
+            "passes_inner_guardrail": False,
+        },
+    ]
+
+    selected = select_stressor_robust_arm(rows)
+
+    assert selected["candidate_arm"] == "D0_R0_F4_reference"
+
+
+def test_arm_selector_missing_outside_evidence_cannot_pass() -> None:
+    metrics = []
+    predictions = []
+    for parameter_set, reference_pred, candidate_pred in ((1, 2.0, 1.0), (2, 2.0, 1.0)):
+        for arm, model, feature, y_pred in (
+            ("D0_R0_F4_reference", "R0_reference_hgb50", "F4_state_log_age_scalar", reference_pred),
+            (
+                "D2_adaptive_R2_F4_conservative",
+                "R5_train_only_stressor_selected_hgb",
+                "F4_state_log_age_scalar",
+                candidate_pred,
+            ),
+        ):
+            metrics.append(
+                {
+                    "schema_version": ARM_SELECTOR_SCHEMA_VERSION,
+                    "run_scope": "primary",
+                    "model_level": model,
+                    "feature_group": feature,
+                    "model_setting_id": arm,
+                    "target": "delta_capacity_Ah",
+                    "split_name": "c_rate_holdout_fold",
+                    "heldout_fold": 0,
+                    "mae": abs(y_pred),
+                    "rmse": abs(y_pred),
+                    "condition_mean_mae": abs(y_pred),
+                    "condition_median_mae": abs(y_pred),
+                    "worst_condition_mae": abs(y_pred),
+                    "selector_inner_train_validation_overlap_count": 0,
+                    "selector_nested_inner_train_validation_overlap_count": 0,
+                }
+            )
+            predictions.append(
+                {
+                    "schema_version": ARM_SELECTOR_SCHEMA_VERSION,
+                    "run_scope": "primary",
+                    "split_name": "c_rate_holdout_fold",
+                    "target": "delta_capacity_Ah",
+                    "model_level": model,
+                    "feature_group": feature,
+                    "model_setting_id": arm,
+                    "attribution_arm_id": arm,
+                    "heldout_fold": 0,
+                    "parameter_set": parameter_set,
+                    "y_true": 0.0,
+                    "y_pred": y_pred,
+                }
+            )
+
+    rows = arm_selector_candidate_rows(metrics, predictions, bootstrap_resamples=10, seed=1)
+    d2 = next(row for row in rows if row["candidate_arm"] == "D2_adaptive_R2_F4_conservative")
+
+    assert d2["c_rate_condition_mean_mae_gain"] > 0
+    assert d2["max_other_split_relative_degradation"] is None
+    assert d2["passes_inner_guardrail"] is False
+
+
+def test_arm_selector_claim_requires_gain_guardrail_and_leakage() -> None:
+    supported = stressor_robust_arm_selector_claim_readiness(
+        [
+            {
+                "target": "delta_capacity_Ah",
+                "split_name": "c_rate_holdout_fold",
+                "condition_mean_mae_gain": 0.02,
+                "paired_p05": 0.01,
+            }
+        ],
+        [{"target": "delta_capacity_Ah", "max_other_split_relative_degradation": 0.04}],
+        leakage_audit={"status": "passed"},
+    )
+    failed = stressor_robust_arm_selector_claim_readiness(
+        [
+            {
+                "target": "delta_capacity_Ah",
+                "split_name": "c_rate_holdout_fold",
+                "condition_mean_mae_gain": 0.02,
+                "paired_p05": 0.01,
+            }
+        ],
+        [{"target": "delta_capacity_Ah", "max_other_split_relative_degradation": 0.20}],
+        leakage_audit={"status": "passed"},
+    )
+
+    assert supported["arm_selector_claim"] == "supported_for_diagnostics"
+    assert failed["arm_selector_claim"] == "diagnostic_only"
+
+
+def test_stressor_robust_arm_selector_runner_smoke(tmp_path: Path) -> None:
+    interval_path, subset_path = _write_capacity_fixture(tmp_path)
+    report_path = tmp_path / "stressor_robust_arm_selector_report.json"
+    predictions_path = tmp_path / "stressor_robust_arm_selector_predictions.parquet"
+    out_dir = tmp_path / "stressor_robust_arm_selector"
+
+    report = run_stressor_robust_arm_selector(
+        interval_path,
+        subset_path,
+        report_path,
+        predictions_path,
+        stress_features_path=interval_path,
+        out_dir=out_dir,
+        targets=["delta_capacity_Ah"],
+        split_views=["condition_fold"],
+        weight_strengths=[0.5, 1.0],
+        selection_split_views=["condition_fold"],
+        hgb_max_iter=2,
+    )
+
+    metadata = pq.read_table(predictions_path).schema.metadata or {}
+    assert report["status"] == "passed"
+    assert report["schema_version"] == ARM_SELECTOR_SCHEMA_VERSION
+    assert report["row_counts"]["comparison_rows"] > 0
+    assert report["row_counts"]["selection_rows"] > 0
+    assert metadata[b"schema_version"] == ARM_SELECTOR_SCHEMA_VERSION.encode()
+    assert (out_dir / "arm_selector_claim_readiness.md").exists()
+    assert (out_dir / "arm_selection_summary.csv").exists()
+    assert (out_dir / "plots" / "c_rate_selector_gain.csv").exists()
+
+
+def test_stressor_robust_arm_selector_report_based_route(tmp_path: Path) -> None:
+    interval_path, subset_path = _write_capacity_fixture(tmp_path)
+    source_report = tmp_path / "attribution_report.json"
+    source_predictions = tmp_path / "attribution_predictions.parquet"
+    report_path = tmp_path / "arm_selector_report.json"
+    predictions_path = tmp_path / "arm_selector_predictions.parquet"
+
+    def metric(split: str, fold: int, arm: str, mae: float) -> dict[str, object]:
+        model_level = "R2_stressor_balanced_hgb" if arm.startswith("D2") else "R0_reference_hgb50"
+        feature_group = "F4_state_log_age_scalar"
+        return {
+            "schema_version": ATTRIBUTION_SCHEMA_VERSION,
+            "run_scope": "primary",
+            "model_setting_id": arm,
+            "attribution_arm_id": arm,
+            "model_level": model_level,
+            "feature_group": feature_group,
+            "target": "delta_capacity_Ah",
+            "split_name": split,
+            "heldout_fold": fold,
+            "mae": mae,
+            "rmse": mae,
+            "condition_mean_mae": mae,
+            "condition_median_mae": mae,
+            "worst_condition_mae": mae,
+            "train_parameter_sets": 1,
+            "test_parameter_sets": 1,
+            "test_rows": 1,
+            "train_rows": 1,
+        }
+
+    rows = [
+        metric("c_rate_holdout_fold", 0, "D0_R0_F4_reference", 0.10),
+        metric("c_rate_holdout_fold", 0, "D2_adaptive_R2_F4_conservative", 0.07),
+        metric("condition_fold", 0, "D0_R0_F4_reference", 0.08),
+    ]
+    source_report.write_text(
+        json.dumps(
+            {
+                "metrics": rows,
+                "selection_rows": [
+                    {
+                        "schema_version": ATTRIBUTION_SCHEMA_VERSION,
+                        "attribution_arm_id": "D2_adaptive_R2_F4_conservative",
+                        "target": "delta_capacity_Ah",
+                        "outer_split_name": "c_rate_holdout_fold",
+                        "outer_heldout_fold": 0,
+                        "selected_by_train_only_rule": True,
+                        "passes_inner_guardrail": True,
+                        "mean_gain_vs_r0": 0.01,
+                        "max_relative_degradation": 0.03,
+                        "outer_train_condition_count": 1,
+                        "outer_test_condition_count": 1,
+                        "outer_train_test_overlap_count": 0,
+                        "max_inner_train_validation_overlap_count": 0,
+                        "weight_strength": 0.25,
+                    }
+                ],
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    prediction_rows = [
+        {
+            "schema_version": ATTRIBUTION_SCHEMA_VERSION,
+            "subset_name": "baseline_clean_tolerant",
+            "run_scope": "primary",
+            "split_name": "c_rate_holdout_fold",
+            "heldout_fold": 0,
+            "model_level": "R0_reference_hgb50",
+            "feature_group": "F4_state_log_age_scalar",
+            "target": "delta_capacity_Ah",
+            "cell_id": "cell-a",
+            "parameter_set": 1,
+            "replicate_id": 1,
+            "checkup_k": 0,
+            "checkup_k_next": 1,
+            "sensitivity_flagged_monotonicity": False,
+            "y_true": 0.0,
+            "y_pred": 0.10,
+            "model_setting_id": "D0_R0_F4_reference",
+            "attribution_arm_id": "D0_R0_F4_reference",
+        },
+        {
+            "schema_version": ATTRIBUTION_SCHEMA_VERSION,
+            "subset_name": "baseline_clean_tolerant",
+            "run_scope": "primary",
+            "split_name": "c_rate_holdout_fold",
+            "heldout_fold": 0,
+            "model_level": "R2_stressor_balanced_hgb",
+            "feature_group": "F4_state_log_age_scalar",
+            "target": "delta_capacity_Ah",
+            "cell_id": "cell-a",
+            "parameter_set": 1,
+            "replicate_id": 1,
+            "checkup_k": 0,
+            "checkup_k_next": 1,
+            "sensitivity_flagged_monotonicity": False,
+            "y_true": 0.0,
+            "y_pred": 0.07,
+            "model_setting_id": "D2_adaptive_R2_F4_conservative",
+            "attribution_arm_id": "D2_adaptive_R2_F4_conservative",
+        },
+        {
+            "schema_version": ATTRIBUTION_SCHEMA_VERSION,
+            "subset_name": "baseline_clean_tolerant",
+            "run_scope": "primary",
+            "split_name": "condition_fold",
+            "heldout_fold": 0,
+            "model_level": "R0_reference_hgb50",
+            "feature_group": "F4_state_log_age_scalar",
+            "target": "delta_capacity_Ah",
+            "cell_id": "cell-b",
+            "parameter_set": 2,
+            "replicate_id": 1,
+            "checkup_k": 0,
+            "checkup_k_next": 1,
+            "sensitivity_flagged_monotonicity": False,
+            "y_true": 0.0,
+            "y_pred": 0.08,
+            "model_setting_id": "D0_R0_F4_reference",
+            "attribution_arm_id": "D0_R0_F4_reference",
+        },
+    ]
+    pq.write_table(pa.Table.from_pylist(prediction_rows), source_predictions)
+
+    report = run_stressor_robust_arm_selector(
+        interval_path,
+        subset_path,
+        report_path,
+        predictions_path,
+        stress_features_path=interval_path,
+        attribution_report_path=source_report,
+        attribution_predictions_path=source_predictions,
+        targets=["delta_capacity_Ah"],
+        split_views=["condition_fold", "c_rate_holdout_fold"],
+    )
+
+    assert report["claim_readiness"]["arm_selector_claim"] == "supported_for_diagnostics"
+    assert report["claim_readiness"]["max_other_split_relative_degradation"] == 0.0
+    selected = [row for row in report["selection_rows"] if row["selected_by_train_only_rule"]]
+    assert {row["candidate_arm"] for row in selected} == {
+        "D0_R0_F4_reference",
+        "D2_adaptive_R2_F4_conservative",
+    }

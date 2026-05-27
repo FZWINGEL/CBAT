@@ -43,6 +43,7 @@ PARETO_SCHEMA_VERSION = "gate54.stressor_robust_pareto.v1"
 ADAPTIVE_SCHEMA_VERSION = "gate55.stressor_robust_adaptive.v1"
 ADAPTIVE_REPLICATION_SCHEMA_VERSION = "gate56.stressor_robust_adaptive_replication.v1"
 ATTRIBUTION_SCHEMA_VERSION = "gate57.stressor_robust_attribution.v1"
+ARM_SELECTOR_SCHEMA_VERSION = "gate58.stressor_robust_arm_selector.v1"
 ROBUST_MODEL_LEVELS = (
     "R0_reference_hgb50",
     "R1_condition_balanced_hgb",
@@ -115,6 +116,21 @@ ATTRIBUTION_COMPARISONS = (
         "D1_R0_F8_stress_reference",
     ),
 )
+ARM_SELECTOR_MODEL_LEVEL = "R6_train_only_arm_selector_hgb"
+ARM_SELECTOR_MODEL_SETTING_ID = ARM_SELECTOR_MODEL_LEVEL
+ARM_SELECTOR_FEATURE_GROUP = "train_only_arm_selector"
+ARM_SELECTOR_COMPARISON_ID = "selector_vs_d0_f4"
+ARM_SELECTOR_ARM_COMPARISON = {
+    "D1_R0_F8_stress_reference": "raw_f8_stress_feature_value",
+    "D2_adaptive_R2_F4_conservative": "reweighting_only",
+    "D3_adaptive_R2_F8_conservative": "combined_adaptive_f8_vs_f4",
+}
+ARM_SELECTOR_TIE_BREAK_ORDER = {
+    "D2_adaptive_R2_F4_conservative": 0,
+    "D3_adaptive_R2_F8_conservative": 1,
+    "D1_R0_F8_stress_reference": 2,
+    "D0_R0_F4_reference": 3,
+}
 
 
 @dataclass(frozen=True)
@@ -1304,6 +1320,583 @@ def run_stressor_robust_attribution(
         report_dir,
     )
     return report
+
+
+def run_stressor_robust_arm_selector(
+    interval_table_path: Path,
+    interval_subsets_path: Path,
+    out_path: Path,
+    predictions_out_path: Path,
+    *,
+    stress_features_path: Path | None = None,
+    attribution_report_path: Path | None = None,
+    attribution_predictions_path: Path | None = None,
+    out_dir: Path | None = None,
+    subset: str = "baseline_clean_tolerant",
+    seed: int = 42,
+    hgb_max_iter: int = DEFAULT_HGB_MAX_ITER,
+    targets: list[str] | None = None,
+    split_views: list[str] | None = None,
+    weight_strengths: list[float] | None = None,
+    selection_split_views: list[str] | None = None,
+) -> dict[str, Any]:
+    """Evaluate a scoped selector/router over existing stressor-robust arms."""
+    if hgb_max_iter <= 0:
+        raise ValueError("hgb_max_iter must be positive.")
+    selected_targets = _normalize_selection(targets, DIRECT_TARGETS, "target", default=[PRIMARY_TARGET])
+    selected_splits = _normalize_selection(split_views, SPLIT_COLUMNS, "split view")
+    selected_weight_strengths = _normalize_float_grid(
+        weight_strengths,
+        DEFAULT_PARETO_WEIGHT_STRENGTHS,
+        "weight strength",
+    )
+    selected_selection_splits = _normalize_selection(
+        selection_split_views,
+        SPLIT_COLUMNS,
+        "selection split view",
+        default=DEFAULT_ADAPTIVE_SELECTION_SPLITS,
+    )
+    if stress_features_path is None:
+        raise ValueError("Stressor-robust arm selection requires --stress-features for F8.")
+    _import_sklearn_stack()
+    if attribution_report_path is not None or attribution_predictions_path is not None:
+        if attribution_report_path is None or attribution_predictions_path is None:
+            raise ValueError(
+                "Both --attribution-report and --attribution-predictions are required "
+                "for report-based arm selection."
+            )
+        return _run_stressor_robust_arm_selector_from_attribution_artifacts(
+            attribution_report_path,
+            attribution_predictions_path,
+            out_path,
+            predictions_out_path,
+            out_dir=out_dir,
+            subset=subset,
+            seed=seed,
+            hgb_max_iter=hgb_max_iter,
+            targets=selected_targets,
+            split_views=selected_splits,
+            weight_strengths=selected_weight_strengths,
+            selection_split_views=selected_selection_splits,
+        )
+
+    all_rows, subset_rows = load_baseline_rows(
+        interval_table_path,
+        interval_subsets_path,
+        subset,
+        stress_features_path=stress_features_path,
+    )
+    if not subset_rows:
+        raise ValueError("Selected interval subset is empty.")
+
+    metrics: list[dict[str, Any]] = []
+    predictions: list[dict[str, Any]] = []
+    selection_rows: list[dict[str, Any]] = []
+    for split_name in selected_splits:
+        for heldout_fold, train_rows, test_rows in iter_split_instances(subset_rows, split_name):
+            assert_no_parameter_set_leakage(train_rows, test_rows, split_name, heldout_fold)
+            outer_train_sets = {int(row["parameter_set"]) for row in train_rows}
+            outer_test_sets = {int(row["parameter_set"]) for row in test_rows}
+            outer_overlap_count = len(outer_train_sets & outer_test_sets)
+            for target in selected_targets:
+                candidate_rows = _arm_selector_train_only_candidate_rows(
+                    train_rows=train_rows,
+                    target=target,
+                    outer_split_name=split_name,
+                    outer_heldout_fold=heldout_fold,
+                    seed=seed,
+                    hgb_max_iter=hgb_max_iter,
+                    weight_strengths=selected_weight_strengths,
+                    selection_split_views=selected_selection_splits,
+                )
+                selected = select_stressor_robust_arm(candidate_rows)
+                selected_arm = str(selected["candidate_arm"])
+                for row in candidate_rows:
+                    selection_rows.append(
+                        {
+                            **row,
+                            "schema_version": ARM_SELECTOR_SCHEMA_VERSION,
+                            "outer_split_name": split_name,
+                            "outer_heldout_fold": heldout_fold,
+                            "outer_train_condition_count": len(outer_train_sets),
+                            "outer_test_condition_count": len(outer_test_sets),
+                            "outer_train_test_overlap_count": outer_overlap_count,
+                            "target": target,
+                            "selected_by_train_only_rule": row["candidate_arm"] == selected_arm,
+                        }
+                    )
+
+                reference_result = _predict_attribution_arm(
+                    "D0_R0_F4_reference",
+                    train_rows=train_rows,
+                    test_rows=test_rows,
+                    target=target,
+                    split_name=split_name,
+                    heldout_fold=heldout_fold,
+                    seed=seed,
+                    hgb_max_iter=hgb_max_iter,
+                    weight_strengths=selected_weight_strengths,
+                    selection_split_views=selected_selection_splits,
+                )
+                selected_result = reference_result if selected_arm == "D0_R0_F4_reference" else (
+                    _predict_attribution_arm(
+                        selected_arm,
+                        train_rows=train_rows,
+                        test_rows=test_rows,
+                        target=target,
+                        split_name=split_name,
+                        heldout_fold=heldout_fold,
+                        seed=seed,
+                        hgb_max_iter=hgb_max_iter,
+                        weight_strengths=selected_weight_strengths,
+                        selection_split_views=selected_selection_splits,
+                    )
+                )
+                reference_metric = compute_metrics(
+                    test_rows,
+                    reference_result.predictions,
+                    target=target,
+                    subset_name=subset,
+                    run_scope="primary",
+                    split_name=split_name,
+                    heldout_fold=heldout_fold,
+                    model_level="R0_reference_hgb50",
+                    feature_group="F4_state_log_age_scalar",
+                    train_rows=train_rows,
+                )
+                reference_metric.update(
+                    {
+                        "schema_version": ARM_SELECTOR_SCHEMA_VERSION,
+                        "model_setting_id": "D0_R0_F4_reference",
+                        "selected_arm_id": None,
+                        "selection_c_rate_gain": None,
+                        "selection_paired_p05": None,
+                        "selection_max_other_split_relative_degradation": None,
+                    }
+                )
+                selector_metric = compute_metrics(
+                    test_rows,
+                    selected_result.predictions,
+                    target=target,
+                    subset_name=subset,
+                    run_scope="primary",
+                    split_name=split_name,
+                    heldout_fold=heldout_fold,
+                    model_level=ARM_SELECTOR_MODEL_LEVEL,
+                    feature_group=ARM_SELECTOR_FEATURE_GROUP,
+                    train_rows=train_rows,
+                )
+                selector_metric.update(
+                    {
+                        "schema_version": ARM_SELECTOR_SCHEMA_VERSION,
+                        "model_setting_id": ARM_SELECTOR_MODEL_SETTING_ID,
+                        "selected_arm_id": selected_arm,
+                        "selection_c_rate_gain": selected["c_rate_condition_mean_mae_gain"],
+                        "selection_paired_p05": selected["c_rate_paired_p05"],
+                        "selection_max_other_split_relative_degradation": (
+                            selected["max_other_split_relative_degradation"]
+                        ),
+                    }
+                )
+                metrics.extend([reference_metric, selector_metric])
+                predictions.extend(
+                    _arm_selector_prediction_rows(
+                        test_rows,
+                        reference_result.predictions,
+                        subset_name=subset,
+                        split_name=split_name,
+                        heldout_fold=heldout_fold,
+                        model_level="R0_reference_hgb50",
+                        feature_group="F4_state_log_age_scalar",
+                        target=target,
+                        model_setting_id="D0_R0_F4_reference",
+                        selected_arm_id=None,
+                        selected_base_model_level=None,
+                        selected_base_feature_group=None,
+                    )
+                )
+                base_model, base_feature = _attribution_arm_model_feature(selected_arm)
+                predictions.extend(
+                    _arm_selector_prediction_rows(
+                        test_rows,
+                        selected_result.predictions,
+                        subset_name=subset,
+                        split_name=split_name,
+                        heldout_fold=heldout_fold,
+                        model_level=ARM_SELECTOR_MODEL_LEVEL,
+                        feature_group=ARM_SELECTOR_FEATURE_GROUP,
+                        target=target,
+                        model_setting_id=ARM_SELECTOR_MODEL_SETTING_ID,
+                        selected_arm_id=selected_arm,
+                        selected_base_model_level=base_model,
+                        selected_base_feature_group=base_feature,
+                    )
+                )
+
+    if not metrics:
+        raise ValueError("No metrics were generated.")
+    report_dir = out_dir or _default_report_dir(out_path)
+    predictions_out_path.parent.mkdir(parents=True, exist_ok=True)
+    pq.write_table(
+        pa.Table.from_pylist(predictions).replace_schema_metadata(
+            {b"schema_version": ARM_SELECTOR_SCHEMA_VERSION.encode()}
+        ),
+        predictions_out_path,
+    )
+    leaderboard = pareto_leaderboard_rows(metrics)
+    comparison_rows = arm_selector_comparison_rows(metrics, predictions)
+    outside_rows = arm_selector_outside_degradation_rows(comparison_rows)
+    leakage_audit = arm_selector_leakage_audit(selection_rows)
+    claim = stressor_robust_arm_selector_claim_readiness(
+        comparison_rows,
+        outside_rows,
+        leakage_audit=leakage_audit,
+    )
+    report = {
+        "status": "passed",
+        "schema_version": ARM_SELECTOR_SCHEMA_VERSION,
+        "generated_at_utc": datetime.now(UTC).isoformat(),
+        "inputs": {
+            "interval_table": str(interval_table_path),
+            "interval_subsets": str(interval_subsets_path),
+            "stress_features": str(stress_features_path),
+        },
+        "outputs": {
+            "report": str(out_path),
+            "predictions": str(predictions_out_path),
+            "out_dir": str(report_dir),
+        },
+        "subset": subset,
+        "seed": seed,
+        "hgb_max_iter": hgb_max_iter,
+        "targets": selected_targets,
+        "split_views": selected_splits,
+        "weight_strengths": selected_weight_strengths,
+        "selection_split_views": selected_selection_splits,
+        "candidate_arms": list(ATTRIBUTION_ARMS),
+        "row_counts": {
+            "full_interval_rows": len(all_rows),
+            "selected_subset_rows": len(subset_rows),
+            "metrics": len(metrics),
+            "predictions": len(predictions),
+            "selection_rows": len(selection_rows),
+            "comparison_rows": len(comparison_rows),
+            "outside_degradation_rows": len(outside_rows),
+        },
+        "leakage_audit": leakage_audit,
+        "claim_readiness": claim,
+        "metrics": metrics,
+        "comparison_rows": comparison_rows,
+        "outside_degradation_rows": outside_rows,
+        "selection_rows": selection_rows,
+    }
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    render_stressor_robust_arm_selector_artifacts(
+        report,
+        leaderboard,
+        comparison_rows,
+        outside_rows,
+        selection_rows,
+        claim,
+        report_dir,
+    )
+    return report
+
+
+def _run_stressor_robust_arm_selector_from_attribution_artifacts(
+    attribution_report_path: Path,
+    attribution_predictions_path: Path,
+    out_path: Path,
+    predictions_out_path: Path,
+    *,
+    out_dir: Path | None,
+    subset: str,
+    seed: int,
+    hgb_max_iter: int,
+    targets: list[str],
+    split_views: list[str],
+    weight_strengths: list[float],
+    selection_split_views: list[str],
+) -> dict[str, Any]:
+    source_report = json.loads(attribution_report_path.read_text(encoding="utf-8"))
+    source_metrics = [
+        row
+        for row in source_report.get("metrics", [])
+        if row.get("target") in targets and row.get("split_name") in split_views
+    ]
+    source_predictions = [
+        row
+        for row in pq.read_table(attribution_predictions_path).to_pylist()
+        if row.get("target") in targets and row.get("split_name") in split_views
+    ]
+    if not source_metrics or not source_predictions:
+        raise ValueError("Attribution artifacts do not contain selected targets and split views.")
+
+    metric_by_key = {
+        (
+            str(row["target"]),
+            str(row["split_name"]),
+            int(row["heldout_fold"]),
+            str(row["model_setting_id"]),
+        ): row
+        for row in source_metrics
+        if row.get("run_scope") == "primary"
+    }
+    d2_selection_by_key = {
+        (
+            str(row["target"]),
+            str(row["outer_split_name"]),
+            int(row["outer_heldout_fold"]),
+        ): row
+        for row in source_report.get("selection_rows", [])
+        if row.get("attribution_arm_id") == "D2_adaptive_R2_F4_conservative"
+        and bool(row.get("selected_by_train_only_rule"))
+        and row.get("target") in targets
+        and row.get("outer_split_name") in split_views
+    }
+
+    metrics: list[dict[str, Any]] = []
+    predictions: list[dict[str, Any]] = []
+    selection_rows: list[dict[str, Any]] = []
+    d0_keys = sorted(key for key in metric_by_key if key[3] == "D0_R0_F4_reference")
+    for target, split_name, heldout_fold, _setting in d0_keys:
+        reference_source = metric_by_key[(target, split_name, heldout_fold, "D0_R0_F4_reference")]
+        d2_selection = d2_selection_by_key.get((target, split_name, heldout_fold))
+        use_d2 = (
+            split_name == PRIMARY_SPLIT
+            and d2_selection is not None
+            and bool(d2_selection.get("passes_inner_guardrail"))
+        )
+        selected_arm = "D2_adaptive_R2_F4_conservative" if use_d2 else "D0_R0_F4_reference"
+        selected_source = metric_by_key.get((target, split_name, heldout_fold, selected_arm))
+        if selected_source is None:
+            selected_arm = "D0_R0_F4_reference"
+            selected_source = reference_source
+            d2_selection = None
+
+        reference_metric = copy.deepcopy(reference_source)
+        reference_metric.update(
+            {
+                "schema_version": ARM_SELECTOR_SCHEMA_VERSION,
+                "model_setting_id": "D0_R0_F4_reference",
+                "selected_arm_id": None,
+                "selection_c_rate_gain": None,
+                "selection_paired_p05": None,
+                "selection_max_other_split_relative_degradation": None,
+            }
+        )
+        selector_metric = copy.deepcopy(selected_source)
+        selector_metric.update(
+            {
+                "schema_version": ARM_SELECTOR_SCHEMA_VERSION,
+                "model_level": ARM_SELECTOR_MODEL_LEVEL,
+                "feature_group": ARM_SELECTOR_FEATURE_GROUP,
+                "model_setting_id": ARM_SELECTOR_MODEL_SETTING_ID,
+                "selected_arm_id": selected_arm,
+                "selection_c_rate_gain": (
+                    d2_selection.get("mean_gain_vs_r0") if d2_selection is not None else None
+                ),
+                "selection_paired_p05": None,
+                "selection_max_other_split_relative_degradation": (
+                    d2_selection.get("max_relative_degradation") if d2_selection is not None else None
+                ),
+            }
+        )
+        metrics.extend([reference_metric, selector_metric])
+
+        predictions.extend(
+            _copy_arm_selector_source_prediction_rows(
+                source_predictions,
+                target=target,
+                split_name=split_name,
+                heldout_fold=heldout_fold,
+                source_arm="D0_R0_F4_reference",
+                model_level="R0_reference_hgb50",
+                feature_group="F4_state_log_age_scalar",
+                model_setting_id="D0_R0_F4_reference",
+                selected_arm_id=None,
+            )
+        )
+        base_model, base_feature = _attribution_arm_model_feature(selected_arm)
+        predictions.extend(
+            _copy_arm_selector_source_prediction_rows(
+                source_predictions,
+                target=target,
+                split_name=split_name,
+                heldout_fold=heldout_fold,
+                source_arm=selected_arm,
+                model_level=ARM_SELECTOR_MODEL_LEVEL,
+                feature_group=ARM_SELECTOR_FEATURE_GROUP,
+                model_setting_id=ARM_SELECTOR_MODEL_SETTING_ID,
+                selected_arm_id=selected_arm,
+                selected_base_model_level=base_model,
+                selected_base_feature_group=base_feature,
+            )
+        )
+
+        selection_rows.append(
+            {
+                "schema_version": ARM_SELECTOR_SCHEMA_VERSION,
+                "candidate_arm": "D0_R0_F4_reference",
+                "comparison_id": "reference_fallback",
+                "target": target,
+                "outer_split_name": split_name,
+                "outer_heldout_fold": heldout_fold,
+                "passes_inner_guardrail": False,
+                "selected_by_train_only_rule": selected_arm == "D0_R0_F4_reference",
+                "outer_train_condition_count": reference_source.get("train_parameter_sets"),
+                "outer_test_condition_count": reference_source.get("test_parameter_sets"),
+                "outer_train_test_overlap_count": 0,
+                "max_inner_train_validation_overlap_count": 0,
+                "max_nested_inner_train_validation_overlap_count": 0,
+                "selector_rule": "use_d2_for_c_rate_else_d0",
+            }
+        )
+        if d2_selection is not None:
+            selection_rows.append(
+                {
+                    "schema_version": ARM_SELECTOR_SCHEMA_VERSION,
+                    "candidate_arm": "D2_adaptive_R2_F4_conservative",
+                    "comparison_id": "reweighting_only",
+                    "target": target,
+                    "outer_split_name": split_name,
+                    "outer_heldout_fold": heldout_fold,
+                    "c_rate_condition_mean_mae_gain": d2_selection.get("mean_gain_vs_r0"),
+                    "c_rate_paired_p05": None,
+                    "max_other_split_relative_degradation": d2_selection.get(
+                        "max_relative_degradation"
+                    ),
+                    "passes_inner_guardrail": bool(d2_selection.get("passes_inner_guardrail")),
+                    "selected_by_train_only_rule": selected_arm == "D2_adaptive_R2_F4_conservative",
+                    "outer_train_condition_count": d2_selection.get("outer_train_condition_count"),
+                    "outer_test_condition_count": d2_selection.get("outer_test_condition_count"),
+                    "outer_train_test_overlap_count": d2_selection.get(
+                        "outer_train_test_overlap_count",
+                        0,
+                    ),
+                    "max_inner_train_validation_overlap_count": d2_selection.get(
+                        "max_inner_train_validation_overlap_count",
+                        0,
+                    ),
+                    "max_nested_inner_train_validation_overlap_count": d2_selection.get(
+                        "max_inner_train_validation_overlap_count",
+                        0,
+                    ),
+                    "selected_weight_strength": d2_selection.get("weight_strength"),
+                    "selector_rule": "use_d2_for_c_rate_else_d0",
+                }
+            )
+
+    if not metrics:
+        raise ValueError("No arm-selector metrics were generated from attribution artifacts.")
+    if not predictions:
+        raise ValueError("No arm-selector predictions were generated from attribution artifacts.")
+    predictions_out_path.parent.mkdir(parents=True, exist_ok=True)
+    pq.write_table(
+        pa.Table.from_pylist(predictions).replace_schema_metadata(
+            {b"schema_version": ARM_SELECTOR_SCHEMA_VERSION.encode()}
+        ),
+        predictions_out_path,
+    )
+
+    leaderboard = pareto_leaderboard_rows(metrics)
+    comparison_rows = arm_selector_comparison_rows(metrics, predictions)
+    outside_rows = arm_selector_outside_degradation_rows(comparison_rows)
+    leakage_audit = arm_selector_leakage_audit(selection_rows)
+    claim = stressor_robust_arm_selector_claim_readiness(
+        comparison_rows,
+        outside_rows,
+        leakage_audit=leakage_audit,
+    )
+    report_dir = out_dir or out_path.with_suffix("")
+    report = {
+        "status": "passed",
+        "schema_version": ARM_SELECTOR_SCHEMA_VERSION,
+        "generated_at_utc": datetime.now(UTC).isoformat(),
+        "inputs": {
+            "attribution_report": str(attribution_report_path),
+            "attribution_predictions": str(attribution_predictions_path),
+        },
+        "outputs": {
+            "report": str(out_path),
+            "predictions": str(predictions_out_path),
+            "out_dir": str(report_dir),
+        },
+        "subset": subset,
+        "seed": seed,
+        "hgb_max_iter": hgb_max_iter,
+        "targets": targets,
+        "split_views": split_views,
+        "weight_strengths": weight_strengths,
+        "selection_split_views": selection_split_views,
+        "selector_rule": "use_d2_for_c_rate_else_d0",
+        "candidate_arms": ["D0_R0_F4_reference", "D2_adaptive_R2_F4_conservative"],
+        "row_counts": {
+            "metrics": len(metrics),
+            "predictions": len(predictions),
+            "selection_rows": len(selection_rows),
+            "comparison_rows": len(comparison_rows),
+            "outside_degradation_rows": len(outside_rows),
+        },
+        "leakage_audit": leakage_audit,
+        "claim_readiness": claim,
+        "metrics": metrics,
+        "comparison_rows": comparison_rows,
+        "outside_degradation_rows": outside_rows,
+        "selection_rows": selection_rows,
+    }
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    render_stressor_robust_arm_selector_artifacts(
+        report,
+        leaderboard,
+        comparison_rows,
+        outside_rows,
+        selection_rows,
+        claim,
+        report_dir,
+    )
+    return report
+
+
+def _copy_arm_selector_source_prediction_rows(
+    source_predictions: list[dict[str, Any]],
+    *,
+    target: str,
+    split_name: str,
+    heldout_fold: int,
+    source_arm: str,
+    model_level: str,
+    feature_group: str,
+    model_setting_id: str,
+    selected_arm_id: str | None,
+    selected_base_model_level: str | None = None,
+    selected_base_feature_group: str | None = None,
+) -> list[dict[str, Any]]:
+    output = []
+    for row in source_predictions:
+        if (
+            row.get("target") != target
+            or row.get("split_name") != split_name
+            or int(row.get("heldout_fold", -1)) != heldout_fold
+            or row.get("attribution_arm_id") != source_arm
+        ):
+            continue
+        copied = copy.deepcopy(row)
+        copied.update(
+            {
+                "schema_version": ARM_SELECTOR_SCHEMA_VERSION,
+                "model_level": model_level,
+                "feature_group": feature_group,
+                "model_setting_id": model_setting_id,
+                "selected_arm_id": selected_arm_id,
+                "selected_base_model_level": selected_base_model_level,
+                "selected_base_feature_group": selected_base_feature_group,
+            }
+        )
+        output.append(copied)
+    return output
 
 
 def predict_stressor_robust_capacity_target(
@@ -2682,6 +3275,592 @@ def _selected_weight_count_string(selection_rows: list[dict[str, Any]]) -> str:
     return ";".join(f"{weight}:{counts[weight]}" for weight in sorted(counts))
 
 
+def _predict_attribution_arm(
+    arm_id: str,
+    *,
+    train_rows: list[dict[str, Any]],
+    test_rows: list[dict[str, Any]],
+    target: str,
+    split_name: str,
+    heldout_fold: int,
+    seed: int,
+    hgb_max_iter: int,
+    weight_strengths: list[float],
+    selection_split_views: list[str],
+) -> RobustPredictionResult:
+    if arm_id == "D0_R0_F4_reference":
+        return predict_stressor_robust_capacity_target(
+            model_level="R0_reference_hgb50",
+            feature_group="F4_state_log_age_scalar",
+            train_rows=train_rows,
+            test_rows=test_rows,
+            target=target,
+            split_name=split_name,
+            heldout_fold=heldout_fold,
+            seed=seed,
+            hgb_max_iter=hgb_max_iter,
+            bag_count=1,
+        )
+    if arm_id == "D1_R0_F8_stress_reference":
+        return predict_stressor_robust_capacity_target(
+            model_level="R0_reference_hgb50",
+            feature_group="F8_timestamp_weighted_stress",
+            train_rows=train_rows,
+            test_rows=test_rows,
+            target=target,
+            split_name=split_name,
+            heldout_fold=heldout_fold,
+            seed=seed,
+            hgb_max_iter=hgb_max_iter,
+            bag_count=1,
+        )
+    if arm_id == "D2_adaptive_R2_F4_conservative":
+        return predict_adaptive_stressor_robust_capacity_target(
+            feature_group="F4_state_log_age_scalar",
+            train_rows=train_rows,
+            test_rows=test_rows,
+            target=target,
+            split_name=split_name,
+            heldout_fold=heldout_fold,
+            seed=seed,
+            hgb_max_iter=hgb_max_iter,
+            weight_strengths=weight_strengths,
+            selection_split_views=selection_split_views,
+            selection_policy="conservative_guarded",
+        )
+    if arm_id == "D3_adaptive_R2_F8_conservative":
+        return predict_adaptive_stressor_robust_capacity_target(
+            feature_group="F8_timestamp_weighted_stress",
+            train_rows=train_rows,
+            test_rows=test_rows,
+            target=target,
+            split_name=split_name,
+            heldout_fold=heldout_fold,
+            seed=seed,
+            hgb_max_iter=hgb_max_iter,
+            weight_strengths=weight_strengths,
+            selection_split_views=selection_split_views,
+            selection_policy="conservative_guarded",
+        )
+    raise ValueError(f"Unknown attribution arm: {arm_id}")
+
+
+def _arm_selector_train_only_candidate_rows(
+    *,
+    train_rows: list[dict[str, Any]],
+    target: str,
+    outer_split_name: str,
+    outer_heldout_fold: int,
+    seed: int,
+    hgb_max_iter: int,
+    weight_strengths: list[float],
+    selection_split_views: list[str],
+) -> list[dict[str, Any]]:
+    metrics: list[dict[str, Any]] = []
+    predictions: list[dict[str, Any]] = []
+    for selection_split in selection_split_views:
+        try:
+            inner_instances = iter_split_instances(train_rows, selection_split)
+        except ValueError:
+            continue
+        for inner_heldout_fold, inner_train, inner_validation in inner_instances:
+            if not inner_train or not inner_validation:
+                continue
+            assert_no_parameter_set_leakage(
+                inner_train,
+                inner_validation,
+                f"arm_selector_{selection_split}",
+                inner_heldout_fold,
+            )
+            inner_train_sets = {int(row["parameter_set"]) for row in inner_train}
+            inner_validation_sets = {int(row["parameter_set"]) for row in inner_validation}
+            inner_overlap_count = len(inner_train_sets & inner_validation_sets)
+            for arm_id in ("D0_R0_F4_reference", "D1_R0_F8_stress_reference"):
+                arm_seed = _variant_seed(
+                    seed,
+                    "arm_selector_inner",
+                    outer_split_name,
+                    outer_heldout_fold,
+                    selection_split,
+                    inner_heldout_fold,
+                    arm_id,
+                )
+                result = _predict_attribution_arm(
+                    arm_id,
+                    train_rows=inner_train,
+                    test_rows=inner_validation,
+                    target=target,
+                    split_name=selection_split,
+                    heldout_fold=inner_heldout_fold,
+                    seed=arm_seed,
+                    hgb_max_iter=hgb_max_iter,
+                    weight_strengths=weight_strengths,
+                    selection_split_views=selection_split_views,
+                )
+                model_level, feature_group = _attribution_arm_model_feature(arm_id)
+                metric = compute_metrics(
+                    inner_validation,
+                    result.predictions,
+                    target=target,
+                    subset_name="arm_selector_inner_validation",
+                    run_scope="primary",
+                    split_name=selection_split,
+                    heldout_fold=inner_heldout_fold,
+                    model_level=model_level,
+                    feature_group=feature_group,
+                    train_rows=inner_train,
+                )
+                metric.update(
+                    {
+                        "schema_version": ARM_SELECTOR_SCHEMA_VERSION,
+                        "model_setting_id": arm_id,
+                        "attribution_arm_id": arm_id,
+                        "selector_outer_split_name": outer_split_name,
+                        "selector_outer_heldout_fold": outer_heldout_fold,
+                        "selector_inner_train_condition_count": len(inner_train_sets),
+                        "selector_inner_validation_condition_count": len(inner_validation_sets),
+                        "selector_inner_train_validation_overlap_count": inner_overlap_count,
+                        "selector_nested_inner_train_validation_overlap_count": 0,
+                        "selected_weight_strength": result.selected_weight_strength,
+                    }
+                )
+                metrics.append(metric)
+                rows = _attribution_prediction_rows(
+                    inner_validation,
+                    result.predictions,
+                    subset_name="arm_selector_inner_validation",
+                    split_name=selection_split,
+                    heldout_fold=inner_heldout_fold,
+                    model_level=model_level,
+                    feature_group=feature_group,
+                    target=target,
+                    attribution_arm_id=arm_id,
+                    selected_weight_strength=result.selected_weight_strength,
+                    selection_mean_gain=result.selection_mean_gain,
+                    selection_max_relative_degradation=result.selection_max_relative_degradation,
+                )
+                for row in rows:
+                    row["schema_version"] = ARM_SELECTOR_SCHEMA_VERSION
+                predictions.extend(rows)
+    if not metrics:
+        raise ValueError("Arm selector produced no inner-validation rows.")
+    comparison_rows = attribution_comparison_rows(
+        metrics,
+        predictions,
+        bootstrap_resamples=1000,
+        seed=seed,
+    )
+    comparison_rows.extend(
+        _arm_selector_adaptive_comparison_rows(
+            train_rows=train_rows,
+            direct_metrics=metrics,
+            target=target,
+            outer_split_name=outer_split_name,
+            outer_heldout_fold=outer_heldout_fold,
+            seed=seed,
+            hgb_max_iter=hgb_max_iter,
+            weight_strengths=weight_strengths,
+            selection_split_views=selection_split_views,
+        )
+    )
+    return _arm_selector_candidate_rows_from_comparisons(
+        metrics,
+        comparison_rows,
+        target=target,
+    )
+
+
+def _arm_selector_adaptive_comparison_rows(
+    *,
+    train_rows: list[dict[str, Any]],
+    direct_metrics: list[dict[str, Any]],
+    target: str,
+    outer_split_name: str,
+    outer_heldout_fold: int,
+    seed: int,
+    hgb_max_iter: int,
+    weight_strengths: list[float],
+    selection_split_views: list[str],
+) -> list[dict[str, Any]]:
+    d0_by_split_fold = {
+        (str(row["split_name"]), int(row["heldout_fold"])): row
+        for row in direct_metrics
+        if row.get("model_setting_id") == "D0_R0_F4_reference" and row.get("target") == target
+    }
+    rows: list[dict[str, Any]] = []
+    for arm_id, feature_group in (
+        ("D2_adaptive_R2_F4_conservative", "F4_state_log_age_scalar"),
+        ("D3_adaptive_R2_F8_conservative", "F8_timestamp_weighted_stress"),
+    ):
+        arm_seed = _variant_seed(
+            seed,
+            "arm_selector_adaptive_candidate",
+            outer_split_name,
+            outer_heldout_fold,
+            arm_id,
+        )
+        raw_rows = raw_adaptive_weight_selection_rows(
+            train_rows=train_rows,
+            feature_group=feature_group,
+            target=target,
+            split_name=outer_split_name,
+            heldout_fold=outer_heldout_fold,
+            seed=arm_seed,
+            hgb_max_iter=hgb_max_iter,
+            weight_strengths=weight_strengths,
+            selection_split_views=selection_split_views,
+        )
+        if not raw_rows:
+            continue
+        selection_rows = aggregate_adaptive_weight_selection_rows(
+            raw_rows,
+            selection_policy="conservative_guarded",
+        )
+        selected = select_adaptive_weight_strength(selection_rows, policy="conservative_guarded")
+        selected_strength = _as_float(selected["weight_strength"])
+        selected_rows = [
+            row for row in raw_rows if _as_float(row["weight_strength"]) == selected_strength
+        ]
+        by_split: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        for row in selected_rows:
+            by_split[str(row["selection_split_name"])].append(row)
+        for split_name, group in sorted(by_split.items()):
+            paired_gains = []
+            reference_values = []
+            candidate_values = []
+            max_overlap = 0
+            for row in group:
+                fold = int(row["selection_heldout_fold"])
+                d0_metric = d0_by_split_fold.get((split_name, fold))
+                if d0_metric is None:
+                    continue
+                reference_mae = _as_float(d0_metric["condition_mean_mae"])
+                candidate_mae = _as_float(row["candidate_condition_mean_mae"])
+                reference_values.append(reference_mae)
+                candidate_values.append(candidate_mae)
+                paired_gains.append(reference_mae - candidate_mae)
+                max_overlap = max(
+                    max_overlap,
+                    int(row.get("inner_train_validation_overlap_count", 0)),
+                )
+            if not paired_gains:
+                continue
+            reference_mae = _mean(reference_values)
+            candidate_mae = _mean(candidate_values)
+            rows.append(
+                {
+                    "schema_version": ARM_SELECTOR_SCHEMA_VERSION,
+                    "comparison_id": ARM_SELECTOR_ARM_COMPARISON[arm_id],
+                    "candidate_arm": arm_id,
+                    "reference_arm": "D0_R0_F4_reference",
+                    "target": target,
+                    "split_name": split_name,
+                    "candidate_condition_mean_mae": candidate_mae,
+                    "reference_condition_mean_mae": reference_mae,
+                    "condition_mean_mae_gain": reference_mae - candidate_mae,
+                    "relative_degradation": (
+                        (candidate_mae - reference_mae) / reference_mae if reference_mae > 0 else None
+                    ),
+                    "paired_condition_count": len(paired_gains),
+                    "paired_mean_gain": _mean(paired_gains),
+                    "paired_p05": _bootstrap_mean_p05(paired_gains, resamples=1000, seed=seed),
+                    "selected_weight_strength": selected_strength,
+                    "selector_inner_train_validation_overlap_count": max_overlap,
+                    "selector_nested_inner_train_validation_overlap_count": max_overlap,
+                }
+            )
+    return rows
+
+
+def _arm_selector_inner_rows(
+    *,
+    train_rows: list[dict[str, Any]],
+    target: str,
+    outer_split_name: str,
+    outer_heldout_fold: int,
+    seed: int,
+    hgb_max_iter: int,
+    weight_strengths: list[float],
+    selection_split_views: list[str],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    metrics: list[dict[str, Any]] = []
+    predictions: list[dict[str, Any]] = []
+    for selection_split in selection_split_views:
+        try:
+            inner_instances = iter_split_instances(train_rows, selection_split)
+        except ValueError:
+            continue
+        for inner_heldout_fold, inner_train, inner_validation in inner_instances:
+            if not inner_train or not inner_validation:
+                continue
+            assert_no_parameter_set_leakage(
+                inner_train,
+                inner_validation,
+                f"arm_selector_{selection_split}",
+                inner_heldout_fold,
+            )
+            inner_train_sets = {int(row["parameter_set"]) for row in inner_train}
+            inner_validation_sets = {int(row["parameter_set"]) for row in inner_validation}
+            inner_overlap_count = len(inner_train_sets & inner_validation_sets)
+            for arm_id in ATTRIBUTION_ARMS:
+                arm_seed = _variant_seed(
+                    seed,
+                    "arm_selector_inner",
+                    outer_split_name,
+                    outer_heldout_fold,
+                    selection_split,
+                    inner_heldout_fold,
+                    arm_id,
+                )
+                try:
+                    result = _predict_attribution_arm(
+                        arm_id,
+                        train_rows=inner_train,
+                        test_rows=inner_validation,
+                        target=target,
+                        split_name=selection_split,
+                        heldout_fold=inner_heldout_fold,
+                        seed=arm_seed,
+                        hgb_max_iter=hgb_max_iter,
+                        weight_strengths=weight_strengths,
+                        selection_split_views=selection_split_views,
+                    )
+                except ValueError as exc:
+                    if "inner-validation rows" not in str(exc):
+                        raise
+                    continue
+                model_level, feature_group = _attribution_arm_model_feature(arm_id)
+                metric = compute_metrics(
+                    inner_validation,
+                    result.predictions,
+                    target=target,
+                    subset_name="arm_selector_inner_validation",
+                    run_scope="primary",
+                    split_name=selection_split,
+                    heldout_fold=inner_heldout_fold,
+                    model_level=model_level,
+                    feature_group=feature_group,
+                    train_rows=inner_train,
+                )
+                nested_overlaps = [
+                    int(row.get("max_inner_train_validation_overlap_count", 0))
+                    for row in result.selection_rows or []
+                ]
+                metric.update(
+                    {
+                        "schema_version": ARM_SELECTOR_SCHEMA_VERSION,
+                        "model_setting_id": arm_id,
+                        "attribution_arm_id": arm_id,
+                        "selector_outer_split_name": outer_split_name,
+                        "selector_outer_heldout_fold": outer_heldout_fold,
+                        "selector_inner_train_condition_count": len(inner_train_sets),
+                        "selector_inner_validation_condition_count": len(inner_validation_sets),
+                        "selector_inner_train_validation_overlap_count": inner_overlap_count,
+                        "selector_nested_inner_train_validation_overlap_count": max(
+                            nested_overlaps,
+                            default=0,
+                        ),
+                        "selected_weight_strength": result.selected_weight_strength,
+                    }
+                )
+                metrics.append(metric)
+                rows = _attribution_prediction_rows(
+                    inner_validation,
+                    result.predictions,
+                    subset_name="arm_selector_inner_validation",
+                    split_name=selection_split,
+                    heldout_fold=inner_heldout_fold,
+                    model_level=model_level,
+                    feature_group=feature_group,
+                    target=target,
+                    attribution_arm_id=arm_id,
+                    selected_weight_strength=result.selected_weight_strength,
+                    selection_mean_gain=result.selection_mean_gain,
+                    selection_max_relative_degradation=result.selection_max_relative_degradation,
+                )
+                for row in rows:
+                    row["schema_version"] = ARM_SELECTOR_SCHEMA_VERSION
+                predictions.extend(rows)
+    if not metrics:
+        raise ValueError("Arm selector produced no inner-validation rows.")
+    return metrics, predictions
+
+
+def arm_selector_candidate_rows(
+    metrics: list[dict[str, Any]],
+    predictions: list[dict[str, Any]],
+    *,
+    target: str = PRIMARY_TARGET,
+    bootstrap_resamples: int = 1000,
+    seed: int = 42,
+) -> list[dict[str, Any]]:
+    comparison_rows = attribution_comparison_rows(
+        metrics,
+        predictions,
+        bootstrap_resamples=bootstrap_resamples,
+        seed=seed,
+    )
+    return _arm_selector_candidate_rows_from_comparisons(
+        metrics,
+        comparison_rows,
+        target=target,
+    )
+
+
+def _arm_selector_candidate_rows_from_comparisons(
+    metrics: list[dict[str, Any]],
+    comparison_rows: list[dict[str, Any]],
+    *,
+    target: str,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for arm_id in ATTRIBUTION_ARMS:
+        candidate_metrics = [row for row in metrics if row.get("model_setting_id") == arm_id]
+        candidate_comparisons = [
+            row for row in comparison_rows if row.get("candidate_arm") == arm_id and row.get("target") == target
+        ]
+        max_inner_overlap = max(
+            (
+                int(
+                    row.get(
+                        "selector_inner_train_validation_overlap_count",
+                        row.get("max_inner_train_validation_overlap_count", 0),
+                    )
+                )
+                for row in [*candidate_metrics, *candidate_comparisons]
+            ),
+            default=0,
+        )
+        max_nested_overlap = max(
+            (
+                int(
+                    row.get(
+                        "selector_nested_inner_train_validation_overlap_count",
+                        row.get("max_nested_inner_train_validation_overlap_count", 0),
+                    )
+                )
+                for row in [*candidate_metrics, *candidate_comparisons]
+            ),
+            default=0,
+        )
+        selected_weight_values = [
+            row.get("selected_weight_strength")
+            for row in [*candidate_metrics, *candidate_comparisons]
+            if row.get("selected_weight_strength") is not None
+        ]
+        if arm_id == "D0_R0_F4_reference":
+            rows.append(
+                {
+                    "schema_version": ARM_SELECTOR_SCHEMA_VERSION,
+                    "candidate_arm": arm_id,
+                    "comparison_id": "reference_fallback",
+                    "target": target,
+                    "c_rate_condition_mean_mae_gain": 0.0,
+                    "c_rate_paired_p05": 0.0,
+                    "max_other_split_relative_degradation": 0.0,
+                    "inner_validation_rows": len(candidate_metrics),
+                    "outside_split_rows": len(
+                        {
+                            str(row["split_name"])
+                            for row in candidate_metrics
+                            if row["target"] == target and row["split_name"] != PRIMARY_SPLIT
+                        }
+                    ),
+                    "passes_inner_guardrail": False,
+                    "selection_score": 0.0,
+                    "max_inner_train_validation_overlap_count": max_inner_overlap,
+                    "max_nested_inner_train_validation_overlap_count": max_nested_overlap,
+                    "selected_weight_strength": None,
+                    "selected_by_train_only_rule": False,
+                }
+            )
+            continue
+        comparison_id = ARM_SELECTOR_ARM_COMPARISON[arm_id]
+        c_rate_row = _find_attribution_comparison(
+            comparison_rows,
+            comparison_id,
+            target,
+            PRIMARY_SPLIT,
+        )
+        outside_rows = [
+            row
+            for row in comparison_rows
+            if row["comparison_id"] == comparison_id
+            and row["target"] == target
+            and row["split_name"] != PRIMARY_SPLIT
+            and row.get("relative_degradation") is not None
+        ]
+        max_degradation = max(
+            (_as_float(row["relative_degradation"]) for row in outside_rows),
+            default=None,
+        )
+        c_rate_gain = c_rate_row["condition_mean_mae_gain"] if c_rate_row else None
+        c_rate_p05 = c_rate_row["paired_p05"] if c_rate_row else None
+        passes = (
+            c_rate_gain is not None
+            and c_rate_p05 is not None
+            and max_degradation is not None
+            and _as_float(c_rate_gain) > 0
+            and _as_float(c_rate_p05) > 0
+            and _as_float(max_degradation) <= ADAPTIVE_NON_DEGRADATION_THRESHOLD
+        )
+        selection_score = _arm_selector_selection_score(c_rate_gain, max_degradation)
+        rows.append(
+            {
+                "schema_version": ARM_SELECTOR_SCHEMA_VERSION,
+                "candidate_arm": arm_id,
+                "comparison_id": comparison_id,
+                "target": target,
+                "c_rate_condition_mean_mae_gain": c_rate_gain,
+                "c_rate_paired_p05": c_rate_p05,
+                "max_other_split_relative_degradation": max_degradation,
+                "inner_validation_rows": len(candidate_metrics),
+                "outside_split_rows": len(outside_rows),
+                "passes_inner_guardrail": passes,
+                "selection_score": selection_score,
+                "max_inner_train_validation_overlap_count": max_inner_overlap,
+                "max_nested_inner_train_validation_overlap_count": max_nested_overlap,
+                "selected_weight_strength": (
+                    _as_float(selected_weight_values[0]) if selected_weight_values else None
+                ),
+                "selected_by_train_only_rule": False,
+            }
+        )
+    if not rows:
+        raise ValueError("Arm selector produced no candidate rows.")
+    selected = select_stressor_robust_arm(rows)
+    for row in rows:
+        row["selected_by_train_only_rule"] = row["candidate_arm"] == selected["candidate_arm"]
+    return rows
+
+
+def select_stressor_robust_arm(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    if not rows:
+        raise ValueError("Cannot select a stressor-robust arm from no rows.")
+    guarded = [row for row in rows if bool(row.get("passes_inner_guardrail"))]
+    if guarded:
+        return max(
+            guarded,
+            key=lambda row: (
+                _finite_or(row.get("c_rate_condition_mean_mae_gain"), -math.inf),
+                -_finite_or(row.get("max_other_split_relative_degradation"), math.inf),
+                -ARM_SELECTOR_TIE_BREAK_ORDER[str(row["candidate_arm"])],
+            ),
+        )
+    fallback = next((row for row in rows if row["candidate_arm"] == "D0_R0_F4_reference"), None)
+    if fallback is None:
+        raise ValueError("Arm selector fallback D0_R0_F4_reference is missing.")
+    return fallback
+
+
+def _arm_selector_selection_score(c_rate_gain: Any, max_degradation: Any) -> float | None:
+    if c_rate_gain is None or max_degradation is None:
+        return None
+    degradation = _as_float(max_degradation)
+    excess = max(0.0, degradation - ADAPTIVE_NON_DEGRADATION_THRESHOLD)
+    return _as_float(c_rate_gain) - excess
+
+
 def attribution_comparison_rows(
     metrics: list[dict[str, Any]],
     predictions: list[dict[str, Any]],
@@ -3079,6 +4258,236 @@ def _attribution_prediction_rows(
         row["schema_version"] = ATTRIBUTION_SCHEMA_VERSION
         row["attribution_arm_id"] = attribution_arm_id
     return rows
+
+
+def _arm_selector_prediction_rows(
+    test_rows: list[dict[str, Any]],
+    predictions: list[dict[str, float | None]],
+    *,
+    subset_name: str,
+    split_name: str,
+    heldout_fold: int,
+    model_level: str,
+    feature_group: str,
+    target: str,
+    model_setting_id: str,
+    selected_arm_id: str | None,
+    selected_base_model_level: str | None,
+    selected_base_feature_group: str | None,
+) -> list[dict[str, Any]]:
+    rows = _robust_prediction_rows(
+        test_rows,
+        predictions,
+        subset_name=subset_name,
+        run_scope="primary",
+        split_name=split_name,
+        heldout_fold=heldout_fold,
+        model_level=model_level,
+        feature_group=feature_group,
+        target=target,
+    )
+    for row in rows:
+        row.update(
+            {
+                "schema_version": ARM_SELECTOR_SCHEMA_VERSION,
+                "model_setting_id": model_setting_id,
+                "selected_arm_id": selected_arm_id,
+                "selected_base_model_level": selected_base_model_level,
+                "selected_base_feature_group": selected_base_feature_group,
+            }
+        )
+    return rows
+
+
+def arm_selector_comparison_rows(
+    metrics: list[dict[str, Any]],
+    predictions: list[dict[str, Any]],
+    *,
+    bootstrap_resamples: int = 1000,
+    seed: int = 42,
+) -> list[dict[str, Any]]:
+    leaderboard = pareto_leaderboard_rows(metrics)
+    leaderboard_by_key = {
+        (
+            str(row["run_scope"]),
+            str(row["split_name"]),
+            str(row["target"]),
+            str(row["model_setting_id"]),
+        ): row
+        for row in leaderboard
+    }
+    condition_errors = _condition_mae_by_selector_setting(predictions)
+    output: list[dict[str, Any]] = []
+    split_targets = sorted({(str(row["split_name"]), str(row["target"])) for row in metrics})
+    for split_name, target in split_targets:
+        candidate = leaderboard_by_key.get(
+            ("primary", split_name, target, ARM_SELECTOR_MODEL_SETTING_ID)
+        )
+        reference = leaderboard_by_key.get(("primary", split_name, target, "D0_R0_F4_reference"))
+        if candidate is None or reference is None:
+            continue
+        paired_gains = []
+        paired_keys = [
+            key
+            for key in condition_errors
+            if key[0] == "primary"
+            and key[1] == split_name
+            and key[2] == target
+            and key[3] == ARM_SELECTOR_MODEL_SETTING_ID
+        ]
+        for key in paired_keys:
+            _run_scope, _split_name, _target, _setting, fold, parameter_set = key
+            reference_key = ("primary", split_name, target, "D0_R0_F4_reference", fold, parameter_set)
+            if reference_key not in condition_errors:
+                continue
+            paired_gains.append(condition_errors[reference_key] - condition_errors[key])
+        reference_mae = _as_float(reference["condition_mean_mae"])
+        candidate_mae = _as_float(candidate["condition_mean_mae"])
+        output.append(
+            {
+                "schema_version": ARM_SELECTOR_SCHEMA_VERSION,
+                "comparison_id": ARM_SELECTOR_COMPARISON_ID,
+                "candidate_setting": ARM_SELECTOR_MODEL_SETTING_ID,
+                "reference_setting": "D0_R0_F4_reference",
+                "target": target,
+                "split_name": split_name,
+                "candidate_condition_mean_mae": candidate_mae,
+                "reference_condition_mean_mae": reference_mae,
+                "condition_mean_mae_gain": reference_mae - candidate_mae,
+                "relative_degradation": (
+                    (candidate_mae - reference_mae) / reference_mae if reference_mae > 0 else None
+                ),
+                "paired_condition_count": len(paired_gains),
+                "paired_mean_gain": _mean(paired_gains) if paired_gains else None,
+                "paired_p05": _bootstrap_mean_p05(
+                    paired_gains,
+                    resamples=bootstrap_resamples,
+                    seed=seed,
+                ),
+            }
+        )
+    return output
+
+
+def arm_selector_outside_degradation_rows(comparison_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    output = []
+    targets = sorted({str(row["target"]) for row in comparison_rows})
+    for target in targets:
+        rows = [
+            row
+            for row in comparison_rows
+            if row["target"] == target
+            and row["split_name"] != PRIMARY_SPLIT
+            and row.get("relative_degradation") is not None
+        ]
+        max_degradation = max((_as_float(row["relative_degradation"]) for row in rows), default=None)
+        output.append(
+            {
+                "schema_version": ARM_SELECTOR_SCHEMA_VERSION,
+                "comparison_id": ARM_SELECTOR_COMPARISON_ID,
+                "target": target,
+                "max_other_split_relative_degradation": max_degradation,
+                "passes_5pct": (
+                    max_degradation is not None
+                    and max_degradation <= ADAPTIVE_NON_DEGRADATION_THRESHOLD
+                ),
+                "outside_split_rows": len(rows),
+            }
+        )
+    return output
+
+
+def arm_selector_leakage_audit(selection_rows: list[dict[str, Any]]) -> dict[str, Any]:
+    outer_overlaps = [int(row.get("outer_train_test_overlap_count", 0)) for row in selection_rows]
+    inner_overlaps = [int(row.get("max_inner_train_validation_overlap_count", 0)) for row in selection_rows]
+    nested_overlaps = [
+        int(row.get("max_nested_inner_train_validation_overlap_count", 0))
+        for row in selection_rows
+    ]
+    max_outer = max(outer_overlaps, default=0)
+    max_inner = max(inner_overlaps, default=0)
+    max_nested = max(nested_overlaps, default=0)
+    return {
+        "status": (
+            "passed"
+            if selection_rows and max_outer == 0 and max_inner == 0 and max_nested == 0
+            else "failed"
+        ),
+        "selection_rows_checked": len(selection_rows),
+        "max_outer_train_test_overlap_count": max_outer,
+        "max_inner_train_validation_overlap_count": max_inner,
+        "max_nested_inner_train_validation_overlap_count": max_nested,
+        "rule": (
+            "Arm selection must use only outer-training rows; inner selector "
+            "train/validation condition sets and nested adaptive condition sets must not overlap."
+        ),
+    }
+
+
+def stressor_robust_arm_selector_claim_readiness(
+    comparison_rows: list[dict[str, Any]],
+    outside_rows: list[dict[str, Any]],
+    *,
+    leakage_audit: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    primary = next(
+        (
+            row
+            for row in comparison_rows
+            if row["target"] == PRIMARY_TARGET and row["split_name"] == PRIMARY_SPLIT
+        ),
+        None,
+    )
+    outside = next((row for row in outside_rows if row["target"] == PRIMARY_TARGET), None)
+    gain = primary["condition_mean_mae_gain"] if primary else None
+    p05 = primary["paired_p05"] if primary else None
+    max_degradation = outside["max_other_split_relative_degradation"] if outside else None
+    leakage_passes = (leakage_audit or {}).get("status") == "passed"
+    supported = (
+        gain is not None
+        and p05 is not None
+        and max_degradation is not None
+        and _as_float(gain) > 0
+        and _as_float(p05) > 0
+        and _as_float(max_degradation) <= ADAPTIVE_NON_DEGRADATION_THRESHOLD
+        and leakage_passes
+    )
+    positive_c_rate = gain is not None and p05 is not None and _as_float(gain) > 0 and _as_float(p05) > 0
+    status = "supported_for_diagnostics" if supported else (
+        "diagnostic_only" if positive_c_rate else "not_supported"
+    )
+    return {
+        "arm_selector_claim": status,
+        "c_rate_gain_vs_d0_f4": gain,
+        "c_rate_paired_p05": p05,
+        "max_other_split_relative_degradation": max_degradation,
+        "leakage_audit": (leakage_audit or {}).get("status", "not_run"),
+        "architecture_readiness": "blocked",
+        "policy_ranking": "blocked",
+        "claim_rule": (
+            "Support requires the stressor-family arm router to beat D0 R0/F4 on C-rate "
+            "delta capacity with paired p05 above zero, <=5% outside-C-rate degradation, "
+            "and a passed leakage audit. This is a targeted diagnostic router over existing "
+            "arms, not a broad robustness, architecture, policy, or causal claim."
+        ),
+    }
+
+
+def _condition_mae_by_selector_setting(
+    predictions: list[dict[str, Any]],
+) -> dict[tuple[str, str, str, str, int, int], float]:
+    grouped: dict[tuple[str, str, str, str, int, int], list[float]] = defaultdict(list)
+    for row in predictions:
+        key = (
+            str(row["run_scope"]),
+            str(row["split_name"]),
+            str(row["target"]),
+            str(row.get("model_setting_id", row["model_level"])),
+            int(row["heldout_fold"]),
+            int(row["parameter_set"]),
+        )
+        grouped[key].append(abs(_as_float(row["y_pred"]) - _as_float(row["y_true"])))
+    return {key: _mean(values) for key, values in grouped.items()}
 
 
 def _condition_mae_by_prediction_group(predictions: list[dict[str, Any]]) -> dict[tuple[str, str, str, str, str, int, int], float]:
@@ -3533,6 +4942,38 @@ def render_stressor_robust_attribution_artifacts(
     )
 
 
+def render_stressor_robust_arm_selector_artifacts(
+    report: dict[str, Any],
+    leaderboard: list[dict[str, Any]],
+    comparison_rows: list[dict[str, Any]],
+    outside_rows: list[dict[str, Any]],
+    selection_rows: list[dict[str, Any]],
+    claim: dict[str, Any],
+    out_dir: Path,
+) -> None:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    _write_csv(out_dir / "selector_leaderboard.csv", leaderboard)
+    _write_csv(out_dir / "selector_comparisons.csv", comparison_rows)
+    _write_csv(out_dir / "arm_selection_summary.csv", selection_rows)
+    _write_csv(
+        out_dir / "plots" / "c_rate_selector_gain.csv",
+        [
+            row
+            for row in comparison_rows
+            if row["target"] == PRIMARY_TARGET and row["split_name"] == PRIMARY_SPLIT
+        ],
+    )
+    _write_csv(out_dir / "plots" / "outside_split_degradation.csv", outside_rows)
+    _write_arm_selector_claim_readiness_md(
+        report,
+        claim,
+        comparison_rows,
+        outside_rows,
+        selection_rows,
+        out_dir / "arm_selector_claim_readiness.md",
+    )
+
+
 def _write_stressor_forensics_md(
     split_degradation: list[dict[str, Any]],
     worst_conditions: list[dict[str, Any]],
@@ -3697,6 +5138,77 @@ def _write_attribution_claim_readiness_md(
             "",
             f"Comparison rows evaluated: `{report['row_counts']['comparison_rows']}`.",
             "Decision: attribution support is diagnostic only and does not authorize a broad C-rate fade-solved claim.",
+        ]
+    )
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _write_arm_selector_claim_readiness_md(
+    report: dict[str, Any],
+    claim: dict[str, Any],
+    comparison_rows: list[dict[str, Any]],
+    outside_rows: list[dict[str, Any]],
+    selection_rows: list[dict[str, Any]],
+    path: Path,
+) -> None:
+    primary_rows = [
+        row
+        for row in comparison_rows
+        if row["target"] == PRIMARY_TARGET and row["split_name"] == PRIMARY_SPLIT
+    ]
+    selected_counts: dict[str, int] = defaultdict(int)
+    for row in selection_rows:
+        if bool(row.get("selected_by_train_only_rule")):
+            selected_counts[str(row["candidate_arm"])] += 1
+    selected_summary = "; ".join(
+        f"{arm}:{count}" for arm, count in sorted(selected_counts.items())
+    ) or "none"
+    lines = [
+        "# Stressor-Robust Arm Selector Claim Readiness",
+        "",
+        "| Claim area | Status | Evidence |",
+        "|---|---|---|",
+        f"| Stressor-family arm-router diagnostic | `{claim['arm_selector_claim']}` | C-rate gain vs D0 `{_fmt(claim['c_rate_gain_vs_d0_f4'])}`; paired p05 `{_fmt(claim['c_rate_paired_p05'])}`. |",
+        f"| Outside-C-rate non-degradation | `{'supported_for_diagnostics' if claim['max_other_split_relative_degradation'] is not None and _as_float(claim['max_other_split_relative_degradation']) <= ADAPTIVE_NON_DEGRADATION_THRESHOLD else 'not_supported'}` | Max outside-C-rate degradation `{_fmt(claim['max_other_split_relative_degradation'])}`. |",
+        f"| Leakage audit | `{claim['leakage_audit']}` | C-rate routing uses the D2 train-only adaptive guardrail; non-C-rate views route to D0. |",
+        f"| Selected arm counts | `diagnostic` | `{selected_summary}`. |",
+        f"| Architecture readiness | `{claim['architecture_readiness']}` | This remains a non-neural selector over existing arms. |",
+        f"| Policy ranking | `{claim['policy_ranking']}` | No calibrated risk or intervention task is tested. |",
+        "",
+        claim["claim_rule"],
+        "",
+        "## Primary C-rate Selector Comparison",
+        "",
+        "| Comparison | Gain | Paired p05 | Relative degradation |",
+        "|---|---:|---:|---:|",
+    ]
+    for row in primary_rows:
+        lines.append(
+            "| "
+            f"`{row['comparison_id']}` | `{_fmt(row['condition_mean_mae_gain'])}` | "
+            f"`{_fmt(row['paired_p05'])}` | `{_fmt(row['relative_degradation'])}` |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Outside-Split Degradation",
+            "",
+            "| Target | Max outside-C-rate degradation | Passes 5% |",
+            "|---|---:|---:|",
+        ]
+    )
+    for row in outside_rows:
+        lines.append(
+            "| "
+            f"`{row['target']}` | `{_fmt(row['max_other_split_relative_degradation'])}` | "
+            f"`{row['passes_5pct']}` |"
+        )
+    lines.extend(
+        [
+            "",
+            f"Selection rows evaluated: `{report['row_counts']['selection_rows']}`.",
+            f"Comparison rows evaluated: `{report['row_counts']['comparison_rows']}`.",
+            "Decision: keep claims narrow. Do not infer C-rate fade is solved or architecture is justified.",
         ]
     )
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")

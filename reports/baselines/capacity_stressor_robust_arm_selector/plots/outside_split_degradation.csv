@@ -1,0 +1,2 @@
+comparison_id,max_other_split_relative_degradation,outside_split_rows,passes_5pct,schema_version,target
+selector_vs_d0_f4,0.0,4,True,gate58.stressor_robust_arm_selector.v1,delta_capacity_Ah

@@ -1,15 +1,15 @@
 # Codex Next Work
 
 Current recommended branch: synthesis/release maintenance. The adaptive
-stressor-robust replication and attribution checks have been run and should
-not be broadened without a fresh gated question.
+stressor-robust replication, attribution, and stressor-family routing checks
+have been run and should not be broadened without a fresh gated question.
 
 ## Current Phase
 
-Milestone 5.7 is a stressor-robust attribution and reweighting decomposition
-gate. It compares R0/F4, R0/F8, adaptive R2/F4, and adaptive R2/F8 arms to
-separate F8 timestamp-weighted stress-feature value from train-only
-reweighting. It is not a new architecture, calibration-claim, or
+Milestone 5.8 is a targeted stressor-family routing diagnostic. It recombines
+existing Milestone 5.7 attribution predictions so C-rate transfer uses D2
+adaptive R2/F4 when its train-only guardrail passes, while non-C-rate views
+route to D0 R0/F4. It is not a new architecture, calibration-claim, or
 policy-ranking branch.
 
 ## Current Result
@@ -38,12 +38,18 @@ F8 comparison fails outside-C-rate non-degradation (`0.717391`), so the
 adaptive result must not be described as independently explained by F8 stress
 features.
 
+Milestone 5.8 supports only targeted diagnostic routing. The router preserves
+the D2 C-rate `delta_capacity_Ah` gain (`0.0106361`, paired p05
+`0.00594397`) and has max outside-C-rate degradation `0` because non-C-rate
+views route to D0. This must not be described as a global robust-capacity
+model or solved C-rate fade.
+
 ## Optional Technical Branch
 
 No broader technical branch is currently justified. Future technical work, if
 opened, should be release automation or documentation synthesis unless a fresh
 predeclared question is created. Do not open CBAT, policy ranking, sequence
-modeling, or new modality expansion from the Milestone 5.6/5.7 results.
+modeling, or new modality expansion from the Milestone 5.6-5.8 results.
 
 ## Blocked Branches
 

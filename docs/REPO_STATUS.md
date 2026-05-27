@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 5.7: Stressor-robust attribution and reweighting decomposition gate**.
+The repository is in **Milestone 5.8: Stressor-family arm-routing diagnostic gate**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -162,6 +162,14 @@ keeps the Milestone 5.6 C-rate gain (`0.0200436` versus F4), but the
 incremental F8 comparison fails the outside-C-rate non-degradation guardrail
 because voltage-window `delta_capacity_Ah` degrades heavily
 (`0.717391`). The result is attribution-diagnostic only.
+Milestone 5.8 evaluates a narrow stressor-family router over existing
+attribution arms. The router uses D2 adaptive R2/F4 for the C-rate transfer
+view when its train-only adaptive guardrail passes and routes non-C-rate
+stressor views to D0 R0/F4. It preserves the reweighting-only C-rate
+`delta_capacity_Ah` gain (`0.0106361`, paired p05 `0.00594397`) and has
+zero outside-C-rate degradation by construction because non-C-rate views route
+to D0. This supports only a targeted diagnostic routing claim, not broad
+robust capacity or solved C-rate fade.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -170,8 +178,8 @@ improvement claims have been started.
 
 Current state:
 
-- Milestone 5.7 is an attribution and reweighting decomposition gate for the
-  existing non-neural stressor-balanced HGB family. It adds no feature
+- Milestone 5.8 is a stressor-family routing diagnostic over existing
+  non-neural stressor-balanced HGB attribution arms. It adds no feature
   engineering, neural/sequence models, CBAT, policy ranking, calibrated-risk
   claims, calibrated-uncertainty claims, or architecture claims.
 - `mbp baseline diagnose-stressor-robust-forensics` adds split/condition
@@ -212,6 +220,14 @@ Current state:
   unchanged outside-C-rate guardrail with max degradation `0.717391`, so F8
   stress-feature attribution remains diagnostic-only and broad fade-solved
   wording remains blocked.
+- `mbp baseline run-stressor-robust-arm-selector` now supports a fast
+  report-based routing mode from the Milestone 5.7 attribution report and
+  prediction parquet. The generated
+  `reports/baselines/capacity_stressor_robust_arm_selector_report.json`
+  records five final selector comparisons, 20,730 ignored prediction rows,
+  and a passed leakage audit. The selector uses D2 only for the C-rate view
+  and D0 elsewhere, yielding C-rate gain `0.0106361`, paired p05
+  `0.00594397`, and max outside-C-rate degradation `0`.
 - Milestone 5.3 remains a correctness-hardening gate for existing calibration
   and stressor-robustness reports. It does not add models, features, or claims.
 - Milestone 5.2 added `ece_10_bin_equal_freq` alongside the existing

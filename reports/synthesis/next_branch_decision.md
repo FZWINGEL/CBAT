@@ -44,6 +44,9 @@ Milestone 5.7 keeps that result narrow: F8 adds C-rate delta signal under
 adaptive selection, but the incremental F8 comparison fails outside-C-rate
 non-degradation, so independent stress-feature attribution remains
 diagnostic-only.
+Milestone 5.8 adds a targeted stressor-family router over existing attribution
+arms. It preserves the C-rate reweighting gain while routing non-C-rate views
+to D0, but it is a diagnostic routing result rather than a global robust model.
 
 ## Recommended Path
 
@@ -52,7 +55,8 @@ diagnostic-only.
 2. If manuscript work resumes, integrate Milestones 5.0/5.2/5.3 as blocked
    calibrated-risk and calibrated-uncertainty evidence, and Milestone 5.1 as a
    diagnostic stressor-robustness result hardened by 5.3 correctness checks
-   and narrowed by the Milestone 5.6 replicated adaptive-selection result.
+   and narrowed by the Milestone 5.6 replicated adaptive-selection result plus
+   the Milestone 5.8 targeted routing diagnostic.
 3. If engineering work resumes, prefer release automation or reproducibility
    checks over new scientific expansion.
 
@@ -76,6 +80,9 @@ than synthesis/release maintenance unless a fresh predeclared question is
 needed. The Milestone 5.7 attribution decomposition does not create that next
 question: reweighting-only and adaptive F8 both contribute C-rate delta signal,
 but F8 attribution fails the outside-split guardrail.
+Milestone 5.8 answers the obvious routing follow-up: targeted D2-for-C-rate and
+D0-elsewhere routing passes diagnostically. More work here should not broaden
+the claim without a new independent validation design.
 
 ## Explicitly Rejected Branches
 

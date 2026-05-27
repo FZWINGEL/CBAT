@@ -222,11 +222,19 @@ under adaptive selection does improve C-rate delta by `0.00940756` with paired
 p05 `6.06012e-05`, but it fails the outside-C-rate guardrail because maximum
 outside-split degradation is `0.717391`.
 
+Milestone 5.8 tested a targeted stressor-family router over existing
+attribution arms. It uses D2 adaptive R2/F4 for the C-rate transfer view when
+the train-only D2 guardrail passes and D0 R0/F4 for non-C-rate views. This
+preserves the reweighting-only C-rate gain (`0.0106361`, paired p05
+`0.00594397`) and makes outside-C-rate degradation `0` because non-C-rate
+views are intentionally routed to the reference arm.
+
 Decision: report the conservative adaptive selector as a narrow diagnostic
 robustness result for `delta_capacity_Ah`. Report F8 stress-feature
-attribution as diagnostic-only rather than independently supported. Do not
-claim C-rate fade is solved, do not open architecture work, and do not use this
-result for policy ranking or causal claims.
+attribution as diagnostic-only rather than independently supported. Report the
+Milestone 5.8 router only as targeted stressor-family routing, not as a global
+robust model. Do not claim C-rate fade is solved, do not open architecture
+work, and do not use this result for policy ranking or causal claims.
 
 ## Milestone 3.0 Blocked-Claim Refresh
 
@@ -243,6 +251,8 @@ The v2 synthesis keeps the following negative boundaries active:
 - F8 stress-feature attribution remains diagnostic-only because incremental F8
   under adaptive selection fails outside-C-rate non-degradation despite a
   positive C-rate delta gain;
+- stressor-family routing can preserve the C-rate reweighting gain without
+  non-C-rate degradation, but this is not a global robust-capacity model;
 - sequence models remain blocked by the order-vs-aggregate and
   order-vs-shuffled negative result;
 - calibrated uncertainty remains blocked by C-rate coverage failure even after
