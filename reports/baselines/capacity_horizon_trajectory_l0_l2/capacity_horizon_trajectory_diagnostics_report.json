@@ -1,0 +1,38 @@
+{
+  "generated_at_utc": "2026-05-27T13:58:48.033647+00:00",
+  "inputs": {
+    "horizon_table": "data/interim/capacity_horizon_table_v1.parquet",
+    "predictions": "data/processed/capacity_horizon_trajectory_l0_l2_predictions.parquet",
+    "report": "reports/baselines/capacity_horizon_trajectory_l0_l2_report.json"
+  },
+  "outputs": {
+    "c_rate_trajectory_gain": "reports/baselines/capacity_horizon_trajectory_l0_l2/plots/c_rate_trajectory_gain.csv",
+    "claim_readiness": "reports/baselines/capacity_horizon_trajectory_l0_l2/trajectory_shape_claim_readiness.md",
+    "diagnostics": "reports/baselines/capacity_horizon_trajectory_l0_l2/trajectory_shape_diagnostics.md",
+    "horizon3_capacity_repair": "reports/baselines/capacity_horizon_trajectory_l0_l2/plots/horizon3_capacity_repair.csv",
+    "out_dir": "reports/baselines/capacity_horizon_trajectory_l0_l2",
+    "trajectory_gain_by_split": "reports/baselines/capacity_horizon_trajectory_l0_l2/plots/trajectory_gain_by_split.csv",
+    "trajectory_leakage_audit": "reports/baselines/capacity_horizon_trajectory_l0_l2/plots/trajectory_leakage_audit.csv"
+  },
+  "readiness": {
+    "c_rate_preservation": "not_supported",
+    "calibrated_risk_or_uncertainty": "blocked",
+    "cbat_architecture": "blocked",
+    "claim_scope": "prospective prior-trajectory diagnostics only",
+    "horizon3_capacity_repair": "not_supported",
+    "policy_ranking": "blocked",
+    "sequence_or_neural_models": "blocked",
+    "trajectory_leakage_audit": "passed",
+    "trajectory_shape_forecasting": "partially_supported"
+  },
+  "row_counts": {
+    "c_rate_gain_rows": 8,
+    "horizon3_capacity_rows": 2,
+    "horizon_rows": 13770,
+    "metrics": 1152,
+    "predictions": 891648,
+    "trajectory_gain_rows": 96
+  },
+  "schema_version": "gate62.capacity_horizon_trajectory_diagnostics.v1",
+  "status": "passed"
+}

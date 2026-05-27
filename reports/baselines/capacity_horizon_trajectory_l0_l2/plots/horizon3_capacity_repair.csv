@@ -1,0 +1,3 @@
+beats_all_references,beats_k2,beats_persistence,beats_prior_slope,candidate_feature_group,candidate_mean_mae,claim_scope,gain_vs_k2,gain_vs_persistence,gain_vs_prior_slope,horizon_checkups,k2_mean_mae,persistence_mean_mae,prior_slope_mean_mae,split_name,target
+False,False,True,False,K4_prior_trajectory_shape,0.10374130748486476,prospective_trajectory_diagnostic,-0.0102108945748514,0.06245337165464751,-0.01050839072625541,3,0.09353041291001336,0.16619467913951227,0.09323291675860935,all,capacity_Ah_kh
+False,False,True,False,K5_nominal_plus_trajectory_shape,0.09812408313172888,prospective_trajectory_diagnostic,-0.004593670221715515,0.0680705960077834,-0.004891166373119524,3,0.09353041291001336,0.16619467913951227,0.09323291675860935,all,capacity_Ah_kh

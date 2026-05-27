@@ -286,6 +286,24 @@ rows only by using non-prospective k-to-k+h exposure. If technical work
 continues, the only defensible branch is a predeclared prior-trajectory-shape
 audit using information available at check-up `k`.
 
+## Prior-Trajectory Shape Does Not Repair the Multi-Horizon Gap
+
+Milestone 6.2 built `capacity_horizon_trajectory_features_v1.parquet` with
+13,770 prior-only feature rows. QA passed with zero duplicate, missing, or
+extra horizon keys and no leakage columns.
+
+The repair gate fails. For all-split horizon-3 `capacity_Ah_kh`, K5
+nominal-plus-trajectory HGB has MAE `0.0981241`, worse than both K2
+(`0.0935304`) and the prior-slope baseline (`0.0932329`). K5 also fails full
+C-rate preservation: it improves C-rate horizon-2 `capacity_Ah_kh` and
+horizon-3 `delta_capacity_Ah_h`, but worsens C-rate horizon-3 `capacity_Ah_kh`
+and horizon-2 `delta_capacity_Ah_h` relative to K2.
+
+Decision: keep prior-trajectory shape as partial/diagnostic only. Do not claim
+that trajectory shape solves multi-horizon forecasting or justifies
+sequence/neural models, CBAT, policy ranking, causal claims, calibrated risk,
+or calibrated uncertainty.
+
 ## Milestone 3.0 Blocked-Claim Refresh
 
 The v2 synthesis keeps the following negative boundaries active:
@@ -309,7 +327,8 @@ The v2 synthesis keeps the following negative boundaries active:
   despite positive C-rate and delta-capacity diagnostics, because all-split
   horizon-3 capacity level narrowly misses the prior-slope baseline; Milestone
   6.1 forensics recommend only a possible prior-trajectory-shape audit, not
-  tuning, architecture, or future-exposure features;
+  tuning, architecture, or future-exposure features; Milestone 6.2 runs that
+  audit and finds trajectory shape does not repair the gap;
 - sequence models remain blocked by the order-vs-aggregate and
   order-vs-shuffled negative result;
 - calibrated uncertainty remains blocked by C-rate coverage failure even after

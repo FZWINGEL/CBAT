@@ -1,0 +1,41 @@
+{
+  "generated_at_utc": "2026-05-27T13:43:44.904078+00:00",
+  "leakage_columns": [],
+  "nan_counts": {
+    "prior_capacity_acceleration_mean_3": 1651,
+    "prior_capacity_curvature_lag1": 1651,
+    "prior_capacity_delta_lag1": 847,
+    "prior_capacity_delta_lag2": 1651,
+    "prior_capacity_delta_lag3": 2411,
+    "prior_capacity_increase_fraction": 847,
+    "prior_capacity_range_Ah_all": 847,
+    "prior_capacity_volatility_3": 847,
+    "prior_delta_abs_max_all": 847,
+    "prior_delta_max_3": 847,
+    "prior_delta_mean_3": 847,
+    "prior_delta_mean_all": 847,
+    "prior_delta_min_3": 847,
+    "prior_delta_std_3": 847,
+    "prior_delta_std_all": 847,
+    "prior_slope_per_day_mean_3": 847,
+    "prior_slope_per_day_std_3": 847
+  },
+  "outputs": {
+    "coverage": "reports/analysis/capacity_horizon/capacity_horizon_trajectory_coverage.csv",
+    "report": "reports/analysis/capacity_horizon/capacity_horizon_trajectory_qa_report.json"
+  },
+  "row_counts": {
+    "cells": 228,
+    "duplicate_keys": 0,
+    "extra_trajectory_keys": 0,
+    "horizon_rows": 13770,
+    "missing_horizon_keys": 0,
+    "parameter_sets": 76,
+    "rows": 13770
+  },
+  "schema_version": "gate62.capacity_horizon_trajectory_features.v1",
+  "status": "passed",
+  "warnings": [
+    "some_rows_have_no_prior_history"
+  ]
+}

@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 6.1: Multi-horizon forecasting error forensics and prospective feature audit.
+Milestone 6.2: Prospective prior-trajectory shape baseline gate.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -75,6 +75,12 @@ Current state:
   gain by split, and a prospective feature audit. It does not authorize new
   model training, architecture work, policy ranking, causal claims, or broader
   multi-horizon claims.
+- Milestone 6.2 tests the only follow-up branch authorized by Milestone 6.1:
+  prior-only trajectory-shape features for multi-horizon capacity forecasting.
+  The sidecar passes QA and leakage checks, but K5 does not repair the
+  all-split horizon-3 `capacity_Ah_kh` near miss and does not preserve all
+  C-rate horizon-2/3 rows. Treat prior-trajectory shape as partial/diagnostic,
+  not as a new supported forecasting claim.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
@@ -90,6 +96,10 @@ Allowed work:
 - prior-slope failure-mode diagnostics
 - oracle-exposure gain audits labeled non-prospective
 - prospective feature audits for possible future prior-trajectory work
+- prior-only capacity trajectory feature sidecars
+- prior-trajectory feature QA and leakage audits
+- K4/K5 non-neural trajectory-shape feature groups under grouped validation
+- trajectory-shape claim-readiness reporting
 - additive equal-frequency ECE diagnostics alongside fixed-width ECE
 - L3 capacity quantile noncrossing post-sort hygiene
 - rerunning existing threshold-warning calibration and capacity calibration reports

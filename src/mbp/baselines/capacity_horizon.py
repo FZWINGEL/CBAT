@@ -35,12 +35,44 @@ FEATURE_GROUPS = (
     "K1_prior_state_time",
     "K2_nominal_condition",
     "K3_oracle_exposure_diagnostic",
+    "K4_prior_trajectory_shape",
+    "K5_nominal_plus_trajectory_shape",
 )
 DEFAULT_TARGETS = TARGETS
 DEFAULT_MODELS = MODEL_LEVELS
 DEFAULT_FEATURE_GROUPS = ("K0_prior_capacity", "K1_prior_state_time", "K2_nominal_condition")
 DEFAULT_HORIZONS = (1, 2, 3, 5)
 ORACLE_FEATURE_GROUPS = {"K3_oracle_exposure_diagnostic"}
+TRAJECTORY_FEATURE_GROUPS = {"K4_prior_trajectory_shape", "K5_nominal_plus_trajectory_shape"}
+TRAJECTORY_KEY_COLUMNS = (
+    "cell_id",
+    "parameter_set",
+    "replicate_id",
+    "checkup_k",
+    "target_checkup_k",
+    "horizon_checkups",
+)
+TRAJECTORY_NUMERIC_FEATURES = (
+    "prior_history_length",
+    "prior_capacity_delta_lag1",
+    "prior_capacity_delta_lag2",
+    "prior_capacity_delta_lag3",
+    "prior_delta_mean_3",
+    "prior_delta_std_3",
+    "prior_delta_min_3",
+    "prior_delta_max_3",
+    "prior_delta_mean_all",
+    "prior_delta_std_all",
+    "prior_slope_per_day_mean_3",
+    "prior_slope_per_day_std_3",
+    "prior_capacity_curvature_lag1",
+    "prior_capacity_acceleration_mean_3",
+    "prior_capacity_volatility_3",
+    "prior_capacity_increase_count",
+    "prior_capacity_increase_fraction",
+    "prior_capacity_range_Ah_all",
+    "prior_delta_abs_max_all",
+)
 NUMERIC_FEATURES = {
     "K0_prior_capacity": ("capacity_Ah_k", "horizon_checkups", "checkup_k"),
     "K1_prior_state_time": (
@@ -88,12 +120,41 @@ NUMERIC_FEATURES = {
         "horizon_log_age_delta_q_Ah",
         "horizon_log_age_row_count",
     ),
+    "K4_prior_trajectory_shape": (
+        "capacity_Ah_k",
+        "soh_k",
+        "horizon_checkups",
+        "checkup_k",
+        "calendar_day_k",
+        "cumulative_efc_k",
+        "cumulative_q_Ah_k",
+        "prior_delta_capacity_Ah",
+        "prior_capacity_slope_per_day",
+        *TRAJECTORY_NUMERIC_FEATURES,
+    ),
+    "K5_nominal_plus_trajectory_shape": (
+        "capacity_Ah_k",
+        "soh_k",
+        "horizon_checkups",
+        "checkup_k",
+        "calendar_day_k",
+        "cumulative_efc_k",
+        "cumulative_q_Ah_k",
+        "prior_delta_capacity_Ah",
+        "prior_capacity_slope_per_day",
+        "nominal_temperature_C",
+        "nominal_charge_C_rate",
+        "nominal_discharge_C_rate",
+        *TRAJECTORY_NUMERIC_FEATURES,
+    ),
 }
 CATEGORICAL_FEATURES = {
     "K0_prior_capacity": (),
     "K1_prior_state_time": (),
     "K2_nominal_condition": ("voltage_window_family", "profile_label", "aging_mode"),
     "K3_oracle_exposure_diagnostic": ("voltage_window_family", "profile_label", "aging_mode"),
+    "K4_prior_trajectory_shape": (),
+    "K5_nominal_plus_trajectory_shape": ("voltage_window_family", "profile_label", "aging_mode"),
 }
 FUTURE_EXPOSURE_FIELDS = {
     "horizon_interval_count",
@@ -182,6 +243,7 @@ def run_capacity_horizon_baselines(
     out_path: Path,
     predictions_out_path: Path,
     out_dir: Path | None = None,
+    trajectory_features_path: Path | None = None,
     *,
     seed: int = 42,
     hgb_max_iter: int = 50,
@@ -202,6 +264,8 @@ def run_capacity_horizon_baselines(
     if any(model in {"MH2_ridge", "MH3_hist_gradient_boosting"} for model in selected_models):
         _import_sklearn_stack()
     _audit_feature_groups(selected_features)
+    if any(group in TRAJECTORY_FEATURE_GROUPS for group in selected_features) and trajectory_features_path is None:
+        raise ValueError("K4/K5 trajectory feature groups require --trajectory-features.")
 
     rows = [
         row
@@ -210,6 +274,8 @@ def run_capacity_horizon_baselines(
     ]
     if not rows:
         raise ValueError("Capacity horizon table has no rows for the selected horizons.")
+    if trajectory_features_path is not None:
+        rows = _join_trajectory_features(rows, pq.read_table(trajectory_features_path).to_pylist())
 
     metrics: list[dict[str, Any]] = []
     predictions: list[dict[str, Any]] = []
@@ -285,6 +351,9 @@ def run_capacity_horizon_baselines(
         "schema_version": SCHEMA_VERSION,
         "generated_at_utc": datetime.now(UTC).isoformat(),
         "inputs": {"horizon_table": str(horizon_table_path)},
+        "optional_inputs": {
+            "trajectory_features": str(trajectory_features_path) if trajectory_features_path else None,
+        },
         "outputs": {
             "report": str(out_path),
             "predictions": str(predictions_out_path),
@@ -521,6 +590,93 @@ def diagnose_capacity_horizon(
     return diagnostic_report
 
 
+def diagnose_capacity_horizon_trajectory(
+    report_path: Path,
+    predictions_path: Path,
+    horizon_table_path: Path,
+    out_dir: Path,
+) -> dict[str, Any]:
+    """Render Milestone 6.2 trajectory-shape diagnostics from an existing run."""
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    metrics = list(report.get("metrics", []))
+    predictions = pq.read_table(predictions_path).to_pylist()
+    horizon_rows = pq.read_table(horizon_table_path).to_pylist()
+    if not metrics:
+        raise ValueError("Capacity horizon trajectory report has no metrics.")
+    if not predictions:
+        raise ValueError("Capacity horizon trajectory prediction table has no rows.")
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    plots_dir = out_dir / "plots"
+    plots_dir.mkdir(parents=True, exist_ok=True)
+    trajectory_gain_rows = trajectory_shape_gain_rows(metrics)
+    horizon3_rows = [
+        row
+        for row in trajectory_gain_rows
+        if row["split_name"] == "all"
+        and row["target"] == "capacity_Ah_kh"
+        and int(row["horizon_checkups"]) == 3
+    ]
+    c_rate_rows = [
+        row
+        for row in trajectory_gain_rows
+        if row["split_name"] == "c_rate_holdout_fold"
+        and int(row["horizon_checkups"]) in {2, 3}
+    ]
+    leakage_rows = trajectory_leakage_audit_rows(report)
+    readiness = trajectory_shape_claim_readiness(trajectory_gain_rows, leakage_rows)
+
+    _write_csv(plots_dir / "trajectory_gain_by_split.csv", trajectory_gain_rows)
+    _write_csv(plots_dir / "horizon3_capacity_repair.csv", horizon3_rows)
+    _write_csv(plots_dir / "c_rate_trajectory_gain.csv", c_rate_rows)
+    _write_csv(plots_dir / "trajectory_leakage_audit.csv", leakage_rows)
+    _write_trajectory_shape_diagnostics_md(
+        report,
+        trajectory_gain_rows,
+        horizon3_rows,
+        c_rate_rows,
+        readiness,
+        out_dir / "trajectory_shape_diagnostics.md",
+    )
+    _write_trajectory_shape_claim_readiness_md(
+        readiness,
+        out_dir / "trajectory_shape_claim_readiness.md",
+    )
+    diagnostic_report = {
+        "status": "passed",
+        "schema_version": "gate62.capacity_horizon_trajectory_diagnostics.v1",
+        "generated_at_utc": datetime.now(UTC).isoformat(),
+        "inputs": {
+            "report": str(report_path),
+            "predictions": str(predictions_path),
+            "horizon_table": str(horizon_table_path),
+        },
+        "outputs": {
+            "out_dir": str(out_dir),
+            "trajectory_gain_by_split": str(plots_dir / "trajectory_gain_by_split.csv"),
+            "horizon3_capacity_repair": str(plots_dir / "horizon3_capacity_repair.csv"),
+            "c_rate_trajectory_gain": str(plots_dir / "c_rate_trajectory_gain.csv"),
+            "trajectory_leakage_audit": str(plots_dir / "trajectory_leakage_audit.csv"),
+            "diagnostics": str(out_dir / "trajectory_shape_diagnostics.md"),
+            "claim_readiness": str(out_dir / "trajectory_shape_claim_readiness.md"),
+        },
+        "row_counts": {
+            "metrics": len(metrics),
+            "predictions": len(predictions),
+            "horizon_rows": len(horizon_rows),
+            "trajectory_gain_rows": len(trajectory_gain_rows),
+            "horizon3_capacity_rows": len(horizon3_rows),
+            "c_rate_gain_rows": len(c_rate_rows),
+        },
+        "readiness": readiness,
+    }
+    (out_dir / "capacity_horizon_trajectory_diagnostics_report.json").write_text(
+        json.dumps(diagnostic_report, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return diagnostic_report
+
+
 def horizon_reference_gain_by_split_rows(metrics: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Compare prospective HGB K2 against persistence and prior-slope references."""
     rows = leaderboard_rows(metrics) + _split_leaderboard_rows(metrics)
@@ -613,6 +769,141 @@ def oracle_exposure_gain_by_split_rows(metrics: list[dict[str, Any]]) -> list[di
             }
         )
     return sorted(output, key=lambda row: (row["split_name"], row["target"], row["horizon_checkups"]))
+
+
+def trajectory_shape_gain_rows(metrics: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Compare K4/K5 trajectory feature groups against K2 and references."""
+    rows = leaderboard_rows(metrics) + _split_leaderboard_rows(metrics)
+    output = []
+    for candidate in rows:
+        if (
+            candidate["model_level"] != "MH3_hist_gradient_boosting"
+            or candidate["feature_group"] not in TRAJECTORY_FEATURE_GROUPS
+        ):
+            continue
+        target = str(candidate["target"])
+        horizon = int(candidate["horizon_checkups"])
+        split_name = str(candidate["split_name"])
+        k2 = _find_row(
+            rows,
+            target=target,
+            horizon=horizon,
+            model_level="MH3_hist_gradient_boosting",
+            feature_group="K2_nominal_condition",
+            split_name=split_name,
+        )
+        prior = _find_row(
+            rows,
+            target=target,
+            horizon=horizon,
+            model_level="MH1_prior_slope_linear",
+            feature_group="prior_slope",
+            split_name=split_name,
+        )
+        persistence = _find_row(
+            rows,
+            target=target,
+            horizon=horizon,
+            model_level="MH0_persistence",
+            feature_group="persistence",
+            split_name=split_name,
+        )
+        if k2 is None or prior is None or persistence is None:
+            continue
+        candidate_mae = float(candidate["mean_mae"])
+        k2_mae = float(k2["mean_mae"])
+        prior_mae = float(prior["mean_mae"])
+        persistence_mae = float(persistence["mean_mae"])
+        output.append(
+            {
+                "target": target,
+                "horizon_checkups": horizon,
+                "split_name": split_name,
+                "candidate_feature_group": candidate["feature_group"],
+                "candidate_mean_mae": candidate_mae,
+                "k2_mean_mae": k2_mae,
+                "prior_slope_mean_mae": prior_mae,
+                "persistence_mean_mae": persistence_mae,
+                "gain_vs_k2": k2_mae - candidate_mae,
+                "gain_vs_prior_slope": prior_mae - candidate_mae,
+                "gain_vs_persistence": persistence_mae - candidate_mae,
+                "beats_k2": candidate_mae < k2_mae,
+                "beats_prior_slope": candidate_mae < prior_mae,
+                "beats_persistence": candidate_mae < persistence_mae,
+                "beats_all_references": candidate_mae < k2_mae and candidate_mae < prior_mae and candidate_mae < persistence_mae,
+                "claim_scope": "prospective_trajectory_diagnostic",
+            }
+        )
+    return sorted(
+        output,
+        key=lambda row: (row["split_name"], row["target"], row["horizon_checkups"], row["candidate_feature_group"]),
+    )
+
+
+def trajectory_leakage_audit_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
+    rows = []
+    for item in report.get("leakage_audit", {}).get("rows", []):
+        if item["feature_group"] in TRAJECTORY_FEATURE_GROUPS:
+            rows.append(
+                {
+                    "feature_group": item["feature_group"],
+                    "claim_scope": item["claim_scope"],
+                    "future_exposure_fields": ",".join(item.get("future_exposure_fields", [])),
+                    "status": "passed" if not item.get("future_exposure_fields") else "failed",
+                }
+            )
+    if not rows:
+        for group in sorted(TRAJECTORY_FEATURE_GROUPS):
+            rows.append(
+                {
+                    "feature_group": group,
+                    "claim_scope": "not_evaluated",
+                    "future_exposure_fields": "",
+                    "status": "not_evaluated",
+                }
+            )
+    return rows
+
+
+def trajectory_shape_claim_readiness(
+    trajectory_rows: list[dict[str, Any]],
+    leakage_rows: list[dict[str, Any]],
+) -> dict[str, Any]:
+    leakage_passes = all(row["status"] in {"passed", "not_evaluated"} for row in leakage_rows)
+    k5_rows = [row for row in trajectory_rows if row["candidate_feature_group"] == "K5_nominal_plus_trajectory_shape"]
+    horizon3 = [
+        row
+        for row in k5_rows
+        if row["split_name"] == "all"
+        and row["target"] == "capacity_Ah_kh"
+        and int(row["horizon_checkups"]) == 3
+    ]
+    c_rate_primary = [
+        row
+        for row in k5_rows
+        if row["split_name"] == "c_rate_holdout_fold"
+        and row["target"] in TARGETS
+        and int(row["horizon_checkups"]) in {2, 3}
+    ]
+    horizon3_passes = bool(horizon3) and all(row["beats_all_references"] for row in horizon3)
+    c_rate_passes = len(c_rate_primary) == 4 and all(row["beats_all_references"] for row in c_rate_primary)
+    if horizon3_passes and c_rate_passes and leakage_passes:
+        trajectory_status = "supported_for_diagnostics"
+    elif any(row["beats_all_references"] for row in k5_rows) and leakage_passes:
+        trajectory_status = "partially_supported"
+    else:
+        trajectory_status = "not_supported"
+    return {
+        "trajectory_shape_forecasting": trajectory_status,
+        "horizon3_capacity_repair": "supported_for_diagnostics" if horizon3_passes else "not_supported",
+        "c_rate_preservation": "supported_for_diagnostics" if c_rate_passes else "not_supported",
+        "trajectory_leakage_audit": "passed" if leakage_passes else "failed",
+        "sequence_or_neural_models": "blocked",
+        "policy_ranking": "blocked",
+        "cbat_architecture": "blocked",
+        "calibrated_risk_or_uncertainty": "blocked",
+        "claim_scope": "prospective prior-trajectory diagnostics only",
+    }
 
 
 def c_rate_condition_horizon_error_rows(
@@ -764,11 +1055,11 @@ def prospective_feature_audit_rows() -> list[dict[str, Any]]:
         [
             {
                 "feature_family": "candidate_prior_trajectory_shape",
-                "artifact_status": "not_implemented",
-                "claim_scope": "prospective_candidate",
+                "artifact_status": "implemented_as_K4_K5",
+                "claim_scope": "prospective_diagnostic",
                 "allowed_for_future_prospective_branch": True,
                 "future_or_target_leakage_fields": "",
-                "policy": "may use capacity trajectory and slopes observed at or before check-up k only",
+                "policy": "implemented as K4/K5 using capacity trajectory and slopes observed at or before check-up k only",
             },
             {
                 "feature_family": "candidate_planned_protocol_metadata",
@@ -1086,7 +1377,9 @@ def _write_capacity_horizon_claim_readiness_md(readiness: dict[str, Any], out_pa
         f"| Calibrated uncertainty or risk | {readiness['calibrated_uncertainty_or_risk']} |",
         "",
         "Prospective feature groups exclude k-to-k+h exposure. "
-        "K3_oracle_exposure_diagnostic is not a valid early-forecasting input.",
+        "K4/K5 prior-trajectory features are prospective only when the sidecar "
+        "contains history observed at or before check-up k. K3_oracle_exposure_diagnostic "
+        "is not a valid early-forecasting input.",
         "",
     ]
     out_path.write_text("\n".join(lines), encoding="utf-8")
@@ -1101,7 +1394,8 @@ def _write_summary_md(report: dict[str, Any], leaderboard: list[dict[str, Any]],
         f"Metric rows: {report['row_counts']['metrics']}",
         "",
         "This gate evaluates non-neural multi-check-up capacity forecasting. "
-        "Prospective claims may use K0-K2 only; K3 is oracle diagnostic.",
+        "Prospective claims may use K0-K2 and prior-only K4/K5 trajectory "
+        "features when supplied; K3 is oracle diagnostic.",
         "",
         "| Target | Horizon | Model | Feature group | Mean MAE |",
         "| --- | ---: | --- | --- | ---: |",
@@ -1248,6 +1542,29 @@ def _horizon_row_index(rows: list[dict[str, Any]]) -> dict[tuple[Any, ...], dict
     return {_horizon_key(row): row for row in rows}
 
 
+def _join_trajectory_features(
+    horizon_rows: list[dict[str, Any]],
+    trajectory_rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    trajectory_by_key = {_trajectory_key(row): row for row in trajectory_rows}
+    missing = []
+    joined = []
+    for row in horizon_rows:
+        key = _trajectory_key(row)
+        features = trajectory_by_key.get(key)
+        if features is None:
+            missing.append(key)
+            continue
+        merged = dict(row)
+        for column in TRAJECTORY_NUMERIC_FEATURES:
+            merged[column] = features.get(column)
+        merged["trajectory_quality_flags"] = features.get("trajectory_quality_flags", "")
+        joined.append(merged)
+    if missing:
+        raise ValueError(f"Trajectory feature table is missing {len(missing)} horizon keys.")
+    return joined
+
+
 def _horizon_key(row: dict[str, Any]) -> tuple[Any, ...]:
     return (
         str(row["cell_id"]),
@@ -1256,6 +1573,13 @@ def _horizon_key(row: dict[str, Any]) -> tuple[Any, ...]:
         int(row["checkup_k"]),
         int(row["target_checkup_k"]),
         int(row["horizon_checkups"]),
+    )
+
+
+def _trajectory_key(row: dict[str, Any]) -> tuple[Any, ...]:
+    return tuple(
+        str(row[column]) if column == "cell_id" else int(row[column])
+        for column in TRAJECTORY_KEY_COLUMNS
     )
 
 
@@ -1430,6 +1754,105 @@ def _write_next_branch_readiness_md(readiness: dict[str, Any], out_path: Path) -
         "",
         "The recommendation is a diagnostic planning result, not authorization for "
         "architecture, policy, causal, or calibrated-risk claims.",
+        "",
+    ]
+    out_path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def _write_trajectory_shape_diagnostics_md(
+    report: dict[str, Any],
+    trajectory_rows: list[dict[str, Any]],
+    horizon3_rows: list[dict[str, Any]],
+    c_rate_rows: list[dict[str, Any]],
+    readiness: dict[str, Any],
+    out_path: Path,
+) -> None:
+    best_rows = sorted(
+        trajectory_rows,
+        key=lambda row: (row["split_name"], row["target"], row["horizon_checkups"], -float(row["gain_vs_k2"])),
+    )
+    lines = [
+        "# Capacity Horizon Trajectory-Shape Diagnostics",
+        "",
+        "Milestone 6.2 tests prior-only trajectory-shape features under the existing "
+        "non-neural grouped multi-horizon capacity runner. K4/K5 features use only "
+        "capacity history observed at or before check-up k.",
+        "",
+        f"Metric rows: {report['row_counts']['metrics']}",
+        f"Trajectory status: `{readiness['trajectory_shape_forecasting']}`",
+        "",
+        "## Horizon-3 Capacity Repair",
+        "",
+        "| Feature group | Candidate MAE | K2 MAE | Prior-slope MAE | Gain vs K2 | Gain vs prior | Beats all |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | --- |",
+    ]
+    for row in horizon3_rows:
+        lines.append(
+            f"| {row['candidate_feature_group']} | {float(row['candidate_mean_mae']):.6g} | "
+            f"{float(row['k2_mean_mae']):.6g} | {float(row['prior_slope_mean_mae']):.6g} | "
+            f"{float(row['gain_vs_k2']):.6g} | {float(row['gain_vs_prior_slope']):.6g} | "
+            f"{row['beats_all_references']} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## C-Rate Horizon 2/3 Preservation",
+            "",
+            "| Target | Horizon | Feature group | Candidate MAE | K2 MAE | Gain vs K2 | Beats all |",
+            "| --- | ---: | --- | ---: | ---: | ---: | --- |",
+        ]
+    )
+    for row in c_rate_rows:
+        lines.append(
+            f"| {row['target']} | {row['horizon_checkups']} | {row['candidate_feature_group']} | "
+            f"{float(row['candidate_mean_mae']):.6g} | {float(row['k2_mean_mae']):.6g} | "
+            f"{float(row['gain_vs_k2']):.6g} | {row['beats_all_references']} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Largest K5 Gains vs K2",
+            "",
+            "| Split | Target | Horizon | Gain vs K2 | Beats all |",
+            "| --- | --- | ---: | ---: | --- |",
+        ]
+    )
+    for row in [item for item in best_rows if item["candidate_feature_group"] == "K5_nominal_plus_trajectory_shape"][:12]:
+        lines.append(
+            f"| {row['split_name']} | {row['target']} | {row['horizon_checkups']} | "
+            f"{float(row['gain_vs_k2']):.6g} | {row['beats_all_references']} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Claim Posture",
+            "",
+            "- Prior-trajectory shape is prospective only when built from check-up-k history.",
+            "- K3 actual horizon exposure remains oracle-diagnostic only.",
+            "- Sequence/neural models, CBAT, policy ranking, causal claims, calibrated risk, and calibrated uncertainty remain blocked.",
+            "",
+        ]
+    )
+    out_path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def _write_trajectory_shape_claim_readiness_md(readiness: dict[str, Any], out_path: Path) -> None:
+    lines = [
+        "# Trajectory-Shape Claim Readiness",
+        "",
+        "| Claim area | Status |",
+        "| --- | --- |",
+        f"| Prior-trajectory shape forecasting | {readiness['trajectory_shape_forecasting']} |",
+        f"| Horizon-3 capacity repair | {readiness['horizon3_capacity_repair']} |",
+        f"| C-rate horizon 2/3 preservation | {readiness['c_rate_preservation']} |",
+        f"| Trajectory leakage audit | {readiness['trajectory_leakage_audit']} |",
+        f"| Sequence or neural models | {readiness['sequence_or_neural_models']} |",
+        f"| Policy ranking | {readiness['policy_ranking']} |",
+        f"| CBAT architecture | {readiness['cbat_architecture']} |",
+        f"| Calibrated risk or uncertainty | {readiness['calibrated_risk_or_uncertainty']} |",
+        "",
+        "This report can authorize only scoped non-neural prior-trajectory diagnostics. "
+        "It does not authorize architecture, policy, causal, or calibrated-risk claims.",
         "",
     ]
     out_path.write_text("\n".join(lines), encoding="utf-8")

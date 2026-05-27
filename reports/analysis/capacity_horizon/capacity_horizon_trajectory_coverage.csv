@@ -1,0 +1,5 @@
+cells,expected_horizon_rows,horizon_checkups,max_prior_history_length,median_prior_history_length,min_prior_history_length,parameter_sets,row_count,zero_prior_history_rows
+228,3827,1,27,10.0,0,76,3827,228
+226,3599,2,26,10.0,0,76,3599,226
+204,3373,3,25,9.0,0,68,3373,204
+189,2971,5,23,9.0,0,64,2971,189

@@ -1489,3 +1489,36 @@ Claim rules:
   forecast horizon.
 - Sequence/neural models, CBAT, policy ranking, causal claims, calibrated
   risk, and calibrated uncertainty remain blocked.
+
+## Milestone 6.2 Prior-Trajectory Shape Baseline Gate
+
+Milestone 6.2 tests whether capacity trajectory shape observed at or before
+check-up `k` improves non-neural multi-horizon capacity forecasting. It is a
+prospective feature-sidecar and baseline gate, not sequence modeling,
+architecture work, policy ranking, or causal analysis.
+
+Required artifacts:
+
+- `data/interim/capacity_horizon_trajectory_features_v1.parquet` (ignored generated data)
+- `reports/analysis/capacity_horizon/capacity_horizon_trajectory_qa_report.json`
+- `reports/analysis/capacity_horizon/capacity_horizon_trajectory_coverage.csv`
+- `reports/baselines/capacity_horizon_trajectory_l0_l2_report.json`
+- `reports/baselines/capacity_horizon_trajectory_l0_l2/trajectory_shape_diagnostics.md`
+- `reports/baselines/capacity_horizon_trajectory_l0_l2/trajectory_shape_claim_readiness.md`
+- `reports/baselines/capacity_horizon_trajectory_l0_l2/plots/trajectory_gain_by_split.csv`
+- `reports/baselines/capacity_horizon_trajectory_l0_l2/plots/horizon3_capacity_repair.csv`
+- `reports/baselines/capacity_horizon_trajectory_l0_l2/plots/c_rate_trajectory_gain.csv`
+- `reports/baselines/capacity_horizon_trajectory_l0_l2/plots/trajectory_leakage_audit.csv`
+- `docs/experiments/2026-05-27_prior_trajectory_shape_horizon_gate.md`
+
+Claim rules:
+
+- Prior-trajectory features may use only capacity history and derived slopes,
+  volatility, and curvature available at or before check-up `k`.
+- A new trajectory-shape diagnostic claim requires K5 HGB to repair all-split
+  horizon-3 `capacity_Ah_kh` against both K2 and prior-slope references while
+  preserving C-rate horizon-2/3 performance for both primary targets.
+- If K5 helps only isolated rows, report split/target-specific diagnostic
+  value only.
+- K3 actual k-to-k+h exposure remains oracle-only and cannot be used to
+  justify prospective forecasting, architecture, policy, or causal claims.

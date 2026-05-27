@@ -32,6 +32,7 @@ The project has completed the major baseline-first charter gates:
 - hierarchical replicate-aware capacity comparators;
 - multi-horizon capacity forecasting diagnostics.
 - multi-horizon error forensics and prospective feature audit.
+- prior-trajectory shape multi-horizon diagnostic.
 
 The strongest contribution is now a rigorous grouped-validation benchmark that
 documents which battery-degradation signals are supported, diagnostic-only,
@@ -61,7 +62,9 @@ not a solved multi-step forecasting result. Milestone 6.1 diagnoses that result
 without new model training: the C-rate rows remain positive, K3 oracle exposure
 is useful only as a non-prospective diagnostic, and the only plausible future
 technical branch is a predeclared prior-trajectory-shape audit using information
-available at check-up `k`.
+available at check-up `k`. Milestone 6.2 runs that audit and keeps the branch
+partial/diagnostic: K5 does not repair all-split horizon-3 capacity and does
+not preserve every C-rate horizon-2/3 target row.
 
 ## Recommended Path
 
@@ -107,12 +110,12 @@ does not create a stronger next branch: the mean C-rate delta gain is tiny,
 paired p05 is negative, and interval coverage fails. Treat it as a completed
 charter comparator rather than a reason to tune more partial-pooling variants.
 
-The multi-horizon capacity branch and its error forensics have now also been
-run. It creates a useful diagnostic result, especially for C-rate horizons 2
-and 3, but it does not justify sequence/neural models, policy ranking, or
-CBAT. If continued, the only defensible follow-up is a predeclared
-prior-trajectory-shape audit, not post-hoc tuning around the near-tied
-horizon-3 capacity-level row.
+The multi-horizon capacity branch, error forensics, and prior-trajectory-shape
+follow-up have now also been run. The K5 prior-trajectory feature group has
+isolated diagnostic gains, but it does not repair the all-split horizon-3
+capacity near miss and does not preserve all C-rate horizon-2/3 rows. This
+branch is complete as diagnostic evidence and does not justify sequence/neural
+models, policy ranking, or CBAT.
 
 ## Explicitly Rejected Branches
 

@@ -38,6 +38,7 @@ Layer 4: Feature and target sidecars
   mbp analysis threshold-event-labels
   mbp analysis build-threshold-warning-table
   mbp analysis build-capacity-horizon-table
+  mbp analysis build-capacity-horizon-trajectory-features
     |
     v
 Layer 5: Baseline reports
@@ -60,7 +61,9 @@ Layer 6: Diagnostics and hardening
   mbp analysis replicate-uncertainty
   mbp analysis calibrate-capacity
   mbp analysis capacity-horizon-qa
+  mbp analysis capacity-horizon-trajectory-qa
   mbp baseline diagnose-capacity-horizon
+  mbp baseline diagnose-capacity-horizon-trajectory
   mbp baseline diagnose-sequence-value
   mbp baseline compare-prior-eis-pulse
   mbp baseline compare-prior-eis-capacity

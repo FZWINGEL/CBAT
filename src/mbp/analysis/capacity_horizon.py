@@ -13,9 +13,14 @@ from typing import Any
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from mbp.data.schema_contracts import CAPACITY_HORIZON_TABLE_V1_SCHEMA, validate_table
+from mbp.data.schema_contracts import (
+    CAPACITY_HORIZON_TABLE_V1_SCHEMA,
+    CAPACITY_HORIZON_TRAJECTORY_FEATURES_V1_SCHEMA,
+    validate_table,
+)
 
 SCHEMA_VERSION = "gate60.capacity_horizon_table.v1"
+TRAJECTORY_SCHEMA_VERSION = "gate62.capacity_horizon_trajectory_features.v1"
 DEFAULT_HORIZONS = (1, 2, 3, 5)
 SPLIT_COLUMNS = (
     "condition_fold",
@@ -23,6 +28,22 @@ SPLIT_COLUMNS = (
     "c_rate_holdout_fold",
     "profile_holdout_fold",
     "voltage_window_holdout_fold",
+)
+TRAJECTORY_KEY_COLUMNS = (
+    "cell_id",
+    "parameter_set",
+    "replicate_id",
+    "checkup_k",
+    "target_checkup_k",
+    "horizon_checkups",
+)
+TRAJECTORY_LEAKAGE_MARKERS = (
+    "capacity_Ah_k1",
+    "capacity_Ah_kh",
+    "delta_capacity_Ah_h",
+    "horizon_log_age",
+    "horizon_duration",
+    "horizon_calendar",
 )
 
 
@@ -100,6 +121,146 @@ def write_capacity_horizon_qa(
     }
     out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return report
+
+
+def build_capacity_horizon_trajectory_features(
+    horizon_table_path: Path,
+    interval_table_path: Path,
+    out_path: Path,
+) -> pa.Table:
+    """Build prior-only trajectory-shape features for capacity horizon rows."""
+    horizon_rows = pq.read_table(horizon_table_path).to_pylist()
+    interval_rows = pq.read_table(interval_table_path).to_pylist()
+    if not horizon_rows:
+        raise ValueError("Capacity horizon table is empty.")
+    if not interval_rows:
+        raise ValueError("Interval table is empty.")
+
+    history_by_cell = _trajectory_history_by_cell(interval_rows)
+    rows = []
+    for row in horizon_rows:
+        history = [
+            item
+            for item in history_by_cell.get(str(row["cell_id"]), [])
+            if int(item["checkup_k_next"]) <= int(row["checkup_k"])
+        ]
+        rows.append(_trajectory_feature_row(row, history))
+
+    table = pa.Table.from_pylist(rows, schema=CAPACITY_HORIZON_TRAJECTORY_FEATURES_V1_SCHEMA)
+    if not validate_table(table, CAPACITY_HORIZON_TRAJECTORY_FEATURES_V1_SCHEMA):
+        raise TypeError(
+            "Generated capacity horizon trajectory features do not match "
+            "CAPACITY_HORIZON_TRAJECTORY_FEATURES_V1_SCHEMA."
+        )
+    table = table.replace_schema_metadata(
+        {
+            b"schema_version": TRAJECTORY_SCHEMA_VERSION.encode(),
+            b"horizon_table_path": str(horizon_table_path).encode(),
+            b"interval_table_path": str(interval_table_path).encode(),
+            b"feature_policy": b"prior_capacity_trajectory_observed_at_or_before_checkup_k",
+        }
+    )
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    pq.write_table(table, out_path)
+    return table
+
+
+def write_capacity_horizon_trajectory_qa(
+    trajectory_features_path: Path,
+    horizon_table_path: Path,
+    out_path: Path,
+    coverage_out: Path,
+) -> dict[str, Any]:
+    """Write QA for prior-only capacity horizon trajectory features."""
+    trajectory_rows = pq.read_table(trajectory_features_path).to_pylist()
+    horizon_rows = pq.read_table(horizon_table_path).to_pylist()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    coverage_out.parent.mkdir(parents=True, exist_ok=True)
+
+    trajectory_keys = [_trajectory_key(row) for row in trajectory_rows]
+    horizon_keys = {_trajectory_key(row) for row in horizon_rows}
+    duplicate_count = len(trajectory_keys) - len(set(trajectory_keys))
+    missing_keys = sorted(horizon_keys - set(trajectory_keys))
+    extra_keys = sorted(set(trajectory_keys) - horizon_keys)
+    feature_columns = [
+        field.name
+        for field in CAPACITY_HORIZON_TRAJECTORY_FEATURES_V1_SCHEMA
+        if field.name not in set(TRAJECTORY_KEY_COLUMNS) | {"trajectory_quality_flags", "schema_version"}
+    ]
+    nan_counts = {
+        column: sum(not math.isfinite(_as_float(row.get(column))) for row in trajectory_rows)
+        for column in feature_columns
+        if CAPACITY_HORIZON_TRAJECTORY_FEATURES_V1_SCHEMA.field(column).type == pa.float64()
+    }
+    leakage_columns = [
+        column
+        for column in feature_columns
+        if any(marker in column for marker in TRAJECTORY_LEAKAGE_MARKERS)
+    ]
+    coverage_rows = capacity_horizon_trajectory_coverage_rows(trajectory_rows, horizon_rows)
+    _write_csv(coverage_out, coverage_rows)
+    warnings = []
+    if duplicate_count:
+        warnings.append("duplicate_trajectory_keys")
+    if missing_keys:
+        warnings.append("missing_horizon_keys")
+    if extra_keys:
+        warnings.append("extra_trajectory_keys")
+    if leakage_columns:
+        warnings.append("trajectory_feature_leakage_columns")
+    if any(int(row["zero_prior_history_rows"]) > 0 for row in coverage_rows):
+        warnings.append("some_rows_have_no_prior_history")
+    report = {
+        "status": "failed" if leakage_columns or duplicate_count or missing_keys or extra_keys else "passed",
+        "schema_version": TRAJECTORY_SCHEMA_VERSION,
+        "generated_at_utc": datetime.now(UTC).isoformat(),
+        "row_counts": {
+            "rows": len(trajectory_rows),
+            "horizon_rows": len(horizon_rows),
+            "cells": len({str(row["cell_id"]) for row in trajectory_rows}),
+            "parameter_sets": len({int(row["parameter_set"]) for row in trajectory_rows}),
+            "duplicate_keys": duplicate_count,
+            "missing_horizon_keys": len(missing_keys),
+            "extra_trajectory_keys": len(extra_keys),
+        },
+        "nan_counts": nan_counts,
+        "leakage_columns": leakage_columns,
+        "warnings": sorted(set(warnings)),
+        "outputs": {"report": str(out_path), "coverage": str(coverage_out)},
+    }
+    out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return report
+
+
+def capacity_horizon_trajectory_coverage_rows(
+    trajectory_rows: list[dict[str, Any]],
+    horizon_rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    grouped: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    for row in trajectory_rows:
+        grouped[int(row["horizon_checkups"])].append(row)
+    horizon_count_by_horizon: dict[int, int] = defaultdict(int)
+    for row in horizon_rows:
+        horizon_count_by_horizon[int(row["horizon_checkups"])] += 1
+
+    output = []
+    for horizon in sorted(set(grouped) | set(horizon_count_by_horizon)):
+        rows = grouped.get(horizon, [])
+        history_lengths = [int(row["prior_history_length"]) for row in rows]
+        output.append(
+            {
+                "horizon_checkups": horizon,
+                "row_count": len(rows),
+                "expected_horizon_rows": horizon_count_by_horizon.get(horizon, 0),
+                "zero_prior_history_rows": sum(length == 0 for length in history_lengths),
+                "median_prior_history_length": _median_int(history_lengths),
+                "min_prior_history_length": min(history_lengths) if history_lengths else 0,
+                "max_prior_history_length": max(history_lengths) if history_lengths else 0,
+                "cells": len({str(row["cell_id"]) for row in rows}),
+                "parameter_sets": len({int(row["parameter_set"]) for row in rows}),
+            }
+        )
+    return output
 
 
 def capacity_horizon_coverage_rows(
@@ -260,6 +421,108 @@ def _group_by_cell(rows: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]
     for row in rows:
         grouped[str(row["cell_id"])].append(row)
     return grouped
+
+
+def _trajectory_history_by_cell(rows: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    return {
+        cell_id: sorted(cell_rows, key=lambda row: int(row["checkup_k"]))
+        for cell_id, cell_rows in _group_by_cell(rows).items()
+    }
+
+
+def _trajectory_feature_row(horizon_row: dict[str, Any], history_rows: list[dict[str, Any]]) -> dict[str, Any]:
+    deltas = [_as_float(row.get("delta_capacity_Ah")) for row in history_rows]
+    finite_deltas = [value for value in deltas if math.isfinite(value)]
+    slopes = [
+        _safe_ratio(row.get("delta_capacity_Ah"), row.get("calendar_days"))
+        for row in history_rows
+    ]
+    finite_slopes = [float(value) for value in slopes if value is not None and math.isfinite(value)]
+    capacities = []
+    for row in history_rows:
+        capacity = _as_float(row.get("capacity_Ah_k"))
+        if math.isfinite(capacity):
+            capacities.append(capacity)
+    if history_rows:
+        final_capacity = _as_float(history_rows[-1].get("capacity_Ah_k1"))
+        if math.isfinite(final_capacity):
+            capacities.append(final_capacity)
+
+    recent = finite_deltas[-3:]
+    recent_slopes = finite_slopes[-3:]
+    accelerations = [finite_deltas[index] - finite_deltas[index - 1] for index in range(1, len(finite_deltas))]
+    recent_accelerations = accelerations[-3:]
+    flags = []
+    if not finite_deltas:
+        flags.append("no_prior_history")
+    elif len(finite_deltas) < 3:
+        flags.append("short_prior_history")
+
+    return {
+        "cell_id": str(horizon_row["cell_id"]),
+        "parameter_set": int(horizon_row["parameter_set"]),
+        "replicate_id": int(horizon_row["replicate_id"]),
+        "checkup_k": int(horizon_row["checkup_k"]),
+        "target_checkup_k": int(horizon_row["target_checkup_k"]),
+        "horizon_checkups": int(horizon_row["horizon_checkups"]),
+        "prior_history_length": len(finite_deltas),
+        "prior_capacity_delta_lag1": _lag(finite_deltas, 1),
+        "prior_capacity_delta_lag2": _lag(finite_deltas, 2),
+        "prior_capacity_delta_lag3": _lag(finite_deltas, 3),
+        "prior_delta_mean_3": _mean_or_none(recent),
+        "prior_delta_std_3": _std_or_none(recent),
+        "prior_delta_min_3": min(recent) if recent else None,
+        "prior_delta_max_3": max(recent) if recent else None,
+        "prior_delta_mean_all": _mean_or_none(finite_deltas),
+        "prior_delta_std_all": _std_or_none(finite_deltas),
+        "prior_slope_per_day_mean_3": _mean_or_none(recent_slopes),
+        "prior_slope_per_day_std_3": _std_or_none(recent_slopes),
+        "prior_capacity_curvature_lag1": accelerations[-1] if accelerations else None,
+        "prior_capacity_acceleration_mean_3": _mean_or_none(recent_accelerations),
+        "prior_capacity_volatility_3": _std_or_none(recent),
+        "prior_capacity_increase_count": sum(delta > 0.0 for delta in finite_deltas),
+        "prior_capacity_increase_fraction": _safe_ratio(sum(delta > 0.0 for delta in finite_deltas), len(finite_deltas)),
+        "prior_capacity_range_Ah_all": (max(capacities) - min(capacities)) if capacities else None,
+        "prior_delta_abs_max_all": max((abs(delta) for delta in finite_deltas), default=None),
+        "trajectory_quality_flags": ";".join(flags) if flags else "none",
+        "schema_version": TRAJECTORY_SCHEMA_VERSION,
+    }
+
+
+def _trajectory_key(row: dict[str, Any]) -> tuple[Any, ...]:
+    return tuple(
+        str(row[column]) if column == "cell_id" else int(row[column])
+        for column in TRAJECTORY_KEY_COLUMNS
+    )
+
+
+def _lag(values: list[float], lag: int) -> float | None:
+    if len(values) < lag:
+        return None
+    return values[-lag]
+
+
+def _mean_or_none(values: list[float]) -> float | None:
+    finite = [float(value) for value in values if math.isfinite(float(value))]
+    return sum(finite) / len(finite) if finite else None
+
+
+def _std_or_none(values: list[float]) -> float | None:
+    finite = [float(value) for value in values if math.isfinite(float(value))]
+    if not finite:
+        return None
+    mean = sum(finite) / len(finite)
+    return math.sqrt(sum((value - mean) ** 2 for value in finite) / len(finite))
+
+
+def _median_int(values: list[int]) -> float:
+    if not values:
+        return 0.0
+    ordered = sorted(values)
+    midpoint = len(ordered) // 2
+    if len(ordered) % 2:
+        return float(ordered[midpoint])
+    return (ordered[midpoint - 1] + ordered[midpoint]) / 2.0
 
 
 def _sum_numeric(rows: list[dict[str, Any]], column: str) -> float | None:

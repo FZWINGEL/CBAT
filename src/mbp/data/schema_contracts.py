@@ -586,6 +586,39 @@ CAPACITY_HORIZON_TABLE_V1_SCHEMA = pa.schema(
     ]
 )
 
+# 13b. Capacity horizon prior-trajectory feature sidecar
+CAPACITY_HORIZON_TRAJECTORY_FEATURES_V1_SCHEMA = pa.schema(
+    [
+        ("cell_id", pa.string(), False),
+        ("parameter_set", pa.int32(), False),
+        ("replicate_id", pa.int32(), False),
+        ("checkup_k", pa.int32(), False),
+        ("target_checkup_k", pa.int32(), False),
+        ("horizon_checkups", pa.int32(), False),
+        ("prior_history_length", pa.int32(), False),
+        ("prior_capacity_delta_lag1", pa.float64(), True),
+        ("prior_capacity_delta_lag2", pa.float64(), True),
+        ("prior_capacity_delta_lag3", pa.float64(), True),
+        ("prior_delta_mean_3", pa.float64(), True),
+        ("prior_delta_std_3", pa.float64(), True),
+        ("prior_delta_min_3", pa.float64(), True),
+        ("prior_delta_max_3", pa.float64(), True),
+        ("prior_delta_mean_all", pa.float64(), True),
+        ("prior_delta_std_all", pa.float64(), True),
+        ("prior_slope_per_day_mean_3", pa.float64(), True),
+        ("prior_slope_per_day_std_3", pa.float64(), True),
+        ("prior_capacity_curvature_lag1", pa.float64(), True),
+        ("prior_capacity_acceleration_mean_3", pa.float64(), True),
+        ("prior_capacity_volatility_3", pa.float64(), True),
+        ("prior_capacity_increase_count", pa.int32(), False),
+        ("prior_capacity_increase_fraction", pa.float64(), True),
+        ("prior_capacity_range_Ah_all", pa.float64(), True),
+        ("prior_delta_abs_max_all", pa.float64(), True),
+        ("trajectory_quality_flags", pa.string(), False),
+        ("schema_version", pa.string(), False),
+    ]
+)
+
 # 14. PULSE interval target table schema
 PULSE_TARGET_TABLE_SCHEMA = pa.schema(
     [

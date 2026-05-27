@@ -2116,6 +2116,37 @@ def analysis_capacity_horizon_qa(
     typer.echo(f"Capacity horizon QA {report['status']}: rows={report['row_counts']['rows']}")
 
 
+@analysis_app.command("build-capacity-horizon-trajectory-features")
+def analysis_build_capacity_horizon_trajectory_features(
+    horizon_table: Path = typer.Option(..., "--horizon-table", help="Path to capacity_horizon_table_v1.parquet."),
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output path for capacity_horizon_trajectory_features_v1.parquet."),
+) -> None:
+    """Build prior-only trajectory-shape features for capacity horizon rows."""
+    from mbp.analysis.capacity_horizon import build_capacity_horizon_trajectory_features
+
+    table = build_capacity_horizon_trajectory_features(horizon_table, interval_table, out)
+    typer.echo(f"Capacity horizon trajectory features generated: {table.num_rows} rows written to {out}")
+
+
+@analysis_app.command("capacity-horizon-trajectory-qa")
+def analysis_capacity_horizon_trajectory_qa(
+    trajectory_features: Path = typer.Option(
+        ...,
+        "--trajectory-features",
+        help="Path to capacity_horizon_trajectory_features_v1.parquet.",
+    ),
+    horizon_table: Path = typer.Option(..., "--horizon-table", help="Path to capacity_horizon_table_v1.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output JSON QA report path."),
+    coverage_out: Path = typer.Option(..., "--coverage-out", help="Output trajectory coverage CSV path."),
+) -> None:
+    """Write prior-trajectory feature QA diagnostics."""
+    from mbp.analysis.capacity_horizon import write_capacity_horizon_trajectory_qa
+
+    report = write_capacity_horizon_trajectory_qa(trajectory_features, horizon_table, out, coverage_out)
+    typer.echo(f"Capacity horizon trajectory QA {report['status']}: rows={report['row_counts']['rows']}")
+
+
 @baseline_app.command("diagnose-capacity")
 def baseline_diagnose_capacity(
     report: Path = typer.Option(
@@ -2185,6 +2216,11 @@ def baseline_run_capacity_horizon(
     out: Path = typer.Option(..., "--out", help="Output JSON report path."),
     predictions_out: Path = typer.Option(..., "--predictions-out", help="Output prediction Parquet path."),
     out_dir: Path | None = typer.Option(None, "--out-dir", help="Output directory for diagnostics."),
+    trajectory_features: Path | None = typer.Option(
+        None,
+        "--trajectory-features",
+        help="Optional capacity_horizon_trajectory_features_v1.parquet for K4/K5 feature groups.",
+    ),
     seed: int = typer.Option(42, "--seed", help="Deterministic model seed."),
     hgb_max_iter: int = typer.Option(50, "--hgb-max-iter", min=1, help="HGB regressor max_iter."),
     targets: str | None = typer.Option(None, "--targets", help="Comma-separated target labels."),
@@ -2201,6 +2237,7 @@ def baseline_run_capacity_horizon(
         out,
         predictions_out,
         out_dir,
+        trajectory_features,
         seed=seed,
         hgb_max_iter=hgb_max_iter,
         targets=_comma_values(targets) if targets else None,
@@ -2212,6 +2249,23 @@ def baseline_run_capacity_horizon(
     typer.echo(
         "Capacity horizon baseline report generated: "
         f"{report['row_counts']['metrics']} metric rows written to {out}"
+    )
+
+
+@baseline_app.command("diagnose-capacity-horizon-trajectory")
+def baseline_diagnose_capacity_horizon_trajectory(
+    report: Path = typer.Option(..., "--report", help="Capacity horizon trajectory JSON report."),
+    predictions: Path = typer.Option(..., "--predictions", help="Capacity horizon trajectory prediction Parquet."),
+    horizon_table: Path = typer.Option(..., "--horizon-table", help="Path to capacity_horizon_table_v1.parquet."),
+    out_dir: Path = typer.Option(..., "--out-dir", help="Output directory for trajectory diagnostics."),
+) -> None:
+    """Diagnose prior-trajectory shape gains for multi-horizon capacity forecasts."""
+    from mbp.baselines.capacity_horizon import diagnose_capacity_horizon_trajectory
+
+    result = diagnose_capacity_horizon_trajectory(report, predictions, horizon_table, out_dir)
+    typer.echo(
+        "Capacity horizon trajectory diagnostics generated: "
+        f"{result['row_counts']['trajectory_gain_rows']} gain rows written under {out_dir}"
     )
 
 

@@ -5,9 +5,9 @@ Status: `passed`
 ## Summary
 
 - Required files checked: 10
-- Tracked artifacts checked: 69
-- Ignored artifacts checked: 23
-- Claim matrix rows checked: 26
+- Tracked artifacts checked: 86
+- Ignored artifacts checked: 25
+- Claim matrix rows checked: 27
 
 ## Errors
 
@@ -26,6 +26,7 @@ Status: `passed`
 - bagit
 - baseline
 - build-capacity-horizon-table
+- build-capacity-horizon-trajectory-features
 - build-features
 - build-knee-risk-labels
 - build-manuscript-assets
@@ -38,6 +39,7 @@ Status: `passed`
 - calibrate-capacity
 - calibrate-threshold-warning
 - capacity-horizon-qa
+- capacity-horizon-trajectory-qa
 - check-manuscript
 - check-reader-manuscript
 - check-release-candidate
@@ -54,6 +56,7 @@ Status: `passed`
 - current-sign-audit
 - diagnose-capacity
 - diagnose-capacity-horizon
+- diagnose-capacity-horizon-trajectory
 - diagnose-sequence-value
 - diagnose-stress-features
 - diagnose-stressor-robust-forensics

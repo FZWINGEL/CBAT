@@ -11,8 +11,8 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 6.1: Multi-horizon forecasting error forensics
-and prospective feature audit**.
+The repository is in **Milestone 6.2: Prospective prior-trajectory shape
+baseline gate**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -198,6 +198,13 @@ hotspots, and K3 oracle gains while keeping K3 non-prospective. The only
 possible future technical branch is a predeclared prior-trajectory-shape audit;
 sequence/neural models, CBAT, policy ranking, causal claims, and calibrated
 risk/uncertainty remain blocked.
+Milestone 6.2 runs that predeclared prospective prior-trajectory-shape audit.
+`capacity_horizon_trajectory_features_v1.parquet` contains 13,770 prior-only
+feature rows and passes leakage/coverage QA. The K5 nominal-plus-trajectory HGB
+arm is partially useful in a few rows, but it does not repair all-split
+horizon-3 `capacity_Ah_kh` (`0.0981241` versus K2 `0.0935304` and prior slope
+`0.0932329`) and does not preserve all C-rate horizon-2/3 target rows. The
+trajectory branch is therefore partial/diagnostic only.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -206,6 +213,11 @@ improvement claims have been started.
 
 Current state:
 
+- Milestone 6.2 is a prospective prior-trajectory shape baseline gate. It
+  builds a prior-only trajectory sidecar, joins K4/K5 feature groups into the
+  existing non-neural capacity-horizon runner, and diagnoses trajectory gains
+  against K2, persistence, and prior-slope references. It adds no neural,
+  sequence, CBAT, policy, causal, or calibrated-risk claims.
 - Milestone 6.1 is a report-based multi-horizon error forensics gate. It
   reads the Milestone 6.0 report, prediction Parquet, and horizon table to
   render split/reference gains, C-rate condition hotspots, prior-slope failure
@@ -301,6 +313,15 @@ Current state:
   `partially_supported`, C-rate multi-horizon `supported_for_diagnostics`,
   oracle exposure `oracle_diagnostic_only`, and recommends only a possible
   `prior_trajectory_shape_audit` if technical work continues.
+- `mbp analysis build-capacity-horizon-trajectory-features` generated 13,770
+  trajectory-feature rows. QA passed with zero duplicate, missing, or extra
+  horizon keys and no leakage columns; rows at check-up 0 have no prior history
+  by construction.
+- `mbp baseline run-capacity-horizon` with K4/K5 produced 1,152 metric rows
+  and 891,648 ignored prediction rows. K5 does not repair all-split horizon-3
+  `capacity_Ah_kh` and does not preserve every C-rate horizon-2/3 row, so
+  trajectory-shape forecasting is only `partially_supported`; horizon-3 repair
+  and C-rate preservation are `not_supported`.
 - Milestone 5.3 remains a correctness-hardening gate for existing calibration
   and stressor-robustness reports. It does not add models, features, or claims.
 - Milestone 5.2 added `ece_10_bin_equal_freq` alongside the existing
