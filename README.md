@@ -29,12 +29,14 @@ processed prediction Parquets.
 - RT/50 PULSE as a scalar resistance diagnostic endpoint;
 - RT/50 EIS scalar endpoints as diagnostic targets;
 - diagnostic 80% capacity-relative threshold-event forecasting beyond
-  proximity baselines and under verified-only censoring sensitivity.
+  proximity baselines and under verified-only censoring sensitivity;
+- negative fixed-length event-sequence and CUDA Torch MLP diagnostics showing
+  that sequence/neural reopening is not currently justified.
 
 ## What Remains Closed
 
 - CBAT architecture work;
-- neural or sequence models;
+- neural or sequence models beyond the completed minimal diagnostic;
 - DRT or learned EIS embeddings;
 - policy ranking;
 - detector-knee prediction;

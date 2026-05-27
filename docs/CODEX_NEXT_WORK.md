@@ -2,22 +2,22 @@
 
 Current recommended branch: benchmark release maintenance and task-registry
 reproducibility. The adaptive stressor-robust replication, attribution,
-stressor-family routing, hierarchical replicate, multi-horizon capacity, and
-prior-trajectory checks have been run and should not be broadened without a
-fresh gated question.
+stressor-family routing, hierarchical replicate, multi-horizon capacity,
+prior-trajectory, and minimal sequence/neural reopening checks have been run
+and should not be broadened without a fresh gated question.
 
 ## Current Phase
 
-Milestone 7.0 is a benchmark task freeze and leaderboard reproducibility gate.
-It defines the official task registry in `configs/benchmark_tasks_v1.yaml`,
-checks it with `mbp report check-benchmark-tasks`, and renders a frozen
-task-level leaderboard plus task/model cards. It is not a modeling,
-architecture, calibration-claim, or policy-ranking branch.
+Milestone 7.1 is a minimal sequence/neural reopening gate. It builds a
+fixed-length LOG_AGE run-event sequence product and evaluates Ridge plus
+CUDA-only Torch MLP true/shuffled sequence diagnostics against aggregate-event
+and timestamp-stress HGB references. It is not a CBAT, transformer,
+architecture, calibration-claim, causal, or policy-ranking branch.
 
 ## Current Result
 
-The task freeze does not change the claim posture. It organizes 12 completed
-benchmark tasks and verifies that their statuses match the v2 claim matrix.
+The task freeze organizes benchmark tasks and verifies that their statuses
+match the v2 claim matrix.
 Threshold-warning
 probability calibration still blocks calibrated-risk wording: Platt
 verified-only primary-horizon mean fixed-width ECE is `0.0748136` and
@@ -71,21 +71,27 @@ Milestone 7.0 freezes the completed evidence base into task cards and a
 leaderboard. It should be maintained as benchmark infrastructure, not treated
 as a reason to reopen model development.
 
+Milestone 7.1 verifies CUDA PyTorch execution (`torch 2.12.0+cu130`) on the
+WSL-visible RTX 5060 Ti, but the scientific gate remains negative:
+true-sequence candidates do not beat aggregate-event HGB or timestamp-stress
+HGB references, and C-rate `delta_capacity_Ah` reopening fails. Treat this as
+a negative H7 check, not as neural/sequence readiness.
+
 ## Optional Technical Branch
 
 No broader technical branch is currently justified. Future technical work, if
 opened, should be release automation, task-registry maintenance, or
 documentation synthesis unless a fresh predeclared question is created. Do not
-open CBAT, policy ranking, sequence modeling, or new modality expansion from
-the Milestone 5.6-7.0 results.
+open CBAT, policy ranking, transformers, broad sequence modeling, or new
+modality expansion from the Milestone 5.6-7.1 results.
 
 ## Blocked Branches
 
 Do not open:
 
 - CBAT architecture
-- neural models
-- sequence models
+- neural models beyond the completed CUDA Torch MLP reopening diagnostic
+- sequence models beyond the completed fixed-length event-sequence diagnostic
 - transformers
 - DRT
 - learned EIS embeddings
@@ -141,12 +147,15 @@ Allowed current wording:
   multi-horizon capacity gap
 - the benchmark task registry freezes current task definitions and claim
   posture without adding new results
+- fixed-length event-sequence and CUDA Torch MLP diagnostics do not reopen
+  sequence/neural modeling
 - K3 horizon exposure is oracle diagnostic only
 
 Forbidden current wording:
 
 - CBAT-ready
 - sequence model justified
+- neural model justified
 - calibrated risk
 - detector-knee prediction
 - causal early warning

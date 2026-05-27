@@ -51,10 +51,13 @@ mbp features build-run-events --log-age data/interim/modality_table_log_age.parq
 mbp features run-events-qa --run-events data/interim/run_event_table_v1.parquet --interval-table data/interim/interval_table.parquet --out reports/audit/run_event_qa_report.json --coverage-out reports/audit/run_event_coverage.csv
 mbp features build-sequence-features --run-events data/interim/run_event_table_v1.parquet --interval-table data/interim/interval_table.parquet --out data/interim/interval_sequence_features_v1.parquet
 mbp features sequence-qa --sequence-features data/interim/interval_sequence_features_v1.parquet --interval-table data/interim/interval_table.parquet --out reports/audit/sequence_feature_qa_report.json
+mbp features build-event-sequences --run-events data/interim/run_event_table_v1.parquet --interval-table data/interim/interval_table.parquet --out data/interim/interval_event_sequence_table_v1.parquet --max-events 64 --seed 42
+mbp features event-sequences-qa --event-sequences data/interim/interval_event_sequence_table_v1.parquet --interval-table data/interim/interval_table.parquet --out reports/audit/interval_event_sequence_qa_report.json
 ```
 
 Outputs: ignored feature Parquets and tracked QA reports. The current run-event
-table has 79,328,229 rows, and the sequence sidecar has 3,827 rows.
+table has 79,328,229 rows, the aggregate/order sequence sidecar has 3,827
+rows, and the fixed-length event-sequence sidecar has 3,827 rows.
 
 ## 4. PULSE Products
 
@@ -93,6 +96,7 @@ mbp baseline replicate-stressor-robust-adaptive --interval-table data/interim/in
 mbp baseline run-stressor-robust-attribution --interval-table data/interim/interval_table.parquet --interval-subsets data/splits/interval_subset_registry_v1.parquet --stress-features data/interim/interval_stress_features_v1_1.parquet --out reports/baselines/capacity_stressor_robust_attribution_report.json --predictions-out data/processed/capacity_stressor_robust_attribution_predictions.parquet --out-dir reports/baselines/capacity_stressor_robust_attribution
 mbp baseline run-stressor-robust-arm-selector --interval-table data/interim/interval_table.parquet --interval-subsets data/splits/interval_subset_registry_v1.parquet --stress-features data/interim/interval_stress_features_v1_1.parquet --attribution-report reports/baselines/capacity_stressor_robust_attribution_report.json --attribution-predictions data/processed/capacity_stressor_robust_attribution_predictions.parquet --out reports/baselines/capacity_stressor_robust_arm_selector_report.json --predictions-out data/processed/capacity_stressor_robust_arm_selector_predictions.parquet --out-dir reports/baselines/capacity_stressor_robust_arm_selector
 mbp baseline run-hierarchical-capacity --interval-table data/interim/interval_table.parquet --interval-subsets data/splits/interval_subset_registry_v1.parquet --stress-features data/interim/interval_stress_features_v1_1.parquet --out reports/baselines/capacity_hierarchical_replicate_report.json --predictions-out data/processed/capacity_hierarchical_replicate_predictions.parquet --out-dir reports/baselines/capacity_hierarchical_replicate --targets capacity_Ah_k1,delta_capacity_Ah --split-views condition_fold,temperature_holdout_fold,c_rate_holdout_fold,profile_holdout_fold,voltage_window_holdout_fold --hgb-max-iter 50
+mbp baseline run-minimal-sequence-reopening --interval-table data/interim/interval_table.parquet --interval-subsets data/splits/interval_subset_registry_v1.parquet --event-sequences data/interim/interval_event_sequence_table_v1.parquet --out reports/baselines/minimal_sequence_reopening_report.json --predictions-out data/processed/minimal_sequence_reopening_predictions.parquet --out-dir reports/baselines/minimal_sequence_reopening --reference-sequence-report reports/baselines/capacity_sequence_value_hgb50_report.json --reference-stress-report reports/baselines/capacity_stress_features_v1_1_hgb50_report.json --model-levels S0_ridge_true_sequence,S1_ridge_shuffled_sequence,S2_torch_mlp_true_sequence,S3_torch_mlp_shuffled_sequence --targets capacity_Ah_k1,delta_capacity_Ah --split-views condition_fold,temperature_holdout_fold,c_rate_holdout_fold,profile_holdout_fold,voltage_window_holdout_fold --mlp-max-iter 200
 mbp analysis build-capacity-horizon-table --interval-table data/interim/interval_table.parquet --out data/interim/capacity_horizon_table_v1.parquet --horizons 1,2,3,5
 mbp analysis capacity-horizon-qa --horizon-table data/interim/capacity_horizon_table_v1.parquet --interval-table data/interim/interval_table.parquet --out reports/analysis/capacity_horizon/capacity_horizon_qa_report.json --coverage-out reports/analysis/capacity_horizon/capacity_horizon_coverage.csv
 mbp analysis build-capacity-horizon-trajectory-features --horizon-table data/interim/capacity_horizon_table_v1.parquet --interval-table data/interim/interval_table.parquet --out data/interim/capacity_horizon_trajectory_features_v1.parquet
@@ -110,6 +114,9 @@ The attribution command emits tracked decomposition reports and an ignored
 prediction Parquet.
 The hierarchical command emits tracked L5 comparator reports and an ignored
 prediction Parquet.
+The minimal-sequence reopening command emits tracked sequence reopening reports
+and an ignored prediction Parquet. Torch MLP rows require CUDA-enabled PyTorch;
+CPU neural fallback is invalid for that gate.
 The capacity-horizon commands emit a tracked QA report, a tracked grouped
 baseline report, tracked forensics reports, and ignored horizon/prediction
 Parquets. K3 horizon exposure features are oracle diagnostics, not prospective

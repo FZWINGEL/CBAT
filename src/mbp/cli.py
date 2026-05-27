@@ -995,6 +995,49 @@ def features_sequence_qa(
     typer.echo(f"Sequence-feature QA {report['status']}: rows={report['row_count']}")
 
 
+@features_app.command("build-event-sequences")
+def features_build_event_sequences(
+    run_events: Path = typer.Option(..., "--run-events", help="Path to run_event_table_v1.parquet."),
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output path for interval_event_sequence_table_v1.parquet."),
+    max_events: int = typer.Option(
+        64,
+        "--max-events",
+        min=1,
+        help="Maximum sampled events retained per interval.",
+    ),
+    seed: int = typer.Option(42, "--seed", help="Deterministic event-order shuffle seed."),
+) -> None:
+    """Build fixed-length event-sequence vectors for the minimal sequence gate."""
+    from mbp.data.products.event_sequences import build_interval_event_sequence_table
+
+    table = build_interval_event_sequence_table(
+        run_events,
+        interval_table,
+        out,
+        max_events=max_events,
+        seed=seed,
+    )
+    typer.echo(f"Event-sequence table generated: {table.num_rows} rows written to {out}")
+
+
+@features_app.command("event-sequences-qa")
+def features_event_sequences_qa(
+    event_sequences: Path = typer.Option(
+        ...,
+        "--event-sequences",
+        help="Path to interval_event_sequence_table_v1.parquet.",
+    ),
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output JSON path for event-sequence QA."),
+) -> None:
+    """Run QA checks on fixed-length event-sequence vectors."""
+    from mbp.data.products.event_sequences import write_interval_event_sequence_qa
+
+    report = write_interval_event_sequence_qa(event_sequences, interval_table, out)
+    typer.echo(f"Event-sequence QA {report['status']}: rows={report['row_count']}")
+
+
 @features_app.command("current-sign-audit")
 def features_current_sign_audit(
     log_age: Path = typer.Option(
@@ -1981,6 +2024,89 @@ def baseline_diagnose_sequence_value(
     typer.echo(
         "Sequence-value diagnostics generated: "
         f"{result['row_counts']['aggregate_vs_order']} aggregate/order rows"
+    )
+
+
+@baseline_app.command("run-minimal-sequence-reopening")
+def baseline_run_minimal_sequence_reopening(
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    interval_subsets: Path = typer.Option(
+        ...,
+        "--interval-subsets",
+        help="Path to interval_subset_registry_v1.parquet.",
+    ),
+    event_sequences: Path = typer.Option(
+        ...,
+        "--event-sequences",
+        help="Path to interval_event_sequence_table_v1.parquet.",
+    ),
+    out: Path = typer.Option(..., "--out", help="Output JSON report path."),
+    predictions_out: Path = typer.Option(
+        ...,
+        "--predictions-out",
+        help="Output ignored prediction Parquet path.",
+    ),
+    reference_sequence_report: Path | None = typer.Option(
+        Path("reports/baselines/capacity_sequence_value_hgb50_report.json"),
+        "--reference-sequence-report",
+        help="Optional Milestone 2.4 sequence-value report for aggregate-event references.",
+    ),
+    reference_stress_report: Path | None = typer.Option(
+        Path("reports/baselines/capacity_stress_features_v1_1_hgb50_report.json"),
+        "--reference-stress-report",
+        help="Optional stress-feature HGB report for timestamp-stress references.",
+    ),
+    out_dir: Path | None = typer.Option(None, "--out-dir", help="Output directory for diagnostics."),
+    subset: str = typer.Option("baseline_clean_tolerant", "--subset", help="Interval subset flag."),
+    seed: int = typer.Option(42, "--seed", help="Deterministic model seed."),
+    model_levels: str = typer.Option(
+        "S0_ridge_true_sequence,S1_ridge_shuffled_sequence,S2_torch_mlp_true_sequence,S3_torch_mlp_shuffled_sequence",
+        "--model-levels",
+        help="Comma-separated minimal sequence model levels. Torch MLP levels require CUDA.",
+    ),
+    targets: str = typer.Option(
+        "capacity_Ah_k1,delta_capacity_Ah",
+        "--targets",
+        help="Comma-separated capacity targets.",
+    ),
+    split_views: str = typer.Option(
+        "condition_fold,temperature_holdout_fold,c_rate_holdout_fold,profile_holdout_fold,voltage_window_holdout_fold",
+        "--split-views",
+        help="Comma-separated grouped split views.",
+    ),
+    mlp_max_iter: int = typer.Option(
+        200,
+        "--mlp-max-iter",
+        min=1,
+        help="Maximum iterations for the tiny CUDA Torch MLP diagnostic.",
+    ),
+) -> None:
+    """Run the minimal sequence/neural reopening gate."""
+    from mbp.baselines.minimal_sequence import run_minimal_sequence_reopening
+
+    try:
+        report = run_minimal_sequence_reopening(
+            interval_table,
+            interval_subsets,
+            event_sequences,
+            out,
+            predictions_out,
+            reference_sequence_report_path=reference_sequence_report,
+            reference_stress_report_path=reference_stress_report,
+            out_dir=out_dir,
+            subset=subset,
+            seed=seed,
+            model_levels=_comma_values(model_levels),
+            targets=_comma_values(targets),
+            split_views=_comma_values(split_views),
+            mlp_max_iter=mlp_max_iter,
+        )
+    except RuntimeError as exc:
+        typer.echo(str(exc))
+        raise typer.Exit(code=1) from exc
+    typer.echo(
+        "Minimal sequence reopening report generated: "
+        f"{len(report['metrics'])} metric rows written to {out}"
     )
 
 

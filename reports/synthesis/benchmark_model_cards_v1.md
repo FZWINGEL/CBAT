@@ -8,6 +8,12 @@ These cards summarize model families already evaluated in the frozen benchmark. 
 - Task statuses: supported
 - Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
 
+## cuda_torch_mlp_sequence
+
+- Used in tasks: T13_minimal_sequence_reopening
+- Task statuses: not_supported
+- Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
+
 ## eis_scalar_baseline
 
 - Used in tasks: T03_eis_scalar_endpoint
@@ -24,6 +30,12 @@ These cards summarize model families already evaluated in the frozen benchmark. 
 
 - Used in tasks: T04_threshold_warning
 - Task statuses: supported_for_diagnostics
+- Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
+
+## fixed_length_event_sequence
+
+- Used in tasks: T13_minimal_sequence_reopening
+- Task statuses: not_supported
 - Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
 
 ## hgb_capacity
@@ -170,6 +182,12 @@ These cards summarize model families already evaluated in the frozen benchmark. 
 - Task statuses: diagnostic_only
 - Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
 
+## ridge_sequence
+
+- Used in tasks: T13_minimal_sequence_reopening
+- Task statuses: not_supported
+- Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
+
 ## semi_empirical_ridge
 
 - Used in tasks: T12_semi_empirical_replicate_checks
@@ -178,7 +196,7 @@ These cards summarize model families already evaluated in the frozen benchmark. 
 
 ## shuffled_order_control
 
-- Used in tasks: T07_temporal_order_falsification
+- Used in tasks: T07_temporal_order_falsification, T13_minimal_sequence_reopening
 - Task statuses: not_supported
 - Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
 

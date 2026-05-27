@@ -1,0 +1,29 @@
+{
+  "event_count_summary": {
+    "max": 247393,
+    "mean": 20728.56780768226,
+    "median": 627.0,
+    "min": 13
+  },
+  "extra_intervals": 0,
+  "intervals": 3827,
+  "leakage_check": {
+    "leakage_columns": [],
+    "status": "passed"
+  },
+  "mask_length_errors": 0,
+  "missing_event_intervals": 0,
+  "missing_intervals": 0,
+  "row_count": 3827,
+  "schema_version": "gate71.interval_event_sequence_table.v1",
+  "selected_event_count_summary": {
+    "max": 64,
+    "mean": 63.98667363470081,
+    "median": 64.0,
+    "min": 13
+  },
+  "status": "passed",
+  "truncated_intervals": 3826,
+  "vector_length_errors": 0,
+  "warnings": []
+}

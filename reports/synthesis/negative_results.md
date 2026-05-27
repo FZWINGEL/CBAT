@@ -304,6 +304,27 @@ that trajectory shape solves multi-horizon forecasting or justifies
 sequence/neural models, CBAT, policy ranking, causal claims, calibrated risk,
 or calibrated uncertainty.
 
+## Minimal Sequence/Neural Reopening Did Not Pass H7 Controls
+
+Milestone 7.1 built `interval_event_sequence_table_v1.parquet` with 3,827
+fixed-length true and shuffled event-sequence rows from the streamed run-event
+table. QA passed with no missing intervals, no vector/mask length errors, and
+no leakage columns. The WSL GPU environment was verified with PyTorch
+`2.12.0+cu130` on the RTX 5060 Ti, and the Torch MLP rows were evaluated on
+CUDA.
+
+The scientific gate still fails. True-sequence candidates have positive mean
+gain versus shuffled order (`0.0290673`, `26/48` positive rows), but they do
+not beat stronger references: mean gain is `-0.227321` versus aggregate-event
+HGB (`0/48` positive rows) and `-0.190925` versus timestamp-stress HGB
+(`0/44` positive rows). C-rate `delta_capacity_Ah` reopening also fails with
+only `1/6` positive comparison rows and mean gain `-0.159493`.
+
+Decision: report Milestone 7.1 as a negative H7 reopening check. GPU execution
+worked, but sequence/neural next-gate readiness remains blocked. Do not open
+transformers, CBAT, policy ranking, or broad neural architecture work from
+this result.
+
 ## Milestone 3.0 Blocked-Claim Refresh
 
 The v2 synthesis keeps the following negative boundaries active:
@@ -330,7 +351,8 @@ The v2 synthesis keeps the following negative boundaries active:
   tuning, architecture, or future-exposure features; Milestone 6.2 runs that
   audit and finds trajectory shape does not repair the gap;
 - sequence models remain blocked by the order-vs-aggregate and
-  order-vs-shuffled negative result;
+  order-vs-shuffled negative result plus the Milestone 7.1 CUDA Torch MLP
+  fixed-length sequence reopening failure;
 - calibrated uncertainty remains blocked by C-rate coverage failure even after
   quantile noncrossing hygiene;
 - CBAT, policy ranking, causal claims, same-cell counterfactuals, DRT, and

@@ -15,6 +15,7 @@
 | Replicate uncertainty | Diagnostic only | Triplet spread contextualizes error but does not validate intervals. | Calibrated uncertainty. | Keep as uncertainty context. |
 | Grouped calibration | Not supported globally | Noncrossing quantile hygiene raises raw q10-q90 mean coverage to `0.701398`, but C-rate coverage remains below target. | Calibrated capacity uncertainty. | Keep blocked. |
 | Temporal order | Not supported | Order-aware features do not beat aggregate/shuffled controls. | Sequence model justification. | Keep sequence models blocked. |
+| Minimal sequence reopening | Not supported | `interval_event_sequence_table_v1` covers all 3,827 intervals and CUDA Torch MLP rows run on PyTorch `2.12.0+cu130`, but true-sequence candidates fail aggregate-event HGB (`-0.227321` mean gain, `0/48` positive rows), timestamp-stress HGB (`-0.190925`, `0/44`), and C-rate `delta_capacity_Ah` (`1/6` positive rows, `-0.159493`). | Sequence/neural model justification; CBAT; policy ranking. | Keep sequence/neural work blocked. |
 | Detector knee labels | Not supported | Only 45 / 64 primary-valid conditions are replicate-consistent within 2 check-ups. | Detector-knee prediction. | Keep diagnostic only. |
 | Threshold warning | Supported for diagnostics | Verified-only HGB W2 Brier `0.090116` beats prior `0.178655` and proximity `0.168492`. | Calibrated risk, causal warning, policy ranking. | Lock diagnostic claim. |
 | Threshold-warning calibration | Not supported for calibrated risk | Equal-frequency ECE sensitivity is reported; corrected Platt verified-only primary ECE is `0.0748136` fixed and `0.0729286` equal-frequency, but policy-specific C-rate remains above guardrail (`0.167653` fixed; `0.176185` equal-frequency). | Calibrated risk. | Keep probabilities diagnostic. |
@@ -44,6 +45,11 @@ claim is only partial and future horizon exposure remains oracle-only.
 Milestone 6.2 tests the only authorized prior-trajectory follow-up and keeps
 that branch partial/diagnostic because it does not repair horizon-3 capacity
 or preserve all C-rate rows.
-Milestone 7.0 freezes these completed gates into 12 benchmark tasks and an
+Milestone 7.0 freezes these completed gates into 13 benchmark tasks and an
 executable registry check without changing any claim status.
+Milestone 7.1 then tests a stricter sequence/neural reopening challenge with
+fixed-length event sequences and CUDA Torch MLP rows. The environment executes
+on GPU, but the true-sequence candidates still lose to aggregate-event and
+timestamp-stress HGB references, so the H7 reopening condition fails and
+sequence/neural branches remain blocked.
 Further modeling should not be opened without a new gated technical rationale.

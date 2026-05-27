@@ -19,8 +19,9 @@ include threshold-warning probability calibration, stressor-axis robust
 capacity, calibration/quantile hygiene, calibration/robustness
 correctness-hardening, Pareto forensics, and train-only adaptive robust
 selection, replication, attribution-decomposition, stressor-family routing,
-hierarchical replicate-aware capacity comparator results, and multi-horizon
-capacity forecasting diagnostics.
+hierarchical replicate-aware capacity comparator results, multi-horizon
+capacity forecasting diagnostics, and the minimal CUDA sequence reopening
+check.
 
 ## Source Artifact Existence
 
@@ -40,6 +41,7 @@ blocked or not supported:
 - calibrated capacity uncertainty;
 - detector-knee prediction;
 - sequence models;
+- neural sequence reopening;
 - CBAT;
 - policy ranking;
 - broad multimodal improvement;
@@ -93,5 +95,8 @@ gain is diagnostic-only and its interval coverage fails. Milestone 6.0
 implements a multi-horizon capacity forecasting gate, but overall
 capacity-level support remains partial and K3 future exposure is
 oracle-diagnostic only.
+Milestone 7.1 verifies CUDA Torch MLP execution but keeps sequence/neural
+readiness blocked because true-sequence candidates fail aggregate-event HGB,
+timestamp-stress HGB, and C-rate delta controls.
 Any future calibrated-risk, calibrated-uncertainty, policy, architecture, or
 broad robust-capacity claim requires a separate gated milestone.

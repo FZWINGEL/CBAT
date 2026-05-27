@@ -24,6 +24,9 @@ gbm = [
     "lightgbm>=4.0",
     "xgboost>=2.0",
 ]
+neural = [
+    "torch==2.12.0",
+]
 
 [project.scripts]
 mbp = "mbp.cli:app"

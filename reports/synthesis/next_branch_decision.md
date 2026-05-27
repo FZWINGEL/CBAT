@@ -34,6 +34,7 @@ The project has completed the major baseline-first charter gates:
 - multi-horizon error forensics and prospective feature audit.
 - prior-trajectory shape multi-horizon diagnostic.
 - benchmark task freeze and leaderboard reproducibility.
+- minimal fixed-length event-sequence and CUDA Torch MLP reopening check.
 
 The strongest contribution is now a rigorous grouped-validation benchmark that
 documents which battery-degradation signals are supported, diagnostic-only,
@@ -66,9 +67,14 @@ technical branch is a predeclared prior-trajectory-shape audit using information
 available at check-up `k`. Milestone 6.2 runs that audit and keeps the branch
 partial/diagnostic: K5 does not repair all-split horizon-3 capacity and does
 not preserve every C-rate horizon-2/3 target row.
-Milestone 7.0 freezes the completed evidence base into 12 benchmark tasks, a
+Milestone 7.0 freezes the completed evidence base into 13 benchmark tasks, a
 task-level leaderboard, task cards, model-family cards, and an executable
 task-registry checker. It changes no claim status and adds no new model branch.
+Milestone 7.1 tests whether the sequence/neural gate should reopen using real
+fixed-length run-event sequences and CUDA Torch MLP rows. GPU execution is now
+verified, but true-sequence candidates still fail the aggregate-event HGB,
+timestamp-stress HGB, and C-rate `delta_capacity_Ah` controls, so the
+sequence/neural branch remains blocked.
 
 ## Recommended Path
 
@@ -121,10 +127,16 @@ capacity near miss and does not preserve all C-rate horizon-2/3 rows. This
 branch is complete as diagnostic evidence and does not justify sequence/neural
 models, policy ranking, or CBAT.
 
+The minimal sequence/neural reopening check has also been run with CUDA
+PyTorch. It is a useful negative H7 test, not a reason to start transformers or
+CBAT: true event order does not beat the stronger aggregate-event or
+timestamp-stress HGB references under the required grouped controls.
+
 ## Explicitly Rejected Branches
 
 - CBAT architecture.
-- Neural or sequence models.
+- Neural or sequence models beyond the completed minimal CUDA reopening
+  diagnostic.
 - DRT or learned EIS embeddings.
 - Policy ranking.
 - Causal or same-cell counterfactual analysis.

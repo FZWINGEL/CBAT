@@ -1,0 +1,12 @@
+# Minimal Sequence Reopening Claim Readiness
+
+| Claim area | Status | Evidence |
+|---|---|---|
+| True sequence beats shuffled order | `not_supported` | mean gain=0.0290673; positive rows=26/48. |
+| True sequence beats aggregate event HGB | `not_supported` | mean gain=-0.227321; positive rows=0/48. |
+| True sequence beats timestamp-stress HGB | `not_supported` | mean gain=-0.190925; positive rows=0/44. |
+| C-rate sequence reopening | `not_supported` | C-rate delta comparison positive rows=1/6; mean gain=-0.159493. |
+| Leakage audit | `supported_for_diagnostics` | Event-sequence vectors use run-event summaries plus F4 current-state features; future diagnostic and target-derived fields are excluded. |
+| Torch MLP GPU execution | `supported_for_diagnostics` | CUDA Torch MLP model rows evaluated for S2_torch_mlp_true_sequence, S3_torch_mlp_shuffled_sequence. |
+| Sequence/neural next-gate readiness | `blocked` | No predeclared true-sequence model beats shuffled, aggregate, and stress references across the required C-rate and non-C-rate checks. |
+| CBAT readiness | `blocked` | This gate can only authorize a later narrow sequence baseline, not CBAT or policy ranking. |

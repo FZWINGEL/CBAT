@@ -422,6 +422,29 @@ INTERVAL_SEQUENCE_FEATURES_V1_SCHEMA = pa.schema(
     ]
 )
 
+INTERVAL_EVENT_SEQUENCE_TABLE_V1_SCHEMA = pa.schema(
+    [
+        ("cell_id", pa.string(), False),
+        ("parameter_set", pa.int32(), False),
+        ("replicate_id", pa.int32(), False),
+        ("checkup_k", pa.int32(), False),
+        ("checkup_k_next", pa.int32(), False),
+        ("schema_version", pa.string(), False),
+        ("feature_policy_version", pa.string(), False),
+        ("max_events", pa.int32(), False),
+        ("event_feature_count", pa.int32(), False),
+        ("event_feature_columns", pa.string(), False),
+        ("event_count", pa.int32(), False),
+        ("selected_event_count", pa.int32(), False),
+        ("truncated_event_count", pa.int32(), False),
+        ("true_sequence_vector", pa.list_(pa.float64()), False),
+        ("shuffled_sequence_vector", pa.list_(pa.float64()), False),
+        ("event_mask", pa.list_(pa.int8()), False),
+        ("sequence_shuffle_seed", pa.int32(), False),
+        ("sequence_quality_flags", pa.string(), False),
+    ]
+)
+
 KNEE_CANDIDATE_TABLE_V1_SCHEMA = pa.schema(
     [
         ("cell_id", pa.string(), False),

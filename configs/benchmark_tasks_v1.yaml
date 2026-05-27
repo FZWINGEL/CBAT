@@ -131,7 +131,7 @@ tasks:
   - task_id: T08_stressor_robust_delta_capacity
     task_name: adaptive stressor-robust C-rate delta diagnostic
     area: stressor_robustness
-    question_id: Q6
+    question_id: Q7
     primary_claim_id: C22
     claim_ids: [C21, C22, C23, C24]
     status: supported_for_diagnostics
@@ -218,3 +218,21 @@ tasks:
     allowed_wording: semi-empirical comparators and replicate spread are diagnostic checks only
     forbidden_wording: semi-empirical models beat strongest HGB baselines or replicate diagnostics validate calibrated uncertainty
     decision: keep as domain and uncertainty context, not as positive comparator claim
+  - task_id: T13_minimal_sequence_reopening
+    task_name: minimal fixed-length event-sequence reopening gate
+    area: temporal_order
+    question_id: Q6
+    primary_claim_id: C28
+    claim_ids: [C16, C28]
+    status: not_supported
+    targets: [capacity_Ah_k1, delta_capacity_Ah]
+    split_views: [condition_fold, temperature_holdout_fold, c_rate_holdout_fold, profile_holdout_fold, voltage_window_holdout_fold]
+    primary_metric: true-sequence condition-mean MAE gain versus shuffled aggregate-event HGB and timestamp-stress HGB controls
+    primary_result: CUDA Torch MLP rows run but true-sequence candidates have mean gain -0.227321 versus aggregate-event HGB and -0.190925 versus timestamp-stress HGB with C-rate delta gain -0.159493
+    best_reference: aggregate-event HGB and timestamp-weighted stress HGB controls
+    baseline_families: [fixed_length_event_sequence, ridge_sequence, cuda_torch_mlp_sequence, shuffled_order_control]
+    source_artifacts: [docs/experiments/2026-05-27_minimal_sequence_reopening_gate.md, reports/baselines/minimal_sequence_reopening/sequence_reopening_claim_readiness.md]
+    local_data_artifacts: [data/interim/interval_event_sequence_table_v1.parquet, data/processed/minimal_sequence_reopening_predictions.parquet]
+    allowed_wording: fixed-length event-sequence and CUDA Torch MLP diagnostics do not reopen sequence or neural modeling
+    forbidden_wording: sequence models neural models CBAT transformers or policy ranking are justified by current sequence evidence
+    decision: keep sequence and neural branches blocked after the GPU-backed H7 reopening check

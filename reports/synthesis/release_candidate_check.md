@@ -5,9 +5,9 @@ Status: `passed`
 ## Summary
 
 - Required files checked: 10
-- Tracked artifacts checked: 99
-- Ignored artifacts checked: 25
-- Claim matrix rows checked: 27
+- Tracked artifacts checked: 110
+- Ignored artifacts checked: 27
+- Claim matrix rows checked: 28
 
 ## Errors
 
@@ -27,6 +27,7 @@ Status: `passed`
 - baseline
 - build-capacity-horizon-table
 - build-capacity-horizon-trajectory-features
+- build-event-sequences
 - build-features
 - build-knee-risk-labels
 - build-manuscript-assets
@@ -67,6 +68,7 @@ Status: `passed`
 - eis
 - eis-claim-readiness
 - eis-hardening-sensitivity
+- event-sequences-qa
 - evidence-memo
 - feature-qa
 - features
@@ -98,6 +100,7 @@ Status: `passed`
 - run-eis
 - run-events-qa
 - run-hierarchical-capacity
+- run-minimal-sequence-reopening
 - run-pipeline
 - run-pulse
 - run-semi-empirical

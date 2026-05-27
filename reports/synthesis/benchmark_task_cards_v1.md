@@ -183,3 +183,18 @@ These cards freeze the benchmark task definitions and current claim posture. The
 - Forbidden wording: semi-empirical models beat strongest HGB baselines or replicate diagnostics validate calibrated uncertainty
 - Decision: keep as domain and uncertainty context, not as positive comparator claim
 - Source artifacts: docs/experiments/2026-05-23_semi_empirical_replicate_gate.md, reports/analysis/replicate_uncertainty/replicate_uncertainty_summary.md
+
+## T13_minimal_sequence_reopening - minimal fixed-length event-sequence reopening gate
+
+- Area: temporal_order
+- Primary claim: C28
+- Status: `not_supported`
+- Targets: capacity_Ah_k1, delta_capacity_Ah
+- Split views: condition_fold, temperature_holdout_fold, c_rate_holdout_fold, profile_holdout_fold, voltage_window_holdout_fold
+- Primary metric: true-sequence condition-mean MAE gain versus shuffled aggregate-event HGB and timestamp-stress HGB controls
+- Primary result: CUDA Torch MLP rows run but true-sequence candidates have mean gain -0.227321 versus aggregate-event HGB and -0.190925 versus timestamp-stress HGB with C-rate delta gain -0.159493
+- Best reference: aggregate-event HGB and timestamp-weighted stress HGB controls
+- Allowed wording: fixed-length event-sequence and CUDA Torch MLP diagnostics do not reopen sequence or neural modeling
+- Forbidden wording: sequence models neural models CBAT transformers or policy ranking are justified by current sequence evidence
+- Decision: keep sequence and neural branches blocked after the GPU-backed H7 reopening check
+- Source artifacts: docs/experiments/2026-05-27_minimal_sequence_reopening_gate.md, reports/baselines/minimal_sequence_reopening/sequence_reopening_claim_readiness.md

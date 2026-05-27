@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 7.0: Benchmark task freeze and leaderboard reproducibility gate.
+Milestone 7.1: Minimal sequence/neural reopening gate.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -85,10 +85,22 @@ Current state:
   registry, executable registry checker, task-level leaderboard, task cards,
   and model-family cards. It is release/reproducibility infrastructure for the
   machine-learning benchmark, not a new modeling branch.
+- Milestone 7.1 tests the charter's H7 sequence-model reopening condition with
+  a fixed-length LOG_AGE run-event sequence data product, deterministic
+  shuffled-order controls, Ridge sequence baselines, and CUDA-only Torch MLP
+  diagnostics. The GPU run completed, but true-sequence baselines still do not
+  beat aggregate-event HGB or timestamp-stress HGB references, so sequence,
+  neural architecture, CBAT, and policy-ranking branches remain blocked.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
 Allowed work:
+- fixed-length LOG_AGE run-event sequence data products
+- event-sequence QA and leakage audits
+- minimal Ridge true/shuffled sequence baselines
+- CUDA-only Torch MLP true/shuffled sequence diagnostics
+- sequence reopening claim-readiness reporting
+- PyTorch/CUDA environment verification for scoped neural diagnostics
 - benchmark task registry and task-card maintenance
 - benchmark leaderboard synthesis from existing tracked reports
 - executable benchmark task consistency checks
@@ -216,11 +228,13 @@ Allowed work:
 - small tests with synthetic fixtures
 
 Forbidden work:
-- new model training outside the scoped hierarchical/stressor-robust diagnostic gates
-- new feature engineering outside the scoped hierarchical/stressor-robust diagnostic gates
+- new model training outside the scoped minimal-sequence, hierarchical, and
+  stressor-robust diagnostic gates
+- new feature engineering outside the scoped minimal-sequence, hierarchical,
+  and stressor-robust diagnostic gates
 - knee prediction models
-- neural models
-- sequence models
+- neural models beyond the CUDA-only minimal Torch MLP reopening diagnostic
+- sequence models beyond fixed-length true/shuffled event-sequence diagnostics
 - transformers
 - CBAT architecture
 - DRT features

@@ -1552,3 +1552,38 @@ Validation rules:
   detector-knee prediction, calibrated risk, calibrated uncertainty, neural or
   sequence models, DRT, EIS embeddings, or broad multimodal claims as
   supported.
+
+## Milestone 7.1 Minimal Sequence/Neural Reopening Gate
+
+Milestone 7.1 reopens H7 only as a narrow falsification check. It may build a
+fixed-length LOG_AGE run-event sequence table, compare true order against a
+deterministic shuffled-order control, and evaluate Ridge plus a tiny CUDA-only
+Torch MLP against frozen aggregate-event and timestamp-stress HGB references.
+It is not a transformer, CBAT, multimodal architecture, policy-ranking, or
+causal milestone.
+
+Required artifacts:
+
+- `data/interim/interval_event_sequence_table_v1.parquet` (ignored generated data)
+- `reports/audit/interval_event_sequence_qa_report.json`
+- `reports/baselines/minimal_sequence_reopening_report.json`
+- `reports/baselines/minimal_sequence_reopening/leaderboard.csv`
+- `reports/baselines/minimal_sequence_reopening/minimal_sequence_reopening_diagnostics.md`
+- `reports/baselines/minimal_sequence_reopening/sequence_reopening_claim_readiness.md`
+- `reports/baselines/minimal_sequence_reopening/plots/sequence_vs_shuffled.csv`
+- `reports/baselines/minimal_sequence_reopening/plots/sequence_vs_aggregate.csv`
+- `reports/baselines/minimal_sequence_reopening/plots/sequence_vs_stress.csv`
+- `reports/baselines/minimal_sequence_reopening/plots/c_rate_sequence_reopening.csv`
+- `docs/experiments/2026-05-27_minimal_sequence_reopening_gate.md`
+
+Validation rules:
+
+- Neural rows must run on CUDA. CPU fallback is invalid for this gate.
+- True-sequence candidates must beat shuffled-order controls, aggregate-event
+  HGB, and timestamp-stress HGB for C-rate `delta_capacity_Ah` and at least one
+  non-C-rate grouped view before any later sequence baseline can be opened.
+- Event-sequence vectors must exclude future diagnostic fields, capacity
+  targets, capacity deltas, PULSE/EIS future state, and PULSE/EIS deltas.
+- A passing Torch/GPU environment check is only execution evidence. It does not
+  authorize neural architecture, transformers, CBAT, policy ranking, or broad
+  multimodal claims.

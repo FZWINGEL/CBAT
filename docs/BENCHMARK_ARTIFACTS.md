@@ -29,6 +29,16 @@ Milestone 7.0 adds a frozen task-level benchmark interface:
 These artifacts summarize existing evidence only; they do not train models or
 change claim status.
 
+Milestone 7.1 adds tracked sequence reopening evidence:
+
+- `reports/audit/interval_event_sequence_qa_report.json`
+- `reports/baselines/minimal_sequence_reopening_report.json`
+- `reports/baselines/minimal_sequence_reopening/sequence_reopening_claim_readiness.md`
+- `docs/experiments/2026-05-27_minimal_sequence_reopening_gate.md`
+
+These artifacts document a negative CUDA-backed H7 reopening check. The local
+event-sequence and prediction Parquets remain ignored.
+
 ## Ignored Generated Parquets
 
 Generated Parquets under `data/interim/`, `data/splits/`, and
@@ -39,6 +49,7 @@ Examples:
 
 - `data/interim/modality_table_log_age.parquet`
 - `data/interim/run_event_table_v1.parquet`
+- `data/interim/interval_event_sequence_table_v1.parquet`
 - `data/interim/eis_feature_table_v1.parquet`
 - `data/interim/threshold_warning_table_v1.parquet`
 - `data/processed/*_predictions.parquet`

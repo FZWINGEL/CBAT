@@ -3,7 +3,7 @@
 | Option | Evidence for | Evidence against | Risk | Recommendation |
 |---|---|---|---|---|
 | Stop modeling and return to manuscript/benchmark integration | Major charter gates are closed; claim posture is coherent; threshold-warning diagnostic is now hardened. | Some claims remain diagnostic rather than predictive. | Low; strongest path to publishable benchmark. | Recommended default. |
-| Benchmark task freeze and leaderboard reproducibility | Milestone 7.0 defines 12 frozen tasks, validates them against the v2 claim matrix, and renders task/model cards from tracked reports only. | Does not create new model performance. | Low; protects benchmark reproducibility and external handoff. | Complete and maintain as the benchmark interface. |
+| Benchmark task freeze and leaderboard reproducibility | Milestone 7.0 defines 13 frozen tasks, validates them against the v2 claim matrix, and renders task/model cards from tracked reports only. | Does not create new model performance. | Low; protects benchmark reproducibility and external handoff. | Complete and maintain as the benchmark interface. |
 | Threshold-warning diagnostic extension | 80% threshold warning survives proximity and verified-only sensitivity. | Lead-time remains exploratory and calibration is poor. | Moderate scope creep. | Allow only if tied to reporting, not new architectures. |
 | Threshold-warning calibration branch | Diagnostic scores are strong and post-hoc calibration improves mean ECE; Milestone 5.2 adds equal-frequency ECE sensitivity and Milestone 5.3 hardens readiness logic. | Policy-specific C-rate ECE remains above guardrail under fixed-width and equal-frequency binning. | Moderate; further tuning could chase calibration noise. | Do not extend unless a narrow diagnostic calibration question is explicitly needed. |
 | Quantile/calibration hygiene | Milestone 5.2 enforced noncrossing capacity quantile endpoints and added equal-frequency ECE. | The hygiene pass did not unblock calibrated risk or calibrated uncertainty. | Low if kept as maintenance; moderate if misread as a new claim. | Complete; keep as diagnostics only. |
@@ -12,7 +12,7 @@
 | Multi-horizon capacity forecasting | Milestone 6.0 implements a Q1 multi-step forecasting gate. Prospective HGB K2 beats persistence and prior slope for C-rate horizons 2/3 on both `capacity_Ah_kh` and `delta_capacity_Ah_h`, and for all-split `delta_capacity_Ah_h` horizons 2/3. Milestone 6.1 forensics confirm the C-rate rows. | Overall capacity-level support is partial because all-split horizon-3 `capacity_Ah_kh` HGB K2 MAE `0.0935304` narrowly misses prior slope `0.0932329`; K3 future exposure is oracle-only. Milestone 6.2 prior-trajectory K5 does not repair the horizon-3 capacity row (`0.0981241`) and does not preserve all C-rate horizon-2/3 rows. | Moderate if used for post-hoc tuning or architecture justification. | Complete as scoped diagnostic evidence; prior-trajectory shape is partial/diagnostic only. |
 | Run-event engineering acceleration | Run-event product is large and had OOM/performance history. | Temporal-order result is negative for modeling value. | Engineering work may not improve claims. | Only if needed for reproducibility/release. |
 | EIS feature-quality extension | EIS QA/features are useful diagnostics. | Prior-EIS signal is narrow; broad EIS improvement is blocked. | Modality expansion without claim value. | Defer. |
-| Sequence model branch | Charter mentions sequence value as a possible path. | Order-aware features failed vs aggregate/shuffled controls. | High; violates gate discipline. | Do not open. |
+| Sequence model branch | Charter mentions sequence value as a possible path. | Order-aware features failed vs aggregate/shuffled controls, and Milestone 7.1 CUDA Torch MLP fixed-length event sequences still fail aggregate-event HGB, timestamp-stress HGB, and C-rate delta controls. | High; violates gate discipline. | Do not open. |
 | CBAT branch | Long-term charter includes architecture. | Calibration, sequence value, multimodal superiority, and policy gates do not support it. | Very high overclaim risk. | Do not open. |
 | Policy ranking branch | Threshold warning is promising. | No calibrated risk, no causal evidence, no intervention validation. | Very high; scientifically unsafe. | Do not open. |
 
@@ -30,7 +30,8 @@ Milestone 6.2 shows prior-trajectory shape does not repair the remaining
 capacity-level gap. This does not create architecture or policy readiness.
 Milestone 7.0 freezes the task registry and leaderboard so future work can
 build from a reproducible benchmark interface rather than reopening completed
-gates.
+gates. Milestone 7.1 then tests the obvious sequence/neural objection with
+CUDA Torch MLP rows and keeps H7 blocked.
 Additional robustness tuning would need a fresh predeclared question to avoid
 claim chasing.
 Milestone 5.2 calibration/quantile hygiene and

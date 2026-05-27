@@ -9,8 +9,9 @@ locally without adding new scientific claims.
 This release-hardening pass covers existing data products, grouped baselines,
 diagnostics, and synthesis reports. It does not authorize new model training
 beyond rerunning documented commands, new feature engineering, CBAT, neural or
-sequence models, DRT, EIS embeddings, policy ranking, causal claims, same-cell
-counterfactual claims, or broad multimodal claims.
+sequence models beyond the completed minimal CUDA reopening diagnostic, DRT,
+EIS embeddings, policy ranking, causal claims, same-cell counterfactual
+claims, or broad multimodal claims.
 
 ## Environment
 
@@ -19,6 +20,16 @@ Use Python 3.11+ and `uv`.
 ```bash
 uv sync --extra dev --extra baseline
 ```
+
+The Milestone 7.1 Torch MLP diagnostic additionally requires the neural extra
+and a WSL-visible NVIDIA GPU:
+
+```bash
+uv sync --extra dev --extra baseline --extra neural
+```
+
+That extra currently resolves PyTorch `2.12.0`; the validated local run used
+`torch 2.12.0+cu130` with CUDA runtime 13.0.
 
 If the local cache location is constrained, use:
 

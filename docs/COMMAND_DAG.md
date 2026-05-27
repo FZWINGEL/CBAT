@@ -31,6 +31,7 @@ Layer 4: Feature and target sidecars
   mbp features build-stress
   mbp features build-run-events
   mbp features build-sequence-features
+  mbp features build-event-sequences
   mbp pulse build-targets
   mbp eis build-features
   mbp eis build-targets
@@ -55,6 +56,7 @@ Layer 5: Baseline reports
   mbp baseline run-stressor-robust-arm-selector
   mbp baseline run-hierarchical-capacity
   mbp baseline run-capacity-horizon
+  mbp baseline run-minimal-sequence-reopening
     |
     v
 Layer 6: Diagnostics and hardening

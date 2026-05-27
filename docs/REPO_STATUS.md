@@ -11,8 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 7.0: Benchmark task freeze and leaderboard
-reproducibility gate**.
+The repository is in **Milestone 7.1: Minimal sequence/neural reopening gate**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -210,16 +209,40 @@ Milestone 7.0 freezes the completed evidence base into
 `mbp report check-benchmark-tasks`, and renders the task-level leaderboard,
 task cards, and model-family cards from existing tracked reports only. It adds
 no new models, feature engineering, or scientific claims.
+Milestone 7.1 reopens the sequence question only as a charter H7 falsification
+check: a fixed-length LOG_AGE run-event sequence product is compared against
+deterministic shuffled-order controls, aggregate-event HGB, and
+timestamp-stress HGB references. CUDA-enabled PyTorch `2.12.0+cu130` was
+installed in the project virtualenv and verified on the WSL-visible RTX 5060
+Ti. The GPU Torch MLP rows ran, but no true-sequence candidate passed the
+predeclared aggregate/stress/C-rate controls; sequence/neural next-gate
+readiness, CBAT, and policy ranking remain blocked.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
-inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
-architecture, knee prediction, policy ranking, CBAT architecture, or broad EIS
-improvement claims have been started.
+inputs, capacity+PULSE+EIS multimodal models, unscoped sequence models,
+neural architecture, knee prediction, policy ranking, CBAT architecture, or
+broad EIS improvement claims have been started. Milestone 7.1 adds only a
+minimal CUDA Torch MLP diagnostic as a falsification check, not an architecture
+branch.
 
 Current state:
 
+- Milestone 7.1 is a minimal sequence/neural reopening gate. It builds
+  `interval_event_sequence_table_v1.parquet` with 3,827 interval rows and
+  fixed 64-event vectors from the 79,328,229-row run-event product. QA passes
+  with no missing intervals, no vector/mask length errors, and no leakage
+  columns; 3,826 intervals are truncated because real event counts are much
+  longer than the fixed diagnostic vector.
+- The Milestone 7.1 GPU run generated 96 metric rows. CUDA Torch MLP execution
+  is supported for diagnostics (`torch 2.12.0+cu130`, CUDA runtime 13.0, RTX
+  5060 Ti), but true sequence still does not reopen the sequence/neural gate:
+  mean gain versus shuffled is `0.0290673` with `26/48` positive rows, mean
+  gain versus aggregate-event HGB is `-0.227321` with `0/48` positive rows,
+  mean gain versus timestamp-stress HGB is `-0.190925` with `0/44` positive
+  rows, and C-rate `delta_capacity_Ah` has only `1/6` positive comparison rows
+  with mean gain `-0.159493`.
 - Milestone 7.0 is a benchmark task freeze and leaderboard reproducibility
-  gate. It defines 12 frozen tasks spanning capacity, PULSE, EIS, threshold
+  gate. It defines 13 frozen tasks spanning capacity, PULSE, EIS, threshold
   warning, calibration, uncertainty, temporal order, stressor robustness,
   hierarchical replicate comparison, multi-horizon capacity, prior-trajectory
   shape, and semi-empirical/replicate checks. The checker passes and keeps the
@@ -682,6 +705,7 @@ The large Parquet outputs remain local generated artifacts:
 | `data/interim/eis_target_table_v1.parquet` | 3,827 | ignored |
 | `data/interim/run_event_table_v1.parquet` | 79,328,229 | ignored |
 | `data/interim/interval_sequence_features_v1.parquet` | 3,827 | ignored |
+| `data/interim/interval_event_sequence_table_v1.parquet` | 3,827 | ignored |
 | `data/interim/knee_candidate_table_v1.parquet` | 9,576 | ignored |
 | `data/interim/knee_risk_label_table_v1.parquet` | 3,827 | ignored |
 | `data/interim/knee_stable_condition_registry_v1.parquet` | 76 | ignored |
