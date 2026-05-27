@@ -2410,6 +2410,61 @@ def analysis_evaluate_observed_policy_contrasts(
     )
 
 
+@analysis_app.command("evaluate-policy-ranking-feasibility")
+def analysis_evaluate_policy_ranking_feasibility(
+    contrast_registry: Path = typer.Option(
+        ...,
+        "--contrast-registry",
+        help="Path to policy_contrast_registry_v1.parquet.",
+    ),
+    horizon_table: Path = typer.Option(
+        ...,
+        "--horizon-table",
+        help="Path to capacity_horizon_table_v1.parquet.",
+    ),
+    predictions: Path = typer.Option(
+        ...,
+        "--predictions",
+        help="Path to existing capacity_horizon_l0_l2_predictions.parquet.",
+    ),
+    out_dir: Path = typer.Option(..., "--out-dir", help="Output directory for supported contrast-ordering diagnostics."),
+    targets: str | None = typer.Option(None, "--targets", help="Comma-separated targets."),
+    horizons: str | None = typer.Option(None, "--horizons", help="Comma-separated check-up horizons."),
+    model_levels: str | None = typer.Option(None, "--model-levels", help="Comma-separated model levels."),
+    feature_groups: str | None = typer.Option(None, "--feature-groups", help="Comma-separated feature groups."),
+    split_views: str | None = typer.Option(None, "--split-views", help="Comma-separated split views."),
+    min_replicate_rows_per_arm: int = typer.Option(
+        2,
+        "--min-replicate-rows-per-arm",
+        min=1,
+        help="Minimum prediction rows required in each contrast arm.",
+    ),
+    bootstrap_count: int = typer.Option(200, "--bootstrap-count", min=1, help="Bootstrap resamples over contrast IDs."),
+    seed: int = typer.Option(42, "--seed", help="Deterministic bootstrap seed."),
+) -> None:
+    """Evaluate existing horizon forecasts on supported observed policy contrasts."""
+    from mbp.analysis.policy_contrast import evaluate_policy_ranking_feasibility
+
+    report = evaluate_policy_ranking_feasibility(
+        contrast_registry,
+        horizon_table,
+        predictions,
+        out_dir,
+        targets=_comma_values(targets) if targets else None,
+        horizons=_comma_ints(horizons) if horizons else None,
+        model_levels=_comma_values(model_levels) if model_levels else None,
+        feature_groups=_comma_values(feature_groups) if feature_groups else None,
+        split_views=_comma_values(split_views) if split_views else None,
+        min_replicate_rows_per_arm=min_replicate_rows_per_arm,
+        bootstrap_count=bootstrap_count,
+        seed=seed,
+    )
+    typer.echo(
+        "Supported contrast-ordering diagnostics generated: "
+        f"{report['row_counts']['pairwise_rows']} pairwise rows"
+    )
+
+
 @baseline_app.command("diagnose-capacity")
 def baseline_diagnose_capacity(
     report: Path = typer.Option(
