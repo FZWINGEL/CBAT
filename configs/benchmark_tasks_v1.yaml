@@ -272,3 +272,21 @@ tasks:
     allowed_wording: existing prospective forecasts can be evaluated for supported observed contrast-ordering diagnostics but the result is partial
     forbidden_wording: policy ranking policy recommendation causal effects same-cell counterfactuals calibrated policy risk or utility CBAT or sequence neural branches are authorized
     decision: keep as partial diagnostic evidence because the strict prior-slope bootstrap reference gate fails
+  - task_id: T16_policy_ranking_failure_forensics
+    task_name: supported contrast-ordering failure forensics
+    area: policy_support
+    question_id: Q4
+    primary_claim_id: C31
+    claim_ids: [C30, C31]
+    status: diagnostic_only
+    targets: [delta_capacity_Ah_h, capacity_Ah_kh]
+    split_views: [condition_fold, temperature_holdout_fold, c_rate_holdout_fold, profile_holdout_fold, voltage_window_holdout_fold]
+    primary_metric: effect-size-thresholded sign accuracy, rank correlation, top-k regret, and HGB-vs-prior failure bins
+    primary_result: 0 of 10 strict HGB-vs-prior all-family checks pass; large-effect passing families are charge_c_rate and temperature; C-rate medium/large pass rows are 1 of 4; HGB ge_0.02Ah mean sign accuracy is 0.856314
+    best_reference: HGB K2 versus prior-slope over existing Milestone 7.3 pairwise metrics
+    baseline_families: [hgb_horizon, prior_slope_horizon, policy_forensics]
+    source_artifacts: [docs/experiments/2026-05-27_policy_ranking_failure_forensics.md, reports/analysis/policy/policy_ranking_failure_claim_readiness.md]
+    local_data_artifacts: []
+    allowed_wording: effect-size and rank-metric forensics explain the partial supported contrast-ordering signal but remain diagnostic-only
+    forbidden_wording: policy ranking policy recommendation causal policy effects same-cell counterfactuals calibrated policy risk or utility CBAT or sequence neural branches are authorized
+    decision: keep policy-response modeling blocked unless a future predeclared large-effect supported-contrast gate is explicitly opened and passes

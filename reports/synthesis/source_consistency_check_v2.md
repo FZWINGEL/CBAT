@@ -14,7 +14,7 @@ This check covers the Milestone 3.0 synthesis artifacts:
 - `reports/synthesis/next_branch_decision.md`
 
 It has been refreshed after Milestones 5.0, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6,
-5.7, 5.8, 5.9, 6.0, 7.1, 7.2, and 7.3 to
+5.7, 5.8, 5.9, 6.0, 7.1, 7.2, 7.3, and 7.4 to
 include threshold-warning probability calibration, stressor-axis robust
 capacity, calibration/quantile hygiene, calibration/robustness
 correctness-hardening, Pareto forensics, and train-only adaptive robust
@@ -22,7 +22,7 @@ selection, replication, attribution-decomposition, stressor-family routing,
 hierarchical replicate-aware capacity comparator results, multi-horizon
 capacity forecasting diagnostics, the minimal CUDA sequence reopening check,
 observed policy-contrast support diagnostics, and support-bounded
-contrast-ordering feasibility diagnostics.
+contrast-ordering feasibility and failure-forensics diagnostics.
 
 ## Source Artifact Existence
 
@@ -68,6 +68,8 @@ blocked or not supported:
 - supported contrast ordering is only partially supported and does not
   authorize recommendation, causal effects, calibrated policy risk/utility, or
   deployment ranking claims.
+- contrast-ordering failure forensics are diagnostic-only and do not reopen
+  policy ranking.
 
 ## Forbidden Wording Check
 
@@ -112,5 +114,8 @@ Milestone 7.3 verifies partial HGB K2 supported contrast-ordering signal from
 existing multi-horizon predictions, but the strict prior-slope bootstrap
 reference gate fails, so recommendation, causal, counterfactual, calibrated
 policy risk/utility, CBAT, and sequence/neural claims remain blocked.
+Milestone 7.4 decomposes that failure by effect size, rank metric, and
+top-k/regret diagnostics, but large-effect ordering remains diagnostic-only
+and does not authorize policy ranking or recommendation.
 Any future calibrated-risk, calibrated-uncertainty, policy, architecture, or
 broad robust-capacity claim requires a separate gated milestone.

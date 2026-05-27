@@ -23,6 +23,7 @@ from mbp.data.schema_contracts import POLICY_CONTRAST_REGISTRY_V1_SCHEMA, valida
 
 SCHEMA_VERSION = "gate72.policy_contrast_registry.v1"
 POLICY_RANKING_SCHEMA_VERSION = "gate73.policy_contrast_ordering_feasibility.v1"
+POLICY_RANKING_FORENSICS_SCHEMA_VERSION = "gate74.policy_contrast_ordering_forensics.v1"
 DEFAULT_CONTRAST_FAMILIES = ("charge_c_rate", "temperature", "voltage_window", "profile")
 POLICY_RANKING_TARGETS = ("delta_capacity_Ah_h", "capacity_Ah_kh")
 POLICY_RANKING_HORIZONS = (2, 3)
@@ -48,6 +49,14 @@ POLICY_RANKING_REFERENCE_MODELS = (
 )
 ORACLE_POLICY_RANKING_FEATURE_GROUPS = {"K3_oracle_exposure_diagnostic"}
 POLICY_RANKING_SIGN_EPSILON = 1e-12
+POLICY_RANKING_EFFECT_THRESHOLDS_AH = (0.0, 0.005, 0.01, 0.02, 0.05)
+POLICY_RANKING_EFFECT_BINS_AH = (
+    ("tiny_lt_0.01Ah", 0.0, 0.01),
+    ("small_0.01_to_0.02Ah", 0.01, 0.02),
+    ("medium_0.02_to_0.05Ah", 0.02, 0.05),
+    ("large_ge_0.05Ah", 0.05, math.inf),
+)
+POLICY_RANKING_TOPK_VALUES = (3, 5)
 CONTRAST_DEFINITIONS = {
     "charge_c_rate": {
         "varied_field": "nominal_charge_C_rate",
@@ -380,6 +389,527 @@ def evaluate_policy_ranking_feasibility(
         encoding="utf-8",
     )
     return report
+
+
+def diagnose_policy_ranking_feasibility(
+    pairwise_metrics_path: Path,
+    by_family_path: Path,
+    bootstrap_path: Path,
+    out_dir: Path,
+) -> dict[str, Any]:
+    """Diagnose why supported contrast-ordering failed strict readiness.
+
+    This is a report-only forensics step over existing Milestone 7.3 CSVs. It
+    does not train models, create features, or authorize policy recommendation.
+    """
+    pairwise_rows = _read_csv_rows(pairwise_metrics_path)
+    by_family_rows = _read_csv_rows(by_family_path)
+    bootstrap_rows = _read_csv_rows(bootstrap_path)
+    if not pairwise_rows:
+        raise ValueError("Policy-ranking pairwise metrics are empty.")
+    if not by_family_rows:
+        raise ValueError("Policy-ranking by-family summary is empty.")
+    if not bootstrap_rows:
+        raise ValueError("Policy-ranking bootstrap summary is empty.")
+
+    effect_threshold_rows = policy_ranking_effect_threshold_rows(pairwise_rows)
+    rank_rows = policy_ranking_rank_correlation_rows(pairwise_rows)
+    topk_rows = policy_ranking_topk_regret_rows(pairwise_rows)
+    failure_bin_rows = policy_ranking_hgb_vs_prior_failure_bin_rows(pairwise_rows)
+    readiness_rows = policy_ranking_failure_forensics_claim_readiness_rows(
+        pairwise_rows=pairwise_rows,
+        by_family_rows=by_family_rows,
+        bootstrap_rows=bootstrap_rows,
+        effect_threshold_rows=effect_threshold_rows,
+        rank_rows=rank_rows,
+        failure_bin_rows=failure_bin_rows,
+    )
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    plots_dir = out_dir / "plots"
+    plots_dir.mkdir(parents=True, exist_ok=True)
+    _write_csv(plots_dir / "effect_size_threshold_sign_accuracy.csv", effect_threshold_rows)
+    _write_csv(plots_dir / "rank_correlation_diagnostics.csv", rank_rows)
+    _write_csv(plots_dir / "topk_regret_diagnostics.csv", topk_rows)
+    _write_csv(plots_dir / "hgb_vs_prior_failure_bins.csv", failure_bin_rows)
+    _write_csv(plots_dir / "policy_ranking_failure_claim_readiness.csv", readiness_rows)
+    _write_policy_ranking_failure_forensics_markdown(
+        out_dir / "policy_ranking_failure_forensics.md",
+        readiness_rows=readiness_rows,
+        failure_bin_rows=failure_bin_rows,
+        effect_threshold_rows=effect_threshold_rows,
+        rank_rows=rank_rows,
+        topk_rows=topk_rows,
+        bootstrap_rows=bootstrap_rows,
+    )
+    _write_policy_ranking_failure_claim_readiness_markdown(
+        out_dir / "policy_ranking_failure_claim_readiness.md",
+        readiness_rows,
+    )
+
+    prospective_rows = _prospective_policy_pairwise_rows(pairwise_rows)
+    oracle_rows = [row for row in pairwise_rows if _is_oracle_policy_row(row)]
+    report = {
+        "status": "passed",
+        "schema_version": POLICY_RANKING_FORENSICS_SCHEMA_VERSION,
+        "generated_at_utc": datetime.now(UTC).isoformat(),
+        "inputs": {
+            "pairwise_metrics": str(pairwise_metrics_path),
+            "by_family": str(by_family_path),
+            "bootstrap": str(bootstrap_path),
+        },
+        "row_counts": {
+            "pairwise_rows": len(pairwise_rows),
+            "prospective_pairwise_rows": len(prospective_rows),
+            "oracle_pairwise_rows_excluded_from_readiness": len(oracle_rows),
+            "by_family_rows": len(by_family_rows),
+            "bootstrap_rows": len(bootstrap_rows),
+            "effect_threshold_rows": len(effect_threshold_rows),
+            "rank_correlation_rows": len(rank_rows),
+            "topk_regret_rows": len(topk_rows),
+            "hgb_vs_prior_failure_bin_rows": len(failure_bin_rows),
+        },
+        "readiness": {str(row["claim_area"]): str(row["status"]) for row in readiness_rows},
+        "outputs": {
+            "report_markdown": str(out_dir / "policy_ranking_failure_forensics.md"),
+            "claim_readiness": str(out_dir / "policy_ranking_failure_claim_readiness.md"),
+            "effect_size_threshold_sign_accuracy": str(
+                plots_dir / "effect_size_threshold_sign_accuracy.csv"
+            ),
+            "rank_correlation_diagnostics": str(plots_dir / "rank_correlation_diagnostics.csv"),
+            "topk_regret_diagnostics": str(plots_dir / "topk_regret_diagnostics.csv"),
+            "hgb_vs_prior_failure_bins": str(plots_dir / "hgb_vs_prior_failure_bins.csv"),
+        },
+        "claim_scope": "failure_forensics_only_no_policy_recommendation_no_causal_claim",
+    }
+    (out_dir / "policy_ranking_failure_forensics_report.json").write_text(
+        json.dumps(report, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return report
+
+
+def policy_ranking_effect_threshold_rows(
+    pairwise_rows: list[dict[str, Any]],
+    *,
+    thresholds: tuple[float, ...] = POLICY_RANKING_EFFECT_THRESHOLDS_AH,
+) -> list[dict[str, Any]]:
+    """Summarize sign accuracy after dropping near-zero observed contrasts."""
+    prospective_rows = _prospective_policy_pairwise_rows(pairwise_rows)
+    grouped: dict[tuple[str, str, int, str, str, str, str, float], list[dict[str, Any]]] = defaultdict(list)
+    for row in prospective_rows:
+        observed_abs = abs(_as_float(row.get("observed_effect_b_minus_a")))
+        if not math.isfinite(observed_abs):
+            continue
+        for threshold in thresholds:
+            if observed_abs < threshold:
+                continue
+            threshold_label = _effect_threshold_label(threshold)
+            for family in (str(row["contrast_family"]), "all"):
+                key = (
+                    str(row["split_name"]),
+                    str(row["target"]),
+                    int(row["horizon_checkups"]),
+                    str(row["model_level"]),
+                    str(row["feature_group"]),
+                    family,
+                    threshold_label,
+                    float(threshold),
+                )
+                grouped[key].append(row)
+
+    output = []
+    for (
+        split_name,
+        target,
+        horizon,
+        model_level,
+        feature_group,
+        family,
+        threshold_label,
+        threshold,
+    ), rows in sorted(grouped.items()):
+        evaluable = [row for row in rows if _as_bool(row.get("sign_evaluable"))]
+        correct = [row for row in evaluable if _as_bool(row.get("sign_correct"))]
+        effects = [abs(_as_float(row.get("observed_effect_b_minus_a"))) for row in rows]
+        errors = [_as_float(row.get("effect_abs_error")) for row in rows]
+        output.append(
+            {
+                "split_name": split_name,
+                "target": target,
+                "horizon_checkups": horizon,
+                "model_level": model_level,
+                "feature_group": feature_group,
+                "contrast_family": family,
+                "effect_threshold_label": threshold_label,
+                "effect_threshold_Ah": threshold,
+                "pairwise_rows": len(rows),
+                "unique_contrasts": len({str(row["contrast_id"]) for row in rows}),
+                "sign_evaluable_rows": len(evaluable),
+                "sign_correct_rows": len(correct),
+                "sign_accuracy": len(correct) / len(evaluable) if evaluable else math.nan,
+                "median_abs_observed_effect_Ah": _median([value for value in effects if math.isfinite(value)]),
+                "mean_effect_abs_error": _mean([value for value in errors if math.isfinite(value)]),
+                "claim_scope": "prospective_supported_contrast_diagnostic",
+            }
+        )
+    return output
+
+
+def policy_ranking_hgb_vs_prior_failure_bin_rows(
+    pairwise_rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Compare HGB K2 against prior slope by observed-effect size bins."""
+    primary_by_key: dict[tuple[str, str, int, str, str, int, int], dict[str, Any]] = {}
+    prior_by_key: dict[tuple[str, str, int, str, str, int, int], dict[str, Any]] = {}
+    for row in _prospective_policy_pairwise_rows(pairwise_rows):
+        key = _forensics_pairwise_match_key(row)
+        model_key = (str(row["model_level"]), str(row["feature_group"]))
+        if model_key == POLICY_RANKING_PRIMARY_MODEL:
+            primary_by_key[key] = row
+        elif model_key == ("MH1_prior_slope_linear", "prior_slope"):
+            prior_by_key[key] = row
+
+    grouped: dict[tuple[str, str, int, str, str], list[tuple[dict[str, Any], dict[str, Any]]]] = defaultdict(list)
+    for key in sorted(set(primary_by_key) & set(prior_by_key)):
+        primary = primary_by_key[key]
+        prior = prior_by_key[key]
+        observed_abs = abs(_as_float(primary.get("observed_effect_b_minus_a")))
+        if not math.isfinite(observed_abs):
+            continue
+        effect_bin = _effect_bin_label(observed_abs)
+        for family in (str(primary["contrast_family"]), "all"):
+            grouped[
+                (
+                    str(primary["split_name"]),
+                    str(primary["target"]),
+                    int(primary["horizon_checkups"]),
+                    family,
+                    effect_bin,
+                )
+            ].append((primary, prior))
+
+    output = []
+    for (split_name, target, horizon, family, effect_bin), rows in sorted(grouped.items()):
+        hgb_rows = [primary for primary, _ in rows]
+        prior_rows = [prior for _, prior in rows]
+        hgb_accuracy = _accuracy_forensics(hgb_rows)
+        prior_accuracy = _accuracy_forensics(prior_rows)
+        hgb_errors = [_as_float(row.get("effect_abs_error")) for row in hgb_rows]
+        prior_errors = [_as_float(row.get("effect_abs_error")) for row in prior_rows]
+        hgb_mean_error = _mean([value for value in hgb_errors if math.isfinite(value)])
+        prior_mean_error = _mean([value for value in prior_errors if math.isfinite(value)])
+        output.append(
+            {
+                "split_name": split_name,
+                "target": target,
+                "horizon_checkups": horizon,
+                "contrast_family": family,
+                "effect_bin": effect_bin,
+                "matched_rows": len(rows),
+                "matched_contrasts": len({str(primary["contrast_id"]) for primary, _ in rows}),
+                "hgb_sign_accuracy": hgb_accuracy,
+                "prior_slope_sign_accuracy": prior_accuracy,
+                "sign_accuracy_gain_vs_prior": hgb_accuracy - prior_accuracy
+                if math.isfinite(hgb_accuracy) and math.isfinite(prior_accuracy)
+                else math.nan,
+                "hgb_mean_effect_abs_error": hgb_mean_error,
+                "prior_slope_mean_effect_abs_error": prior_mean_error,
+                "mean_abs_error_gain_vs_prior": prior_mean_error - hgb_mean_error
+                if math.isfinite(hgb_mean_error) and math.isfinite(prior_mean_error)
+                else math.nan,
+                "hgb_sign_correct_rows": sum(_as_bool(row.get("sign_correct")) for row in hgb_rows),
+                "prior_slope_sign_correct_rows": sum(_as_bool(row.get("sign_correct")) for row in prior_rows),
+                "claim_scope": "prospective_supported_contrast_diagnostic",
+            }
+        )
+    return output
+
+
+def policy_ranking_rank_correlation_rows(
+    pairwise_rows: list[dict[str, Any]],
+    *,
+    min_contrasts: int = 5,
+) -> list[dict[str, Any]]:
+    """Compute contrast-level rank correlations between observed and predicted effects."""
+    summaries = _contrast_level_effect_rows(_prospective_policy_pairwise_rows(pairwise_rows))
+    grouped: dict[tuple[str, str, int, str, str, str], list[dict[str, Any]]] = defaultdict(list)
+    for row in summaries:
+        for family in (str(row["contrast_family"]), "all"):
+            grouped[
+                (
+                    str(row["split_name"]),
+                    str(row["target"]),
+                    int(row["horizon_checkups"]),
+                    str(row["model_level"]),
+                    str(row["feature_group"]),
+                    family,
+                )
+            ].append(row)
+
+    output = []
+    for (split_name, target, horizon, model_level, feature_group, family), rows in sorted(grouped.items()):
+        observed = [_as_float(row["observed_effect_b_minus_a"]) for row in rows]
+        predicted = [_as_float(row["predicted_effect_b_minus_a"]) for row in rows]
+        paired = [(obs, pred) for obs, pred in zip(observed, predicted, strict=False) if math.isfinite(obs) and math.isfinite(pred)]
+        if len(paired) < min_contrasts:
+            status = "insufficient_contrasts"
+            spearman = math.nan
+            kendall = math.nan
+        else:
+            status = "evaluated"
+            spearman = _spearman_correlation([obs for obs, _ in paired], [pred for _, pred in paired])
+            kendall = _kendall_tau_b([obs for obs, _ in paired], [pred for _, pred in paired])
+        output.append(
+            {
+                "split_name": split_name,
+                "target": target,
+                "horizon_checkups": horizon,
+                "model_level": model_level,
+                "feature_group": feature_group,
+                "contrast_family": family,
+                "contrast_rows": len(rows),
+                "rank_evaluable_contrasts": len(paired),
+                "spearman_r": spearman,
+                "kendall_tau_b": kendall,
+                "status": status,
+                "claim_scope": "prospective_supported_contrast_diagnostic",
+            }
+        )
+    return output
+
+
+def policy_ranking_topk_regret_rows(
+    pairwise_rows: list[dict[str, Any]],
+    *,
+    topk_values: tuple[int, ...] = POLICY_RANKING_TOPK_VALUES,
+    min_contrasts: int = 3,
+) -> list[dict[str, Any]]:
+    """Evaluate whether predicted ranks identify the most harmful supported contrasts."""
+    summaries = _contrast_level_effect_rows(_prospective_policy_pairwise_rows(pairwise_rows))
+    grouped: dict[tuple[str, str, int, str, str, str], list[dict[str, Any]]] = defaultdict(list)
+    for row in summaries:
+        for family in (str(row["contrast_family"]), "all"):
+            grouped[
+                (
+                    str(row["split_name"]),
+                    str(row["target"]),
+                    int(row["horizon_checkups"]),
+                    str(row["model_level"]),
+                    str(row["feature_group"]),
+                    family,
+                )
+            ].append(row)
+
+    output = []
+    for (split_name, target, horizon, model_level, feature_group, family), rows in sorted(grouped.items()):
+        finite_rows = [
+            row
+            for row in rows
+            if math.isfinite(_as_float(row["observed_effect_b_minus_a"]))
+            and math.isfinite(_as_float(row["predicted_effect_b_minus_a"]))
+        ]
+        for top_k in topk_values:
+            effective_k = min(top_k, len(finite_rows))
+            if len(finite_rows) < min_contrasts or effective_k <= 0:
+                output.append(
+                    {
+                        "split_name": split_name,
+                        "target": target,
+                        "horizon_checkups": horizon,
+                        "model_level": model_level,
+                        "feature_group": feature_group,
+                        "contrast_family": family,
+                        "top_k": top_k,
+                        "effective_top_k": effective_k,
+                        "contrast_rows": len(finite_rows),
+                        "topk_overlap_fraction": math.nan,
+                        "mean_observed_effect_selected": math.nan,
+                        "mean_observed_effect_best": math.nan,
+                        "regret_vs_observed_best": math.nan,
+                        "status": "insufficient_contrasts",
+                        "claim_scope": "prospective_supported_contrast_diagnostic",
+                    }
+                )
+                continue
+            observed_best = sorted(
+                finite_rows,
+                key=lambda row: (_as_float(row["observed_effect_b_minus_a"]), str(row["contrast_id"])),
+                reverse=True,
+            )[:effective_k]
+            predicted_selected = sorted(
+                finite_rows,
+                key=lambda row: (_as_float(row["predicted_effect_b_minus_a"]), str(row["contrast_id"])),
+                reverse=True,
+            )[:effective_k]
+            observed_ids = {str(row["contrast_id"]) for row in observed_best}
+            predicted_ids = {str(row["contrast_id"]) for row in predicted_selected}
+            selected_mean = _mean([_as_float(row["observed_effect_b_minus_a"]) for row in predicted_selected])
+            best_mean = _mean([_as_float(row["observed_effect_b_minus_a"]) for row in observed_best])
+            output.append(
+                {
+                    "split_name": split_name,
+                    "target": target,
+                    "horizon_checkups": horizon,
+                    "model_level": model_level,
+                    "feature_group": feature_group,
+                    "contrast_family": family,
+                    "top_k": top_k,
+                    "effective_top_k": effective_k,
+                    "contrast_rows": len(finite_rows),
+                    "topk_overlap_fraction": len(observed_ids & predicted_ids) / effective_k,
+                    "mean_observed_effect_selected": selected_mean,
+                    "mean_observed_effect_best": best_mean,
+                    "regret_vs_observed_best": best_mean - selected_mean,
+                    "status": "evaluated",
+                    "claim_scope": "prospective_supported_contrast_diagnostic",
+                }
+            )
+    return output
+
+
+def policy_ranking_failure_forensics_claim_readiness_rows(
+    *,
+    pairwise_rows: list[dict[str, Any]],
+    by_family_rows: list[dict[str, Any]],
+    bootstrap_rows: list[dict[str, Any]],
+    effect_threshold_rows: list[dict[str, Any]],
+    rank_rows: list[dict[str, Any]],
+    failure_bin_rows: list[dict[str, Any]],
+) -> list[dict[str, str]]:
+    """Return conservative readiness rows for the failure-forensics gate."""
+    del pairwise_rows, by_family_rows
+    strict_prior_rows = [
+        row
+        for row in bootstrap_rows
+        if str(row.get("contrast_family")) == "all"
+        and str(row.get("target")) == "delta_capacity_Ah_h"
+        and int(row.get("horizon_checkups", 0)) in set(POLICY_RANKING_HORIZONS)
+        and str(row.get("candidate_model_level")) == POLICY_RANKING_PRIMARY_MODEL[0]
+        and str(row.get("candidate_feature_group")) == POLICY_RANKING_PRIMARY_MODEL[1]
+        and str(row.get("reference_model_level")) == "MH1_prior_slope_linear"
+        and str(row.get("reference_feature_group")) == "prior_slope"
+    ]
+    strict_prior_pass = [
+        row
+        for row in strict_prior_rows
+        if _as_float(row.get("accuracy_gain")) > 0 and _as_float(row.get("accuracy_gain_p05")) > 0
+    ]
+    large_effect_rows = [
+        row
+        for row in failure_bin_rows
+        if str(row["target"]) == "delta_capacity_Ah_h"
+        and int(row["horizon_checkups"]) in set(POLICY_RANKING_HORIZONS)
+        and str(row["effect_bin"]) == "large_ge_0.05Ah"
+        and str(row["contrast_family"]) != "all"
+    ]
+    large_effect_passing_families = {
+        str(row["contrast_family"])
+        for row in large_effect_rows
+        if _as_float(row.get("sign_accuracy_gain_vs_prior")) > 0
+        and _as_float(row.get("hgb_sign_accuracy")) >= 0.5
+    }
+    c_rate_large_rows = [
+        row
+        for row in failure_bin_rows
+        if str(row["split_name"]) == "c_rate_holdout_fold"
+        and str(row["target"]) == "delta_capacity_Ah_h"
+        and int(row["horizon_checkups"]) in set(POLICY_RANKING_HORIZONS)
+        and str(row["effect_bin"]) in {"medium_0.02_to_0.05Ah", "large_ge_0.05Ah"}
+        and str(row["contrast_family"]) == "all"
+    ]
+    c_rate_large_pass_rows = [
+        row
+        for row in c_rate_large_rows
+        if _as_float(row.get("sign_accuracy_gain_vs_prior")) > 0
+        and _as_float(row.get("hgb_sign_accuracy")) >= 0.5
+    ]
+    fixed_002_rows = [
+        row
+        for row in effect_threshold_rows
+        if str(row["target"]) == "delta_capacity_Ah_h"
+        and int(row["horizon_checkups"]) in set(POLICY_RANKING_HORIZONS)
+        and str(row["model_level"]) == POLICY_RANKING_PRIMARY_MODEL[0]
+        and str(row["feature_group"]) == POLICY_RANKING_PRIMARY_MODEL[1]
+        and str(row["effect_threshold_label"]) == "ge_0.02Ah"
+        and str(row["contrast_family"]) == "all"
+    ]
+    threshold_accuracy = _mean([_as_float(row["sign_accuracy"]) for row in fixed_002_rows])
+    rank_hgb_better_families = _rank_families_hgb_better_than_prior(rank_rows)
+    if len(large_effect_passing_families) >= 2 and len(c_rate_large_pass_rows) >= 2:
+        next_gate_status = "possible_next_gate"
+        evidence_prefix = "Large-effect HGB-vs-prior diagnostics pass in multiple families and C-rate rows."
+    elif large_effect_passing_families or c_rate_large_pass_rows or (
+        math.isfinite(threshold_accuracy) and threshold_accuracy >= 0.75
+    ):
+        next_gate_status = "diagnostic_only"
+        evidence_prefix = "Some large-effect or thresholded diagnostics improve, but not enough for a new gate."
+    else:
+        next_gate_status = "not_supported"
+        evidence_prefix = "Large-effect and rank diagnostics do not rescue the prior-slope gate."
+
+    return [
+        {
+            "claim_area": "contrast-ordering failure forensics",
+            "status": "supported_for_diagnostics",
+            "evidence": (
+                f"Report-only diagnostics generated over existing 7.3 artifacts; "
+                f"{len(strict_prior_pass)}/{len(strict_prior_rows)} strict HGB-vs-prior all-family checks pass."
+            ),
+            "allowed_wording": "The 7.3 failure can be decomposed by effect size, rank metric, split, horizon, and family.",
+            "forbidden_wording": "The diagnostics train a new policy model or prove policy utility.",
+        },
+        {
+            "claim_area": "large-effect contrast ordering next gate",
+            "status": next_gate_status,
+            "evidence": (
+                f"{evidence_prefix} Large-effect passing families: "
+                f"{', '.join(sorted(large_effect_passing_families)) or 'none'}; "
+                f"C-rate medium/large pass rows: {len(c_rate_large_pass_rows)}/{len(c_rate_large_rows)}; "
+                f"HGB ge_0.02Ah mean sign accuracy: {_format_float(threshold_accuracy)}."
+            ),
+            "allowed_wording": "At most, a future predeclared large-effect supported-contrast gate may be considered if diagnostics justify it.",
+            "forbidden_wording": "Policy ranking, recommendation, or broad policy-response modeling is authorized.",
+        },
+        {
+            "claim_area": "rank-metric robustness",
+            "status": "diagnostic_only" if rank_hgb_better_families else "not_supported",
+            "evidence": (
+                f"HGB K2 Spearman exceeds prior slope in {len(rank_hgb_better_families)} contrast families: "
+                f"{', '.join(sorted(rank_hgb_better_families)) or 'none'}."
+            ),
+            "allowed_wording": "Rank correlations can contextualize sign-accuracy failures.",
+            "forbidden_wording": "Rank metrics validate policy recommendation quality.",
+        },
+        {
+            "claim_area": "K3 oracle exclusion",
+            "status": "supported_for_diagnostics",
+            "evidence": "Oracle K3 rows are excluded from prospective forensics readiness.",
+            "allowed_wording": "K3 remains an oracle/future-exposure diagnostic only.",
+            "forbidden_wording": "K3 is a prospective policy input.",
+        },
+        {
+            "claim_area": "policy recommendation",
+            "status": "blocked",
+            "evidence": "The gate uses observed supported contrasts and existing prediction artifacts only.",
+            "allowed_wording": "No operating-policy recommendation is made.",
+            "forbidden_wording": "Select, prescribe, optimize, or deploy a battery operating policy.",
+        },
+        {
+            "claim_area": "causal or same-cell counterfactual policy claims",
+            "status": "blocked",
+            "evidence": "Observed condition-triplet contrasts are not same-cell interventions.",
+            "allowed_wording": "Report support-bounded observed contrast diagnostics only.",
+            "forbidden_wording": "Changing a policy would cause the estimated degradation effect in the same cell.",
+        },
+        {
+            "claim_area": "calibrated policy risk or CBAT readiness",
+            "status": "blocked",
+            "evidence": "Calibrated policy utility/risk, CBAT, and architecture claims require later gates that remain blocked.",
+            "allowed_wording": "Scores are diagnostic ordering outputs.",
+            "forbidden_wording": "Calibrated policy risk, utility, CBAT, or architecture readiness is supported.",
+        },
+    ]
 
 
 def policy_contrast_family_rows(registry_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -1438,6 +1968,413 @@ def _families_with_primary_reference_gain(summary_rows: list[dict[str, Any]]) ->
         references = [value for value in reference_by_key.get(key, []) if math.isfinite(value)]
         if math.isfinite(accuracy) and references and accuracy > max(references):
             passing.add(str(key[2]))
+    return passing
+
+
+def _write_policy_ranking_failure_forensics_markdown(
+    out_path: Path,
+    *,
+    readiness_rows: list[dict[str, str]],
+    failure_bin_rows: list[dict[str, Any]],
+    effect_threshold_rows: list[dict[str, Any]],
+    rank_rows: list[dict[str, Any]],
+    topk_rows: list[dict[str, Any]],
+    bootstrap_rows: list[dict[str, Any]],
+) -> None:
+    primary_prior = [
+        row
+        for row in bootstrap_rows
+        if str(row.get("contrast_family")) == "all"
+        and str(row.get("target")) == "delta_capacity_Ah_h"
+        and int(row.get("horizon_checkups", 0)) in set(POLICY_RANKING_HORIZONS)
+        and str(row.get("reference_model_level")) == "MH1_prior_slope_linear"
+    ]
+    main_bins = [
+        row
+        for row in failure_bin_rows
+        if str(row["target"]) == "delta_capacity_Ah_h"
+        and int(row["horizon_checkups"]) in set(POLICY_RANKING_HORIZONS)
+        and str(row["contrast_family"]) == "all"
+    ][:20]
+    primary_thresholds = [
+        row
+        for row in effect_threshold_rows
+        if str(row["target"]) == "delta_capacity_Ah_h"
+        and int(row["horizon_checkups"]) in set(POLICY_RANKING_HORIZONS)
+        and str(row["model_level"]) == POLICY_RANKING_PRIMARY_MODEL[0]
+        and str(row["feature_group"]) == POLICY_RANKING_PRIMARY_MODEL[1]
+        and str(row["contrast_family"]) == "all"
+    ][:20]
+    primary_ranks = [
+        row
+        for row in rank_rows
+        if str(row["target"]) == "delta_capacity_Ah_h"
+        and int(row["horizon_checkups"]) in set(POLICY_RANKING_HORIZONS)
+        and str(row["model_level"]) == POLICY_RANKING_PRIMARY_MODEL[0]
+        and str(row["feature_group"]) == POLICY_RANKING_PRIMARY_MODEL[1]
+        and str(row["contrast_family"]) == "all"
+    ][:20]
+    primary_topk = [
+        row
+        for row in topk_rows
+        if str(row["target"]) == "delta_capacity_Ah_h"
+        and int(row["horizon_checkups"]) in set(POLICY_RANKING_HORIZONS)
+        and str(row["model_level"]) == POLICY_RANKING_PRIMARY_MODEL[0]
+        and str(row["feature_group"]) == POLICY_RANKING_PRIMARY_MODEL[1]
+        and str(row["contrast_family"]) == "all"
+    ][:20]
+    lines = [
+        "# Policy Ranking Failure Forensics",
+        "",
+        "This report diagnoses the Milestone 7.3 supported contrast-ordering near miss using existing CSV artifacts only. It does not train a model, add features, recommend policies, estimate causal effects, or create same-cell counterfactuals.",
+        "",
+        "## Claim Readiness",
+        "",
+        "| Claim area | Status | Evidence | Allowed wording | Forbidden wording |",
+        "|---|---|---|---|---|",
+    ]
+    for row in readiness_rows:
+        lines.append(
+            "| {area} | {status} | {evidence} | {allowed} | {forbidden} |".format(
+                area=row["claim_area"],
+                status=row["status"],
+                evidence=row["evidence"],
+                allowed=row["allowed_wording"],
+                forbidden=row["forbidden_wording"],
+            )
+        )
+    lines.extend(
+        [
+            "",
+            "## Strict Prior-Slope Bootstrap Rows",
+            "",
+            "| Split | Horizon | Gain | Gain p05 | Candidate accuracy | Prior accuracy |",
+            "|---|---:|---:|---:|---:|---:|",
+        ]
+    )
+    for row in primary_prior:
+        lines.append(
+            "| {split} | {horizon} | {gain} | {p05} | {cand} | {ref} |".format(
+                split=row["split_name"],
+                horizon=row["horizon_checkups"],
+                gain=_format_float(row["accuracy_gain"]),
+                p05=_format_float(row["accuracy_gain_p05"]),
+                cand=_format_float(row["candidate_sign_accuracy"]),
+                ref=_format_float(row["reference_sign_accuracy"]),
+            )
+        )
+    lines.extend(
+        [
+            "",
+            "## HGB Versus Prior By Effect Bin",
+            "",
+            "| Split | Horizon | Bin | Rows | HGB sign acc. | Prior sign acc. | Gain | HGB MAE | Prior MAE |",
+            "|---|---:|---|---:|---:|---:|---:|---:|---:|",
+        ]
+    )
+    for row in main_bins:
+        lines.append(
+            "| {split} | {horizon} | {bin} | {rows} | {hgb} | {prior} | {gain} | {hgb_mae} | {prior_mae} |".format(
+                split=row["split_name"],
+                horizon=row["horizon_checkups"],
+                bin=row["effect_bin"],
+                rows=row["matched_rows"],
+                hgb=_format_float(row["hgb_sign_accuracy"]),
+                prior=_format_float(row["prior_slope_sign_accuracy"]),
+                gain=_format_float(row["sign_accuracy_gain_vs_prior"]),
+                hgb_mae=_format_float(row["hgb_mean_effect_abs_error"]),
+                prior_mae=_format_float(row["prior_slope_mean_effect_abs_error"]),
+            )
+        )
+    lines.extend(
+        [
+            "",
+            "## HGB Effect-Threshold Sign Accuracy",
+            "",
+            "| Split | Horizon | Threshold | Rows | Sign accuracy | Median abs effect |",
+            "|---|---:|---|---:|---:|---:|",
+        ]
+    )
+    for row in primary_thresholds:
+        lines.append(
+            "| {split} | {horizon} | {threshold} | {rows} | {acc} | {effect} |".format(
+                split=row["split_name"],
+                horizon=row["horizon_checkups"],
+                threshold=row["effect_threshold_label"],
+                rows=row["pairwise_rows"],
+                acc=_format_float(row["sign_accuracy"]),
+                effect=_format_float(row["median_abs_observed_effect_Ah"]),
+            )
+        )
+    lines.extend(
+        [
+            "",
+            "## HGB Rank Diagnostics",
+            "",
+            "| Split | Horizon | Contrasts | Spearman | Kendall tau-b | Status |",
+            "|---|---:|---:|---:|---:|---|",
+        ]
+    )
+    for row in primary_ranks:
+        lines.append(
+            "| {split} | {horizon} | {rows} | {spearman} | {kendall} | {status} |".format(
+                split=row["split_name"],
+                horizon=row["horizon_checkups"],
+                rows=row["rank_evaluable_contrasts"],
+                spearman=_format_float(row["spearman_r"]),
+                kendall=_format_float(row["kendall_tau_b"]),
+                status=row["status"],
+            )
+        )
+    lines.extend(
+        [
+            "",
+            "## HGB Top-K Harmful Contrast Diagnostics",
+            "",
+            "| Split | Horizon | Top-k | Overlap | Regret | Status |",
+            "|---|---:|---:|---:|---:|---|",
+        ]
+    )
+    for row in primary_topk:
+        lines.append(
+            "| {split} | {horizon} | {top_k} | {overlap} | {regret} | {status} |".format(
+                split=row["split_name"],
+                horizon=row["horizon_checkups"],
+                top_k=row["top_k"],
+                overlap=_format_float(row["topk_overlap_fraction"]),
+                regret=_format_float(row["regret_vs_observed_best"]),
+                status=row["status"],
+            )
+        )
+    lines.extend(
+        [
+            "",
+            "## Interpretation",
+            "",
+            "- Near-zero observed contrasts can make sign accuracy brittle; thresholded rows show whether that explains the 7.3 strict-gate failure.",
+            "- Rank and top-k diagnostics are support-bounded forensics, not policy optimization.",
+            "- Policy recommendation, causal effects, same-cell counterfactuals, calibrated policy risk/utility, sequence/neural models, and CBAT remain blocked.",
+        ]
+    )
+    out_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _write_policy_ranking_failure_claim_readiness_markdown(
+    out_path: Path,
+    readiness_rows: list[dict[str, str]],
+) -> None:
+    lines = [
+        "# Policy Ranking Failure Forensics Claim Readiness",
+        "",
+        "| Claim area | Status | Evidence | Allowed wording | Forbidden wording |",
+        "|---|---|---|---|---|",
+    ]
+    for row in readiness_rows:
+        lines.append(
+            "| {area} | {status} | {evidence} | {allowed} | {forbidden} |".format(
+                area=row["claim_area"],
+                status=row["status"],
+                evidence=row["evidence"],
+                allowed=row["allowed_wording"],
+                forbidden=row["forbidden_wording"],
+            )
+        )
+    lines.append("")
+    out_path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def _read_csv_rows(path: Path) -> list[dict[str, Any]]:
+    with path.open("r", encoding="utf-8", newline="") as f:
+        return list(csv.DictReader(f))
+
+
+def _prospective_policy_pairwise_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [row for row in rows if not _is_oracle_policy_row(row)]
+
+
+def _is_oracle_policy_row(row: dict[str, Any]) -> bool:
+    return (
+        str(row.get("claim_scope")) == "oracle_diagnostic_only"
+        or str(row.get("feature_group")) in ORACLE_POLICY_RANKING_FEATURE_GROUPS
+    )
+
+
+def _as_bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    text = str(value).strip().lower()
+    return text in {"1", "true", "t", "yes", "y"}
+
+
+def _effect_threshold_label(threshold: float) -> str:
+    if threshold == 0:
+        return "ge_0Ah"
+    return f"ge_{threshold:g}Ah"
+
+
+def _effect_bin_label(abs_effect: float) -> str:
+    for label, lower, upper in POLICY_RANKING_EFFECT_BINS_AH:
+        if lower <= abs_effect < upper:
+            return label
+    return "unbinned"
+
+
+def _forensics_pairwise_match_key(row: dict[str, Any]) -> tuple[str, str, int, str, str, int, int]:
+    return (
+        str(row["split_name"]),
+        str(row["target"]),
+        int(row["horizon_checkups"]),
+        str(row["contrast_family"]),
+        str(row["contrast_id"]),
+        int(row["checkup_k"]),
+        int(row["target_checkup_k"]),
+    )
+
+
+def _accuracy_forensics(rows: list[dict[str, Any]]) -> float:
+    evaluable = [row for row in rows if _as_bool(row.get("sign_evaluable"))]
+    if not evaluable:
+        return math.nan
+    return sum(_as_bool(row.get("sign_correct")) for row in evaluable) / len(evaluable)
+
+
+def _contrast_level_effect_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    grouped: dict[tuple[str, str, int, str, str, str, str], list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        grouped[
+            (
+                str(row["split_name"]),
+                str(row["target"]),
+                int(row["horizon_checkups"]),
+                str(row["model_level"]),
+                str(row["feature_group"]),
+                str(row["contrast_family"]),
+                str(row["contrast_id"]),
+            )
+        ].append(row)
+
+    output = []
+    for (split_name, target, horizon, model_level, feature_group, family, contrast_id), group in sorted(grouped.items()):
+        observed = [_as_float(row.get("observed_effect_b_minus_a")) for row in group]
+        predicted = [_as_float(row.get("predicted_effect_b_minus_a")) for row in group]
+        output.append(
+            {
+                "split_name": split_name,
+                "target": target,
+                "horizon_checkups": horizon,
+                "model_level": model_level,
+                "feature_group": feature_group,
+                "contrast_family": family,
+                "contrast_id": contrast_id,
+                "observed_effect_b_minus_a": _mean([value for value in observed if math.isfinite(value)]),
+                "predicted_effect_b_minus_a": _mean([value for value in predicted if math.isfinite(value)]),
+                "source_pairwise_rows": len(group),
+            }
+        )
+    return output
+
+
+def _rank_values(values: list[float]) -> list[float]:
+    indexed = sorted((value, index) for index, value in enumerate(values))
+    ranks = [0.0] * len(values)
+    position = 0
+    while position < len(indexed):
+        end = position + 1
+        while end < len(indexed) and indexed[end][0] == indexed[position][0]:
+            end += 1
+        average_rank = (position + 1 + end) / 2.0
+        for _, original_index in indexed[position:end]:
+            ranks[original_index] = average_rank
+        position = end
+    return ranks
+
+
+def _pearson_correlation(left: list[float], right: list[float]) -> float:
+    if len(left) != len(right) or len(left) < 2:
+        return math.nan
+    left_mean = _mean(left)
+    right_mean = _mean(right)
+    left_centered = [value - left_mean for value in left]
+    right_centered = [value - right_mean for value in right]
+    numerator = sum(a * b for a, b in zip(left_centered, right_centered, strict=False))
+    left_denominator = math.sqrt(sum(value * value for value in left_centered))
+    right_denominator = math.sqrt(sum(value * value for value in right_centered))
+    denominator = left_denominator * right_denominator
+    if denominator == 0:
+        return math.nan
+    return numerator / denominator
+
+
+def _spearman_correlation(left: list[float], right: list[float]) -> float:
+    if len(left) != len(right) or len(left) < 2:
+        return math.nan
+    return _pearson_correlation(_rank_values(left), _rank_values(right))
+
+
+def _kendall_tau_b(left: list[float], right: list[float]) -> float:
+    if len(left) != len(right) or len(left) < 2:
+        return math.nan
+    concordant = 0
+    discordant = 0
+    left_ties = 0
+    right_ties = 0
+    for i in range(len(left) - 1):
+        for j in range(i + 1, len(left)):
+            left_delta = _sign_number(left[i] - left[j])
+            right_delta = _sign_number(right[i] - right[j])
+            if left_delta == 0 and right_delta == 0:
+                continue
+            if left_delta == 0:
+                left_ties += 1
+            elif right_delta == 0:
+                right_ties += 1
+            elif left_delta == right_delta:
+                concordant += 1
+            else:
+                discordant += 1
+    denominator = math.sqrt((concordant + discordant + left_ties) * (concordant + discordant + right_ties))
+    if denominator == 0:
+        return math.nan
+    return (concordant - discordant) / denominator
+
+
+def _sign_number(value: float) -> int:
+    if value > 0:
+        return 1
+    if value < 0:
+        return -1
+    return 0
+
+
+def _rank_families_hgb_better_than_prior(rank_rows: list[dict[str, Any]]) -> set[str]:
+    hgb_by_key: dict[tuple[str, str, int, str], float] = {}
+    prior_by_key: dict[tuple[str, str, int, str], float] = {}
+    for row in rank_rows:
+        if (
+            str(row["target"]) != "delta_capacity_Ah_h"
+            or int(row["horizon_checkups"]) not in set(POLICY_RANKING_HORIZONS)
+            or str(row["contrast_family"]) == "all"
+        ):
+            continue
+        key = (
+            str(row["split_name"]),
+            str(row["contrast_family"]),
+            int(row["horizon_checkups"]),
+            str(row["target"]),
+        )
+        model_key = (str(row["model_level"]), str(row["feature_group"]))
+        if model_key == POLICY_RANKING_PRIMARY_MODEL:
+            hgb_by_key[key] = _as_float(row["spearman_r"])
+        elif model_key == ("MH1_prior_slope_linear", "prior_slope"):
+            prior_by_key[key] = _as_float(row["spearman_r"])
+    passing = set()
+    for key in sorted(set(hgb_by_key) & set(prior_by_key)):
+        hgb = hgb_by_key[key]
+        prior = prior_by_key[key]
+        if math.isfinite(hgb) and math.isfinite(prior) and hgb > prior:
+            passing.add(str(key[1]))
     return passing
 
 

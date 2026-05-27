@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 7.3: Support-bounded contrast-ordering feasibility gate.
+Milestone 7.4: Contrast-ordering failure forensics and metric robustness.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -102,6 +102,12 @@ Current state:
   oracle-diagnostic only, and policy recommendation, causal/same-cell
   counterfactual, calibrated-risk, CBAT, and sequence/neural claims remain
   blocked.
+- Milestone 7.4 diagnoses why the Milestone 7.3 strict prior-slope bootstrap
+  gate failed. It uses the existing 7.3 pairwise/by-family/bootstrap CSVs only,
+  adds effect-size-thresholded sign accuracy, rank-correlation, top-k/regret,
+  and HGB-vs-prior failure-bin diagnostics, and keeps policy recommendation,
+  causal/same-cell counterfactual, calibrated policy risk/utility, CBAT, and
+  sequence/neural branches blocked.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
@@ -110,6 +116,10 @@ Allowed work:
 - policy-contrast support QA
 - observed capacity-loss sign-stability diagnostics
 - existing-prediction supported contrast-ordering diagnostics
+- report-only contrast-ordering failure forensics from existing 7.3 CSVs
+- effect-size-thresholded sign-accuracy diagnostics
+- rank-correlation and top-k/regret diagnostics over supported contrasts
+- HGB-vs-prior-slope failure bins by split, horizon, family, and effect size
 - pairwise observed-vs-predicted contrast sign and magnitude metrics
 - contrast-level bootstrap summaries over existing predictions
 - K3 oracle exposure ordering diagnostics labeled non-prospective

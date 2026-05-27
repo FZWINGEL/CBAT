@@ -76,6 +76,7 @@ Layer 6: Diagnostics and hardening
   mbp analysis policy-contrast-qa
   mbp analysis evaluate-observed-policy-contrasts
   mbp analysis evaluate-policy-ranking-feasibility
+  mbp analysis diagnose-policy-ranking-feasibility
     |
     v
 Layer 7: Synthesis and release checks
@@ -106,3 +107,6 @@ Layer 7: Synthesis and release checks
 - Prediction Parquets are local generated artifacts and must not be committed.
 - Supported contrast-ordering feasibility consumes existing horizon prediction
   Parquets only; it must not train or tune a policy/ranking model.
+- Policy-ranking failure forensics consumes existing 7.3 CSV reports only; it
+  must not retrain, tune, recommend policies, or make causal/counterfactual
+  claims.

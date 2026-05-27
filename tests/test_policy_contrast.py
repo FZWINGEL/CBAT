@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 from pathlib import Path
 
 import pyarrow as pa
@@ -7,14 +8,20 @@ import pyarrow.parquet as pq
 
 from mbp.analysis.policy_contrast import (
     build_policy_contrast_registry,
+    diagnose_policy_ranking_feasibility,
     evaluate_policy_ranking_feasibility,
     evaluate_observed_policy_contrasts,
     observed_policy_stability_rows,
     policy_claim_readiness_rows,
     policy_contrast_family_rows,
     policy_ranking_bootstrap_rows,
+    policy_ranking_effect_threshold_rows,
+    policy_ranking_failure_forensics_claim_readiness_rows,
+    policy_ranking_hgb_vs_prior_failure_bin_rows,
     policy_ranking_pairwise_rows,
+    policy_ranking_rank_correlation_rows,
     policy_ranking_summary_rows,
+    policy_ranking_topk_regret_rows,
     write_policy_contrast_qa,
 )
 from mbp.data.schema_contracts import POLICY_CONTRAST_REGISTRY_V1_SCHEMA, validate_table
@@ -351,3 +358,219 @@ def test_evaluate_policy_ranking_feasibility_cli_sized_artifacts(tmp_path: Path)
     assert (out_dir / "policy_ranking_claim_readiness.md").exists()
     readiness_text = (out_dir / "policy_ranking_claim_readiness.md").read_text(encoding="utf-8")
     assert "No policy recommendation is made" in readiness_text
+
+
+def _forensics_pairwise_rows() -> list[dict[str, object]]:
+    specs = [
+        ("PC001_charge", "charge_c_rate", 0.006, 0.005, -0.004),
+        ("PC002_charge", "charge_c_rate", 0.030, 0.026, -0.012),
+        ("PC003_charge", "charge_c_rate", 0.080, 0.070, 0.083),
+        ("PC004_temperature", "temperature", -0.040, -0.032, 0.018),
+        ("PC005_temperature", "temperature", 0.060, 0.052, -0.020),
+        ("PC006_temperature", "temperature", 0.015, -0.008, 0.022),
+    ]
+    rows: list[dict[str, object]] = []
+    for contrast_id, family, observed, hgb_predicted, prior_predicted in specs:
+        for model_level, feature_group, predicted in [
+            ("MH3_hist_gradient_boosting", "K2_nominal_condition", hgb_predicted),
+            ("MH1_prior_slope_linear", "prior_slope", prior_predicted),
+            ("MH3_hist_gradient_boosting", "K3_oracle_exposure_diagnostic", observed),
+        ]:
+            observed_sign = _test_effect_sign(observed)
+            predicted_sign = _test_effect_sign(predicted)
+            rows.append(
+                {
+                    "contrast_id": contrast_id,
+                    "contrast_family": family,
+                    "split_name": "c_rate_holdout_fold",
+                    "target": "delta_capacity_Ah_h",
+                    "horizon_checkups": 2,
+                    "model_level": model_level,
+                    "feature_group": feature_group,
+                    "checkup_k": 1,
+                    "target_checkup_k": 3,
+                    "arm_a_parameter_set": 1,
+                    "arm_b_parameter_set": 2,
+                    "arm_a_value": "a",
+                    "arm_b_value": "b",
+                    "arm_a_prediction_rows": 3,
+                    "arm_b_prediction_rows": 3,
+                    "arm_a_replicates": 3,
+                    "arm_b_replicates": 3,
+                    "arm_a_heldout_folds": "1",
+                    "arm_b_heldout_folds": "2",
+                    "arm_a_observed_severity_mean": 0.0,
+                    "arm_b_observed_severity_mean": observed,
+                    "arm_a_predicted_severity_mean": 0.0,
+                    "arm_b_predicted_severity_mean": predicted,
+                    "observed_effect_b_minus_a": observed,
+                    "predicted_effect_b_minus_a": predicted,
+                    "effect_abs_error": abs(predicted - observed),
+                    "observed_sign_label": observed_sign,
+                    "predicted_sign_label": predicted_sign,
+                    "sign_evaluable": observed_sign != "tie" and predicted_sign != "tie",
+                    "sign_correct": observed_sign != "tie" and observed_sign == predicted_sign,
+                    "claim_scope": (
+                        "oracle_diagnostic_only"
+                        if feature_group == "K3_oracle_exposure_diagnostic"
+                        else "prospective_supported_contrast_diagnostic"
+                    ),
+                }
+            )
+    return rows
+
+
+def _test_effect_sign(value: float) -> str:
+    if value > 0:
+        return "arm_b_more_degraded"
+    if value < 0:
+        return "arm_a_more_degraded"
+    return "tie"
+
+
+def _forensics_bootstrap_rows() -> list[dict[str, object]]:
+    return [
+        {
+            "split_name": "c_rate_holdout_fold",
+            "target": "delta_capacity_Ah_h",
+            "horizon_checkups": 2,
+            "contrast_family": "all",
+            "candidate_model_level": "MH3_hist_gradient_boosting",
+            "candidate_feature_group": "K2_nominal_condition",
+            "reference_model_level": "MH1_prior_slope_linear",
+            "reference_feature_group": "prior_slope",
+            "matched_rows": 6,
+            "matched_contrasts": 6,
+            "candidate_sign_accuracy": 5 / 6,
+            "reference_sign_accuracy": 2 / 6,
+            "accuracy_gain": 0.5,
+            "accuracy_gain_p05": -0.1,
+            "accuracy_gain_p50": 0.5,
+            "accuracy_gain_p95": 0.8,
+            "bootstrap_count": 10,
+            "claim_scope": "prospective_supported_contrast_diagnostic",
+        }
+    ]
+
+
+def _write_test_csv(path: Path, rows: list[dict[str, object]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()), lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def test_policy_ranking_effect_thresholds_exclude_tiny_effects_and_oracle_rows() -> None:
+    rows = _forensics_pairwise_rows()
+    threshold_rows = policy_ranking_effect_threshold_rows(rows)
+    hgb_all_002 = [
+        row
+        for row in threshold_rows
+        if row["model_level"] == "MH3_hist_gradient_boosting"
+        and row["feature_group"] == "K2_nominal_condition"
+        and row["contrast_family"] == "all"
+        and row["effect_threshold_label"] == "ge_0.02Ah"
+    ][0]
+
+    assert hgb_all_002["pairwise_rows"] == 4
+    assert hgb_all_002["sign_accuracy"] == 1.0
+    assert all(row["feature_group"] != "K3_oracle_exposure_diagnostic" for row in threshold_rows)
+
+
+def test_policy_ranking_rank_metrics_handle_insufficient_and_evaluable_rows() -> None:
+    full_rows = policy_ranking_rank_correlation_rows(_forensics_pairwise_rows())
+    hgb_all = [
+        row
+        for row in full_rows
+        if row["model_level"] == "MH3_hist_gradient_boosting"
+        and row["feature_group"] == "K2_nominal_condition"
+        and row["contrast_family"] == "all"
+    ][0]
+    sparse_rows = policy_ranking_rank_correlation_rows(_forensics_pairwise_rows()[:4], min_contrasts=5)
+    sparse_hgb = [
+        row
+        for row in sparse_rows
+        if row["model_level"] == "MH3_hist_gradient_boosting"
+        and row["feature_group"] == "K2_nominal_condition"
+        and row["contrast_family"] == "all"
+    ][0]
+
+    assert hgb_all["status"] == "evaluated"
+    assert hgb_all["spearman_r"] > 0.8
+    assert sparse_hgb["status"] == "insufficient_contrasts"
+
+
+def test_policy_ranking_topk_regret_is_reported_for_supported_contrasts() -> None:
+    rows = policy_ranking_topk_regret_rows(_forensics_pairwise_rows(), topk_values=(3,))
+    hgb_all = [
+        row
+        for row in rows
+        if row["model_level"] == "MH3_hist_gradient_boosting"
+        and row["feature_group"] == "K2_nominal_condition"
+        and row["contrast_family"] == "all"
+    ][0]
+
+    assert hgb_all["status"] == "evaluated"
+    assert hgb_all["topk_overlap_fraction"] >= 2 / 3
+    assert hgb_all["regret_vs_observed_best"] >= 0
+
+
+def test_policy_ranking_failure_readiness_blocks_recommendation_and_excludes_oracle() -> None:
+    pairwise = _forensics_pairwise_rows()
+    threshold_rows = policy_ranking_effect_threshold_rows(pairwise)
+    rank_rows = policy_ranking_rank_correlation_rows(pairwise)
+    failure_bins = policy_ranking_hgb_vs_prior_failure_bin_rows(pairwise)
+    readiness = policy_ranking_failure_forensics_claim_readiness_rows(
+        pairwise_rows=pairwise,
+        by_family_rows=[{"placeholder": "row"}],
+        bootstrap_rows=_forensics_bootstrap_rows(),
+        effect_threshold_rows=threshold_rows,
+        rank_rows=rank_rows,
+        failure_bin_rows=failure_bins,
+    )
+    by_area = {row["claim_area"]: row for row in readiness}
+
+    assert by_area["K3 oracle exclusion"]["status"] == "supported_for_diagnostics"
+    assert by_area["policy recommendation"]["status"] == "blocked"
+    assert by_area["causal or same-cell counterfactual policy claims"]["status"] == "blocked"
+    assert "K3 remains an oracle" in by_area["K3 oracle exclusion"]["allowed_wording"]
+
+
+def test_diagnose_policy_ranking_feasibility_writes_forensics_outputs(tmp_path: Path) -> None:
+    pairwise_path = tmp_path / "policy_ranking_pairwise_metrics.csv"
+    by_family_path = tmp_path / "policy_ranking_by_family.csv"
+    bootstrap_path = tmp_path / "policy_ranking_bootstrap.csv"
+    out_dir = tmp_path / "policy"
+    _write_test_csv(pairwise_path, _forensics_pairwise_rows())
+    _write_test_csv(
+        by_family_path,
+        [
+            {
+                "split_name": "c_rate_holdout_fold",
+                "target": "delta_capacity_Ah_h",
+                "horizon_checkups": 2,
+                "model_level": "MH3_hist_gradient_boosting",
+                "feature_group": "K2_nominal_condition",
+                "contrast_family": "all",
+                "pairwise_rows": 6,
+                "unique_contrasts": 6,
+                "sign_evaluable_rows": 6,
+                "sign_correct_rows": 5,
+                "sign_accuracy": 5 / 6,
+                "mean_effect_abs_error": 0.01,
+                "median_effect_abs_error": 0.01,
+                "observed_tie_rows": 0,
+                "predicted_tie_rows": 0,
+                "claim_scope": "prospective_supported_contrast_diagnostic",
+            }
+        ],
+    )
+    _write_test_csv(bootstrap_path, _forensics_bootstrap_rows())
+
+    report = diagnose_policy_ranking_feasibility(pairwise_path, by_family_path, bootstrap_path, out_dir)
+
+    assert report["row_counts"]["oracle_pairwise_rows_excluded_from_readiness"] == 6
+    assert (out_dir / "policy_ranking_failure_forensics.md").exists()
+    assert (out_dir / "policy_ranking_failure_claim_readiness.md").exists()
+    assert (out_dir / "plots" / "hgb_vs_prior_failure_bins.csv").exists()

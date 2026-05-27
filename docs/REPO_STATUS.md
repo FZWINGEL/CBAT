@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 7.3: Support-bounded contrast-ordering feasibility gate**.
+The repository is in **Milestone 7.4: Contrast-ordering failure forensics and metric robustness**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -239,6 +239,15 @@ The result is therefore only `partially_supported` for supported observed
 contrast-ordering diagnostics. Policy recommendation, causal claims, same-cell
 counterfactual claims, calibrated risk/utility, CBAT, and sequence/neural
 branches remain blocked.
+Milestone 7.4 diagnoses that 7.3 failure without retraining models or adding
+features. It consumes the existing 7.3 pairwise/by-family/bootstrap CSVs and
+writes effect-size-thresholded sign accuracy, rank-correlation, top-k/regret,
+and HGB-vs-prior failure-bin diagnostics. The forensics are supported for
+diagnostics: oracle K3 rows are excluded from readiness, `0/10` strict
+HGB-vs-prior all-family checks still pass, large-effect diagnostics are only
+`diagnostic_only`, and policy recommendation, causal/same-cell
+counterfactual, calibrated policy risk/utility, CBAT, and sequence/neural
+branches remain blocked.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, unscoped sequence models,
@@ -249,6 +258,14 @@ branch.
 
 Current state:
 
+- Milestone 7.4 is a report-only forensics gate over the existing Milestone
+  7.3 CSVs. It adds
+  `reports/analysis/policy/policy_ranking_failure_forensics_report.json`,
+  `policy_ranking_failure_forensics.md`, and plot-ready CSVs for
+  effect-size thresholds, rank correlations, top-k/regret diagnostics, and
+  HGB-vs-prior failure bins. It supports only failure decomposition and does
+  not authorize policy recommendation, causal/counterfactual claims,
+  calibrated policy risk, CBAT, or sequence/neural work.
 - Milestone 7.3 is an existing-prediction feasibility gate for supported
   observed contrast ordering, not a policy-recommendation or causal milestone.
   It joins `policy_contrast_registry_v1.parquet`,

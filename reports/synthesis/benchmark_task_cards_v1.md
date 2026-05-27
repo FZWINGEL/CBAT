@@ -228,3 +228,18 @@ These cards freeze the benchmark task definitions and current claim posture. The
 - Forbidden wording: policy ranking policy recommendation causal effects same-cell counterfactuals calibrated policy risk or utility CBAT or sequence neural branches are authorized
 - Decision: keep as partial diagnostic evidence because the strict prior-slope bootstrap reference gate fails
 - Source artifacts: docs/experiments/2026-05-27_policy_ranking_feasibility_gate.md, reports/analysis/policy/policy_ranking_claim_readiness.md
+
+## T16_policy_ranking_failure_forensics - supported contrast-ordering failure forensics
+
+- Area: policy_support
+- Primary claim: C31
+- Status: `diagnostic_only`
+- Targets: delta_capacity_Ah_h, capacity_Ah_kh
+- Split views: condition_fold, temperature_holdout_fold, c_rate_holdout_fold, profile_holdout_fold, voltage_window_holdout_fold
+- Primary metric: effect-size-thresholded sign accuracy, rank correlation, top-k regret, and HGB-vs-prior failure bins
+- Primary result: 0 of 10 strict HGB-vs-prior all-family checks pass; large-effect passing families are charge_c_rate and temperature; C-rate medium/large pass rows are 1 of 4; HGB ge_0.02Ah mean sign accuracy is 0.856314
+- Best reference: HGB K2 versus prior-slope over existing Milestone 7.3 pairwise metrics
+- Allowed wording: effect-size and rank-metric forensics explain the partial supported contrast-ordering signal but remain diagnostic-only
+- Forbidden wording: policy ranking policy recommendation causal policy effects same-cell counterfactuals calibrated policy risk or utility CBAT or sequence neural branches are authorized
+- Decision: keep policy-response modeling blocked unless a future predeclared large-effect supported-contrast gate is explicitly opened and passes
+- Source artifacts: docs/experiments/2026-05-27_policy_ranking_failure_forensics.md, reports/analysis/policy/policy_ranking_failure_claim_readiness.md

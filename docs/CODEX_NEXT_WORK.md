@@ -5,15 +5,15 @@ reproducibility, or a separately predeclared feasibility gate. The adaptive
 stressor-robust replication, attribution, stressor-family routing,
 hierarchical replicate, multi-horizon capacity, prior-trajectory, minimal
 sequence/neural reopening, observed policy-contrast support, and supported
-contrast-ordering feasibility checks have been run and should not be broadened
-without a fresh gated question.
+contrast-ordering feasibility and failure-forensics checks have been run and
+should not be broadened without a fresh gated question.
 
 ## Current Phase
 
-Milestone 7.3 is a support-bounded contrast-ordering feasibility gate. It uses
-existing out-of-fold multi-horizon capacity predictions and the Milestone 7.2
-contrast registry only. It is not a policy-recommendation, causal, same-cell
-counterfactual, CBAT, transformer, architecture, or calibration-claim branch.
+Milestone 7.4 is a report-only support-bounded contrast-ordering failure
+forensics gate. It uses existing Milestone 7.3 CSV outputs only. It is not a
+policy-recommendation, causal, same-cell counterfactual, CBAT, transformer,
+architecture, sequence/neural, or calibration-claim branch.
 
 ## Current Result
 
@@ -92,6 +92,12 @@ against prior slope (`0/10` primary all-family checks pass). Treat this as
 partial diagnostic evidence only; policy recommendation, causal/counterfactual
 claims, calibrated policy risk/utility, CBAT, and sequence/neural branches
 remain blocked.
+
+Milestone 7.4 decomposes that failure by effect size, rank metric, and
+top-k/regret diagnostics. It explains useful metric sensitivity but remains
+diagnostic-only: large-effect passing families are `charge_c_rate` and
+`temperature`, C-rate medium/large pass rows are only `1/4`, and policy
+ranking remains blocked.
 
 ## Optional Technical Branch
 

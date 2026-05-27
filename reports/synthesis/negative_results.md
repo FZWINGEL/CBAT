@@ -346,6 +346,24 @@ evidence only. Do not claim policy recommendations, causal effects, same-cell
 counterfactuals, calibrated policy risk/utility, CBAT readiness, or sequence
 and neural readiness.
 
+## Policy contrast-ordering forensics do not reopen policy ranking
+
+Milestone 7.4 decomposed the Milestone 7.3 failure using existing 7.3 CSV
+artifacts only. It added effect-size-thresholded sign accuracy, rank
+correlation, top-k/regret diagnostics, and HGB-vs-prior failure bins without
+training a model or adding features.
+
+The forensics explain the near miss but do not reverse it. The strict
+HGB-vs-prior all-family gate still passes `0/10` checks. Large-effect rows are
+only diagnostic: passing contrast families are `charge_c_rate` and
+`temperature`, C-rate medium/large pass rows are `1/4`, and HGB `ge_0.02Ah`
+mean sign accuracy is `0.856314`. Rank metrics are also diagnostic only.
+
+Decision: keep policy-response modeling blocked. At most, this motivates a
+future predeclared large-effect supported-contrast gate if explicitly opened;
+it does not authorize recommendation, causal/counterfactual, calibrated
+policy-risk, CBAT, or sequence/neural claims.
+
 ## Milestone 3.0 Blocked-Claim Refresh
 
 The v2 synthesis keeps the following negative boundaries active:
@@ -387,6 +405,9 @@ The v2 synthesis keeps the following negative boundaries active:
   it fails the strict prior-slope bootstrap reference gate and therefore still
   blocks recommendation, causal, counterfactual, calibrated-risk, CBAT, and
   sequence/neural claims.
+- Milestone 7.4 explains that failure by effect size and rank metric, but
+  large-effect and rank diagnostics remain diagnostic-only and do not reopen
+  policy ranking.
 
 Decision: return to synthesis/release maintenance unless a new narrow
 calibration-method diagnostic is explicitly justified.

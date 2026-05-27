@@ -1,0 +1,39 @@
+{
+  "claim_scope": "failure_forensics_only_no_policy_recommendation_no_causal_claim",
+  "generated_at_utc": "2026-05-27T16:50:51.100170+00:00",
+  "inputs": {
+    "bootstrap": "reports/analysis/policy/policy_ranking_bootstrap.csv",
+    "by_family": "reports/analysis/policy/policy_ranking_by_family.csv",
+    "pairwise_metrics": "reports/analysis/policy/policy_ranking_pairwise_metrics.csv"
+  },
+  "outputs": {
+    "claim_readiness": "reports/analysis/policy/policy_ranking_failure_claim_readiness.md",
+    "effect_size_threshold_sign_accuracy": "reports/analysis/policy/plots/effect_size_threshold_sign_accuracy.csv",
+    "hgb_vs_prior_failure_bins": "reports/analysis/policy/plots/hgb_vs_prior_failure_bins.csv",
+    "rank_correlation_diagnostics": "reports/analysis/policy/plots/rank_correlation_diagnostics.csv",
+    "report_markdown": "reports/analysis/policy/policy_ranking_failure_forensics.md",
+    "topk_regret_diagnostics": "reports/analysis/policy/plots/topk_regret_diagnostics.csv"
+  },
+  "readiness": {
+    "K3 oracle exclusion": "supported_for_diagnostics",
+    "calibrated policy risk or CBAT readiness": "blocked",
+    "causal or same-cell counterfactual policy claims": "blocked",
+    "contrast-ordering failure forensics": "supported_for_diagnostics",
+    "large-effect contrast ordering next gate": "diagnostic_only",
+    "policy recommendation": "blocked",
+    "rank-metric robustness": "diagnostic_only"
+  },
+  "row_counts": {
+    "bootstrap_rows": 210,
+    "by_family_rows": 504,
+    "effect_threshold_rows": 1680,
+    "hgb_vs_prior_failure_bin_rows": 306,
+    "oracle_pairwise_rows_excluded_from_readiness": 54700,
+    "pairwise_rows": 164100,
+    "prospective_pairwise_rows": 109400,
+    "rank_correlation_rows": 336,
+    "topk_regret_rows": 672
+  },
+  "schema_version": "gate74.policy_contrast_ordering_forensics.v1",
+  "status": "passed"
+}

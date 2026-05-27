@@ -69,7 +69,7 @@ technical branch is a predeclared prior-trajectory-shape audit using information
 available at check-up `k`. Milestone 6.2 runs that audit and keeps the branch
 partial/diagnostic: K5 does not repair all-split horizon-3 capacity and does
 not preserve every C-rate horizon-2/3 target row.
-Milestone 7.0 freezes the completed evidence base into 13 benchmark tasks, a
+Milestone 7.0 freezes the completed evidence base into the benchmark task set, a
 task-level leaderboard, task cards, model-family cards, and an executable
 task-registry checker. It changes no claim status and adds no new model branch.
 Milestone 7.1 tests whether the sequence/neural gate should reopen using real
@@ -87,6 +87,9 @@ support-bounded contrast ordering. HGB K2 has partial diagnostic signal, but
 it fails the strict prior-slope bootstrap reference gate, so this is still not
 policy recommendation, causal evidence, calibrated risk, or a deployment
 ranking result.
+Milestone 7.4 then diagnoses that failure by effect-size threshold, rank
+correlation, and top-k/regret metrics. It explains some of the metric
+sensitivity but remains diagnostic-only and does not reopen policy ranking.
 
 ## Recommended Path
 
@@ -104,8 +107,9 @@ ranking result.
    maintenance, or reproducibility checks over new scientific expansion.
 4. If ML research continues, do not continue the policy branch unless a new
    predeclared diagnostic objective is stronger than the already-failed
-   Milestone 7.3 prior-slope bootstrap gate. Do not treat Milestone 7.2 or 7.3
-   as a policy result.
+   Milestone 7.3 prior-slope bootstrap gate and the Milestone 7.4
+   diagnostic-only forensics. Do not treat Milestone 7.2, 7.3, or 7.4 as a
+   policy result.
 
 ## Optional Technical Branch
 
@@ -158,6 +162,10 @@ finds partial HGB K2 ordering signal from existing multi-horizon predictions,
 including strong C-rate sign accuracy, but it fails the strict bootstrap
 comparison against prior slope. Treat this as partial diagnostic evidence, not
 as a branch-opening result.
+
+The contrast-ordering failure-forensics gate has also been run. It decomposes
+the failure by effect size and rank metric, but large-effect and rank
+diagnostics remain diagnostic-only.
 
 ## Explicitly Rejected Branches
 

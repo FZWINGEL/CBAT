@@ -1658,3 +1658,36 @@ Validation rules:
   remains partial or diagnostic only. Policy recommendation, causal claims,
   same-cell counterfactual claims, calibrated policy risk/utility, CBAT, and
   sequence/neural branches remain blocked.
+
+## Milestone 7.4 Contrast-Ordering Failure Forensics and Metric Robustness
+
+Milestone 7.4 diagnoses the Milestone 7.3 strict prior-slope bootstrap failure
+without retraining models or adding features. It consumes only the existing
+7.3 pairwise, by-family, and bootstrap CSV artifacts and reports whether the
+failure is concentrated in near-zero effects, rank metrics, C-rate rows, or
+specific contrast families.
+
+Required artifacts:
+
+- `reports/analysis/policy/policy_ranking_failure_forensics_report.json`
+- `reports/analysis/policy/policy_ranking_failure_forensics.md`
+- `reports/analysis/policy/policy_ranking_failure_claim_readiness.md`
+- `reports/analysis/policy/plots/effect_size_threshold_sign_accuracy.csv`
+- `reports/analysis/policy/plots/rank_correlation_diagnostics.csv`
+- `reports/analysis/policy/plots/topk_regret_diagnostics.csv`
+- `reports/analysis/policy/plots/hgb_vs_prior_failure_bins.csv`
+- `docs/experiments/2026-05-27_policy_ranking_failure_forensics.md`
+
+Validation rules:
+
+- The diagnostic command must be report-only: no new model training, no new
+  feature engineering, and no regenerated prediction table.
+- K3 future-exposure rows must be excluded from prospective readiness and kept
+  oracle-diagnostic only.
+- Effect-size-thresholded gains may support only metric forensics unless a
+  future predeclared gate shows HGB beats prior slope on large-effect
+  contrasts across at least two families without C-rate collapse.
+- Rank-correlation and top-k/regret rows are support-bounded diagnostics; they
+  are not policy optimization or recommendation metrics.
+- Policy recommendation, causal or same-cell counterfactual claims, calibrated
+  policy risk/utility, CBAT, and sequence/neural branches remain blocked.

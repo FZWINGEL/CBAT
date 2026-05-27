@@ -2465,6 +2465,35 @@ def analysis_evaluate_policy_ranking_feasibility(
     )
 
 
+@analysis_app.command("diagnose-policy-ranking-feasibility")
+def analysis_diagnose_policy_ranking_feasibility(
+    pairwise_metrics: Path = typer.Option(
+        ...,
+        "--pairwise-metrics",
+        help="Existing policy_ranking_pairwise_metrics.csv from Milestone 7.3.",
+    ),
+    by_family: Path = typer.Option(
+        ...,
+        "--by-family",
+        help="Existing policy_ranking_by_family.csv from Milestone 7.3.",
+    ),
+    bootstrap: Path = typer.Option(
+        ...,
+        "--bootstrap",
+        help="Existing policy_ranking_bootstrap.csv from Milestone 7.3.",
+    ),
+    out_dir: Path = typer.Option(..., "--out-dir", help="Output directory for policy-ranking failure forensics."),
+) -> None:
+    """Diagnose supported contrast-ordering failure modes without retraining."""
+    from mbp.analysis.policy_contrast import diagnose_policy_ranking_feasibility
+
+    report = diagnose_policy_ranking_feasibility(pairwise_metrics, by_family, bootstrap, out_dir)
+    typer.echo(
+        "Policy-ranking failure forensics generated: "
+        f"{report['row_counts']['hgb_vs_prior_failure_bin_rows']} HGB-vs-prior bin rows"
+    )
+
+
 @baseline_app.command("diagnose-capacity")
 def baseline_diagnose_capacity(
     report: Path = typer.Option(

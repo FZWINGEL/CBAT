@@ -46,8 +46,8 @@ These cards summarize model families already evaluated in the frozen benchmark. 
 
 ## hgb_horizon
 
-- Used in tasks: T10_multi_horizon_capacity, T11_prior_trajectory_shape, T15_supported_contrast_ordering
-- Task statuses: partially_supported
+- Used in tasks: T10_multi_horizon_capacity, T11_prior_trajectory_shape, T15_supported_contrast_ordering, T16_policy_ranking_failure_forensics
+- Task statuses: diagnostic_only, partially_supported
 - Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
 
 ## hgb_quantile
@@ -116,6 +116,12 @@ These cards summarize model families already evaluated in the frozen benchmark. 
 - Task statuses: not_supported
 - Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
 
+## policy_forensics
+
+- Used in tasks: T16_policy_ranking_failure_forensics
+- Task statuses: diagnostic_only
+- Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
+
 ## prior_eis_hgb
 
 - Used in tasks: T03_eis_scalar_endpoint
@@ -130,8 +136,8 @@ These cards summarize model families already evaluated in the frozen benchmark. 
 
 ## prior_slope_horizon
 
-- Used in tasks: T10_multi_horizon_capacity, T15_supported_contrast_ordering
-- Task statuses: partially_supported
+- Used in tasks: T10_multi_horizon_capacity, T15_supported_contrast_ordering, T16_policy_ranking_failure_forensics
+- Task statuses: diagnostic_only, partially_supported
 - Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
 
 ## prior_trajectory_features
