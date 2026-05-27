@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 8.6: C-rate repair boundary and transfer audit**.
+The repository is in **Milestone 8.7: target-consistency reconstruction audit**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -340,6 +340,15 @@ reference (`-0.00801457`), and the targeted router gives zero C-rate
 capacity-level gain. Two-target C-rate repair, broad robust capacity, solved
 C-rate fade, architecture, policy ranking, calibrated risk/uncertainty,
 neural/sequence branches, CBAT, and causal claims remain blocked.
+Milestone 8.7 tests whether the successful `delta_capacity_Ah` repair can be
+converted into `capacity_Ah_k1` by the algebraic reconstruction
+`capacity_Ah_k + predicted_delta`. The derived capacity path has positive
+C-rate gains versus direct capacity references (`0.0440972` adaptive versus
+F4 and `0.0346897` router versus F4), but the router-derived capacity path
+fails the outside-split guardrail with max degradation `0.293828`. The result
+keeps capacity-from-delta transfer, two-target repair, broad robust capacity,
+solved C-rate fade, architecture, policy ranking, calibrated risk/uncertainty,
+neural/sequence branches, CBAT, and causal claims blocked.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, unscoped sequence models,
@@ -349,6 +358,19 @@ minimal CUDA Torch MLP diagnostic as a falsification check, not an architecture
 branch.
 
 Current state:
+
+- Milestone 8.7 is a target-consistency reconstruction audit over existing
+  non-neural C-rate repair predictions. It adds
+  `mbp analysis diagnose-target-consistency-reconstruction`,
+  `reports/analysis/target_consistency_reconstruction/target_consistency_reconstruction_report.json`,
+  `target_consistency_reconstruction_decision.md`,
+  `target_consistency_claim_readiness.md`,
+  `plots/direct_vs_derived_target_paths.csv`,
+  `plots/c_rate_reconstruction_gain.csv`, and
+  `plots/outside_split_reconstruction_guardrail.csv`. It confirms that
+  capacity-from-delta reconstruction is useful diagnostically on the C-rate
+  row but fails the unchanged outside-split guardrail for the targeted router,
+  so two-target and capacity-level repair remain unsupported.
 
 - Milestone 8.6 is a boundary audit over existing non-neural C-rate repair
   machinery. It adds `mbp analysis diagnose-c-rate-repair-boundary`,

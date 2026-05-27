@@ -5,9 +5,9 @@ Status: `passed`
 ## Summary
 
 - Required files checked: 10
-- Tracked artifacts checked: 194
+- Tracked artifacts checked: 201
 - Ignored artifacts checked: 36
-- Claim matrix rows checked: 35
+- Claim matrix rows checked: 36
 
 ## Errors
 
@@ -71,6 +71,7 @@ Status: `passed`
 - diagnose-stressor-robustness
 - diagnose-support-reliability
 - diagnose-target-consistency
+- diagnose-target-consistency-reconstruction
 - diagnose-threshold-warning
 - diagnostic-horizon-qa
 - eis

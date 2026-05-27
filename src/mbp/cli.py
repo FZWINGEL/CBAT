@@ -2849,6 +2849,46 @@ def analysis_diagnose_c_rate_repair_boundary(
     )
 
 
+@analysis_app.command("diagnose-target-consistency-reconstruction")
+def analysis_diagnose_target_consistency_reconstruction(
+    interval_table: Path = typer.Option(
+        ...,
+        "--interval-table",
+        help="Interval table with capacity_Ah_k, capacity_Ah_k1, and delta_capacity_Ah.",
+    ),
+    adaptive_predictions: Path = typer.Option(
+        ...,
+        "--adaptive-predictions",
+        help="Ignored dual-target adaptive prediction Parquet.",
+    ),
+    arm_selector_predictions: Path = typer.Option(
+        ...,
+        "--arm-selector-predictions",
+        help="Ignored dual-target arm-selector prediction Parquet.",
+    ),
+    out_dir: Path = typer.Option(..., "--out-dir", help="Output directory for target-consistency diagnostics."),
+    boundary_report: Path | None = typer.Option(
+        None,
+        "--boundary-report",
+        help="Optional Milestone 8.6 boundary report JSON for claim-scope context.",
+    ),
+) -> None:
+    """Diagnose whether delta repair reconstructs capacity-level C-rate forecasts."""
+    from mbp.analysis.target_consistency_reconstruction import diagnose_target_consistency_reconstruction
+
+    report = diagnose_target_consistency_reconstruction(
+        interval_table,
+        adaptive_predictions,
+        arm_selector_predictions,
+        out_dir,
+        boundary_report_path=boundary_report,
+    )
+    typer.echo(
+        "Target-consistency reconstruction diagnostics generated: "
+        f"{report['row_counts']['c_rate_gain_rows']} C-rate gain rows"
+    )
+
+
 @baseline_app.command("diagnose-capacity")
 def baseline_diagnose_capacity(
     report: Path = typer.Option(

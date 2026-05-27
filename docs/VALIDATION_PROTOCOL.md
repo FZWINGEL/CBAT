@@ -2124,3 +2124,49 @@ Validation rules:
   `delta_capacity_Ah` and `capacity_Ah_k1` pass both repair-method boundaries.
 - Support-stratified gains are interpretation diagnostics only and do not prove
   deployment reliability or causal stressor effects.
+
+## Milestone 8.7 Target-Consistency Reconstruction Audit
+
+Milestone 8.7 authorizes only a report-only algebraic reconstruction audit for
+the existing C-rate repair predictions. It tests whether the successful
+`delta_capacity_Ah` repair can be converted into a capacity-level forecast via
+`capacity_Ah_k + predicted_delta`. It does not train models, add features,
+relax the 5% outside-split guardrail, recommend policies, calibrate risk, or
+make neural/sequence, CBAT, causal, same-cell counterfactual, solved-fade, or
+broad robust-capacity claims.
+
+Required command:
+
+```bash
+mbp analysis diagnose-target-consistency-reconstruction \
+  --interval-table data/interim/interval_table.parquet \
+  --adaptive-predictions data/processed/capacity_stressor_robust_adaptive_boundary_predictions.parquet \
+  --arm-selector-predictions data/processed/capacity_stressor_robust_arm_selector_boundary_predictions.parquet \
+  --boundary-report reports/analysis/c_rate_repair_boundary/c_rate_repair_boundary_report.json \
+  --out-dir reports/analysis/target_consistency_reconstruction
+```
+
+Required artifacts:
+
+- `reports/analysis/target_consistency_reconstruction/target_consistency_reconstruction_report.json`
+- `reports/analysis/target_consistency_reconstruction/target_consistency_reconstruction_decision.md`
+- `reports/analysis/target_consistency_reconstruction/target_consistency_claim_readiness.md`
+- `reports/analysis/target_consistency_reconstruction/plots/direct_vs_derived_target_paths.csv`
+- `reports/analysis/target_consistency_reconstruction/plots/c_rate_reconstruction_gain.csv`
+- `reports/analysis/target_consistency_reconstruction/plots/outside_split_reconstruction_guardrail.csv`
+- `docs/experiments/2026-05-27_target_consistency_reconstruction_gate.md`
+
+Validation rules:
+
+- Direct `delta_capacity_Ah` repair remains supported only if adaptive R2/F8
+  and targeted routing keep positive C-rate gains, positive paired condition
+  p05, and <=5% outside-C-rate non-degradation.
+- Capacity-from-delta transfer is supported only if
+  `capacity_Ah_k + predicted_delta` beats the existing direct capacity
+  references on C-rate, has positive paired p05, and passes <=5%
+  outside-C-rate non-degradation for both adaptive and router methods.
+- Derived-vs-derived reference gains are target-path diagnostics only; they do
+  not authorize capacity-level repair unless direct capacity-reference checks
+  also pass.
+- If any repair method fails the capacity-from-delta direct-reference or
+  outside-split guardrail, two-target C-rate repair wording remains blocked.

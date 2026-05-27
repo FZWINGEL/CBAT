@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 8.6: C-rate repair boundary and transfer audit.
+Milestone 8.7: target-consistency reconstruction audit for C-rate repair.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -165,6 +165,11 @@ Current state:
   support-stratified gains. The result keeps repair wording limited to
   diagnostic C-rate `delta_capacity_Ah`; capacity-level transfer and
   two-target repair wording are not supported.
+- Milestone 8.7 tests whether the successful `delta_capacity_Ah` repair can be
+  algebraically reconstructed into `capacity_Ah_k1` as
+  `capacity_Ah_k + predicted_delta`. Derived capacity improves the C-rate row,
+  but the targeted-router derived capacity path fails the outside-split
+  guardrail, so two-target and broad capacity repair remain unsupported.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
@@ -191,6 +196,10 @@ Allowed work:
 - dual-target C-rate repair transfer diagnostics for `delta_capacity_Ah` and
   `capacity_Ah_k1`
 - support-stratified C-rate repair gain summaries labeled diagnostic-only
+- target-consistency reconstruction diagnostics from existing C-rate repair
+  predictions
+- direct-vs-derived capacity/delta target-path comparisons
+- capacity-from-delta claim-readiness reporting under unchanged guardrails
 - persistence-ceiling and condition-hotspot diagnostics for scalar endpoints
 - support-distance diagnostics over existing grouped prediction artifacts
 - non-neural diagnostic-state distillation with predicted PULSE/EIS state

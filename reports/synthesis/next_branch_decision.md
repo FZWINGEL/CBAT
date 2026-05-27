@@ -105,13 +105,15 @@ features. Auxiliary PULSE/EIS state is learnable from check-up-k state and
 nominal fields, but D3 predicted PULSE+EIS state worsens the primary all-split
 capacity-horizon and threshold-warning rows and fails C-rate non-collapse. This
 closes the broad diagnostic-state distillation branch as a negative gate.
-Milestones 8.4 through 8.6 then revisit the most persistent capacity blocker:
+Milestones 8.4 through 8.7 then revisit the most persistent capacity blocker:
 C-rate transfer. Root-cause diagnostics and train-only support overlap are
 useful, and existing non-neural adaptive/router repair machinery supports a
 narrow C-rate `delta_capacity_Ah` diagnostic. The boundary audit prevents
-over-broadening: the same repair does not transfer to `capacity_Ah_k1`, so
-two-target repair, broad robust capacity, and solved C-rate fade remain
-unsupported.
+over-broadening: the same direct repair does not transfer to `capacity_Ah_k1`.
+The reconstruction audit adds that `capacity_Ah_k + predicted_delta` improves
+the C-rate capacity row, but the router-derived capacity path fails the
+outside-split guardrail. Two-target repair, broad robust capacity, and solved
+C-rate fade remain unsupported.
 
 ## Recommended Path
 
@@ -141,9 +143,10 @@ unsupported.
    endpoints are forecastable in many rows, and selected endpoints pass
    endpoint-specific diagnostic checks, but the broad strict primary and
    C-rate guardrails do not fully pass.
-7. Do not broaden the Milestone 8.5 C-rate repair claim. Milestone 8.6 shows
-   the adaptive/router repair remains a `delta_capacity_Ah` diagnostic and does
-   not transfer to `capacity_Ah_k1`.
+7. Do not broaden the Milestone 8.5 C-rate repair claim. Milestones 8.6 and
+   8.7 show the adaptive/router repair remains a `delta_capacity_Ah`
+   diagnostic: direct capacity transfer fails, and capacity-from-delta
+   reconstruction fails the outside-split transfer guardrail.
 
 ## Optional Technical Branch
 
@@ -168,11 +171,14 @@ but F8 attribution fails the outside-split guardrail.
 Milestone 5.8 answers the obvious routing follow-up: targeted D2-for-C-rate and
 D0-elsewhere routing passes diagnostically. More work here should not broaden
 the claim without a new independent validation design.
-Milestone 8.6 supplies that boundary check and keeps the result narrow: adaptive
-R2/F8 worsens C-rate `capacity_Ah_k1` versus both F4 and stress references, and
-the targeted router gives zero C-rate capacity-level gain. Further C-rate repair
-work should start only with a fresh predeclared target, not by stretching the
-current delta-capacity result.
+Milestone 8.6 supplies the direct target boundary check and keeps the result
+narrow: adaptive R2/F8 worsens C-rate `capacity_Ah_k1` versus both F4 and
+stress references, and the targeted router gives zero C-rate capacity-level
+gain. Milestone 8.7 supplies the algebraic reconstruction check: derived
+capacity improves C-rate rows but the router-derived capacity path fails
+outside-split non-degradation at `0.293828`. Further C-rate repair work should
+start only with a fresh predeclared target, not by stretching the current
+delta-capacity result.
 
 The hierarchical replicate-aware capacity branch has now also been run. It
 does not create a stronger next branch: the mean C-rate delta gain is tiny,

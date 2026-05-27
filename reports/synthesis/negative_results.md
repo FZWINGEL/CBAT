@@ -452,6 +452,12 @@ The v2 synthesis keeps the following negative boundaries active:
   repair, capacity-level transfer, broad robust capacity, solved C-rate fade,
   architecture, CBAT, policy ranking, calibrated risk/uncertainty,
   sequence/neural, and causal claims remain blocked.
+- Milestone 8.7 audits whether repaired delta predictions can reconstruct a
+  supported capacity-level forecast through `capacity_Ah_k + predicted_delta`.
+  The C-rate row improves versus direct capacity references, but the
+  router-derived capacity path fails outside-split non-degradation with max
+  degradation `0.293828`. Reconstruction remains target-path forensics, not
+  capacity-level repair.
 
 Decision: return to synthesis/release maintenance unless a new narrow
 calibration-method diagnostic is explicitly justified.
