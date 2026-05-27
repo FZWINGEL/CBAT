@@ -14,12 +14,12 @@ This check covers the Milestone 3.0 synthesis artifacts:
 - `reports/synthesis/next_branch_decision.md`
 
 It has been refreshed after Milestones 5.0, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6,
-5.7, and 5.8 to
+5.7, 5.8, and 5.9 to
 include threshold-warning probability calibration, stressor-axis robust
 capacity, calibration/quantile hygiene, calibration/robustness
 correctness-hardening, Pareto forensics, and train-only adaptive robust
-selection, replication, attribution-decomposition, and stressor-family routing
-results.
+selection, replication, attribution-decomposition, stressor-family routing,
+and hierarchical replicate-aware capacity comparator results.
 
 ## Source Artifact Existence
 
@@ -49,6 +49,8 @@ blocked or not supported:
 - adaptive stressor-robust gain is independently attributable to F8 stress
   features;
 - stressor-family routing is a global robust-capacity model;
+- hierarchical partial pooling solves C-rate fade;
+- hierarchical replicate intervals validate calibrated uncertainty;
 - adaptive stressor-robust diagnostics justify architecture or policy;
 - quantile noncrossing validates calibrated uncertainty;
 - equal-frequency ECE validates calibrated risk;
@@ -82,6 +84,8 @@ C-rate fade-solved claim remains blocked. Milestone 5.7 shows incremental F8
 value under adaptive selection for C-rate delta, but that attribution fails
 outside-C-rate non-degradation and remains diagnostic-only. Milestone 5.8
 adds targeted D2-for-C-rate/D0-elsewhere routing, but this is not a global
-robust-capacity model.
+robust-capacity model. Milestone 5.9 implements the hierarchical
+replicate-aware comparator required by the charter, but its partial-pooling
+gain is diagnostic-only and its interval coverage fails.
 Any future calibrated-risk, calibrated-uncertainty, policy, architecture, or
 broad robust-capacity claim requires a separate gated milestone.

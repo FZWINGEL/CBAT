@@ -6,11 +6,10 @@ have been run and should not be broadened without a fresh gated question.
 
 ## Current Phase
 
-Milestone 5.8 is a targeted stressor-family routing diagnostic. It recombines
-existing Milestone 5.7 attribution predictions so C-rate transfer uses D2
-adaptive R2/F4 when its train-only guardrail passes, while non-C-rate views
-route to D0 R0/F4. It is not a new architecture, calibration-claim, or
-policy-ranking branch.
+Milestone 5.9 is a hierarchical replicate-aware capacity baseline gate. It
+implements train-only stressor-family residual partial pooling and
+replicate-variance interval diagnostics as an L5 comparator. It is not a new
+architecture, calibration-claim, or policy-ranking branch.
 
 ## Current Result
 
@@ -44,12 +43,17 @@ the D2 C-rate `delta_capacity_Ah` gain (`0.0106361`, paired p05
 views route to D0. This must not be described as a global robust-capacity
 model or solved C-rate fade.
 
+Milestone 5.9 is diagnostic-only. H4/F4 partial pooling gives a tiny C-rate
+`delta_capacity_Ah` gain versus H3/F4 (`0.000100645`) but paired p05 is
+negative (`-1.88643e-05`). H5 replicate-variance intervals are undercovered
+with C-rate delta coverage `0.312102` and minimum primary coverage `0.151596`.
+
 ## Optional Technical Branch
 
 No broader technical branch is currently justified. Future technical work, if
 opened, should be release automation or documentation synthesis unless a fresh
 predeclared question is created. Do not open CBAT, policy ranking, sequence
-modeling, or new modality expansion from the Milestone 5.6-5.8 results.
+modeling, or new modality expansion from the Milestone 5.6-5.9 results.
 
 ## Blocked Branches
 
@@ -103,6 +107,8 @@ Allowed current wording:
   C-rate `delta_capacity_Ah` robustness result
 - F8 stress-feature attribution remains diagnostic-only because incremental F8
   under adaptive selection fails outside-C-rate non-degradation
+- hierarchical replicate-aware partial pooling is an L5 diagnostic comparator
+  and does not pass paired C-rate support or interval coverage
 
 Forbidden current wording:
 

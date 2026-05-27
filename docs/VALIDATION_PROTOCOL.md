@@ -1397,3 +1397,32 @@ Decision rule:
 - New model training, feature engineering, neural/sequence models, DRT, EIS
   embeddings, policy ranking, CBAT, causal claims, and same-cell
   counterfactual claims remain blocked.
+
+## Milestone 5.9 Hierarchical Replicate-Aware Capacity Baseline Gate
+
+Milestone 5.9 evaluates L5-style non-neural hierarchical/partial-pooling
+capacity comparators under the same grouped split discipline. Residual offsets,
+shrinkage estimates, and interval radii must be computed from outer-training
+rows only.
+
+Required artifacts:
+
+- `reports/baselines/capacity_hierarchical_replicate_report.json`
+- `reports/baselines/capacity_hierarchical_replicate/leaderboard.csv`
+- `reports/baselines/capacity_hierarchical_replicate/hierarchical_claim_readiness.md`
+- `reports/baselines/capacity_hierarchical_replicate/plots/c_rate_hierarchical_gain.csv`
+- `reports/baselines/capacity_hierarchical_replicate/plots/c_rate_paired_condition_gains.csv`
+- `reports/baselines/capacity_hierarchical_replicate/plots/outside_split_degradation.csv`
+- `docs/experiments/2026-05-27_hierarchical_replicate_baseline_gate.md`
+
+Claim rules:
+
+- A hierarchical comparator can be reported as implemented if it runs under
+  grouped validation with a passed train/test parameter-set leakage audit.
+- A narrow C-rate `delta_capacity_Ah` hierarchical diagnostic requires H4/F4 to
+  beat H3/F4 on the C-rate split, paired condition bootstrap p05 above zero,
+  and maximum outside-C-rate relative degradation no greater than 5%.
+- Replicate-variance intervals are diagnostic only unless grouped and C-rate
+  coverage both pass. They do not authorize calibrated-uncertainty wording.
+- The gate never authorizes global robust-capacity, solved C-rate fade,
+  architecture, policy-ranking, causal, calibrated-risk, or CBAT claims.

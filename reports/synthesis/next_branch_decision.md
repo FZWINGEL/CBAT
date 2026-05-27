@@ -28,6 +28,8 @@ The project has completed the major baseline-first charter gates:
 - train-only adaptive stressor-robust selection;
 - adaptive stressor-robust replication and final claim hardening;
 - stressor-robust attribution and reweighting decomposition.
+- targeted stressor-family routing;
+- hierarchical replicate-aware capacity comparators.
 
 The strongest contribution is now a rigorous grouped-validation benchmark that
 documents which battery-degradation signals are supported, diagnostic-only,
@@ -47,6 +49,9 @@ diagnostic-only.
 Milestone 5.8 adds a targeted stressor-family router over existing attribution
 arms. It preserves the C-rate reweighting gain while routing non-C-rate views
 to D0, but it is a diagnostic routing result rather than a global robust model.
+Milestone 5.9 adds the charter-required hierarchical replicate-aware
+comparator. It is useful as an L5 diagnostic baseline, but H4/F4 partial
+pooling does not pass paired C-rate support and H5 intervals are undercovered.
 
 ## Recommended Path
 
@@ -56,7 +61,8 @@ to D0, but it is a diagnostic routing result rather than a global robust model.
    calibrated-risk and calibrated-uncertainty evidence, and Milestone 5.1 as a
    diagnostic stressor-robustness result hardened by 5.3 correctness checks
    and narrowed by the Milestone 5.6 replicated adaptive-selection result plus
-   the Milestone 5.8 targeted routing diagnostic.
+   the Milestone 5.8 targeted routing diagnostic, and the Milestone 5.9
+   hierarchical comparator as a negative/diagnostic L5 baseline.
 3. If engineering work resumes, prefer release automation or reproducibility
    checks over new scientific expansion.
 
@@ -83,6 +89,11 @@ but F8 attribution fails the outside-split guardrail.
 Milestone 5.8 answers the obvious routing follow-up: targeted D2-for-C-rate and
 D0-elsewhere routing passes diagnostically. More work here should not broaden
 the claim without a new independent validation design.
+
+The hierarchical replicate-aware capacity branch has now also been run. It
+does not create a stronger next branch: the mean C-rate delta gain is tiny,
+paired p05 is negative, and interval coverage fails. Treat it as a completed
+charter comparator rather than a reason to tune more partial-pooling variants.
 
 ## Explicitly Rejected Branches
 

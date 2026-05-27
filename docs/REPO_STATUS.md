@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 5.8: Stressor-family arm-routing diagnostic gate**.
+The repository is in **Milestone 5.9: Hierarchical replicate-aware capacity baseline gate**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -170,6 +170,15 @@ stressor views to D0 R0/F4. It preserves the reweighting-only C-rate
 zero outside-C-rate degradation by construction because non-C-rate views route
 to D0. This supports only a targeted diagnostic routing claim, not broad
 robust capacity or solved C-rate fade.
+Milestone 5.9 adds a charter-required L5-style hierarchical replicate-aware
+capacity comparator using train-only residual partial pooling over stressor
+families and replicate-variance interval diagnostics. It produces 288 metric
+rows and 213,672 ignored prediction rows. The H4/F4 partial-pooling arm gives
+only a tiny C-rate `delta_capacity_Ah` gain versus the H3/F4 HGB reference
+(`0.000100645`), and paired bootstrap p05 is negative (`-1.88643e-05`), so
+the hierarchical C-rate delta result is diagnostic-only. Replicate-variance
+interval coverage also fails (`0.312102` for C-rate delta and minimum primary
+coverage `0.151596`), so calibrated uncertainty remains blocked.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -178,6 +187,12 @@ improvement claims have been started.
 
 Current state:
 
+- Milestone 5.9 is a train-only hierarchical replicate-aware capacity
+  comparator. It adds H0 global train mean, H1 ridge, H2 ridge partial pooling,
+  H3 HGB reference, H4 HGB residual partial pooling, and H5
+  replicate-variance interval diagnostics. It adds no neural/sequence models,
+  CBAT, policy ranking, calibrated-risk claims, calibrated-uncertainty claims,
+  causal claims, or architecture claims.
 - Milestone 5.8 is a stressor-family routing diagnostic over existing
   non-neural stressor-balanced HGB attribution arms. It adds no feature
   engineering, neural/sequence models, CBAT, policy ranking, calibrated-risk
@@ -228,6 +243,14 @@ Current state:
   and a passed leakage audit. The selector uses D2 only for the C-rate view
   and D0 elsewhere, yielding C-rate gain `0.0106361`, paired p05
   `0.00594397`, and max outside-C-rate degradation `0`.
+- `mbp baseline run-hierarchical-capacity` evaluated train-only stressor-family
+  residual partial pooling and replicate-variance intervals over 3,827
+  intervals. It writes
+  `reports/baselines/capacity_hierarchical_replicate_report.json`, diagnostics
+  under `reports/baselines/capacity_hierarchical_replicate/`, and an ignored
+  prediction Parquet. H4/F4 does not pass the paired-support gate for C-rate
+  `delta_capacity_Ah`, and H5 intervals are diagnostic-only due to low grouped
+  and C-rate coverage.
 - Milestone 5.3 remains a correctness-hardening gate for existing calibration
   and stressor-robustness reports. It does not add models, features, or claims.
 - Milestone 5.2 added `ece_10_bin_equal_freq` alongside the existing

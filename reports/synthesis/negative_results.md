@@ -236,6 +236,27 @@ Milestone 5.8 router only as targeted stressor-family routing, not as a global
 robust model. Do not claim C-rate fade is solved, do not open architecture
 work, and do not use this result for policy ranking or causal claims.
 
+## Hierarchical Replicate Baselines Did Not Pass the C-Rate Paired-Support Gate
+
+Milestone 5.9 added the charter-required L5-style hierarchical comparator:
+global train mean, Ridge, Ridge with train-only stressor-family residual
+partial pooling, HGB reference, HGB with train-only residual partial pooling,
+and replicate-variance interval diagnostics.
+
+The H4/F4 partial-pooling arm slightly improves C-rate `delta_capacity_Ah`
+versus the H3/F4 HGB reference (`0.000100645`) and keeps max outside-C-rate
+relative degradation low (`0.00275483`), but the paired condition bootstrap
+p05 is negative (`-1.88643e-05`). This fails the predeclared paired-support
+requirement for a new hierarchical robustness claim.
+
+The H5 replicate-variance interval diagnostic also fails coverage: C-rate
+`delta_capacity_Ah` coverage is `0.312102`, and the minimum primary coverage
+across target/split rows is `0.151596`.
+
+Decision: keep hierarchical replicate-aware partial pooling as an L5 diagnostic
+comparator. Do not claim C-rate fade is solved, do not claim calibrated
+uncertainty, and do not use this as architecture or policy-ranking evidence.
+
 ## Milestone 3.0 Blocked-Claim Refresh
 
 The v2 synthesis keeps the following negative boundaries active:
@@ -253,6 +274,8 @@ The v2 synthesis keeps the following negative boundaries active:
   positive C-rate delta gain;
 - stressor-family routing can preserve the C-rate reweighting gain without
   non-C-rate degradation, but this is not a global robust-capacity model;
+- hierarchical replicate-aware partial pooling is implemented but diagnostic
+  only because paired C-rate support and interval coverage fail;
 - sequence models remain blocked by the order-vs-aggregate and
   order-vs-shuffled negative result;
 - calibrated uncertainty remains blocked by C-rate coverage failure even after

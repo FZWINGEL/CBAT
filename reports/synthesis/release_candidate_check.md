@@ -5,9 +5,9 @@ Status: `passed`
 ## Summary
 
 - Required files checked: 10
-- Tracked artifacts checked: 53
-- Ignored artifacts checked: 20
-- Claim matrix rows checked: 24
+- Tracked artifacts checked: 58
+- Ignored artifacts checked: 21
+- Claim matrix rows checked: 25
 
 ## Errors
 
@@ -89,6 +89,7 @@ Status: `passed`
 - run-capacity
 - run-eis
 - run-events-qa
+- run-hierarchical-capacity
 - run-pipeline
 - run-pulse
 - run-semi-empirical

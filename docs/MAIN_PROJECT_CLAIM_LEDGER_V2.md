@@ -1,6 +1,6 @@
 # Main Project Claim Ledger v2
 
-This ledger is the post-Milestone 5.8 technical source of truth. It extends
+This ledger is the post-Milestone 5.9 technical source of truth. It extends
 the paper claim ledger with main-project gate decisions and next actions.
 
 | ID | Claim | Status | Source artifact | Allowed wording | Forbidden wording | Next action |
@@ -29,11 +29,13 @@ the paper claim ledger with main-project gate decisions and next actions.
 | C22 | Conservative train-only adaptive stressor-balanced HGB passes the C-rate gain and outside-C-rate guardrail for `delta_capacity_Ah` and replicates across the deterministic seed interface. | `supported_for_diagnostics` | `docs/experiments/2026-05-24_adaptive_stressor_robust_replication.md` | Conservative train-only adaptive R2 selection supports a narrow diagnostic C-rate `delta_capacity_Ah` robustness result under the unchanged 5% outside-C-rate guardrail; the Milestone 5.6 replication records deterministic HGB/no-bagging seed reuse explicitly. | C-rate fade is solved globally, architecture work is justified, calibrated risk is available, or policy ranking is ready. | Lock as a narrow diagnostic robustness result; do not broaden without a new gated milestone. |
 | C23 | F8 timestamp-weighted stress features independently explain the adaptive C-rate `delta_capacity_Ah` robustness gain. | `diagnostic_only` | `docs/experiments/2026-05-27_stressor_robust_attribution_gate.md` | F8 adds C-rate delta signal under adaptive selection, but the incremental F8 comparison fails outside-C-rate non-degradation, so attribution is diagnostic only. Train-only reweighting alone also contributes C-rate gain. | The adaptive robustness result is wholly attributable to F8 stress features, C-rate fade is solved, or architecture work is justified. | Keep C22 narrow; do not claim independent stress-feature attribution without a future predeclared gate that passes non-degradation. |
 | C24 | A stressor-family router can preserve the C-rate reweighting gain without degrading non-C-rate views. | `supported_for_diagnostics` | `docs/experiments/2026-05-27_stressor_robust_arm_selector_gate.md` | A targeted router over existing arms uses D2 adaptive R2/F4 for the C-rate transfer view and D0 R0/F4 elsewhere, preserving C-rate `delta_capacity_Ah` gain (`0.0106361`, paired p05 `0.00594397`) with max outside-C-rate degradation `0`. | This is a global robust-capacity model, C-rate fade is solved, F8 stress features are independently responsible, architecture work is justified, or policy ranking is ready. | Lock as a targeted diagnostic routing result only; do not broaden beyond known stressor-family routing. |
+| C25 | Hierarchical replicate-aware partial pooling improves C-rate `delta_capacity_Ah` enough to support a new robustness claim. | `diagnostic_only` | `docs/experiments/2026-05-27_hierarchical_replicate_baseline_gate.md` | Train-only hierarchical partial pooling is implemented as an L5 comparator, but H4/F4 only gives a tiny C-rate `delta_capacity_Ah` gain (`0.000100645`) versus H3/F4 and paired p05 is negative (`-1.88643e-05`), so the result is diagnostic-only. Replicate-variance intervals are undercovered. | Hierarchical partial pooling solves C-rate fade, validates calibrated uncertainty, justifies architecture work, or supports policy ranking. | Keep as an L5 negative/diagnostic comparator; do not broaden without a future predeclared gate. |
 
 ## Next Action
 
 Return to benchmark/manuscript integration or release maintenance unless a
-new explicitly scoped ML gate is opened. Milestone 5.8 adds C24 as a targeted
-diagnostic router: use D2 for C-rate transfer and D0 elsewhere. It does not
-authorize calibrated-risk, calibrated-uncertainty, broad robust-capacity,
-architecture, policy, F8 attribution, or causal claims.
+new explicitly scoped ML gate is opened. Milestone 5.9 adds C25 as a
+hierarchical replicate-aware comparator: train-only partial pooling runs and is
+useful diagnostically, but paired support and interval coverage do not pass. It
+does not authorize calibrated-risk, calibrated-uncertainty, broad
+robust-capacity, architecture, policy, F8 attribution, or causal claims.

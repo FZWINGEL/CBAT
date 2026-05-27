@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 5.8: Stressor-family arm-routing diagnostic gate.
+Milestone 5.9: Hierarchical replicate-aware capacity baseline gate.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -59,12 +59,16 @@ Current state:
   F8 timestamp-weighted stress features, train-only reweighting, or their
   combination. F8 attribution remains diagnostic-only because the incremental
   F8 comparison fails outside-C-rate non-degradation.
-- The current main-project track evaluates a narrow stressor-family router over
-  existing attribution arms: use train-only D2 adaptive R2/F4 for C-rate
-  transfer when its inner guardrail passes, and route non-C-rate stressor views
-  to D0 R0/F4. It must not be described as broad robust capacity, solved
-  C-rate fade, architecture readiness, policy ranking, calibrated risk,
-  calibrated uncertainty, or causal evidence.
+- Milestone 5.8 evaluated a narrow stressor-family router over existing
+  attribution arms: use train-only D2 adaptive R2/F4 for C-rate transfer when
+  its inner guardrail passes, and route non-C-rate stressor views to D0 R0/F4.
+  It must not be described as broad robust capacity, solved C-rate fade,
+  architecture readiness, policy ranking, calibrated risk, calibrated
+  uncertainty, or causal evidence.
+- The current main-project track evaluates train-only hierarchical
+  replicate-aware/partial-pooling capacity comparators. Residual offsets,
+  shrinkage, and interval radii must be computed from outer-training rows only;
+  held-out parameter sets must never receive fitted random effects.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
@@ -98,6 +102,10 @@ Allowed work:
 - stressor-family routing over existing D0/D2 attribution arms
 - report-based recombination of existing outer-fold attribution predictions
 - arm-router leakage audits and claim-readiness reporting
+- hierarchical replicate-aware capacity baselines
+- train-only stressor-family residual partial pooling
+- replicate-variance interval diagnostics
+- hierarchical leakage audits and claim-readiness reporting
 - grouped threshold-warning probability calibration
 - Platt/logistic and isotonic post-hoc calibration fitted on calibration
   conditions only
@@ -172,8 +180,8 @@ Allowed work:
 - small tests with synthetic fixtures
 
 Forbidden work:
-- new model training outside the scoped stressor-robust attribution gate
-- new feature engineering outside the scoped stressor-robust attribution gate
+- new model training outside the scoped hierarchical/stressor-robust diagnostic gates
+- new feature engineering outside the scoped hierarchical/stressor-robust diagnostic gates
 - knee prediction models
 - neural models
 - sequence models

@@ -92,12 +92,15 @@ mbp baseline run-stressor-robust-adaptive --interval-table data/interim/interval
 mbp baseline replicate-stressor-robust-adaptive --interval-table data/interim/interval_table.parquet --interval-subsets data/splits/interval_subset_registry_v1.parquet --stress-features data/interim/interval_stress_features_v1_1.parquet --out-dir reports/baselines/capacity_stressor_robust_adaptive_replication
 mbp baseline run-stressor-robust-attribution --interval-table data/interim/interval_table.parquet --interval-subsets data/splits/interval_subset_registry_v1.parquet --stress-features data/interim/interval_stress_features_v1_1.parquet --out reports/baselines/capacity_stressor_robust_attribution_report.json --predictions-out data/processed/capacity_stressor_robust_attribution_predictions.parquet --out-dir reports/baselines/capacity_stressor_robust_attribution
 mbp baseline run-stressor-robust-arm-selector --interval-table data/interim/interval_table.parquet --interval-subsets data/splits/interval_subset_registry_v1.parquet --stress-features data/interim/interval_stress_features_v1_1.parquet --attribution-report reports/baselines/capacity_stressor_robust_attribution_report.json --attribution-predictions data/processed/capacity_stressor_robust_attribution_predictions.parquet --out reports/baselines/capacity_stressor_robust_arm_selector_report.json --predictions-out data/processed/capacity_stressor_robust_arm_selector_predictions.parquet --out-dir reports/baselines/capacity_stressor_robust_arm_selector
+mbp baseline run-hierarchical-capacity --interval-table data/interim/interval_table.parquet --interval-subsets data/splits/interval_subset_registry_v1.parquet --stress-features data/interim/interval_stress_features_v1_1.parquet --out reports/baselines/capacity_hierarchical_replicate_report.json --predictions-out data/processed/capacity_hierarchical_replicate_predictions.parquet --out-dir reports/baselines/capacity_hierarchical_replicate --targets capacity_Ah_k1,delta_capacity_Ah --split-views condition_fold,temperature_holdout_fold,c_rate_holdout_fold,profile_holdout_fold,voltage_window_holdout_fold --hgb-max-iter 50
 ```
 
 Outputs: tracked JSON/CSV/Markdown reports and ignored prediction Parquets.
 The adaptive replication command emits tracked reports only and records
 deterministic seed reuse explicitly for the HGB/no-bagging path.
 The attribution command emits tracked decomposition reports and an ignored
+prediction Parquet.
+The hierarchical command emits tracked L5 comparator reports and an ignored
 prediction Parquet.
 
 ## 7. Diagnostics

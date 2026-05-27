@@ -51,6 +51,7 @@ Layer 5: Baseline reports
   mbp baseline replicate-stressor-robust-adaptive
   mbp baseline run-stressor-robust-attribution
   mbp baseline run-stressor-robust-arm-selector
+  mbp baseline run-hierarchical-capacity
     |
     v
 Layer 6: Diagnostics and hardening
