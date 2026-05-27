@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 5.9: Hierarchical replicate-aware capacity baseline gate**.
+The repository is in **Milestone 6.0: Multi-horizon capacity forecasting gate**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -179,6 +179,16 @@ only a tiny C-rate `delta_capacity_Ah` gain versus the H3/F4 HGB reference
 the hierarchical C-rate delta result is diagnostic-only. Replicate-variance
 interval coverage also fails (`0.312102` for C-rate delta and minimum primary
 coverage `0.151596`), so calibrated uncertainty remains blocked.
+Milestone 6.0 adds a non-neural multi-horizon capacity forecasting gate for
+horizons 1, 2, 3, and 5 check-ups. `capacity_horizon_table_v1.parquet`
+contains 13,770 observed horizon rows across 228 cells and 76 parameter sets.
+The prospective HGB K2 nominal-condition model beats persistence and
+prior-slope baselines for C-rate horizons 2 and 3 on both
+`capacity_Ah_kh` and `delta_capacity_Ah_h`, but the all-split capacity-level
+horizon-3 row narrowly misses the prior-slope baseline. Therefore the
+multi-horizon result is partially supported overall, C-rate multi-horizon and
+delta-capacity diagnostics are supported for diagnostics, and K3 future
+exposure remains oracle-diagnostic only.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, sequence models, neural
@@ -187,6 +197,10 @@ improvement claims have been started.
 
 Current state:
 
+- Milestone 6.0 is a non-neural multi-horizon capacity forecasting gate. It
+  builds `capacity_horizon_table_v1.parquet`, runs persistence, prior-slope,
+  Ridge, and HGB baselines under grouped splits, and labels K3 k-to-k+h
+  exposure features as oracle diagnostics rather than prospective inputs.
 - Milestone 5.9 is a train-only hierarchical replicate-aware capacity
   comparator. It adds H0 global train mean, H1 ridge, H2 ridge partial pooling,
   H3 HGB reference, H4 HGB residual partial pooling, and H5
@@ -251,6 +265,21 @@ Current state:
   prediction Parquet. H4/F4 does not pass the paired-support gate for C-rate
   `delta_capacity_Ah`, and H5 intervals are diagnostic-only due to low grouped
   and C-rate coverage.
+- `mbp analysis build-capacity-horizon-table` generated 13,770 multi-horizon
+  rows for horizons 1, 2, 3, and 5 from `interval_table.parquet`. QA passes
+  with all 228 cells and 76 parameter sets represented, and no missing/censored
+  rows among observed possible starts for those horizons.
+- `mbp baseline run-capacity-horizon` produced 960 grouped metric rows and an
+  ignored prediction Parquet. For C-rate horizon 2, HGB K2 mean MAE is
+  `0.183684` for `capacity_Ah_kh` and `0.183020` for
+  `delta_capacity_Ah_h`, beating persistence (`0.433943`) and prior-slope
+  (`0.299260`). For C-rate horizon 3, HGB K2 mean MAE is `0.221461` for
+  `capacity_Ah_kh` and `0.232468` for `delta_capacity_Ah_h`, beating
+  persistence (`0.492851`) and prior-slope (`0.302605`). Across all splits,
+  HGB K2 beats both references for horizon-2 capacity level and horizons 2/3
+  delta capacity, but horizon-3 capacity level is essentially tied and slightly
+  worse than prior slope (`0.0935304` versus `0.0932329`), so the overall
+  multi-horizon claim remains partially supported.
 - Milestone 5.3 remains a correctness-hardening gate for existing calibration
   and stressor-robustness reports. It does not add models, features, or claims.
 - Milestone 5.2 added `ece_10_bin_equal_freq` alongside the existing

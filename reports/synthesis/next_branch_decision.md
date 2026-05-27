@@ -29,7 +29,8 @@ The project has completed the major baseline-first charter gates:
 - adaptive stressor-robust replication and final claim hardening;
 - stressor-robust attribution and reweighting decomposition.
 - targeted stressor-family routing;
-- hierarchical replicate-aware capacity comparators.
+- hierarchical replicate-aware capacity comparators;
+- multi-horizon capacity forecasting diagnostics.
 
 The strongest contribution is now a rigorous grouped-validation benchmark that
 documents which battery-degradation signals are supported, diagnostic-only,
@@ -52,6 +53,10 @@ to D0, but it is a diagnostic routing result rather than a global robust model.
 Milestone 5.9 adds the charter-required hierarchical replicate-aware
 comparator. It is useful as an L5 diagnostic baseline, but H4/F4 partial
 pooling does not pass paired C-rate support and H5 intervals are undercovered.
+Milestone 6.0 adds a Q1 multi-horizon capacity forecasting diagnostic. C-rate
+and delta-capacity horizons 2/3 are positive for prospective HGB K2, but the
+all-split horizon-3 capacity-level row narrowly misses prior slope, so this is
+not a solved multi-step forecasting result.
 
 ## Recommended Path
 
@@ -62,7 +67,9 @@ pooling does not pass paired C-rate support and H5 intervals are undercovered.
    diagnostic stressor-robustness result hardened by 5.3 correctness checks
    and narrowed by the Milestone 5.6 replicated adaptive-selection result plus
    the Milestone 5.8 targeted routing diagnostic, and the Milestone 5.9
-   hierarchical comparator as a negative/diagnostic L5 baseline.
+   hierarchical comparator as a negative/diagnostic L5 baseline. Integrate
+   Milestone 6.0 as a scoped multi-horizon diagnostic, not as architecture
+   readiness.
 3. If engineering work resumes, prefer release automation or reproducibility
    checks over new scientific expansion.
 
@@ -94,6 +101,13 @@ The hierarchical replicate-aware capacity branch has now also been run. It
 does not create a stronger next branch: the mean C-rate delta gain is tiny,
 paired p05 is negative, and interval coverage fails. Treat it as a completed
 charter comparator rather than a reason to tune more partial-pooling variants.
+
+The multi-horizon capacity branch has now also been run. It creates a useful
+diagnostic result, especially for C-rate horizons 2 and 3, but it does not
+justify sequence/neural models, policy ranking, or CBAT. If continued, the only
+defensible follow-up would be a predeclared error-analysis or prospective
+feature audit, not post-hoc tuning around the near-tied horizon-3
+capacity-level row.
 
 ## Explicitly Rejected Branches
 

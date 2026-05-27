@@ -1,15 +1,16 @@
 # Codex Next Work
 
 Current recommended branch: synthesis/release maintenance. The adaptive
-stressor-robust replication, attribution, and stressor-family routing checks
-have been run and should not be broadened without a fresh gated question.
+stressor-robust replication, attribution, stressor-family routing,
+hierarchical replicate, and multi-horizon capacity checks have been run and
+should not be broadened without a fresh gated question.
 
 ## Current Phase
 
-Milestone 5.9 is a hierarchical replicate-aware capacity baseline gate. It
-implements train-only stressor-family residual partial pooling and
-replicate-variance interval diagnostics as an L5 comparator. It is not a new
-architecture, calibration-claim, or policy-ranking branch.
+Milestone 6.0 is a multi-horizon capacity forecasting gate. It implements a
+prospective non-neural table/baseline for horizons 1, 2, 3, and 5 check-ups,
+plus a K3 oracle exposure diagnostic. It is not a sequence, architecture,
+calibration-claim, or policy-ranking branch.
 
 ## Current Result
 
@@ -48,12 +49,21 @@ Milestone 5.9 is diagnostic-only. H4/F4 partial pooling gives a tiny C-rate
 negative (`-1.88643e-05`). H5 replicate-variance intervals are undercovered
 with C-rate delta coverage `0.312102` and minimum primary coverage `0.151596`.
 
+Milestone 6.0 is partially supported overall and positive in the scoped C-rate
+and delta-capacity views. `capacity_horizon_table_v1` has 13,770 observed rows.
+For C-rate horizons 2 and 3, prospective HGB K2 beats persistence and prior
+slope for both `capacity_Ah_kh` and `delta_capacity_Ah_h`. Across all splits,
+HGB K2 beats both references for `delta_capacity_Ah_h` horizons 2/3, but
+horizon-3 `capacity_Ah_kh` narrowly misses prior slope (`0.0935304` versus
+`0.0932329`), so broad multi-horizon capacity wording is not supported. K3
+future exposure is oracle-diagnostic only.
+
 ## Optional Technical Branch
 
 No broader technical branch is currently justified. Future technical work, if
 opened, should be release automation or documentation synthesis unless a fresh
 predeclared question is created. Do not open CBAT, policy ranking, sequence
-modeling, or new modality expansion from the Milestone 5.6-5.9 results.
+modeling, or new modality expansion from the Milestone 5.6-6.0 results.
 
 ## Blocked Branches
 
@@ -72,6 +82,8 @@ Do not open:
 - broad multimodal degradation claims
 - calibrated risk or calibrated uncertainty claims without grouped evidence
 - robust-capacity/fade-solved claims without passing non-degradation guardrails
+- broad multi-horizon capacity-solved claims
+- prospective claims using K3 future horizon exposure
 
 ## Updating Phase Docs
 
@@ -109,6 +121,9 @@ Allowed current wording:
   under adaptive selection fails outside-C-rate non-degradation
 - hierarchical replicate-aware partial pooling is an L5 diagnostic comparator
   and does not pass paired C-rate support or interval coverage
+- multi-horizon capacity forecasting is partially supported overall, with
+  C-rate and delta-capacity horizon 2/3 diagnostics supported
+- K3 horizon exposure is oracle diagnostic only
 
 Forbidden current wording:
 
@@ -119,6 +134,8 @@ Forbidden current wording:
 - causal early warning
 - broad multimodal improvement
 - C-rate fade solved
+- K3 future exposure is prospective
+- multi-horizon capacity forecasting is solved globally
 
 ## Avoiding Data Artifact Commits
 

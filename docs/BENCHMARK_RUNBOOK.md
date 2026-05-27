@@ -93,6 +93,9 @@ mbp baseline replicate-stressor-robust-adaptive --interval-table data/interim/in
 mbp baseline run-stressor-robust-attribution --interval-table data/interim/interval_table.parquet --interval-subsets data/splits/interval_subset_registry_v1.parquet --stress-features data/interim/interval_stress_features_v1_1.parquet --out reports/baselines/capacity_stressor_robust_attribution_report.json --predictions-out data/processed/capacity_stressor_robust_attribution_predictions.parquet --out-dir reports/baselines/capacity_stressor_robust_attribution
 mbp baseline run-stressor-robust-arm-selector --interval-table data/interim/interval_table.parquet --interval-subsets data/splits/interval_subset_registry_v1.parquet --stress-features data/interim/interval_stress_features_v1_1.parquet --attribution-report reports/baselines/capacity_stressor_robust_attribution_report.json --attribution-predictions data/processed/capacity_stressor_robust_attribution_predictions.parquet --out reports/baselines/capacity_stressor_robust_arm_selector_report.json --predictions-out data/processed/capacity_stressor_robust_arm_selector_predictions.parquet --out-dir reports/baselines/capacity_stressor_robust_arm_selector
 mbp baseline run-hierarchical-capacity --interval-table data/interim/interval_table.parquet --interval-subsets data/splits/interval_subset_registry_v1.parquet --stress-features data/interim/interval_stress_features_v1_1.parquet --out reports/baselines/capacity_hierarchical_replicate_report.json --predictions-out data/processed/capacity_hierarchical_replicate_predictions.parquet --out-dir reports/baselines/capacity_hierarchical_replicate --targets capacity_Ah_k1,delta_capacity_Ah --split-views condition_fold,temperature_holdout_fold,c_rate_holdout_fold,profile_holdout_fold,voltage_window_holdout_fold --hgb-max-iter 50
+mbp analysis build-capacity-horizon-table --interval-table data/interim/interval_table.parquet --out data/interim/capacity_horizon_table_v1.parquet --horizons 1,2,3,5
+mbp analysis capacity-horizon-qa --horizon-table data/interim/capacity_horizon_table_v1.parquet --interval-table data/interim/interval_table.parquet --out reports/analysis/capacity_horizon/capacity_horizon_qa_report.json --coverage-out reports/analysis/capacity_horizon/capacity_horizon_coverage.csv
+mbp baseline run-capacity-horizon --horizon-table data/interim/capacity_horizon_table_v1.parquet --out reports/baselines/capacity_horizon_l0_l2_report.json --predictions-out data/processed/capacity_horizon_l0_l2_predictions.parquet --out-dir reports/baselines/capacity_horizon_l0_l2 --targets capacity_Ah_kh,delta_capacity_Ah_h --horizons 1,2,3,5 --split-views condition_fold,temperature_holdout_fold,c_rate_holdout_fold,profile_holdout_fold,voltage_window_holdout_fold --model-levels MH0_persistence,MH1_prior_slope_linear,MH2_ridge,MH3_hist_gradient_boosting --feature-groups K0_prior_capacity,K1_prior_state_time,K2_nominal_condition,K3_oracle_exposure_diagnostic --hgb-max-iter 50
 ```
 
 Outputs: tracked JSON/CSV/Markdown reports and ignored prediction Parquets.
@@ -102,6 +105,9 @@ The attribution command emits tracked decomposition reports and an ignored
 prediction Parquet.
 The hierarchical command emits tracked L5 comparator reports and an ignored
 prediction Parquet.
+The capacity-horizon commands emit a tracked QA report, a tracked grouped
+baseline report, and ignored horizon/prediction Parquets. K3 horizon exposure
+features are oracle diagnostics, not prospective forecast inputs.
 
 ## 7. Diagnostics
 

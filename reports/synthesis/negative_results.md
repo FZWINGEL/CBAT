@@ -257,6 +257,27 @@ Decision: keep hierarchical replicate-aware partial pooling as an L5 diagnostic
 comparator. Do not claim C-rate fade is solved, do not claim calibrated
 uncertainty, and do not use this as architecture or policy-ranking evidence.
 
+## Multi-Horizon Capacity Forecasting Is Partial, Not Solved
+
+Milestone 6.0 built `capacity_horizon_table_v1.parquet` with 13,770 observed
+rows for horizons 1, 2, 3, and 5 check-ups. The C-rate multi-horizon rows are
+positive: prospective HGB K2 beats both persistence and prior-slope baselines
+for horizons 2 and 3 on both `capacity_Ah_kh` and `delta_capacity_Ah_h`.
+
+The overall capacity-level claim does not fully pass. For horizon-3
+`capacity_Ah_kh` across all grouped split rows, HGB K2 mean MAE is `0.0935304`,
+slightly worse than the prior-slope baseline at `0.0932329`. This is a near
+tie, but it blocks broad multi-horizon capacity-forecasting wording.
+
+K3 oracle exposure diagnostics improve several rows, but those fields aggregate
+the actual k-to-k+h exposure and therefore cannot be used as prospective
+forecasting inputs.
+
+Decision: report C-rate and delta-capacity multi-horizon forecasting as
+diagnostic positives, keep the overall multi-horizon capacity claim partial,
+and do not claim solved C-rate fade, architecture readiness, policy ranking,
+or prospective value from future exposure fields.
+
 ## Milestone 3.0 Blocked-Claim Refresh
 
 The v2 synthesis keeps the following negative boundaries active:
@@ -276,6 +297,9 @@ The v2 synthesis keeps the following negative boundaries active:
   non-C-rate degradation, but this is not a global robust-capacity model;
 - hierarchical replicate-aware partial pooling is implemented but diagnostic
   only because paired C-rate support and interval coverage fail;
+- multi-horizon capacity forecasting is only partially supported overall,
+  despite positive C-rate and delta-capacity diagnostics, because all-split
+  horizon-3 capacity level narrowly misses the prior-slope baseline;
 - sequence models remain blocked by the order-vs-aggregate and
   order-vs-shuffled negative result;
 - calibrated uncertainty remains blocked by C-rate coverage failure even after

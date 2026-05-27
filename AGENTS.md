@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 5.9: Hierarchical replicate-aware capacity baseline gate.
+Milestone 6.0: Multi-horizon capacity forecasting gate.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -65,14 +65,20 @@ Current state:
   It must not be described as broad robust capacity, solved C-rate fade,
   architecture readiness, policy ranking, calibrated risk, calibrated
   uncertainty, or causal evidence.
-- The current main-project track evaluates train-only hierarchical
-  replicate-aware/partial-pooling capacity comparators. Residual offsets,
-  shrinkage, and interval radii must be computed from outer-training rows only;
-  held-out parameter sets must never receive fitted random effects.
+- Milestone 6.0 evaluates non-neural multi-check-up capacity forecasting as a
+  charter-aligned Q1 extension. It separates prospective check-up-k state,
+  time, history, and nominal-condition features from K3 oracle k-to-k+h
+  exposure diagnostics, which are never valid early-forecasting inputs.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
 Allowed work:
+- multi-horizon capacity target table construction from existing interval rows
+- multi-horizon capacity target QA and split coverage diagnostics
+- non-neural multi-horizon capacity baselines under grouped validation
+- prospective prior-state/time/nominal multi-horizon feature groups
+- oracle future-exposure diagnostics clearly labeled as non-prospective
+- multi-horizon capacity claim-readiness reporting
 - additive equal-frequency ECE diagnostics alongside fixed-width ECE
 - L3 capacity quantile noncrossing post-sort hygiene
 - rerunning existing threshold-warning calibration and capacity calibration reports

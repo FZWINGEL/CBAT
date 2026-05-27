@@ -14,12 +14,13 @@ This check covers the Milestone 3.0 synthesis artifacts:
 - `reports/synthesis/next_branch_decision.md`
 
 It has been refreshed after Milestones 5.0, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6,
-5.7, 5.8, and 5.9 to
+5.7, 5.8, 5.9, and 6.0 to
 include threshold-warning probability calibration, stressor-axis robust
 capacity, calibration/quantile hygiene, calibration/robustness
 correctness-hardening, Pareto forensics, and train-only adaptive robust
 selection, replication, attribution-decomposition, stressor-family routing,
-and hierarchical replicate-aware capacity comparator results.
+hierarchical replicate-aware capacity comparator results, and multi-horizon
+capacity forecasting diagnostics.
 
 ## Source Artifact Existence
 
@@ -51,6 +52,8 @@ blocked or not supported:
 - stressor-family routing is a global robust-capacity model;
 - hierarchical partial pooling solves C-rate fade;
 - hierarchical replicate intervals validate calibrated uncertainty;
+- multi-horizon capacity forecasting is solved globally;
+- future k-to-k+h exposure is prospective forecasting input;
 - adaptive stressor-robust diagnostics justify architecture or policy;
 - quantile noncrossing validates calibrated uncertainty;
 - equal-frequency ECE validates calibrated risk;
@@ -86,6 +89,9 @@ outside-C-rate non-degradation and remains diagnostic-only. Milestone 5.8
 adds targeted D2-for-C-rate/D0-elsewhere routing, but this is not a global
 robust-capacity model. Milestone 5.9 implements the hierarchical
 replicate-aware comparator required by the charter, but its partial-pooling
-gain is diagnostic-only and its interval coverage fails.
+gain is diagnostic-only and its interval coverage fails. Milestone 6.0
+implements a multi-horizon capacity forecasting gate, but overall
+capacity-level support remains partial and K3 future exposure is
+oracle-diagnostic only.
 Any future calibrated-risk, calibrated-uncertainty, policy, architecture, or
 broad robust-capacity claim requires a separate gated milestone.

@@ -5,9 +5,9 @@ Status: `passed`
 ## Summary
 
 - Required files checked: 10
-- Tracked artifacts checked: 58
-- Ignored artifacts checked: 21
-- Claim matrix rows checked: 25
+- Tracked artifacts checked: 61
+- Ignored artifacts checked: 23
+- Claim matrix rows checked: 26
 
 ## Errors
 
@@ -25,6 +25,7 @@ Status: `passed`
 - audit
 - bagit
 - baseline
+- build-capacity-horizon-table
 - build-features
 - build-knee-risk-labels
 - build-manuscript-assets
@@ -36,6 +37,7 @@ Status: `passed`
 - build-threshold-warning-table
 - calibrate-capacity
 - calibrate-threshold-warning
+- capacity-horizon-qa
 - check-manuscript
 - check-reader-manuscript
 - check-release-candidate
@@ -87,6 +89,7 @@ Status: `passed`
 - replicate-uncertainty
 - report
 - run-capacity
+- run-capacity-horizon
 - run-eis
 - run-events-qa
 - run-hierarchical-capacity

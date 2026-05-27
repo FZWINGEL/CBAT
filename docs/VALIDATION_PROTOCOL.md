@@ -1426,3 +1426,37 @@ Claim rules:
   coverage both pass. They do not authorize calibrated-uncertainty wording.
 - The gate never authorizes global robust-capacity, solved C-rate fade,
   architecture, policy-ranking, causal, calibrated-risk, or CBAT claims.
+
+## Milestone 6.0 Multi-Horizon Capacity Forecasting Gate
+
+Milestone 6.0 evaluates whether non-neural models can forecast capacity over
+multiple future check-up horizons under the same grouped validation discipline.
+It is a Q1 forecasting gate, not architecture work.
+
+Required artifacts:
+
+- `data/interim/capacity_horizon_table_v1.parquet` (ignored generated data)
+- `reports/analysis/capacity_horizon/capacity_horizon_qa_report.json`
+- `reports/analysis/capacity_horizon/capacity_horizon_coverage.csv`
+- `reports/baselines/capacity_horizon_l0_l2_report.json`
+- `reports/baselines/capacity_horizon_l0_l2/leaderboard.csv`
+- `reports/baselines/capacity_horizon_l0_l2/capacity_horizon_claim_readiness.md`
+- `reports/baselines/capacity_horizon_l0_l2/plots/horizon_performance.csv`
+- `reports/baselines/capacity_horizon_l0_l2/plots/c_rate_horizon_performance.csv`
+- `reports/baselines/capacity_horizon_l0_l2/plots/oracle_exposure_gain.csv`
+- `docs/experiments/2026-05-27_multi_horizon_capacity_forecasting_gate.md`
+
+Claim rules:
+
+- Prospective feature groups may use only check-up-k state, prior trajectory,
+  cumulative history available at k, and nominal condition metadata.
+- K3 oracle exposure features aggregate k-to-k+h exposure and are diagnostic
+  only. They cannot support early forecasting, policy, causal, or architecture
+  claims.
+- A multi-horizon diagnostic claim requires HGB K2 to beat both persistence and
+  prior-slope baselines for the predeclared horizons 2 and 3 under grouped
+  validation.
+- C-rate wording must be split-specific. It is not evidence that C-rate fade is
+  solved globally.
+- The gate does not authorize calibrated uncertainty, calibrated risk, policy
+  ranking, sequence/neural models, CBAT, or causal claims.

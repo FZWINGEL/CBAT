@@ -542,7 +542,51 @@ THRESHOLD_WARNING_TABLE_V1_SCHEMA = pa.schema(
     ]
 )
 
-# 13. PULSE interval target table schema
+# 13. Multi-horizon capacity target table schema
+CAPACITY_HORIZON_TABLE_V1_SCHEMA = pa.schema(
+    [
+        ("cell_id", pa.string(), False),
+        ("parameter_set", pa.int32(), False),
+        ("replicate_id", pa.int32(), False),
+        ("checkup_k", pa.int32(), False),
+        ("target_checkup_k", pa.int32(), False),
+        ("horizon_checkups", pa.int32(), False),
+        ("capacity_Ah_k", pa.float64(), False),
+        ("capacity_Ah_kh", pa.float64(), False),
+        ("delta_capacity_Ah_h", pa.float64(), False),
+        ("soh_k", pa.float64(), True),
+        ("soh_kh", pa.float64(), True),
+        ("calendar_day_k", pa.float64(), True),
+        ("horizon_days", pa.float64(), True),
+        ("cumulative_efc_k", pa.float64(), True),
+        ("cumulative_q_Ah_k", pa.float64(), True),
+        ("prior_delta_capacity_Ah", pa.float64(), True),
+        ("prior_capacity_slope_per_checkup", pa.float64(), True),
+        ("prior_capacity_slope_per_day", pa.float64(), True),
+        ("nominal_temperature_C", pa.float64(), False),
+        ("voltage_window_family", pa.string(), False),
+        ("nominal_charge_C_rate", pa.float64(), False),
+        ("nominal_discharge_C_rate", pa.float64(), True),
+        ("profile_label", pa.string(), False),
+        ("aging_mode", pa.string(), False),
+        ("condition_fold", pa.int32(), False),
+        ("temperature_holdout_fold", pa.int32(), False),
+        ("c_rate_holdout_fold", pa.int32(), False),
+        ("profile_holdout_fold", pa.int32(), False),
+        ("voltage_window_holdout_fold", pa.int32(), False),
+        ("horizon_interval_count", pa.int32(), False),
+        ("horizon_duration_h", pa.float64(), True),
+        ("horizon_calendar_days", pa.float64(), True),
+        ("horizon_log_age_efc_delta", pa.float64(), True),
+        ("horizon_log_age_delta_q_Ah", pa.float64(), True),
+        ("horizon_log_age_row_count", pa.int64(), False),
+        ("event_observed", pa.bool_(), False),
+        ("quality_flags", pa.string(), False),
+        ("schema_version", pa.string(), False),
+    ]
+)
+
+# 14. PULSE interval target table schema
 PULSE_TARGET_TABLE_SCHEMA = pa.schema(
     [
         ("cell_id", pa.string(), False),
@@ -565,7 +609,7 @@ PULSE_TARGET_TABLE_SCHEMA = pa.schema(
     ]
 )
 
-# 14. EIS scalar feature table schema
+# 15. EIS scalar feature table schema
 EIS_FEATURE_TABLE_V1_SCHEMA = pa.schema(
     [
         ("cell_id", pa.string(), False),

@@ -1,0 +1,21 @@
+{
+  "generated_at_utc": "2026-05-27T11:54:35.342603+00:00",
+  "outputs": {
+    "coverage": "reports/analysis/capacity_horizon/capacity_horizon_coverage.csv",
+    "report": "reports/analysis/capacity_horizon/capacity_horizon_qa_report.json"
+  },
+  "row_counts": {
+    "cells": 228,
+    "horizons": [
+      1,
+      2,
+      3,
+      5
+    ],
+    "parameter_sets": 76,
+    "rows": 13770
+  },
+  "schema_version": "gate60.capacity_horizon_table.v1",
+  "status": "passed",
+  "warnings": []
+}

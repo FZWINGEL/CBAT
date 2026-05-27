@@ -1,0 +1,5 @@
+c_rate_holdout_parameter_sets,c_rate_holdout_rows,cells,horizon_checkups,missing_or_censored_rows,parameter_sets,possible_start_rows,profile_holdout_parameter_sets,profile_holdout_rows,row_count
+12,157,228,1,0,76,3827,12,752,3827
+12,121,226,2,0,76,3599,12,716,3599
+7,87,204,3,0,68,3373,12,680,3373
+5,50,189,5,0,64,2971,12,608,2971
