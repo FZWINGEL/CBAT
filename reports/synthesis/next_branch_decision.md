@@ -35,6 +35,7 @@ The project has completed the major baseline-first charter gates:
 - prior-trajectory shape multi-horizon diagnostic.
 - benchmark task freeze and leaderboard reproducibility.
 - minimal fixed-length event-sequence and CUDA Torch MLP reopening check.
+- observed policy-contrast support and sign-stability diagnostics.
 
 The strongest contribution is now a rigorous grouped-validation benchmark that
 documents which battery-degradation signals are supported, diagnostic-only,
@@ -75,6 +76,11 @@ fixed-length run-event sequences and CUDA Torch MLP rows. GPU execution is now
 verified, but true-sequence candidates still fail the aggregate-event HGB,
 timestamp-stress HGB, and C-rate `delta_capacity_Ah` controls, so the
 sequence/neural branch remains blocked.
+Milestone 7.2 then checks whether a policy-response branch even has observed
+matched support. It does: 234 triplet-supported contrasts across four families
+and 0.916 observed sign-stable capacity-loss rows. This is useful support
+evidence, but it is not calibrated risk, not causal evidence, not an
+intervention test, and not a ranking model.
 
 ## Recommended Path
 
@@ -90,6 +96,9 @@ sequence/neural branch remains blocked.
    readiness.
 3. If engineering work resumes, prefer release automation, task-registry
    maintenance, or reproducibility checks over new scientific expansion.
+4. If ML research continues, the only policy-related next step should be a
+   separate predeclared ranking-feasibility baseline using observed contrasts
+   and uncertainty guardrails. Do not treat Milestone 7.2 as a policy result.
 
 ## Optional Technical Branch
 
@@ -131,6 +140,11 @@ The minimal sequence/neural reopening check has also been run with CUDA
 PyTorch. It is a useful negative H7 test, not a reason to start transformers or
 CBAT: true event order does not beat the stronger aggregate-event or
 timestamp-stress HGB references under the required grouped controls.
+
+The observed policy-contrast support gate has also been run. It establishes
+that matched triplet contrasts exist and observed degradation ordering is often
+stable, but it does not authorize policy recommendation, causal intervention,
+same-cell counterfactual, or deployment ranking claims.
 
 ## Explicitly Rejected Branches
 

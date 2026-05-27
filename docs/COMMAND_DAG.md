@@ -40,6 +40,7 @@ Layer 4: Feature and target sidecars
   mbp analysis build-threshold-warning-table
   mbp analysis build-capacity-horizon-table
   mbp analysis build-capacity-horizon-trajectory-features
+  mbp analysis build-policy-contrast-registry
     |
     v
 Layer 5: Baseline reports
@@ -72,6 +73,8 @@ Layer 6: Diagnostics and hardening
   mbp baseline compare-threshold-warning-censoring
   mbp baseline finalize-threshold-warning-claim
   mbp baseline diagnose-stressor-robust-forensics
+  mbp analysis policy-contrast-qa
+  mbp analysis evaluate-observed-policy-contrasts
     |
     v
 Layer 7: Synthesis and release checks

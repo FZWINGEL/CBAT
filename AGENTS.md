@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 7.1: Minimal sequence/neural reopening gate.
+Milestone 7.2: Policy-contrast support and observed ranking feasibility gate.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -91,10 +91,20 @@ Current state:
   diagnostics. The GPU run completed, but true-sequence baselines still do not
   beat aggregate-event HGB or timestamp-stress HGB references, so sequence,
   neural architecture, CBAT, and policy-ranking branches remain blocked.
+- Milestone 7.2 evaluates whether the existing condition triplets contain
+  enough matched observed policy contrasts to justify a later policy-ranking
+  feasibility gate. It builds an observed contrast registry and stability
+  diagnostics only; it does not train a ranking model, recommend policies, or
+  make causal/same-cell counterfactual claims.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
 Allowed work:
+- observed matched policy-contrast registry construction
+- policy-contrast support QA
+- observed capacity-loss sign-stability diagnostics
+- policy-contrast claim-readiness reporting
+- benchmark task registry and claim-ledger updates for observed support only
 - fixed-length LOG_AGE run-event sequence data products
 - event-sequence QA and leakage audits
 - minimal Ridge true/shuffled sequence baselines
@@ -228,10 +238,8 @@ Allowed work:
 - small tests with synthetic fixtures
 
 Forbidden work:
-- new model training outside the scoped minimal-sequence, hierarchical, and
-  stressor-robust diagnostic gates
-- new feature engineering outside the scoped minimal-sequence, hierarchical,
-  and stressor-robust diagnostic gates
+- new model training outside explicitly scoped diagnostic gates
+- new feature engineering outside explicitly scoped diagnostic gates
 - knee prediction models
 - neural models beyond the CUDA-only minimal Torch MLP reopening diagnostic
 - sequence models beyond fixed-length true/shuffled event-sequence diagnostics
@@ -240,6 +248,7 @@ Forbidden work:
 - DRT features
 - EIS embeddings
 - policy ranking
+- policy recommendation
 - capacity+PULSE+EIS architecture work
 - causal or mechanistic overclaims
 - same-cell counterfactual claims

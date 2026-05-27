@@ -565,6 +565,32 @@ THRESHOLD_WARNING_TABLE_V1_SCHEMA = pa.schema(
     ]
 )
 
+# 12b. Observed policy-contrast support registry
+POLICY_CONTRAST_REGISTRY_V1_SCHEMA = pa.schema(
+    [
+        ("contrast_id", pa.string(), False),
+        ("contrast_family", pa.string(), False),
+        ("varied_field", pa.string(), False),
+        ("match_key", pa.string(), False),
+        ("arm_a_parameter_set", pa.int32(), False),
+        ("arm_b_parameter_set", pa.int32(), False),
+        ("arm_a_value", pa.string(), False),
+        ("arm_b_value", pa.string(), False),
+        ("arm_a_cells", pa.int32(), False),
+        ("arm_b_cells", pa.int32(), False),
+        ("arm_a_interval_rows", pa.int32(), False),
+        ("arm_b_interval_rows", pa.int32(), False),
+        ("arm_a_min_checkup_k", pa.int32(), False),
+        ("arm_a_max_checkup_k", pa.int32(), False),
+        ("arm_b_min_checkup_k", pa.int32(), False),
+        ("arm_b_max_checkup_k", pa.int32(), False),
+        ("common_checkup_count", pa.int32(), False),
+        ("has_triplet_support", pa.bool_(), False),
+        ("support_quality", pa.string(), False),
+        ("schema_version", pa.string(), False),
+    ]
+)
+
 # 13. Multi-horizon capacity target table schema
 CAPACITY_HORIZON_TABLE_V1_SCHEMA = pa.schema(
     [

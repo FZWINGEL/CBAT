@@ -357,6 +357,11 @@ The v2 synthesis keeps the following negative boundaries active:
   quantile noncrossing hygiene;
 - CBAT, policy ranking, causal claims, same-cell counterfactuals, DRT, and
   learned EIS embeddings remain blocked.
+- Milestone 7.2 adds positive observed support for matched policy contrasts
+  (234 triplet-supported contrasts and 0.916 sign-stable capacity-loss rows),
+  but policy ranking remains blocked because this is not calibrated risk, not
+  causal evidence, not a same-cell counterfactual design, and not a policy
+  recommendation model.
 
 Decision: return to synthesis/release maintenance unless a new narrow
 calibration-method diagnostic is explicitly justified.

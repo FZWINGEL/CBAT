@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 7.1: Minimal sequence/neural reopening gate**.
+The repository is in **Milestone 7.2: Policy-contrast support and observed ranking feasibility gate**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -217,6 +217,16 @@ installed in the project virtualenv and verified on the WSL-visible RTX 5060
 Ti. The GPU Torch MLP rows ran, but no true-sequence candidate passed the
 predeclared aggregate/stress/C-rate controls; sequence/neural next-gate
 readiness, CBAT, and policy ranking remain blocked.
+Milestone 7.2 evaluates charter H6/Q4 support before any policy-ranking model:
+it builds `policy_contrast_registry_v1.parquet`, support QA, observed
+capacity-loss sign-stability diagnostics, and claim-readiness reports from the
+existing interval table only. The gate finds 234 triplet-supported observed
+contrasts across charge C-rate, temperature, voltage-window, and profile
+families, with 2,943 of 3,213 observed capacity-loss rows sign-stable. This
+supports only an observed policy-contrast support diagnostic and a possible
+future ranking-feasibility gate. It does not authorize policy ranking, policy
+recommendations, causal/same-cell counterfactual claims, CBAT, sequence/neural
+models, or calibrated risk.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, unscoped sequence models,
@@ -226,6 +236,20 @@ minimal CUDA Torch MLP diagnostic as a falsification check, not an architecture
 branch.
 
 Current state:
+
+- Milestone 7.2 is an observed support/stability gate for policy contrasts, not
+  a policy-ranking or causal milestone. `policy_contrast_registry_v1.parquet`
+  contains 234 matched triplet-supported observed contrasts. QA passes across
+  all four supported contrast families: charge C-rate (36 contrasts), profile
+  (12), temperature (114), and voltage window (72). Observed capacity-loss
+  sign stability is high overall (`2943/3213 = 0.916` rows), with family-level
+  sign-stable fractions from `0.893985` to `0.954464`.
+- The Milestone 7.2 claim-readiness report marks matched observed
+  policy-contrast support and observed contrast sign stability as
+  `supported_for_diagnostics`, but only marks future policy-ranking baseline
+  readiness as `possible_next_gate`. Policy ranking itself, policy
+  recommendation, causal intervention claims, and same-cell counterfactual
+  claims remain blocked.
 
 - Milestone 7.1 is a minimal sequence/neural reopening gate. It builds
   `interval_event_sequence_table_v1.parquet` with 3,827 interval rows and

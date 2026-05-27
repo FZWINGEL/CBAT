@@ -14,14 +14,14 @@ This check covers the Milestone 3.0 synthesis artifacts:
 - `reports/synthesis/next_branch_decision.md`
 
 It has been refreshed after Milestones 5.0, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6,
-5.7, 5.8, 5.9, and 6.0 to
+5.7, 5.8, 5.9, 6.0, 7.1, and 7.2 to
 include threshold-warning probability calibration, stressor-axis robust
 capacity, calibration/quantile hygiene, calibration/robustness
 correctness-hardening, Pareto forensics, and train-only adaptive robust
 selection, replication, attribution-decomposition, stressor-family routing,
 hierarchical replicate-aware capacity comparator results, multi-horizon
-capacity forecasting diagnostics, and the minimal CUDA sequence reopening
-check.
+capacity forecasting diagnostics, the minimal CUDA sequence reopening check,
+and observed policy-contrast support diagnostics.
 
 ## Source Artifact Existence
 
@@ -44,6 +44,7 @@ blocked or not supported:
 - neural sequence reopening;
 - CBAT;
 - policy ranking;
+- policy recommendation;
 - broad multimodal improvement;
 - broad EIS improvement;
 - prior-PULSE strongest-baseline dominance;
@@ -61,6 +62,8 @@ blocked or not supported:
 - equal-frequency ECE validates calibrated risk;
 - same-cell counterfactual claims;
 - DRT and learned EIS embeddings.
+- observed policy-contrast support is diagnostic only and does not authorize
+  policy recommendation, causal effects, or same-cell counterfactual effects.
 
 ## Forbidden Wording Check
 
@@ -98,5 +101,8 @@ oracle-diagnostic only.
 Milestone 7.1 verifies CUDA Torch MLP execution but keeps sequence/neural
 readiness blocked because true-sequence candidates fail aggregate-event HGB,
 timestamp-stress HGB, and C-rate delta controls.
+Milestone 7.2 verifies observed matched policy-contrast support and sign
+stability, but policy recommendation, causal, counterfactual, and deployment
+ranking claims remain blocked.
 Any future calibrated-risk, calibrated-uncertainty, policy, architecture, or
 broad robust-capacity claim requires a separate gated milestone.

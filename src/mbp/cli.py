@@ -2347,6 +2347,69 @@ def analysis_capacity_horizon_trajectory_qa(
     typer.echo(f"Capacity horizon trajectory QA {report['status']}: rows={report['row_counts']['rows']}")
 
 
+@analysis_app.command("build-policy-contrast-registry")
+def analysis_build_policy_contrast_registry(
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output path for policy_contrast_registry_v1.parquet."),
+    contrast_families: str | None = typer.Option(
+        None,
+        "--contrast-families",
+        help="Comma-separated observed contrast families: charge_c_rate, temperature, voltage_window, profile.",
+    ),
+) -> None:
+    """Build matched observed condition-policy contrasts. This does not train a model."""
+    from mbp.analysis.policy_contrast import build_policy_contrast_registry
+
+    table = build_policy_contrast_registry(
+        interval_table,
+        out,
+        contrast_families=_comma_values(contrast_families) if contrast_families else None,
+    )
+    typer.echo(f"Policy contrast registry generated: {table.num_rows} rows written to {out}")
+
+
+@analysis_app.command("policy-contrast-qa")
+def analysis_policy_contrast_qa(
+    contrast_registry: Path = typer.Option(
+        ...,
+        "--contrast-registry",
+        help="Path to policy_contrast_registry_v1.parquet.",
+    ),
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    out: Path = typer.Option(..., "--out", help="Output JSON support report path."),
+    registry_out: Path = typer.Option(..., "--registry-out", help="Output CSV registry path."),
+    family_out: Path = typer.Option(..., "--family-out", help="Output family-support CSV path."),
+) -> None:
+    """Write support QA for matched observed policy contrasts."""
+    from mbp.analysis.policy_contrast import write_policy_contrast_qa
+
+    report = write_policy_contrast_qa(contrast_registry, interval_table, out, registry_out, family_out)
+    typer.echo(
+        "Policy contrast QA "
+        f"{report['status']}: contrasts={report['row_counts']['contrast_rows']}"
+    )
+
+
+@analysis_app.command("evaluate-observed-policy-contrasts")
+def analysis_evaluate_observed_policy_contrasts(
+    contrast_registry: Path = typer.Option(
+        ...,
+        "--contrast-registry",
+        help="Path to policy_contrast_registry_v1.parquet.",
+    ),
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    out_dir: Path = typer.Option(..., "--out-dir", help="Output directory for observed policy diagnostics."),
+) -> None:
+    """Evaluate observed sign stability for matched policy contrasts."""
+    from mbp.analysis.policy_contrast import evaluate_observed_policy_contrasts
+
+    report = evaluate_observed_policy_contrasts(contrast_registry, interval_table, out_dir)
+    typer.echo(
+        "Observed policy-contrast diagnostics generated: "
+        f"{report['row_counts']['stability_rows']} stability rows"
+    )
+
+
 @baseline_app.command("diagnose-capacity")
 def baseline_diagnose_capacity(
     report: Path = typer.Option(

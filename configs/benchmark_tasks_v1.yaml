@@ -236,3 +236,21 @@ tasks:
     allowed_wording: fixed-length event-sequence and CUDA Torch MLP diagnostics do not reopen sequence or neural modeling
     forbidden_wording: sequence models neural models CBAT transformers or policy ranking are justified by current sequence evidence
     decision: keep sequence and neural branches blocked after the GPU-backed H7 reopening check
+  - task_id: T14_policy_contrast_support
+    task_name: observed policy-contrast support diagnostic
+    area: policy_support
+    question_id: Q4
+    primary_claim_id: C29
+    claim_ids: [C29]
+    status: supported_for_diagnostics
+    targets: [capacity_loss_Ah]
+    split_views: [charge_c_rate, temperature, voltage_window, profile]
+    primary_metric: triplet-supported matched contrasts and observed capacity-loss sign-stable fraction
+    primary_result: 234 triplet-supported contrasts across four families with 2943 of 3213 observed capacity-loss rows sign-stable
+    best_reference: observed matched contrast registry
+    baseline_families: [observed_policy_contrast_registry, observed_sign_stability]
+    source_artifacts: [docs/experiments/2026-05-27_policy_contrast_support_gate.md, reports/analysis/policy/policy_claim_readiness.md]
+    local_data_artifacts: [data/interim/policy_contrast_registry_v1.parquet]
+    allowed_wording: observed matched policy contrasts support diagnostic degradation-order analysis
+    forbidden_wording: policy ranking policy recommendation causal effects same-cell counterfactuals CBAT or calibrated risk are authorized
+    decision: keep as observed support/stability diagnostic; separate predeclared gate required before any ranking baseline

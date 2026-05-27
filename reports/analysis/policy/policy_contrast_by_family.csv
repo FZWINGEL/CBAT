@@ -1,0 +1,5 @@
+contrast_family,contrast_rows,triplet_supported_contrasts,median_common_checkup_count,min_common_checkup_count,max_common_checkup_count,partial_support_contrasts
+charge_c_rate,36,36,5.0,3,29,0
+profile,12,12,16.0,6,29,0
+temperature,114,114,14.0,3,29,0
+voltage_window,72,72,15.0,3,29,0

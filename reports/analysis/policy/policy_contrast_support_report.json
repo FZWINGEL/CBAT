@@ -1,0 +1,23 @@
+{
+  "generated_at_utc": "2026-05-27T15:51:29.593320+00:00",
+  "outputs": {
+    "family": "reports/analysis/policy/policy_contrast_by_family.csv",
+    "registry": "reports/analysis/policy/policy_contrast_registry.csv",
+    "report": "reports/analysis/policy/policy_contrast_support_report.json"
+  },
+  "row_counts": {
+    "contrast_families": [
+      "charge_c_rate",
+      "profile",
+      "temperature",
+      "voltage_window"
+    ],
+    "contrast_rows": 234,
+    "interval_rows": 3827,
+    "parameter_sets": 76,
+    "triplet_supported_contrasts": 234
+  },
+  "schema_version": "gate72.policy_contrast_registry.v1",
+  "status": "passed",
+  "warnings": []
+}

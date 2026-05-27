@@ -1,0 +1,28 @@
+{
+  "generated_at_utc": "2026-05-27T15:51:29.612902+00:00",
+  "outputs": {
+    "claim_readiness": "reports/analysis/policy/policy_claim_readiness.md",
+    "feasibility": "reports/analysis/policy/policy_ranking_feasibility.md",
+    "stability": "reports/analysis/policy/observed_policy_ranking_stability.csv"
+  },
+  "readiness": {
+    "causal or same-cell counterfactual policy claims": "blocked",
+    "future policy-ranking baseline readiness": "possible_next_gate",
+    "matched observed policy-contrast support": "supported_for_diagnostics",
+    "observed contrast sign stability": "supported_for_diagnostics"
+  },
+  "row_counts": {
+    "contrast_rows": 234,
+    "families": [
+      "charge_c_rate",
+      "profile",
+      "temperature",
+      "voltage_window"
+    ],
+    "sign_stable_rows": 2943,
+    "stability_rows": 3213,
+    "triplet_supported_contrasts": 234
+  },
+  "schema_version": "gate72.policy_contrast_registry.v1",
+  "status": "passed"
+}

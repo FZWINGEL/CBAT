@@ -1587,3 +1587,38 @@ Validation rules:
 - A passing Torch/GPU environment check is only execution evidence. It does not
   authorize neural architecture, transformers, CBAT, policy ranking, or broad
   multimodal claims.
+
+## Milestone 7.2 Policy-Contrast Support and Observed Ranking Feasibility Gate
+
+Milestone 7.2 tests charter H6/Q4 support before any policy-ranking model. It
+may build matched observed contrasts between parameter-set triplets that differ
+on one nominal policy/stressor axis while holding the other key condition
+metadata fixed. It may summarize observed capacity-loss sign stability across
+replicates and check-ups. It must not train a ranking model, recommend an
+operating policy, estimate intervention effects, or make same-cell
+counterfactual claims.
+
+Required artifacts:
+
+- `data/interim/policy_contrast_registry_v1.parquet` (ignored generated data)
+- `reports/analysis/policy/policy_contrast_support_report.json`
+- `reports/analysis/policy/policy_contrast_registry.csv`
+- `reports/analysis/policy/policy_contrast_by_family.csv`
+- `reports/analysis/policy/observed_policy_contrast_report.json`
+- `reports/analysis/policy/observed_policy_ranking_stability.csv`
+- `reports/analysis/policy/policy_ranking_feasibility.md`
+- `reports/analysis/policy/policy_claim_readiness.md`
+- `docs/experiments/2026-05-27_policy_contrast_support_gate.md`
+
+Validation rules:
+
+- Contrast families are diagnostic only: charge C-rate, temperature, voltage
+  window, and profile.
+- A registry contrast must vary one family field and match the remaining
+  nominal fields used by that family.
+- Triplet support means both arms have at least three replicate cells.
+- Observed sign stability may be reported only as an observed capacity-loss
+  ordering diagnostic, never as a causal, counterfactual, or deployment policy.
+- A future policy-ranking baseline can only be considered as a separate gate
+  after observed support and stability are documented. Milestone 7.2 itself
+  does not authorize policy ranking.

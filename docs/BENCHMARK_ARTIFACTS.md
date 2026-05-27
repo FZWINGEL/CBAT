@@ -39,6 +39,19 @@ Milestone 7.1 adds tracked sequence reopening evidence:
 These artifacts document a negative CUDA-backed H7 reopening check. The local
 event-sequence and prediction Parquets remain ignored.
 
+Milestone 7.2 adds tracked observed policy-contrast support evidence:
+
+- `reports/analysis/policy/policy_contrast_support_report.json`
+- `reports/analysis/policy/policy_contrast_registry.csv`
+- `reports/analysis/policy/policy_contrast_by_family.csv`
+- `reports/analysis/policy/observed_policy_contrast_report.json`
+- `reports/analysis/policy/observed_policy_ranking_stability.csv`
+- `reports/analysis/policy/policy_claim_readiness.md`
+- `docs/experiments/2026-05-27_policy_contrast_support_gate.md`
+
+These artifacts document observed support and sign-stability diagnostics only.
+The local policy-contrast registry Parquet remains ignored.
+
 ## Ignored Generated Parquets
 
 Generated Parquets under `data/interim/`, `data/splits/`, and
@@ -50,6 +63,7 @@ Examples:
 - `data/interim/modality_table_log_age.parquet`
 - `data/interim/run_event_table_v1.parquet`
 - `data/interim/interval_event_sequence_table_v1.parquet`
+- `data/interim/policy_contrast_registry_v1.parquet`
 - `data/interim/eis_feature_table_v1.parquet`
 - `data/interim/threshold_warning_table_v1.parquet`
 - `data/processed/*_predictions.parquet`

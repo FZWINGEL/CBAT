@@ -1,0 +1,5 @@
+contrast_family,stability_rows,sign_stable_rows,sign_stable_fraction,median_abs_effect_b_minus_a,unique_contrasts,claim_scope
+charge_c_rate,228,206,0.9035087719298246,0.1822001666666665,36,observed_support_diagnostic_only
+profile,186,167,0.8978494623655914,0.09737933333333341,12,observed_support_diagnostic_only
+temperature,1679,1501,0.8939845145920191,0.055649333333333356,114,observed_support_diagnostic_only
+voltage_window,1120,1069,0.9544642857142858,0.07506049999999997,72,observed_support_diagnostic_only

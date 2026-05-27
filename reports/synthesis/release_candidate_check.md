@@ -5,9 +5,9 @@ Status: `passed`
 ## Summary
 
 - Required files checked: 10
-- Tracked artifacts checked: 110
-- Ignored artifacts checked: 27
-- Claim matrix rows checked: 28
+- Tracked artifacts checked: 120
+- Ignored artifacts checked: 28
+- Claim matrix rows checked: 29
 
 ## Errors
 
@@ -31,6 +31,7 @@ Status: `passed`
 - build-features
 - build-knee-risk-labels
 - build-manuscript-assets
+- build-policy-contrast-registry
 - build-pulse-capacity-table
 - build-run-events
 - build-sequence-features
@@ -68,6 +69,7 @@ Status: `passed`
 - eis
 - eis-claim-readiness
 - eis-hardening-sensitivity
+- evaluate-observed-policy-contrasts
 - event-sequences-qa
 - evidence-memo
 - feature-qa
@@ -87,6 +89,7 @@ Status: `passed`
 - log-age-monotonicity
 - manifest
 - missingness
+- policy-contrast-qa
 - pulse
 - pulse-capacity
 - pulse-capacity-robustness

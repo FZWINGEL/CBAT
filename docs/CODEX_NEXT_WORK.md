@@ -1,18 +1,19 @@
 # Codex Next Work
 
-Current recommended branch: benchmark release maintenance and task-registry
-reproducibility. The adaptive stressor-robust replication, attribution,
-stressor-family routing, hierarchical replicate, multi-horizon capacity,
-prior-trajectory, and minimal sequence/neural reopening checks have been run
-and should not be broadened without a fresh gated question.
+Current recommended branch: benchmark release maintenance, task-registry
+reproducibility, or a separately predeclared feasibility gate. The adaptive
+stressor-robust replication, attribution, stressor-family routing,
+hierarchical replicate, multi-horizon capacity, prior-trajectory, minimal
+sequence/neural reopening, and observed policy-contrast support checks have
+been run and should not be broadened without a fresh gated question.
 
 ## Current Phase
 
-Milestone 7.1 is a minimal sequence/neural reopening gate. It builds a
-fixed-length LOG_AGE run-event sequence product and evaluates Ridge plus
-CUDA-only Torch MLP true/shuffled sequence diagnostics against aggregate-event
-and timestamp-stress HGB references. It is not a CBAT, transformer,
-architecture, calibration-claim, causal, or policy-ranking branch.
+Milestone 7.2 is a policy-contrast support and observed ranking feasibility
+gate. It builds matched observed contrasts from existing interval rows and
+summarizes observed capacity-loss sign stability. It is not a policy-ranking,
+policy-recommendation, causal, same-cell counterfactual, CBAT, transformer,
+architecture, or calibration-claim branch.
 
 ## Current Result
 
@@ -77,13 +78,20 @@ true-sequence candidates do not beat aggregate-event HGB or timestamp-stress
 HGB references, and C-rate `delta_capacity_Ah` reopening fails. Treat this as
 a negative H7 check, not as neural/sequence readiness.
 
+Milestone 7.2 finds useful observed policy-contrast support: 234 matched
+triplet-supported contrasts across four families and 2,943/3,213 observed
+capacity-loss rows sign-stable. Treat this as observed support diagnostics
+only. It does not authorize policy ranking, policy recommendation, causal
+effects, same-cell counterfactual effects, CBAT, or calibrated risk.
+
 ## Optional Technical Branch
 
 No broader technical branch is currently justified. Future technical work, if
-opened, should be release automation, task-registry maintenance, or
-documentation synthesis unless a fresh predeclared question is created. Do not
-open CBAT, policy ranking, transformers, broad sequence modeling, or new
-modality expansion from the Milestone 5.6-7.1 results.
+opened, should be release automation, task-registry maintenance, documentation
+synthesis, or a separately predeclared observed-contrast ranking-feasibility
+baseline with strict uncertainty/no-overclaim guardrails. Do not open CBAT,
+policy recommendations, transformers, broad sequence modeling, or new modality
+expansion from the Milestone 5.6-7.2 results.
 
 ## Blocked Branches
 
@@ -96,6 +104,7 @@ Do not open:
 - DRT
 - learned EIS embeddings
 - policy ranking
+- policy recommendation
 - detector-knee prediction
 - causal or mechanistic claims
 - same-cell counterfactual claims
@@ -149,6 +158,7 @@ Allowed current wording:
   posture without adding new results
 - fixed-length event-sequence and CUDA Torch MLP diagnostics do not reopen
   sequence/neural modeling
+- observed matched policy contrasts support degradation-order diagnostics only
 - K3 horizon exposure is oracle diagnostic only
 
 Forbidden current wording:
@@ -156,6 +166,7 @@ Forbidden current wording:
 - CBAT-ready
 - sequence model justified
 - neural model justified
+- policy recommendation
 - calibrated risk
 - detector-knee prediction
 - causal early warning

@@ -33,13 +33,13 @@ the paper claim ledger with main-project gate decisions and next actions.
 | C26 | Non-neural models can forecast capacity over multiple future check-up horizons under grouped validation. | `partially_supported` | `docs/experiments/2026-05-27_multi_horizon_capacity_forecasting_gate.md`; `docs/experiments/2026-05-27_multi_horizon_error_forensics.md` | Prospective HGB K2 supports C-rate and delta-capacity multi-horizon diagnostics for horizons 2 and 3, but overall multi-horizon capacity-level support is partial because horizon-3 `capacity_Ah_kh` narrowly misses the prior-slope baseline. | Multi-horizon capacity forecasting is solved globally, K3 future exposure is prospective, C-rate fade is solved, calibrated uncertainty/risk is available, or architecture/policy work is justified. | Lock as a scoped diagnostic; do not broaden beyond the horizon/split evidence. |
 | C27 | Prior-trajectory shape features repair the multi-horizon capacity forecast gap. | `partially_supported` | `docs/experiments/2026-05-27_prior_trajectory_shape_horizon_gate.md` | Prior-only trajectory shape is a leakage-safe diagnostic feature family with isolated gains, but it does not repair all-split horizon-3 `capacity_Ah_kh` and does not preserve all C-rate horizon-2/3 rows. | Prior-trajectory shape solves multi-horizon forecasting, justifies sequence/neural models, validates CBAT, or authorizes policy/causal/calibrated-risk claims. | Keep as partial/diagnostic evidence; do not continue this branch without a fresh predeclared question. |
 | C28 | Fixed-length event-sequence baselines reopen the sequence/neural model gate. | `not_supported` | `docs/experiments/2026-05-27_minimal_sequence_reopening_gate.md` | CUDA Torch MLP execution is now verified, but fixed-length true-sequence Ridge/MLP diagnostics still do not beat aggregate-event HGB or timestamp-stress HGB references and fail the C-rate delta reopening rule. | Sequence/neural models, CBAT, transformers, or policy ranking are justified by the current evidence. | Keep sequence/neural work blocked; treat the CUDA run as a negative H7 reopening check. |
+| C29 | Matched observed policy contrasts have enough support for diagnostic sign-stability analysis. | `supported_for_diagnostics` | `docs/experiments/2026-05-27_policy_contrast_support_gate.md`; `reports/analysis/policy/policy_claim_readiness.md` | Observed matched policy contrasts are available for support and degradation-order diagnostics: 234 triplet-supported contrasts across four families and 2,943/3,213 sign-stable capacity-loss rows. | Policy ranking, policy recommendation, same-cell counterfactual effects, causal intervention effects, CBAT, or calibrated risk are authorized. | Treat as observed support diagnostics only; any ranking feasibility baseline would require a separate predeclared gate. |
 
 ## Next Action
 
-Return to benchmark/manuscript integration or release maintenance unless a
-new explicitly scoped ML gate is opened. Milestone 7.1 adds C28 as a minimal
-sequence reopening check: fixed-length event-sequence Ridge and CUDA Torch MLP
-rows fail the required aggregate-event HGB, timestamp-stress HGB, and C-rate
-controls even though PyTorch/CUDA execution is verified. It does not authorize
-calibrated-risk, calibrated-uncertainty, broad robust-capacity, architecture,
-policy, sequence/neural, or causal claims.
+Return to benchmark/manuscript integration or release maintenance unless a new
+explicitly scoped ML gate is opened. Milestone 7.2 adds C29 as an observed
+policy-contrast support diagnostic: matched triplet support and observed
+capacity-loss sign stability are available, but policy ranking, policy
+recommendation, same-cell counterfactual, causal, CBAT, sequence/neural, and
+calibrated-risk claims remain blocked.

@@ -80,6 +80,18 @@ These cards summarize model families already evaluated in the frozen benchmark. 
 - Task statuses: supported_for_diagnostics
 - Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
 
+## observed_policy_contrast_registry
+
+- Used in tasks: T14_policy_contrast_support
+- Task statuses: supported_for_diagnostics
+- Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
+
+## observed_sign_stability
+
+- Used in tasks: T14_policy_contrast_support
+- Task statuses: supported_for_diagnostics
+- Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
+
 ## order_aware_hgb
 
 - Used in tasks: T07_temporal_order_falsification

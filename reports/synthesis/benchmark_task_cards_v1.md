@@ -198,3 +198,18 @@ These cards freeze the benchmark task definitions and current claim posture. The
 - Forbidden wording: sequence models neural models CBAT transformers or policy ranking are justified by current sequence evidence
 - Decision: keep sequence and neural branches blocked after the GPU-backed H7 reopening check
 - Source artifacts: docs/experiments/2026-05-27_minimal_sequence_reopening_gate.md, reports/baselines/minimal_sequence_reopening/sequence_reopening_claim_readiness.md
+
+## T14_policy_contrast_support - observed policy-contrast support diagnostic
+
+- Area: policy_support
+- Primary claim: C29
+- Status: `supported_for_diagnostics`
+- Targets: capacity_loss_Ah
+- Split views: charge_c_rate, temperature, voltage_window, profile
+- Primary metric: triplet-supported matched contrasts and observed capacity-loss sign-stable fraction
+- Primary result: 234 triplet-supported contrasts across four families with 2943 of 3213 observed capacity-loss rows sign-stable
+- Best reference: observed matched contrast registry
+- Allowed wording: observed matched policy contrasts support diagnostic degradation-order analysis
+- Forbidden wording: policy ranking policy recommendation causal effects same-cell counterfactuals CBAT or calibrated risk are authorized
+- Decision: keep as observed support/stability diagnostic; separate predeclared gate required before any ranking baseline
+- Source artifacts: docs/experiments/2026-05-27_policy_contrast_support_gate.md, reports/analysis/policy/policy_claim_readiness.md
