@@ -110,6 +110,7 @@ mbp analysis policy-contrast-qa --contrast-registry data/interim/policy_contrast
 mbp analysis evaluate-observed-policy-contrasts --contrast-registry data/interim/policy_contrast_registry_v1.parquet --interval-table data/interim/interval_table.parquet --out-dir reports/analysis/policy
 mbp analysis evaluate-policy-ranking-feasibility --contrast-registry data/interim/policy_contrast_registry_v1.parquet --horizon-table data/interim/capacity_horizon_table_v1.parquet --predictions data/processed/capacity_horizon_l0_l2_predictions.parquet --out-dir reports/analysis/policy --targets delta_capacity_Ah_h,capacity_Ah_kh --horizons 2,3 --model-levels MH0_persistence,MH1_prior_slope_linear,MH2_ridge,MH3_hist_gradient_boosting --feature-groups persistence,prior_slope,K2_nominal_condition,K3_oracle_exposure_diagnostic --split-views condition_fold,temperature_holdout_fold,c_rate_holdout_fold,profile_holdout_fold,voltage_window_holdout_fold --bootstrap-count 200
 mbp analysis diagnose-policy-ranking-feasibility --pairwise-metrics reports/analysis/policy/policy_ranking_pairwise_metrics.csv --by-family reports/analysis/policy/policy_ranking_by_family.csv --bootstrap reports/analysis/policy/policy_ranking_bootstrap.csv --out-dir reports/analysis/policy
+mbp analysis diagnose-support-reliability --interval-table data/interim/interval_table.parquet --horizon-table data/interim/capacity_horizon_table_v1.parquet --capacity-predictions data/processed/capacity_horizon_l0_l2_predictions.parquet --warning-table data/interim/threshold_warning_table_v1.parquet --warning-predictions data/processed/threshold_warning_l0_l2_predictions.parquet --policy-pairwise reports/analysis/policy/policy_ranking_pairwise_metrics.csv --out-dir reports/analysis/support_reliability
 ```
 
 Outputs: tracked JSON/CSV/Markdown reports and ignored prediction Parquets.
@@ -133,7 +134,10 @@ policy recommendations. The supported contrast-ordering feasibility command
 uses existing multi-horizon predictions only; it does not retrain models, and
 K3 rows remain oracle-diagnostic only. The failure-forensics command consumes
 the 7.3 CSV reports only and decomposes the strict prior-slope failure by
-effect size, rank metric, and top-k/regret diagnostics.
+effect size, rank metric, and top-k/regret diagnostics. The support-reliability
+command consumes existing prediction/report artifacts only and writes tracked
+support-distance and selective-retention diagnostics; it does not train a
+model or authorize deployment, calibrated-risk, policy, causal, or CBAT claims.
 
 ## 7. Diagnostics
 

@@ -408,6 +408,11 @@ The v2 synthesis keeps the following negative boundaries active:
 - Milestone 7.4 explains that failure by effect size and rank metric, but
   large-effect and rank diagnostics remain diagnostic-only and do not reopen
   policy ranking.
+- Milestone 8.0 adds support-aware selective reliability diagnostics, but
+  support filtering does not improve the primary capacity or threshold-warning
+  rows at 50% retention and C-rate support reliability is not supported. This
+  keeps deployment reliability, calibrated-risk, policy, causal, and CBAT
+  claims blocked.
 
 Decision: return to synthesis/release maintenance unless a new narrow
 calibration-method diagnostic is explicitly justified.

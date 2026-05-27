@@ -70,6 +70,9 @@ blocked or not supported:
   deployment ranking claims.
 - contrast-ordering failure forensics are diagnostic-only and do not reopen
   policy ranking.
+- support-aware selective reliability is diagnostic-only and does not authorize
+  deployment reliability, calibrated risk, policy recommendation, causal
+  effects, same-cell counterfactual effects, CBAT, or architecture readiness.
 
 ## Forbidden Wording Check
 
@@ -117,5 +120,9 @@ policy risk/utility, CBAT, and sequence/neural claims remain blocked.
 Milestone 7.4 decomposes that failure by effect size, rank metric, and
 top-k/regret diagnostics, but large-effect ordering remains diagnostic-only
 and does not authorize policy ranking or recommendation.
+Milestone 8.0 adds support-aware selective reliability diagnostics, but support
+filtering worsens primary capacity and threshold-warning metrics at 50%
+retention and C-rate support reliability is not supported. It remains an audit
+and abstention diagnostic only.
 Any future calibrated-risk, calibrated-uncertainty, policy, architecture, or
 broad robust-capacity claim requires a separate gated milestone.

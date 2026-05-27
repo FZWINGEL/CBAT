@@ -4,16 +4,18 @@ Current recommended branch: benchmark release maintenance, task-registry
 reproducibility, or a separately predeclared feasibility gate. The adaptive
 stressor-robust replication, attribution, stressor-family routing,
 hierarchical replicate, multi-horizon capacity, prior-trajectory, minimal
-sequence/neural reopening, observed policy-contrast support, and supported
-contrast-ordering feasibility and failure-forensics checks have been run and
+sequence/neural reopening, observed policy-contrast support, supported
+contrast-ordering feasibility and failure-forensics, and support-aware
+selective reliability checks have been run and
 should not be broadened without a fresh gated question.
 
 ## Current Phase
 
-Milestone 7.4 is a report-only support-bounded contrast-ordering failure
-forensics gate. It uses existing Milestone 7.3 CSV outputs only. It is not a
+Milestone 8.0 is a report-only support-aware selective reliability gate. It
+uses existing capacity-horizon predictions, threshold-warning predictions, and
+Milestone 7.3 policy-pairwise CSV outputs only. It is not a model-training,
 policy-recommendation, causal, same-cell counterfactual, CBAT, transformer,
-architecture, sequence/neural, or calibration-claim branch.
+architecture, sequence/neural, deployment, or calibration-claim branch.
 
 ## Current Result
 
@@ -99,13 +101,23 @@ diagnostic-only: large-effect passing families are `charge_c_rate` and
 `temperature`, C-rate medium/large pass rows are only `1/4`, and policy
 ranking remains blocked.
 
+Milestone 8.0 adds train-only support-distance and selective-retention
+diagnostics over existing artifacts. It generates 380 support-distance rows,
+2,000 capacity selective rows, 975 threshold-warning selective rows, and 1,680
+policy-contrast selective rows. Support-distance auditing is allowed, but
+selective reliability is diagnostic-only: 50% retention worsens primary
+capacity MAE by `0.0115957` and threshold-warning Brier by `0.0040389`, while
+policy sign accuracy improves by only `0.0173861`. C-rate support reliability
+is not supported (`-0.0525537` primary capacity MAE gain).
+
 ## Optional Technical Branch
 
 No broader technical branch is currently justified. Future technical work, if
 opened, should be release automation, task-registry maintenance, documentation
 synthesis, or a separately predeclared support-bounded diagnostic objective.
-Do not open CBAT, policy recommendations, transformers, broad sequence
-modeling, or new modality expansion from the Milestone 5.6-7.3 results.
+Do not treat Milestone 8.0 support filtering as deployment reliability or
+policy safety. Do not open CBAT, policy recommendations, transformers, broad sequence
+modeling, or new modality expansion from the Milestone 5.6-8.0 results.
 
 ## Blocked Branches
 

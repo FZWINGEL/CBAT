@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 7.4: Contrast-ordering failure forensics and metric robustness**.
+The repository is in **Milestone 8.0: Support-aware selective reliability gate**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -248,6 +248,20 @@ HGB-vs-prior all-family checks still pass, large-effect diagnostics are only
 `diagnostic_only`, and policy recommendation, causal/same-cell
 counterfactual, calibrated policy risk/utility, CBAT, and sequence/neural
 branches remain blocked.
+Milestone 8.0 audits support-aware selective reliability over existing
+prediction artifacts only. `mbp analysis diagnose-support-reliability`
+computes train-only condition-support distances and retention curves for
+capacity-horizon forecasts, threshold-warning scores, and supported
+contrast-ordering rows. It generates 380 support-distance rows, 2,000
+capacity selective rows, 975 threshold-warning selective rows, and 1,680
+policy-contrast selective rows. The result supports support-distance auditing
+for diagnostics, but selective prediction reliability remains
+`diagnostic_only`: 50% retention worsens the primary capacity MAE by
+`0.0115957` and threshold-warning Brier by `0.0040389`, while policy sign
+accuracy improves by only `0.0173861`. C-rate support reliability is
+`not_supported` because primary C-rate capacity MAE worsens by `0.0525537`.
+Policy recommendation, causal/same-cell counterfactual claims, calibrated risk,
+CBAT readiness, and deployment wording remain blocked.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
 inputs, capacity+PULSE+EIS multimodal models, unscoped sequence models,
@@ -258,6 +272,16 @@ branch.
 
 Current state:
 
+- Milestone 8.0 is a report-only support-aware selective reliability gate over
+  existing capacity-horizon, threshold-warning, and supported policy-contrast
+  prediction artifacts. It adds
+  `reports/analysis/support_reliability/support_reliability_report.json`,
+  `support_reliability_diagnostics.md`,
+  `support_reliability_claim_readiness.md`, and plot-ready CSVs for support
+  distances and selective capacity, threshold-warning, and policy-contrast
+  performance. The gate supports only support-distance diagnostics; selective
+  reliability is diagnostic-only and C-rate support reliability is not
+  supported.
 - Milestone 7.4 is a report-only forensics gate over the existing Milestone
   7.3 CSVs. It adds
   `reports/analysis/policy/policy_ranking_failure_forensics_report.json`,
@@ -735,6 +759,13 @@ Small audit sidecars that are referenced by documentation are tracked:
 - `reports/baselines/threshold_warning_l0_l2/threshold_warning_final_claim_readiness.md`
 - `reports/baselines/threshold_warning_l0_l2/plots/final_lead_time_claim_matrix.csv`
 - `reports/baselines/threshold_warning_l0_l2/plots/final_c_rate_warning_matrix.csv`
+- `reports/analysis/support_reliability/support_reliability_report.json`
+- `reports/analysis/support_reliability/support_reliability_diagnostics.md`
+- `reports/analysis/support_reliability/support_reliability_claim_readiness.md`
+- `reports/analysis/support_reliability/plots/support_distance_by_split.csv`
+- `reports/analysis/support_reliability/plots/selective_capacity_performance.csv`
+- `reports/analysis/support_reliability/plots/selective_threshold_warning_performance.csv`
+- `reports/analysis/support_reliability/plots/selective_policy_contrast_performance.csv`
 - `docs/MAIN_PROJECT_CLAIM_LEDGER_V2.md`
 - `reports/synthesis/main_project_claim_matrix_v2.csv`
 - `reports/synthesis/main_project_gate_status.md`

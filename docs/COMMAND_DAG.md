@@ -77,6 +77,7 @@ Layer 6: Diagnostics and hardening
   mbp analysis evaluate-observed-policy-contrasts
   mbp analysis evaluate-policy-ranking-feasibility
   mbp analysis diagnose-policy-ranking-feasibility
+  mbp analysis diagnose-support-reliability
     |
     v
 Layer 7: Synthesis and release checks
@@ -109,4 +110,8 @@ Layer 7: Synthesis and release checks
   Parquets only; it must not train or tune a policy/ranking model.
 - Policy-ranking failure forensics consumes existing 7.3 CSV reports only; it
   must not retrain, tune, recommend policies, or make causal/counterfactual
+  claims.
+- Support-reliability diagnostics consume existing prediction and policy CSV
+  artifacts only; they must not train models, create predictor features, or
+  make deployment, calibrated-risk, policy, causal/counterfactual, or CBAT
   claims.

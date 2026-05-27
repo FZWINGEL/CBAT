@@ -1691,3 +1691,50 @@ Validation rules:
   are not policy optimization or recommendation metrics.
 - Policy recommendation, causal or same-cell counterfactual claims, calibrated
   policy risk/utility, CBAT, and sequence/neural branches remain blocked.
+
+## Milestone 8.0 Support-Aware Selective Reliability Gate
+
+Milestone 8.0 audits whether train-only condition-support scores identify
+more reliable subsets of existing prediction artifacts. It is a report-only
+diagnostic gate over capacity-horizon forecasts, threshold-warning scores, and
+supported contrast-ordering rows.
+
+Required command:
+
+```bash
+mbp analysis diagnose-support-reliability \
+  --interval-table data/interim/interval_table.parquet \
+  --horizon-table data/interim/capacity_horizon_table_v1.parquet \
+  --capacity-predictions data/processed/capacity_horizon_l0_l2_predictions.parquet \
+  --warning-table data/interim/threshold_warning_table_v1.parquet \
+  --warning-predictions data/processed/threshold_warning_l0_l2_predictions.parquet \
+  --policy-pairwise reports/analysis/policy/policy_ranking_pairwise_metrics.csv \
+  --out-dir reports/analysis/support_reliability
+```
+
+Required artifacts:
+
+- `reports/analysis/support_reliability/support_reliability_report.json`
+- `reports/analysis/support_reliability/support_reliability_diagnostics.md`
+- `reports/analysis/support_reliability/support_reliability_claim_readiness.md`
+- `reports/analysis/support_reliability/plots/support_distance_by_split.csv`
+- `reports/analysis/support_reliability/plots/selective_capacity_performance.csv`
+- `reports/analysis/support_reliability/plots/selective_threshold_warning_performance.csv`
+- `reports/analysis/support_reliability/plots/selective_policy_contrast_performance.csv`
+
+Validation rules:
+
+- Support scores must be computed from condition metadata and training-side
+  conditions for each grouped split; held-out test rows must not define their
+  own support.
+- Selective curves may retain rows by support score only. They must not use
+  observed errors, labels, outcomes, or future interval exposure to decide
+  which rows to retain.
+- The gate must not train a model, tune a model, create predictor features, or
+  regenerate prediction Parquets.
+- K3 oracle future-exposure rows remain non-prospective and must not drive
+  support-readiness wording.
+- Passing support-distance diagnostics can support only audit/abstention
+  wording. They do not authorize calibrated risk, deployment reliability,
+  policy recommendation, causal or same-cell counterfactual claims, CBAT, or
+  architecture readiness.

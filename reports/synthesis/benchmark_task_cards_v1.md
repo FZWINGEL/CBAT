@@ -243,3 +243,18 @@ These cards freeze the benchmark task definitions and current claim posture. The
 - Forbidden wording: policy ranking policy recommendation causal policy effects same-cell counterfactuals calibrated policy risk or utility CBAT or sequence neural branches are authorized
 - Decision: keep policy-response modeling blocked unless a future predeclared large-effect supported-contrast gate is explicitly opened and passes
 - Source artifacts: docs/experiments/2026-05-27_policy_ranking_failure_forensics.md, reports/analysis/policy/policy_ranking_failure_claim_readiness.md
+
+## T17_support_reliability - support-aware selective reliability diagnostic
+
+- Area: support_reliability
+- Primary claim: C32
+- Status: `diagnostic_only`
+- Targets: delta_capacity_Ah_h, event_within_3_checkups, supported_policy_contrast_sign
+- Split views: condition_fold, temperature_holdout_fold, c_rate_holdout_fold, profile_holdout_fold, voltage_window_holdout_fold
+- Primary metric: 50pct retention gain by train-only support score
+- Primary result: support distances are generated for existing artifacts but 50pct retention worsens primary capacity MAE by 0.0115957 and threshold-warning Brier by 0.0040389 while policy sign accuracy improves by only 0.0173861; C-rate capacity support reliability is not supported
+- Best reference: existing HGB K2 capacity horizon predictions and HGB W2 threshold-warning predictions
+- Allowed wording: train-only support distances can audit existing prediction artifacts and selective retention remains diagnostic-only
+- Forbidden wording: support filtering validates deployment reliability calibrated risk policy recommendation causal effects same-cell counterfactuals CBAT or architecture readiness
+- Decision: keep as an abstention and support audit; do not proceed to policy or deployment claims
+- Source artifacts: docs/experiments/2026-05-27_support_aware_selective_reliability_gate.md, reports/analysis/support_reliability/support_reliability_claim_readiness.md

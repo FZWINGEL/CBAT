@@ -212,6 +212,12 @@ These cards summarize model families already evaluated in the frozen benchmark. 
 - Task statuses: not_supported
 - Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
 
+## selective_retention_diagnostic
+
+- Used in tasks: T17_support_reliability
+- Task statuses: diagnostic_only
+- Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
+
 ## semi_empirical_ridge
 
 - Used in tasks: T12_semi_empirical_replicate_checks
@@ -252,6 +258,12 @@ These cards summarize model families already evaluated in the frozen benchmark. 
 
 - Used in tasks: T08_stressor_robust_delta_capacity
 - Task statuses: supported_for_diagnostics
+- Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
+
+## support_distance_audit
+
+- Used in tasks: T17_support_reliability
+- Task statuses: diagnostic_only
 - Claim rule: use only the task-specific allowed wording; do not generalize across blocked gates.
 
 ## train_only_adaptive_selector

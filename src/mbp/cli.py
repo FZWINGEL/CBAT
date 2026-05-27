@@ -2494,6 +2494,54 @@ def analysis_diagnose_policy_ranking_feasibility(
     )
 
 
+@analysis_app.command("diagnose-support-reliability")
+def analysis_diagnose_support_reliability(
+    interval_table: Path = typer.Option(..., "--interval-table", help="Path to interval_table.parquet."),
+    horizon_table: Path = typer.Option(
+        ...,
+        "--horizon-table",
+        help="Path to capacity_horizon_table_v1.parquet.",
+    ),
+    capacity_predictions: Path = typer.Option(
+        ...,
+        "--capacity-predictions",
+        help="Path to capacity_horizon_l0_l2_predictions.parquet.",
+    ),
+    warning_table: Path = typer.Option(
+        ...,
+        "--warning-table",
+        help="Path to threshold_warning_table_v1.parquet.",
+    ),
+    warning_predictions: Path = typer.Option(
+        ...,
+        "--warning-predictions",
+        help="Path to threshold_warning_l0_l2_predictions.parquet.",
+    ),
+    policy_pairwise: Path = typer.Option(
+        ...,
+        "--policy-pairwise",
+        help="Path to policy_ranking_pairwise_metrics.csv.",
+    ),
+    out_dir: Path = typer.Option(..., "--out-dir", help="Output directory for support-reliability diagnostics."),
+) -> None:
+    """Diagnose support-aware selective reliability over existing artifacts."""
+    from mbp.analysis.support_reliability import diagnose_support_reliability
+
+    report = diagnose_support_reliability(
+        interval_table,
+        horizon_table,
+        capacity_predictions,
+        warning_table,
+        warning_predictions,
+        policy_pairwise,
+        out_dir,
+    )
+    typer.echo(
+        "Support-aware reliability diagnostics generated: "
+        f"{report['row_counts']['support_distance_rows']} support rows"
+    )
+
+
 @baseline_app.command("diagnose-capacity")
 def baseline_diagnose_capacity(
     report: Path = typer.Option(

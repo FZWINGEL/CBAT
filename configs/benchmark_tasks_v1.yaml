@@ -290,3 +290,21 @@ tasks:
     allowed_wording: effect-size and rank-metric forensics explain the partial supported contrast-ordering signal but remain diagnostic-only
     forbidden_wording: policy ranking policy recommendation causal policy effects same-cell counterfactuals calibrated policy risk or utility CBAT or sequence neural branches are authorized
     decision: keep policy-response modeling blocked unless a future predeclared large-effect supported-contrast gate is explicitly opened and passes
+  - task_id: T17_support_reliability
+    task_name: support-aware selective reliability diagnostic
+    area: support_reliability
+    question_id: Q4
+    primary_claim_id: C32
+    claim_ids: [C30, C31, C32]
+    status: diagnostic_only
+    targets: [delta_capacity_Ah_h, event_within_3_checkups, supported_policy_contrast_sign]
+    split_views: [condition_fold, temperature_holdout_fold, c_rate_holdout_fold, profile_holdout_fold, voltage_window_holdout_fold]
+    primary_metric: 50pct retention gain by train-only support score
+    primary_result: support distances are generated for existing artifacts but 50pct retention worsens primary capacity MAE by 0.0115957 and threshold-warning Brier by 0.0040389 while policy sign accuracy improves by only 0.0173861; C-rate capacity support reliability is not supported
+    best_reference: existing HGB K2 capacity horizon predictions and HGB W2 threshold-warning predictions
+    baseline_families: [support_distance_audit, selective_retention_diagnostic]
+    source_artifacts: [docs/experiments/2026-05-27_support_aware_selective_reliability_gate.md, reports/analysis/support_reliability/support_reliability_claim_readiness.md]
+    local_data_artifacts: [data/processed/capacity_horizon_l0_l2_predictions.parquet, data/processed/threshold_warning_l0_l2_predictions.parquet]
+    allowed_wording: train-only support distances can audit existing prediction artifacts and selective retention remains diagnostic-only
+    forbidden_wording: support filtering validates deployment reliability calibrated risk policy recommendation causal effects same-cell counterfactuals CBAT or architecture readiness
+    decision: keep as an abstention and support audit; do not proceed to policy or deployment claims

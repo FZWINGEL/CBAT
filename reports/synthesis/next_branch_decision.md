@@ -37,6 +37,8 @@ The project has completed the major baseline-first charter gates:
 - minimal fixed-length event-sequence and CUDA Torch MLP reopening check.
 - observed policy-contrast support and sign-stability diagnostics.
 - support-bounded contrast-ordering feasibility diagnostics.
+- contrast-ordering failure forensics and support-aware selective reliability
+  diagnostics.
 
 The strongest contribution is now a rigorous grouped-validation benchmark that
 documents which battery-degradation signals are supported, diagnostic-only,
@@ -90,6 +92,13 @@ ranking result.
 Milestone 7.4 then diagnoses that failure by effect-size threshold, rank
 correlation, and top-k/regret metrics. It explains some of the metric
 sensitivity but remains diagnostic-only and does not reopen policy ranking.
+Milestone 8.0 then tests whether train-only condition-support scores can
+identify reliable subsets of existing capacity, threshold-warning, and
+supported contrast-ordering predictions. Support-distance auditing is useful,
+but primary capacity and threshold-warning metrics worsen at 50% retention and
+C-rate support reliability is not supported. This keeps support filtering as
+an abstention diagnostic, not a deployment, calibrated-risk, policy, causal, or
+CBAT result.
 
 ## Recommended Path
 
@@ -108,8 +117,9 @@ sensitivity but remains diagnostic-only and does not reopen policy ranking.
 4. If ML research continues, do not continue the policy branch unless a new
    predeclared diagnostic objective is stronger than the already-failed
    Milestone 7.3 prior-slope bootstrap gate and the Milestone 7.4
-   diagnostic-only forensics. Do not treat Milestone 7.2, 7.3, or 7.4 as a
-   policy result.
+   diagnostic-only forensics and also survives the Milestone 8.0
+   support-reliability limitation. Do not treat Milestone 7.2, 7.3, 7.4, or
+   8.0 as a policy result.
 
 ## Optional Technical Branch
 

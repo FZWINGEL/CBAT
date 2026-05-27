@@ -1,0 +1,10 @@
+# Support-Reliability Claim Readiness
+
+| Claim area | Status | Evidence | Allowed wording | Forbidden wording |
+|---|---|---|---|---|
+| support-aware reliability diagnostics | supported_for_diagnostics | Train-only support-distance diagnostics were generated for capacity, threshold-warning, and policy-contrast artifacts. | Support distance can be used to audit where existing predictions are inside or outside observed experimental support. | Support scoring validates deployment, intervention, or counterfactual policy decisions. |
+| selective prediction reliability | diagnostic_only | 50% retention gains: capacity MAE -0.0115957, threshold-warning Brier -0.0040389, policy sign accuracy 0.0173861. | Selective reliability curves may be discussed as diagnostic abstention/support-audit evidence. | A selective model is calibrated, deployable, or globally reliable. |
+| C-rate support reliability | not_supported | C-rate primary capacity 50% retention MAE gain is -0.0525537. | C-rate support reliability can be discussed only as split-specific diagnostics. | C-rate transfer is solved or safe for policy decisions. |
+| policy recommendation | blocked | Support filtering is an abstention diagnostic over existing predictions, not an optimizer or intervention study. | No operating-policy recommendation is made. | Select, prescribe, optimize, or deploy an operating policy. |
+| causal or same-cell counterfactual claims | blocked | Support scores compare observed condition metadata and do not create same-cell interventions. | Report support-bounded diagnostics only. | Changing a policy would cause the estimated effect in the same cell. |
+| calibrated risk or CBAT readiness | blocked | Selective diagnostics do not calibrate probabilities or justify architecture. | Scores are diagnostic reliability outputs. | Calibrated risk, CBAT, or architecture readiness is supported. |

@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 7.4: Contrast-ordering failure forensics and metric robustness.
+Milestone 8.0: Support-aware selective reliability gate.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -108,10 +108,22 @@ Current state:
   and HGB-vs-prior failure-bin diagnostics, and keeps policy recommendation,
   causal/same-cell counterfactual, calibrated policy risk/utility, CBAT, and
   sequence/neural branches blocked.
+- Milestone 8.0 audits whether train-only condition-support scores identify
+  more reliable subsets of existing capacity-horizon, threshold-warning, and
+  supported contrast-ordering predictions. It is report-only: no models are
+  retrained, no predictor features are added, and support filtering remains an
+  abstention/reliability diagnostic rather than policy recommendation,
+  calibrated risk, deployment support, CBAT readiness, or causal evidence.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
 Allowed work:
+- support-distance diagnostics over existing grouped prediction artifacts
+- support-aware selective retention curves for capacity-horizon forecasts
+- support-aware selective retention curves for threshold-warning scores
+- support-aware selective retention curves for supported policy contrasts
+- support-reliability claim-readiness reporting
+- report-only support and abstention diagnostics without retraining
 - observed matched policy-contrast registry construction
 - policy-contrast support QA
 - observed capacity-loss sign-stability diagnostics

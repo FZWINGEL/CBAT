@@ -1,0 +1,41 @@
+{
+  "claim_scope": "support_aware_reliability_diagnostics_only_no_policy_recommendation",
+  "generated_at_utc": "2026-05-27T17:12:10.441768+00:00",
+  "inputs": {
+    "capacity_predictions": "data/processed/capacity_horizon_l0_l2_predictions.parquet",
+    "horizon_table": "data/interim/capacity_horizon_table_v1.parquet",
+    "interval_table": "data/interim/interval_table.parquet",
+    "policy_pairwise": "reports/analysis/policy/policy_ranking_pairwise_metrics.csv",
+    "warning_predictions": "data/processed/threshold_warning_l0_l2_predictions.parquet",
+    "warning_table": "data/interim/threshold_warning_table_v1.parquet"
+  },
+  "outputs": {
+    "claim_readiness": "reports/analysis/support_reliability/support_reliability_claim_readiness.md",
+    "diagnostics": "reports/analysis/support_reliability/support_reliability_diagnostics.md",
+    "selective_capacity_performance": "reports/analysis/support_reliability/plots/selective_capacity_performance.csv",
+    "selective_policy_contrast_performance": "reports/analysis/support_reliability/plots/selective_policy_contrast_performance.csv",
+    "selective_threshold_warning_performance": "reports/analysis/support_reliability/plots/selective_threshold_warning_performance.csv",
+    "support_distance_by_split": "reports/analysis/support_reliability/plots/support_distance_by_split.csv"
+  },
+  "readiness": {
+    "C-rate support reliability": "not_supported",
+    "calibrated risk or CBAT readiness": "blocked",
+    "causal or same-cell counterfactual claims": "blocked",
+    "policy recommendation": "blocked",
+    "selective prediction reliability": "diagnostic_only",
+    "support-aware reliability diagnostics": "supported_for_diagnostics"
+  },
+  "row_counts": {
+    "capacity_prediction_rows": 743040,
+    "horizon_rows": 13770,
+    "interval_rows": 3827,
+    "policy_pairwise_rows": 164100,
+    "selective_capacity_rows": 2000,
+    "selective_policy_rows": 1680,
+    "selective_warning_rows": 975,
+    "support_distance_rows": 380,
+    "warning_prediction_rows": 404235
+  },
+  "schema_version": "gate80.support_reliability.v1",
+  "status": "passed"
+}
