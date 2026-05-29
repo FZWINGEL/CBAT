@@ -155,12 +155,19 @@ def check_release_candidate(
 
     agents_text = _read_text(agents)
     repo_status_text = _read_text(repo_status)
+    codex_path = root / "docs" / "CODEX_NEXT_WORK.md"
+    codex_text = _read_text(codex_path)
     agents_phase = _current_milestone(agents_text)
     repo_phase = _current_milestone(repo_status_text)
+    codex_phase = _current_milestone(codex_text)
     if not agents_phase or not repo_phase:
         errors.append("Could not determine current milestone from AGENTS.md or REPO_STATUS.md.")
     elif agents_phase != repo_phase:
         errors.append(f"Phase mismatch: AGENTS.md has {agents_phase}, REPO_STATUS has {repo_phase}.")
+    if repo_phase and codex_phase and codex_phase != repo_phase:
+        errors.append(
+            f"Phase mismatch: CODEX_NEXT_WORK.md has {codex_phase}, REPO_STATUS has {repo_phase}."
+        )
 
     manifest_rows = _load_artifact_manifest(artifact_manifest)
     if not manifest_rows:
@@ -189,6 +196,14 @@ def check_release_candidate(
     matrix_rows = _load_claim_matrix(claim_matrix)
     if not matrix_rows:
         errors.append(f"Claim matrix is missing or empty: {claim_matrix}")
+    matrix_ids = {
+        row.get("claim_id", "").strip()
+        for row in matrix_rows
+        if row.get("claim_id", "").strip()
+    }
+    missing_from_matrix = sorted(ledger_ids - matrix_ids)
+    if missing_from_matrix:
+        errors.append("Ledger claim IDs missing from claim matrix: " + ", ".join(missing_from_matrix))
     for row in matrix_rows:
         claim_id = row.get("claim_id", "").strip()
         if claim_id and claim_id not in ledger_ids:
