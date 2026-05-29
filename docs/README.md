@@ -8,6 +8,8 @@ package; see the root [`../README.md`](../README.md) for the project overview.
 
 - [PUBLIC_REVIEW_ENTRYPOINT.md](PUBLIC_REVIEW_ENTRYPOINT.md) — shortest route
   through the release for reviewers and collaborators.
+- [POST_M9_REVIEW_CHECKLIST.md](POST_M9_REVIEW_CHECKLIST.md) — post-Milestone-9
+  external-review checklist and validation path.
 - [BENCHMARK_MANUSCRIPT_HANDOFF.md](BENCHMARK_MANUSCRIPT_HANDOFF.md) — bridge
   between the benchmark release and the manuscript package.
 
@@ -43,6 +45,9 @@ package; see the root [`../README.md`](../README.md) for the project overview.
 - [RELEASE_NOTES_v0.1-rc2.md](RELEASE_NOTES_v0.1-rc2.md) ·
   [BENCHMARK_V0_1_RC2_SUMMARY.md](BENCHMARK_V0_1_RC2_SUMMARY.md) ·
   [GITHUB_RELEASE_DRAFT_v0.1-rc2.md](GITHUB_RELEASE_DRAFT_v0.1-rc2.md)
+- [POST_RC2_MAIN_STATUS.md](POST_RC2_MAIN_STATUS.md) ·
+  [RELEASE_NOTES_v0.2-rc1_DRAFT.md](RELEASE_NOTES_v0.2-rc1_DRAFT.md) ·
+  [GITHUB_RELEASE_DRAFT_v0.2-rc1_DRAFT.md](GITHUB_RELEASE_DRAFT_v0.2-rc1_DRAFT.md)
 - [RELEASE_NOTES_v0.1-rc1.md](RELEASE_NOTES_v0.1-rc1.md) — RC1 validation
   checkpoint (retained; required by the release validator).
 - [TAGGING_RELEASE_CANDIDATE.md](TAGGING_RELEASE_CANDIDATE.md) ·

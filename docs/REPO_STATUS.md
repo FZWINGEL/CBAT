@@ -11,11 +11,15 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Post-Milestone 9 release maintenance after the negative
-neural sequence architecture gate**.
+The repository is in **Milestone 10: post-M9 external-review and submission
+preflight**.
 The 2026-05-29 cleanup pass archived superseded planning/RC1 docs and added
 navigation indexes without changing the scientific record; the current
 scientific posture remains the negative Milestone 9 neural-sequence/CBAT gate.
+Milestone 10 is documentation, release-draft, manuscript-alignment,
+reviewer-packaging, and reproducibility-smoke-test planning only; it adds no
+new science, model training, generated data products, or positive architecture
+claims.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
