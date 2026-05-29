@@ -268,6 +268,13 @@ reports/baselines/neural_sequence_gate/figures/true_vs_shuffled_by_split.svg,fig
 data/interim/interval_event_sequence_tensor_v2.parquet,data_product,ignored,mbp features build-event-sequence-tensors,run_event_table_v1.parquet; interval_table.parquet,3827,INTERVAL_EVENT_SEQUENCE_TENSOR_V2_SCHEMA,neural sequence architecture,local generated v2 tensor product
 data/processed/neural_sequence_gate_predictions.parquet,predictions,ignored,mbp baseline run-neural-sequence,interval_event_sequence_tensor_v2.parquet,124380,gate9.neural_sequence_predictions.v1,neural sequence architecture,local ignored prediction rows
 docs/POST_RC2_MAIN_STATUS.md,release_doc,tracked,manual synthesis,BENCHMARK_V0_1_RC2_SUMMARY.md,,n/a,post-rc2 status,distinguishes public rc2 anchor from current main
+docs/POST_M9_REVIEW_CHECKLIST.md,release_doc,tracked,manual review checklist,POST_RC2_MAIN_STATUS.md,,n/a,post-M9 review,external-review validation path
+docs/RELEASE_NOTES_v0.2-rc1_DRAFT.md,release_doc,tracked,manual release draft,POST_RC2_MAIN_STATUS.md,,n/a,post-M9 release draft,draft-only v0.2-rc1 release notes
+docs/GITHUB_RELEASE_DRAFT_v0.2-rc1_DRAFT.md,release_doc,tracked,manual release draft,RELEASE_NOTES_v0.2-rc1_DRAFT.md,,n/a,post-M9 release draft,draft-only GitHub release text
+docs/REPRODUCIBILITY_SMOKE_TEST_PLAN.md,reproducibility_plan,tracked,manual plan,BENCHMARK_REPRODUCIBILITY.md,,n/a,reproducibility smoke tests,future tiny-fixture infrastructure plan
+docs/REVIEWER_FEEDBACK_TEMPLATE.md,review_template,tracked,manual template,POST_M9_REVIEW_CHECKLIST.md,,n/a,review feedback,reviewer feedback classification template
+docs/REPRODUCIBILITY_ISSUE_TEMPLATE.md,review_template,tracked,manual template,REPRODUCIBILITY_SMOKE_TEST_PLAN.md,,n/a,reproducibility feedback,reproducibility issue classification template
+reports/synthesis/post_m9_handoff_check.md,consistency_check,tracked,manual synthesis,benchmark_task_registry_check_v2.md,,n/a,post-M9 handoff,reviewer preflight handoff summary
 configs/benchmark_tasks_v2.yaml,config,tracked,manual task freeze,main_project_claim_matrix_v2.csv,20,benchmark_tasks.v1,benchmark task freeze,post-Milestone-9 task registry
 reports/synthesis/benchmark_task_registry_check_v2.md,consistency_check,tracked,mbp report check-benchmark-tasks,configs/benchmark_tasks_v2.yaml,20,benchmark_tasks.v1,benchmark task freeze,v2 executable task registry check
 reports/synthesis/benchmark_leaderboard_v2.csv,leaderboard,tracked,mbp report check-benchmark-tasks,configs/benchmark_tasks_v2.yaml,20,benchmark_tasks.v1,benchmark task freeze,v2 task-level benchmark leaderboard

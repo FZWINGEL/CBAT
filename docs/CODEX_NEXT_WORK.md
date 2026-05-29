@@ -11,13 +11,19 @@ should not be broadened without a fresh gated question.
 
 ## Current Phase
 
-Post-Milestone 9 release maintenance and synthesis alignment.
+Milestone 10: post-M9 external-review and submission preflight.
 
 Milestone 9 completed a pre-CBAT neural sequence architecture gate. The v2
 fixed-length event tensor product passed QA and CUDA CNN/TCN/CNN-LSTM rows ran,
 but true-order sequence candidates did not beat shuffled-order, aggregate-event
 HGB, timestamp-stress HGB, or C-rate `delta_capacity_Ah` controls. Neural
 sequence next-gate readiness and CBAT prototype readiness remain blocked.
+
+Milestone 10 packages the repository state for external review and submission
+preflight. It authorizes only documentation, release-draft, manuscript-alignment,
+reviewer-packaging, and reproducibility-smoke-test planning work. It does not
+authorize new science, model training, generated data products, release tagging,
+or positive architecture claims.
 
 ## Current Result
 
@@ -26,9 +32,9 @@ match the v2 claim matrix.
 Milestone 9 adds a stronger negative neural-sequence/CBAT gate: v2 tensor QA
 passes over all 3,827 intervals and CUDA neural rows execute, but true sequence
 does not beat aggregate-event HGB, timestamp-stress HGB, or C-rate
-`delta_capacity_Ah` controls. The correct next work is release maintenance,
-task-registry alignment, documentation synthesis, and manuscript/package
-handoff, not another modeling sprint.
+`delta_capacity_Ah` controls. The correct next work is review packaging, draft
+release preparation, manuscript/submission alignment, and reproducibility
+smoke-test planning, not another modeling sprint.
 Threshold-warning
 probability calibration still blocks calibrated-risk wording: Platt
 verified-only primary-horizon mean fixed-width ECE is `0.0748136` and

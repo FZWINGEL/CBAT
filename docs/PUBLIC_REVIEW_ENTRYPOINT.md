@@ -8,6 +8,9 @@ also contains post-rc2 maintenance and the completed negative Milestone 9
 neural sequence architecture gate; see `docs/POST_RC2_MAIN_STATUS.md` for that
 addendum.
 
+For post-Milestone-9 review, `docs/POST_M9_REVIEW_CHECKLIST.md` is the
+canonical validation path. This page remains the short orientation route.
+
 ## Start Here
 
 | Need | File |
@@ -15,6 +18,7 @@ addendum.
 | Release summary | `docs/BENCHMARK_V0_1_RC2_SUMMARY.md` |
 | Release notes | `docs/RELEASE_NOTES_v0.1-rc2.md` |
 | Post-rc2 main status | `docs/POST_RC2_MAIN_STATUS.md` |
+| Post-M9 review checklist | `docs/POST_M9_REVIEW_CHECKLIST.md` |
 | Claim boundaries | `docs/MAIN_PROJECT_CLAIM_LEDGER_V2.md` |
 | Gate status | `reports/synthesis/main_project_gate_status.md` |
 | Manuscript | `manuscript/manuscript_v0_7.md` |
@@ -68,23 +72,14 @@ Current closed wording:
 
 1. Read `README.md` for project orientation.
 2. Read `docs/BENCHMARK_V0_1_RC2_SUMMARY.md` for release scope.
-3. Read `docs/MAIN_PROJECT_CLAIM_LEDGER_V2.md` for allowed wording.
-4. Read `manuscript/manuscript_v0_7.md` for the paper narrative.
-5. Use `manuscript/manuscript_v0_7_traceability.md` to audit claims.
-6. Use `manuscript/submission_readiness_v0_9.md` before venue formatting.
+3. Read `docs/POST_M9_REVIEW_CHECKLIST.md` for the post-Milestone-9 review path.
+4. Read `docs/MAIN_PROJECT_CLAIM_LEDGER_V2.md` for allowed wording.
+5. Read `manuscript/manuscript_v0_7.md` for the paper narrative.
+6. Use `manuscript/manuscript_v0_7_traceability.md` to audit claims.
+7. Use `manuscript/submission_readiness_v0_9.md` before venue formatting.
 
 ## Validation Commands
 
-```bash
-mbp report check-release-candidate
-mbp report check-manuscript \
-  --manuscript manuscript/manuscript_v0_7.md \
-  --claim-ledger docs/MAIN_PROJECT_CLAIM_LEDGER_V2.md \
-  --traceability manuscript/manuscript_v0_7_traceability.md
-mbp report check-reader-manuscript \
-  --manuscript manuscript/manuscript_v0_7.md \
-  --claim-ledger docs/MAIN_PROJECT_CLAIM_LEDGER_V2.md \
-  --traceability manuscript/manuscript_v0_7_traceability.md
-```
-
-Use `.venv/bin/` prefixes if running inside the project virtual environment.
+Use `docs/POST_M9_REVIEW_CHECKLIST.md` for the canonical post-Milestone-9
+validation command list, including release, v2 task-registry, manuscript,
+reader-manuscript, whitespace, and no-data-staged checks.

@@ -177,6 +177,8 @@ command DAG, artifact manifest, release checker, release notes, claim ledger,
 and synthesis reports. It excludes raw data and generated Parquets. The v0.7
 manuscript package changes presentation and review readiness, not the
 scientific evidence.
+Latest `main` also includes a post-rc2 status addendum and benchmark task
+registry v2 for the completed negative Milestone 9 neural-sequence gate.
 
 ## Discussion
 
@@ -194,6 +196,10 @@ The next scientific branch should not be CBAT, sequence models, DRT, EIS
 embeddings, detector-knee prediction, policy ranking, or causal analysis. If a
 technical branch is opened later, it should be limited to threshold-warning
 calibration and should preserve the current claim gates.
+A post-rc2 pre-CBAT neural-sequence architecture gate tested v2 fixed-length
+event tensors with CUDA CNN/TCN/CNN-LSTM baselines. It did not pass the
+predeclared shuffled-order, aggregate-event HGB, timestamp-stress HGB, or C-rate
+controls, so neural sequence and CBAT readiness remain blocked.
 
 ## Limitations
 
@@ -205,3 +211,5 @@ duration-sum warnings for a subset of intervals. Detector-knee labels remain
 exploratory. Threshold-warning probabilities are diagnostic scores, not
 validated risks. Policy ranking, same-cell counterfactuals, and architecture
 claims remain outside the supported evidence.
+The post-rc2 Milestone 9 architecture gate is negative evidence, not CBAT
+progress.

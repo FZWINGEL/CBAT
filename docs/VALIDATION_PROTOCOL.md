@@ -2297,3 +2297,33 @@ Validation rules:
   deltas, and target-derived fields are forbidden as event tensor inputs.
 - If CUDA is unavailable, only tensor QA and non-neural controls may be run;
   neural sequence, CBAT, and architecture claims remain blocked.
+
+## Milestone 10 Post-M9 External-Review and Submission Preflight
+
+Milestone 10 authorizes only reviewer packaging, manuscript wording alignment,
+draft release preparation, and reproducibility smoke-test planning after the
+negative Milestone 9 neural-sequence architecture gate. It does not authorize
+new model training, new feature engineering, release tagging, CBAT,
+transformers, policy ranking, calibrated-risk claims, calibrated-uncertainty
+claims, causal claims, DRT features, learned EIS embeddings, or broad
+multimodal architecture wording.
+
+Required artifacts:
+
+- `docs/POST_M9_REVIEW_CHECKLIST.md`
+- `docs/RELEASE_NOTES_v0.2-rc1_DRAFT.md`
+- `docs/GITHUB_RELEASE_DRAFT_v0.2-rc1_DRAFT.md`
+- `reports/synthesis/post_m9_handoff_check.md`
+- `docs/REPRODUCIBILITY_SMOKE_TEST_PLAN.md`
+- `docs/REVIEWER_FEEDBACK_TEMPLATE.md`
+- `docs/REPRODUCIBILITY_ISSUE_TEMPLATE.md`
+
+Validation rules:
+
+- Draft release notes must remain draft-only unless a human explicitly approves
+  a tag.
+- Manuscript wording may cite C38 and Milestone 9 only as negative
+  architecture evidence.
+- The branch must pass release, task-registry, manuscript, and
+  reader-manuscript checks.
+- No `data/` paths or Parquet files may be staged.

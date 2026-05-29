@@ -2,6 +2,8 @@
 
 The public release anchor remains `benchmark-v0.1-rc2`. Current `main` contains
 additional post-rc2 maintenance and Milestone 9 evidence.
+Use `docs/POST_M9_REVIEW_CHECKLIST.md` for the reviewer-facing validation path
+over this current-main state.
 
 ## Added After rc2
 
@@ -9,6 +11,8 @@ additional post-rc2 maintenance and Milestone 9 evidence.
   branch closure.
 - Milestone 9 pre-CBAT neural sequence architecture gate.
 - 2026-05-29 repository cleanup and documentation navigation.
+- Post-Milestone-9 review checklist, draft v0.2-rc1 release notes, and
+  manuscript/package preflight material.
 
 ## Current Scientific Posture
 

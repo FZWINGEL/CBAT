@@ -82,6 +82,14 @@ Reviewer caveat: sequence readiness and detector-knee prediction remain
 blocked. The 80% threshold label is the stronger candidate threshold-event
 target.
 
+Post-rc2 sequence evidence is tracked separately by:
+
+- `docs/experiments/2026-05-28_neural_sequence_architecture_gate.md`
+- `reports/baselines/neural_sequence_gate/neural_sequence_claim_readiness.md`
+
+Reviewer caveat: the Milestone 9 CUDA CNN/TCN/CNN-LSTM gate is negative. It
+does not justify neural sequence readiness or CBAT prototype readiness.
+
 ## S7. Threshold-Event Warning
 
 Threshold-warning diagnostics are documented by:
@@ -101,11 +109,15 @@ Release artifacts include:
 
 - `docs/BENCHMARK_V0_1_RC2_SUMMARY.md`
 - `docs/RELEASE_NOTES_v0.1-rc2.md`
+- `docs/POST_RC2_MAIN_STATUS.md`
+- `docs/POST_M9_REVIEW_CHECKLIST.md`
 - `reports/synthesis/release_candidate_check.md`
 - `reports/synthesis/benchmark_v0_1_rc2_handoff_check.md`
+- `reports/synthesis/benchmark_task_registry_check_v2.md`
 
 Reviewer caveat: the rc2 source archive is the reviewer-facing handoff package.
-It does not include raw data or generated Parquets.
+Latest `main` adds post-rc2 maintenance and negative Milestone 9 evidence. It
+does not include raw data or generated Parquets.
 
 ## S9. Reviewer-Risk Crosswalk
 
