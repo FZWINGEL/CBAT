@@ -1978,7 +1978,7 @@ Implemented synthesis artifacts:
 
 - Claim ledger: `docs/PAPER_CLAIM_LEDGER.md`
 - Figure/table plan: `docs/PAPER_FIGURE_PLAN.md`
-- Paper skeleton: `docs/PAPER_SKELETON.md`
+- Paper skeleton: `docs/archive/PAPER_SKELETON.md`
 - Experiment synthesis:
   `docs/experiments/2026-05-23_evidence_synthesis.md`
 - Claim matrix: `reports/synthesis/claim_matrix.csv`
@@ -2010,7 +2010,7 @@ broad multimodal claims.
 
 Implemented paper-QA artifacts:
 
-- Manuscript package plan: `docs/MANUSCRIPT_PACKAGE_PLAN.md`
+- Manuscript package plan: `docs/archive/MANUSCRIPT_PACKAGE_PLAN.md`
 - Source artifact checklist:
   `reports/synthesis/source_artifact_checklist.md`
 - Reviewer-risk register:

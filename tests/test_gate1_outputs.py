@@ -64,7 +64,7 @@ def test_required_repo_skeleton_files_exist() -> None:
         "docs/KNOWN_DATA_ISSUES.md",
         "docs/SCHEMA_REGISTRY.md",
         "docs/VALIDATION_PROTOCOL.md",
-        "docs/PAPER_SKELETON.md",
+        "docs/archive/PAPER_SKELETON.md",
         "data/README.md",
         "scripts/audit_dataset.py",
         "scripts/make_manifest.py",

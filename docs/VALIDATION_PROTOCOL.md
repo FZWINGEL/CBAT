@@ -330,7 +330,7 @@ Required Milestone 3.2 release-candidate validation artifacts:
 
 Required Milestone 3.3 release-polish artifacts:
 
-- `docs/BENCHMARK_V0_1_RC1_SUMMARY.md`
+- `docs/archive/BENCHMARK_V0_1_RC1_SUMMARY.md`
 - `docs/BENCHMARK_V0_1_RC2_SUMMARY.md`
 - `reports/synthesis/benchmark_v0_1_rc1_handoff_check.md`
 - `reports/synthesis/benchmark_v0_1_rc2_handoff_check.md`
@@ -359,7 +359,7 @@ Required Milestone 5.2 calibration/quantile hygiene artifacts:
 - refreshed `reports/baselines/capacity_hgb50_focused_report.json`
 - refreshed `reports/analysis/calibration_capacity/calibration_claim_readiness.md`
 - `docs/experiments/2026-05-24_calibration_quantile_hygiene.md`
-- `docs/GITHUB_RELEASE_DRAFT_v0.1-rc1.md`
+- `docs/archive/GITHUB_RELEASE_DRAFT_v0.1-rc1.md`
 - `docs/GITHUB_RELEASE_DRAFT_v0.1-rc2.md`
 - optional `docs/FUTURE_BRANCHES.md`
 
@@ -581,7 +581,7 @@ Required Milestone 1.0 synthesis artifacts:
 - `docs/experiments/2026-05-23_evidence_synthesis.md`
 - `docs/PAPER_CLAIM_LEDGER.md`
 - `docs/PAPER_FIGURE_PLAN.md`
-- `docs/PAPER_SKELETON.md`
+- `docs/archive/PAPER_SKELETON.md`
 - `reports/synthesis/claim_matrix.csv`
 - `reports/synthesis/evidence_matrix.md`
 - `reports/synthesis/model_ladder_summary.csv`
@@ -590,7 +590,7 @@ Required Milestone 1.0 synthesis artifacts:
 
 Required Milestone 1.0.1 paper-QA artifacts:
 
-- `docs/MANUSCRIPT_PACKAGE_PLAN.md`
+- `docs/archive/MANUSCRIPT_PACKAGE_PLAN.md`
 - `reports/synthesis/source_artifact_checklist.md`
 - `reports/synthesis/reviewer_risk_register.md`
 

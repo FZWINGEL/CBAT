@@ -799,7 +799,7 @@ Maintain these artifacts throughout the project:
 10. `DECISION_LOG.md`
 11. `KNOWN_DATA_ISSUES.md`
 12. `QA_DASHBOARD/`
-13. `PAPER_SKELETON.md`
+13. `archive/PAPER_SKELETON.md`
 14. `REPRODUCTION_README.md`
 
 A practical workspace should include a shared repository, a project board for gates/tasks, and a lightweight visual map of data products, splits, and claim dependencies. The workspace may use any tooling, but it must maintain one source of truth for schemas, split definitions, experiment IDs, and evaluation cards.
