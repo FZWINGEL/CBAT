@@ -28,6 +28,7 @@ Status: `passed`
 - build-capacity-horizon-table
 - build-capacity-horizon-trajectory-features
 - build-diagnostic-horizon-table
+- build-event-sequence-tensors
 - build-event-sequences
 - build-features
 - build-knee-risk-labels
@@ -64,6 +65,7 @@ Status: `passed`
 - diagnose-capacity-horizon
 - diagnose-capacity-horizon-trajectory
 - diagnose-diagnostic-horizon
+- diagnose-neural-sequence
 - diagnose-policy-ranking-feasibility
 - diagnose-reconstruction-failure
 - diagnose-sequence-value
@@ -80,6 +82,7 @@ Status: `passed`
 - eis-hardening-sensitivity
 - evaluate-observed-policy-contrasts
 - evaluate-policy-ranking-feasibility
+- event-sequence-tensor-qa
 - event-sequences-qa
 - evidence-memo
 - feature-qa
@@ -117,6 +120,7 @@ Status: `passed`
 - run-events-qa
 - run-hierarchical-capacity
 - run-minimal-sequence-reopening
+- run-neural-sequence
 - run-pipeline
 - run-pulse
 - run-semi-empirical
