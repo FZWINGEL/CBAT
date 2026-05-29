@@ -3,12 +3,18 @@
 This is the shortest route through the current benchmark and manuscript
 package for an external reviewer or collaborator.
 
+`benchmark-v0.1-rc2` remains the stable external-review anchor. Current `main`
+also contains post-rc2 maintenance and the completed negative Milestone 9
+neural sequence architecture gate; see `docs/POST_RC2_MAIN_STATUS.md` for that
+addendum.
+
 ## Start Here
 
 | Need | File |
 |---|---|
 | Release summary | `docs/BENCHMARK_V0_1_RC2_SUMMARY.md` |
 | Release notes | `docs/RELEASE_NOTES_v0.1-rc2.md` |
+| Post-rc2 main status | `docs/POST_RC2_MAIN_STATUS.md` |
 | Claim boundaries | `docs/MAIN_PROJECT_CLAIM_LEDGER_V2.md` |
 | Gate status | `reports/synthesis/main_project_gate_status.md` |
 | Manuscript | `manuscript/manuscript_v0_7.md` |
@@ -44,6 +50,8 @@ Current supported wording:
 - C-rate as the hardest capacity generalization view;
 - diagnostic 80% capacity-relative threshold-event forecasting beyond
   proximity baselines.
+- negative Milestone 9 neural sequence architecture gate evidence that keeps
+  neural sequence and CBAT readiness blocked.
 
 Current closed wording:
 

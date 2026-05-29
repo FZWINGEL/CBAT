@@ -1548,6 +1548,16 @@ Required artifacts:
 - `reports/synthesis/benchmark_model_cards_v1.md`
 - `docs/experiments/2026-05-27_benchmark_task_freeze.md`
 
+Post-Milestone 9 release maintenance adds a v2 registry without rewriting the
+historical v1 freeze:
+
+- `configs/benchmark_tasks_v2.yaml`
+- `reports/synthesis/benchmark_task_registry_check_v2.md`
+- `reports/synthesis/benchmark_leaderboard_v2.csv`
+- `reports/synthesis/benchmark_task_cards_v2.md`
+- `reports/synthesis/benchmark_model_cards_v2.md`
+- `docs/experiments/2026-05-29_benchmark_task_registry_v2_post_m9.md`
+
 Validation rules:
 
 - Every frozen task must identify a primary claim ID, status, source artifact,
@@ -2219,12 +2229,14 @@ Validation rules:
 
 ## Milestone 9 Neural Sequence Architecture Gate Before CBAT
 
-Milestone 9 authorizes only a narrow pre-CBAT neural sequence architecture
-gate. It tests whether stronger fixed-length LOG_AGE run-event sequence
-baselines can recover temporal-order value that the Milestone 7.1 minimal
-sequence check did not find. This is not a full CBAT milestone and does not
-authorize policy ranking, causal claims, calibrated risk, same-cell
-counterfactuals, or broad multimodal architecture wording.
+Milestone 9 authorizes only a pre-CBAT neural sequence architecture
+falsification gate over existing interval/run-event products. It may build v2
+fixed-length event-sequence tensors, run tensor QA, run CUDA-only
+CNN/TCN/CNN-LSTM sequence baselines, compare true-order versus shuffled-order
+controls, and compare against aggregate-event HGB and timestamp-stress HGB
+references. It does not authorize CBAT, transformers, policy ranking,
+calibrated-risk claims, causal claims, or broad multimodal architecture
+wording unless all predeclared controls pass.
 
 Required commands:
 
@@ -2259,17 +2271,17 @@ mbp baseline run-neural-sequence \
 
 Required artifacts:
 
-- `data/interim/interval_event_sequence_tensor_v2.parquet` (ignored generated data)
+- `docs/experiments/2026-05-28_neural_sequence_architecture_gate.md`
 - `reports/audit/event_sequence_tensor_v2_qa_report.json`
 - `reports/baselines/neural_sequence_gate_report.json`
-- `data/processed/neural_sequence_gate_predictions.parquet` (ignored generated data)
 - `reports/baselines/neural_sequence_gate/leaderboard.csv`
 - `reports/baselines/neural_sequence_gate/neural_sequence_diagnostics.md`
 - `reports/baselines/neural_sequence_gate/neural_sequence_claim_readiness.md`
 - `reports/baselines/neural_sequence_gate/neural_sequence_leakage_audit.md`
 - `reports/baselines/neural_sequence_gate/plots/*.csv`
 - `reports/baselines/neural_sequence_gate/figures/*.svg`
-- `docs/experiments/2026-05-28_neural_sequence_architecture_gate.md`
+- `data/interim/interval_event_sequence_tensor_v2.parquet` (ignored generated data)
+- `data/processed/neural_sequence_gate_predictions.parquet` (ignored generated data)
 
 Validation rules:
 

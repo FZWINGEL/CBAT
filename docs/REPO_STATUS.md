@@ -1,6 +1,6 @@
 # Repository Status
 
-Last updated: 2026-05-28
+Last updated: 2026-05-29
 
 Current branch: `main`
 
@@ -11,7 +11,11 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 9: neural sequence architecture gate before CBAT**.
+The repository is in **Post-Milestone 9 release maintenance after the negative
+neural sequence architecture gate**.
+The 2026-05-29 cleanup pass archived superseded planning/RC1 docs and added
+navigation indexes without changing the scientific record; the current
+scientific posture remains the negative Milestone 9 neural-sequence/CBAT gate.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -209,6 +213,10 @@ Milestone 7.0 freezes the completed evidence base into
 `mbp report check-benchmark-tasks`, and renders the task-level leaderboard,
 task cards, and model-family cards from existing tracked reports only. It adds
 no new models, feature engineering, or scientific claims.
+Post-Milestone-9 release maintenance preserves that historical v1 freeze and
+adds `configs/benchmark_tasks_v2.yaml` with T20 for the negative neural
+sequence architecture gate, plus v2 task-registry check, leaderboard, task
+cards, and model-family cards.
 Milestone 7.1 reopens the sequence question only as a charter H7 falsification
 check: a fixed-length LOG_AGE run-event sequence product is compared against
 deterministic shuffled-order controls, aggregate-event HGB, and

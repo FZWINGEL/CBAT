@@ -96,3 +96,4 @@ Repository-cleanup policy is documented in
 ## 2026-05-29
 
 - [Repository Cleanup](2026-05-29_repo_cleanup.md)
+- [Post-Milestone-9 Benchmark Task Registry v2 Alignment](2026-05-29_benchmark_task_registry_v2_post_m9.md)
