@@ -11,17 +11,24 @@ should not be broadened without a fresh gated question.
 
 ## Current Phase
 
-Milestone 8.5 is a report-only C-rate repair feasibility finalization gate. It
-synthesizes the Milestone 8.4 C-rate support/root-cause diagnostics with the
-existing adaptive stressor-robust replication and targeted arm-router reports.
-It is not a new model-training, feature-engineering, policy-recommendation,
-causal, same-cell counterfactual, CBAT, transformer, architecture,
-sequence/neural, deployment, or calibration-claim branch.
+Post-Milestone 9 release maintenance and synthesis alignment.
+
+Milestone 9 completed a pre-CBAT neural sequence architecture gate. The v2
+fixed-length event tensor product passed QA and CUDA CNN/TCN/CNN-LSTM rows ran,
+but true-order sequence candidates did not beat shuffled-order, aggregate-event
+HGB, timestamp-stress HGB, or C-rate `delta_capacity_Ah` controls. Neural
+sequence next-gate readiness and CBAT prototype readiness remain blocked.
 
 ## Current Result
 
 The task freeze organizes benchmark tasks and verifies that their statuses
 match the v2 claim matrix.
+Milestone 9 adds a stronger negative neural-sequence/CBAT gate: v2 tensor QA
+passes over all 3,827 intervals and CUDA neural rows execute, but true sequence
+does not beat aggregate-event HGB, timestamp-stress HGB, or C-rate
+`delta_capacity_Ah` controls. The correct next work is release maintenance,
+task-registry alignment, documentation synthesis, and manuscript/package
+handoff, not another modeling sprint.
 Threshold-warning
 probability calibration still blocks calibrated-risk wording: Platt
 verified-only primary-horizon mean fixed-width ECE is `0.0748136` and
@@ -125,7 +132,8 @@ opened, should be release automation, task-registry maintenance, documentation
 synthesis, or a separately predeclared support-bounded diagnostic objective.
 Do not treat Milestone 8.0 support filtering as deployment reliability or
 policy safety. Do not open CBAT, policy recommendations, transformers, broad sequence
-modeling, or new modality expansion from the Milestone 5.6-8.0 results.
+modeling, neural sequence expansion, or new modality expansion from the current
+post-Milestone-9 evidence base.
 
 ## Blocked Branches
 
@@ -192,6 +200,12 @@ Allowed current wording:
   posture without adding new results
 - fixed-length event-sequence and CUDA Torch MLP diagnostics do not reopen
   sequence/neural modeling
+- v2 event-sequence tensor QA and CUDA CNN/TCN/CNN-LSTM execution are
+  diagnostic successes
+- the stronger Milestone 9 neural sequence architecture gate is negative
+- neural sequence and CBAT readiness remain blocked
+- release maintenance, task-registry alignment, documentation synthesis, and
+  manuscript/package handoff work are authorized
 - observed matched policy contrasts support degradation-order diagnostics only
 - K3 horizon exposure is oracle diagnostic only
 
@@ -199,7 +213,8 @@ Forbidden current wording:
 
 - CBAT-ready
 - sequence model justified
-- neural model justified
+- neural sequence architecture justified
+- transformers justified
 - policy recommendation
 - calibrated risk
 - detector-knee prediction

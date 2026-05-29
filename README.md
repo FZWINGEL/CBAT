@@ -12,6 +12,11 @@ processed prediction Parquets.
 
 ## Current Package
 
+Current `main` also includes post-rc2 maintenance and the completed negative
+Milestone 9 neural sequence architecture gate. See
+`docs/POST_RC2_MAIN_STATUS.md` for the distinction between the published rc2
+prerelease and the latest main branch.
+
 - Release: `benchmark-v0.1-rc2`
 - Release notes: `docs/RELEASE_NOTES_v0.1-rc2.md`
 - Public review entry point: `docs/PUBLIC_REVIEW_ENTRYPOINT.md`
@@ -30,13 +35,14 @@ processed prediction Parquets.
 - RT/50 EIS scalar endpoints as diagnostic targets;
 - diagnostic 80% capacity-relative threshold-event forecasting beyond
   proximity baselines and under verified-only censoring sensitivity;
-- negative fixed-length event-sequence and CUDA Torch MLP diagnostics showing
-  that sequence/neural reopening is not currently justified.
+- negative fixed-length event-sequence, CUDA Torch MLP, and Milestone 9 CUDA
+  CNN/TCN/CNN-LSTM diagnostics showing that sequence/neural reopening is not
+  currently justified.
 
 ## What Remains Closed
 
 - CBAT architecture work;
-- neural or sequence models beyond the completed minimal diagnostic;
+- neural or sequence models beyond the completed diagnostic gates;
 - DRT or learned EIS embeddings;
 - policy ranking;
 - detector-knee prediction;

@@ -198,8 +198,10 @@ The current synthesis artifacts are tracked under `docs/` and
 ```bash
 mbp report check-release-candidate
 mbp report check-benchmark-tasks --task-registry configs/benchmark_tasks_v1.yaml --out reports/synthesis/benchmark_task_registry_check.md --leaderboard-out reports/synthesis/benchmark_leaderboard_v1.csv --task-cards-out reports/synthesis/benchmark_task_cards_v1.md --model-cards-out reports/synthesis/benchmark_model_cards_v1.md
+mbp report check-benchmark-tasks --task-registry configs/benchmark_tasks_v2.yaml --out reports/synthesis/benchmark_task_registry_check_v2.md --leaderboard-out reports/synthesis/benchmark_leaderboard_v2.csv --task-cards-out reports/synthesis/benchmark_task_cards_v2.md --model-cards-out reports/synthesis/benchmark_model_cards_v2.md
 ```
 
 Outputs: tracked release/task consistency checks and frozen task-level
-benchmark synthesis artifacts. These commands do not train models or generate
-data products.
+benchmark synthesis artifacts. The v1 task registry preserves the original
+freeze, while v2 adds the post-Milestone-9 neural sequence architecture gate.
+These commands do not train models or generate data products.

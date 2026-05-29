@@ -213,8 +213,9 @@ def write_benchmark_leaderboard(rows: list[dict[str, str]], out: Path) -> None:
 
 def write_benchmark_task_cards(registry: dict[str, Any], out: Path) -> None:
     """Write Markdown task cards from the benchmark registry."""
+    benchmark_label = _benchmark_label(registry, out)
     lines = [
-        "# Benchmark Task Cards v1",
+        f"# Benchmark Task Cards - {benchmark_label}",
         "",
         f"Benchmark version: `{registry.get('benchmark_version', '')}`",
         "",
@@ -253,8 +254,11 @@ def write_benchmark_model_cards(registry: dict[str, Any], out: Path) -> None:
         for family in _as_list(task.get("baseline_families", [])):
             family_to_tasks.setdefault(family, []).append(task)
 
+    benchmark_label = _benchmark_label(registry, out)
     lines = [
-        "# Benchmark Model Cards v1",
+        f"# Benchmark Model Cards - {benchmark_label}",
+        "",
+        f"Benchmark version: `{registry.get('benchmark_version', '')}`",
         "",
         "These cards summarize model families already evaluated in the frozen benchmark. "
         "They are not new model claims.",
@@ -313,6 +317,16 @@ def _load_registry_for_check(path: Path, errors: list[str]) -> dict[str, Any]:
     except Exception as exc:  # pragma: no cover - exact parser error text is unimportant.
         errors.append(f"Could not load benchmark task registry {path}: {exc}")
         return {"tasks": []}
+
+
+def _benchmark_label(registry: dict[str, Any], out: Path) -> str:
+    version = str(registry.get("benchmark_version", "")).strip()
+    if version:
+        return version
+    match = re.search(r"benchmark_(?:task|model)_cards_(v\d+)", out.name)
+    if match:
+        return match.group(1)
+    return "unversioned"
 
 
 def _parse_simple_registry_yaml(text: str) -> dict[str, Any]:

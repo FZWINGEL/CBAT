@@ -640,6 +640,11 @@ def report_check_release_candidate(
         "--command-dag",
         help="Benchmark command DAG markdown file.",
     ),
+    repo_root: Path = typer.Option(
+        Path("."),
+        "--repo-root",
+        help="Repository root for required release files.",
+    ),
     out: Path = typer.Option(
         Path("reports/synthesis/release_candidate_check.md"),
         "--out",
@@ -657,6 +662,7 @@ def report_check_release_candidate(
         agents=agents,
         runbook=runbook,
         command_dag=command_dag,
+        repo_root=repo_root,
     )
     write_release_candidate_check(result, out)
     typer.echo(f"Release candidate check {result['status']}: {out}")

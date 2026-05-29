@@ -55,11 +55,15 @@ def _minimal_release_fixture(root: Path) -> dict[str, Path]:
         "BENCHMARK_ARTIFACTS.md",
         "BENCHMARK_RELEASE_CHECKLIST.md",
         "COMMAND_DAG.md",
-        "CODEX_NEXT_WORK.md",
         "RELEASE_NOTES_v0.1-rc1.md",
         "TAGGING_RELEASE_CANDIDATE.md",
     ]:
         _write(docs / relative, "mbp audit\nmbp ingest\nmbp split\nmbp features\nmbp pulse\nmbp eis\nmbp baseline\nmbp analysis\n")
+    _write(
+        docs / "CODEX_NEXT_WORK.md",
+        "# Codex Next Work\n\n## Current Phase\n\nMilestone 3.2: Benchmark release candidate v0.1 validation.\n\n"
+        "mbp audit\nmbp ingest\nmbp split\nmbp features\nmbp pulse\nmbp eis\nmbp baseline\nmbp analysis\n",
+    )
     _write(
         reports / "reproducibility_gate_status.md",
         "# Reproducibility Gate\n",
@@ -157,6 +161,17 @@ def test_release_checker_fails_phase_mismatch(tmp_path: Path) -> None:
     assert any("Phase mismatch" in error for error in result["errors"])
 
 
+def test_release_checker_fails_codex_phase_mismatch(tmp_path: Path) -> None:
+    paths = _minimal_release_fixture(tmp_path)
+    _write(paths["repo_status"], "# Repository Status\n\nMilestone 3.1: old phase.\n")
+    _write(paths["agents"], "# AGENTS\n\n## Current Phase\n\nMilestone 3.1: old phase.\n")
+
+    result = check_release_candidate(repo_root=tmp_path, **paths)
+
+    assert result["status"] == "failed"
+    assert any("CODEX_NEXT_WORK.md has Milestone 3.2" in error for error in result["errors"])
+
+
 def test_release_checker_fails_ignored_artifact_outside_allowed_locations(tmp_path: Path) -> None:
     paths = _minimal_release_fixture(tmp_path)
     _write(
@@ -195,6 +210,25 @@ def test_release_checker_fails_matrix_id_missing_from_ledger(tmp_path: Path) -> 
     assert any("absent from ledger: C99" in error for error in result["errors"])
 
 
+def test_release_checker_fails_ledger_id_missing_from_matrix(tmp_path: Path) -> None:
+    paths = _minimal_release_fixture(tmp_path)
+    _write(
+        paths["claim_matrix"],
+        "\n".join(
+            [
+                "claim_id,area,claim,status,primary_metric,source_artifact,allowed_wording,forbidden_wording,next_action",
+                "C01,Validation,Grouped validation is required,supported,n/a,docs/VALIDATION_PROTOCOL.md,Grouped validation required,Random splits publishable,Keep",
+            ]
+        )
+        + "\n",
+    )
+
+    result = check_release_candidate(repo_root=tmp_path, **paths)
+
+    assert result["status"] == "failed"
+    assert any("Ledger claim IDs missing from claim matrix: C11" in error for error in result["errors"])
+
+
 def test_release_checker_cli_writes_report(tmp_path: Path) -> None:
     paths = _minimal_release_fixture(tmp_path)
     out = tmp_path / "reports" / "synthesis" / "release_candidate_check.md"
@@ -219,6 +253,8 @@ def test_release_checker_cli_writes_report(tmp_path: Path) -> None:
             str(paths["runbook"]),
             "--command-dag",
             str(paths["command_dag"]),
+            "--repo-root",
+            str(tmp_path),
             "--out",
             str(out),
         ],

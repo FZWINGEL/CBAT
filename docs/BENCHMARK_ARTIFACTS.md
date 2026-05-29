@@ -13,7 +13,8 @@ Tracked reports include:
 - synthesis reports under `reports/synthesis/`
 - experiment memos under `docs/experiments/`
 - claim ledgers and policy documents under `docs/`
-- benchmark task registry config under `configs/benchmark_tasks_v1.yaml`
+- benchmark task registry configs under `configs/benchmark_tasks_v1.yaml` and
+  `configs/benchmark_tasks_v2.yaml`
 
 Tracked reports should be small enough for review and should preserve
 provenance, source paths, row counts, metrics, and claim-readiness decisions.
@@ -28,6 +29,19 @@ Milestone 7.0 adds a frozen task-level benchmark interface:
 
 These artifacts summarize existing evidence only; they do not train models or
 change claim status.
+
+Post-Milestone 9 release maintenance adds the current v2 task registry:
+
+- `configs/benchmark_tasks_v2.yaml`
+- `reports/synthesis/benchmark_task_registry_check_v2.md`
+- `reports/synthesis/benchmark_leaderboard_v2.csv`
+- `reports/synthesis/benchmark_task_cards_v2.md`
+- `reports/synthesis/benchmark_model_cards_v2.md`
+- `docs/experiments/2026-05-29_benchmark_task_registry_v2_post_m9.md`
+
+The v2 registry preserves the v1 freeze and adds
+`T20_neural_sequence_architecture_gate` for the negative Milestone 9
+pre-CBAT architecture gate.
 
 Milestone 7.1 adds tracked sequence reopening evidence:
 
