@@ -28,7 +28,7 @@ the package.
 | `manuscript/cover_letter_draft_v0_8.md` | Reusable cover-letter draft. |
 | `manuscript/data_code_availability_v0_8.md` | Data and code availability wording. |
 | `manuscript/figure_table_inventory_v0_8.md` | Figure/table inventory and source mapping. |
-| `manuscript/submission_checklist_v0_8.md` | Final handoff checklist before venue formatting. |
+| `manuscript/submission_checklist_v0_8.md` | Venue-format handoff checklist after the post-M9 validation path. |
 | `docs/BENCHMARK_MANUSCRIPT_HANDOFF.md` | External handoff guide for the benchmark and manuscript. |
 
 ## Claim Boundary
@@ -64,7 +64,10 @@ It keeps the following closed:
 6. Review `reports/synthesis/reviewer_risk_register_v2.md`.
 7. Select a title/abstract option from `manuscript/title_abstract_options_v0_8.md`.
 8. Adapt `manuscript/cover_letter_draft_v0_8.md` to the target venue.
-9. Run the validation commands listed in `manuscript/submission_checklist_v0_8.md`.
+9. Run the canonical post-M9 validation commands in
+   `docs/POST_M9_REVIEW_CHECKLIST.md`, including the v2 task-registry check.
+10. Use `manuscript/submission_checklist_v0_8.md` only for final venue-format
+    handoff items after validation.
 
 ## Package Status
 
