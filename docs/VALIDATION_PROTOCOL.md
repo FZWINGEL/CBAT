@@ -2327,3 +2327,28 @@ Validation rules:
 - The branch must pass release, task-registry, manuscript, and
   reader-manuscript checks.
 - No `data/` paths or Parquet files may be staged.
+
+## Milestone 11 Benchmark v0.2-rc1 Release Finalization
+
+Milestone 11 authorizes finalizing `benchmark-v0.2-rc1` as a GitHub prerelease
+after human approval. It may create final release notes, update public release
+anchors, update manuscript handoff anchors, validate the canonical post-M9
+check path, tag `benchmark-v0.2-rc1`, and publish a GitHub prerelease. It does
+not authorize new model training, new feature engineering, generated data
+products, CBAT, transformers, policy ranking, calibrated-risk claims,
+calibrated-uncertainty claims, causal claims, DRT features, learned EIS
+embeddings, or broad multimodal architecture wording.
+
+Required artifacts:
+
+- `docs/RELEASE_NOTES_v0.2-rc1.md`
+- `docs/GITHUB_RELEASE_DRAFT_v0.2-rc1.md`
+- `docs/experiments/2026-05-29_benchmark_v0_2_rc1_finalization.md`
+
+Validation rules:
+
+- Release wording must preserve Milestone 9 as a negative architecture gate.
+- `benchmark-v0.1-rc2` must remain described as the previous handoff archive.
+- The branch must pass release, v2 task-registry, manuscript, and
+  reader-manuscript checks.
+- No `data/` paths or Parquet files may be staged.

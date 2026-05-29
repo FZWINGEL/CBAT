@@ -4,21 +4,23 @@ Reproducible grouped-validation benchmark for battery degradation prediction
 from capacity check-ups, LOG_AGE operating-history products, scalar PULSE
 resistance diagnostics, and gated EIS scalar diagnostics.
 
-The current public release anchor is `benchmark-v0.1-rc2`, a reviewer-facing
-release candidate for the benchmark and manuscript handoff package. It includes
-tracked code, reports, release checks, claim-ledger artifacts, and manuscript
-traceability. It does not include raw data, generated interim Parquets, or
-processed prediction Parquets.
+The current public release anchor is `benchmark-v0.2-rc1`, a post-Milestone-9
+reviewer checkpoint. It includes the rc2 benchmark/manuscript handoff package,
+post-rc2 synthesis alignment, C38, benchmark task registry v2, and the negative
+Milestone 9 neural-sequence architecture gate. It does not include raw data,
+generated interim Parquets, split Parquets, or processed prediction Parquets.
+
+`benchmark-v0.1-rc2` remains the earlier reviewer-facing handoff archive before
+Milestone 8.8/Milestone 9 alignment.
 
 ## Current Package
 
-Current `main` also includes post-rc2 maintenance and the completed negative
-Milestone 9 neural sequence architecture gate. See
-`docs/POST_RC2_MAIN_STATUS.md` for the distinction between the published rc2
-prerelease and the latest main branch.
+Current `main` is packaged by `benchmark-v0.2-rc1` as a GitHub prerelease. See
+`docs/POST_RC2_MAIN_STATUS.md` for the distinction between the earlier rc2
+handoff archive and the post-Milestone-9 reviewer checkpoint.
 
-- Release: `benchmark-v0.1-rc2`
-- Release notes: `docs/RELEASE_NOTES_v0.1-rc2.md`
+- Release: `benchmark-v0.2-rc1`
+- Release notes: `docs/RELEASE_NOTES_v0.2-rc1.md`
 - Public review entry point: `docs/PUBLIC_REVIEW_ENTRYPOINT.md`
 - Benchmark handoff: `docs/BENCHMARK_MANUSCRIPT_HANDOFF.md`
 - Manuscript handoff bundle: `manuscript/submission_bundle_v0_8.md`

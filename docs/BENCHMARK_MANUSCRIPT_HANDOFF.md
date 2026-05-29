@@ -6,8 +6,8 @@ development history.
 
 ## Current Package
 
-- Benchmark release: `benchmark-v0.1-rc2`
-- Release URL: `https://github.com/FZWINGEL/CBAT/releases/tag/benchmark-v0.1-rc2`
+- Benchmark release: `benchmark-v0.2-rc1`
+- Release URL: `https://github.com/FZWINGEL/CBAT/releases/tag/benchmark-v0.2-rc1`
 - Main manuscript: `manuscript/manuscript_v0_7.md`
 - Supplement: `manuscript/supplement_v0_7.md`
 - Submission bundle: `manuscript/submission_bundle_v0_8.md`
@@ -33,7 +33,7 @@ The current package is not:
 
 ## Fast Review Order
 
-1. `docs/BENCHMARK_V0_1_RC2_SUMMARY.md`
+1. `docs/RELEASE_NOTES_v0.2-rc1.md`
 2. `docs/MAIN_PROJECT_CLAIM_LEDGER_V2.md`
 3. `reports/synthesis/main_project_gate_status.md`
 4. `manuscript/manuscript_v0_7.md`

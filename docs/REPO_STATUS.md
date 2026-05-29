@@ -11,15 +11,15 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 10: post-M9 external-review and submission
-preflight**.
+The repository is in **Milestone 11: benchmark v0.2-rc1 release finalization
+and manuscript anchor freeze**.
 The 2026-05-29 cleanup pass archived superseded planning/RC1 docs and added
 navigation indexes without changing the scientific record; the current
 scientific posture remains the negative Milestone 9 neural-sequence/CBAT gate.
-Milestone 10 is documentation, release-draft, manuscript-alignment,
-reviewer-packaging, and reproducibility-smoke-test planning only; it adds no
-new science, model training, generated data products, or positive architecture
-claims.
+Milestone 11 finalizes the post-Milestone-9 reviewer checkpoint as
+`benchmark-v0.2-rc1`, updates public release anchors, and freezes the manuscript
+handoff against that code/release checkpoint. It adds no new science, model
+training, generated data products, or positive architecture claims.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are

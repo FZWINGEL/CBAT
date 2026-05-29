@@ -9,9 +9,9 @@ the package.
 
 | Item | Path or tag | Purpose |
 |---|---|---|
-| Benchmark release tag | `benchmark-v0.1-rc2` | Reviewer-facing source archive with release-polish docs. |
-| Release notes | `docs/RELEASE_NOTES_v0.1-rc2.md` | External release description and limitations. |
-| Post-rc2 main status | `docs/POST_RC2_MAIN_STATUS.md` | Distinguishes rc2 from latest main. |
+| Benchmark release tag | `benchmark-v0.2-rc1` | Post-Milestone-9 reviewer checkpoint. |
+| Release notes | `docs/RELEASE_NOTES_v0.2-rc1.md` | External release description and limitations. |
+| Post-rc2 main status | `docs/POST_RC2_MAIN_STATUS.md` | Distinguishes rc2 from v0.2-rc1. |
 | Post-M9 review checklist | `docs/POST_M9_REVIEW_CHECKLIST.md` | Reviewer-facing preflight path. |
 | Main manuscript | `manuscript/manuscript_v0_7.md` | Current venue-neutral manuscript draft. |
 | Supplement | `manuscript/supplement_v0_7.md` | Current venue-neutral supplementary package. |
@@ -56,7 +56,7 @@ It keeps the following closed:
 
 ## Recommended Handoff Flow
 
-1. Read `docs/BENCHMARK_V0_1_RC2_SUMMARY.md`.
+1. Read `docs/RELEASE_NOTES_v0.2-rc1.md`.
 2. Read `docs/POST_RC2_MAIN_STATUS.md`.
 3. Read `docs/POST_M9_REVIEW_CHECKLIST.md`.
 4. Read `manuscript/manuscript_v0_7.md`.

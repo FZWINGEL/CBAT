@@ -28,8 +28,8 @@ claims.
   and 38 ignored artifacts.
 - The current v2 benchmark task-registry check covers 20 tasks, 38 claim-matrix
   rows, and 282 artifact-manifest rows with no warnings or errors.
-- `docs/POST_RC2_MAIN_STATUS.md` distinguishes the published
-  `benchmark-v0.1-rc2` anchor from latest `main`.
+- `docs/POST_RC2_MAIN_STATUS.md` distinguishes the previous
+  `benchmark-v0.1-rc2` anchor from `benchmark-v0.2-rc1`.
 
 ## Checks To Refresh
 
@@ -40,7 +40,7 @@ checks before publishing or tagging.
 
 ## Release Boundary
 
-`docs/RELEASE_NOTES_v0.2-rc1_DRAFT.md` and
-`docs/GITHUB_RELEASE_DRAFT_v0.2-rc1_DRAFT.md` are draft-only. No tag has been
-created, and `benchmark-v0.1-rc2` remains the published release anchor unless a
-human explicitly approves `benchmark-v0.2-rc1`.
+`docs/RELEASE_NOTES_v0.2-rc1.md` and
+`docs/GITHUB_RELEASE_DRAFT_v0.2-rc1.md` finalize the post-Milestone-9
+prerelease package. `benchmark-v0.1-rc2` remains the previous handoff archive;
+`benchmark-v0.2-rc1` is the post-Milestone-9 reviewer checkpoint.

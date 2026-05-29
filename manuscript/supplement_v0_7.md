@@ -6,7 +6,7 @@ or claims.
 
 ## S1. Dataset and Artifact Policy
 
-The benchmark release is anchored by `benchmark-v0.1-rc2`. Full reruns require
+The benchmark release is anchored by `benchmark-v0.2-rc1`. Full reruns require
 local raw data and generated products described in:
 
 - `docs/BENCHMARK_REPRODUCIBILITY.md`

@@ -7,7 +7,7 @@ Status: `passed`
 - Benchmark version: `benchmark-task-freeze-v2-post-m9`
 - Tasks checked: 20
 - Claim matrix rows checked: 38
-- Artifact manifest rows checked: 282
+- Artifact manifest rows checked: 285
 
 ## Errors
 

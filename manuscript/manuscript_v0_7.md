@@ -4,7 +4,7 @@ Working title: A grouped-validation benchmark for battery degradation from
 operating histories and gated diagnostic endpoints.
 
 This venue-neutral draft tightens the v0.6 manuscript for reviewer preflight.
-It uses `benchmark-v0.1-rc2` as the reproducibility anchor and keeps claim
+It uses `benchmark-v0.2-rc1` as the reproducibility anchor and keeps claim
 traceability in `manuscript/manuscript_v0_7_traceability.md`.
 
 ## Abstract
@@ -168,17 +168,19 @@ warning wording. Table 7 summarizes the warning hardening result, and Figure
 ## Release Package and Reproducibility
 
 The release track separates the validation checkpoint from the reviewer-facing
-handoff archive. `benchmark-v0.1-rc1` remains the validation checkpoint at
-commit `ff4c8c2`. `benchmark-v0.1-rc2` is the release-polished handoff archive
-at commit `e499b12` and is published as a GitHub prerelease.
+handoff archives. `benchmark-v0.1-rc1` remains the validation checkpoint at
+commit `ff4c8c2`. `benchmark-v0.1-rc2` is the earlier release-polished handoff
+archive at commit `e499b12`. `benchmark-v0.2-rc1` is the post-Milestone-9
+reviewer checkpoint and is published as a GitHub prerelease.
 
 The release package includes the benchmark reproducibility guide, runbook,
 command DAG, artifact manifest, release checker, release notes, claim ledger,
 and synthesis reports. It excludes raw data and generated Parquets. The v0.7
 manuscript package changes presentation and review readiness, not the
 scientific evidence.
-Latest `main` also includes a post-rc2 status addendum and benchmark task
-registry v2 for the completed negative Milestone 9 neural-sequence gate.
+The post-Milestone-9 checkpoint includes a post-rc2 status addendum and
+benchmark task registry v2 for the completed negative Milestone 9
+neural-sequence gate.
 
 ## Discussion
 

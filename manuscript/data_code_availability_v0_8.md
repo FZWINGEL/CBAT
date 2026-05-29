@@ -5,9 +5,9 @@
 The benchmark source code, tracked reports, release documentation, and
 manuscript traceability artifacts are available in the repository release:
 
-- Tag: `benchmark-v0.1-rc2`
-- Release URL: `https://github.com/FZWINGEL/CBAT/releases/tag/benchmark-v0.1-rc2`
-- Release notes: `docs/RELEASE_NOTES_v0.1-rc2.md`
+- Tag: `benchmark-v0.2-rc1`
+- Release URL: `https://github.com/FZWINGEL/CBAT/releases/tag/benchmark-v0.2-rc1`
+- Release notes: `docs/RELEASE_NOTES_v0.2-rc1.md`
 - Benchmark runbook: `docs/BENCHMARK_RUNBOOK.md`
 - Command DAG: `docs/COMMAND_DAG.md`
 - Artifact manifest: `reports/synthesis/artifact_manifest_v2.csv`
