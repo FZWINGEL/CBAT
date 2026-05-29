@@ -7,11 +7,11 @@ closed before venue-specific submission packaging.
 
 | Item | Status | Evidence |
 |---|---|---|
-| Benchmark release anchor | ready | `benchmark-v0.1-rc2` |
+| Benchmark release anchor | ready | `benchmark-v0.2-rc1` |
 | Post-rc2 status addendum | ready | `docs/POST_RC2_MAIN_STATUS.md` |
 | Post-M9 review checklist | ready | `docs/POST_M9_REVIEW_CHECKLIST.md` |
 | Benchmark task registry v2 | ready | `configs/benchmark_tasks_v2.yaml` |
-| Release notes | ready | `docs/RELEASE_NOTES_v0.1-rc2.md` |
+| Release notes | ready | `docs/RELEASE_NOTES_v0.2-rc1.md` |
 | Public README | ready | `README.md` |
 | Claim ledger | ready | `docs/MAIN_PROJECT_CLAIM_LEDGER_V2.md` |
 | Manuscript draft | ready for human review | `manuscript/manuscript_v0_7.md` |

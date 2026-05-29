@@ -24,7 +24,8 @@ review and preflight sequence.
 
 - Are supported claims stated narrowly enough?
 - Are blocked claims consistently blocked?
-- Is the distinction between `benchmark-v0.1-rc2` and latest `main` clear?
+- Is the distinction between `benchmark-v0.1-rc2` and `benchmark-v0.2-rc1`
+  clear?
 - Does the v2 task registry capture all claim-bearing gates?
 - Are generated data artifacts excluded?
 - Is Milestone 9 represented as a negative architecture gate, not as CBAT

@@ -16,7 +16,8 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 10: post-M9 external-review and submission preflight.
+Milestone 11: benchmark v0.2-rc1 release finalization and manuscript anchor
+freeze.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented

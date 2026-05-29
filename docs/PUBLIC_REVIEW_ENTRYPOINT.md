@@ -3,10 +3,10 @@
 This is the shortest route through the current benchmark and manuscript
 package for an external reviewer or collaborator.
 
-`benchmark-v0.1-rc2` remains the stable external-review anchor. Current `main`
-also contains post-rc2 maintenance and the completed negative Milestone 9
-neural sequence architecture gate; see `docs/POST_RC2_MAIN_STATUS.md` for that
-addendum.
+`benchmark-v0.2-rc1` is the current stable external-review anchor. It packages
+the post-rc2 maintenance, C38, benchmark task registry v2, and the completed
+negative Milestone 9 neural sequence architecture gate. `benchmark-v0.1-rc2`
+remains the earlier handoff archive before Milestone 8.8/Milestone 9 alignment.
 
 For post-Milestone-9 review, `docs/POST_M9_REVIEW_CHECKLIST.md` is the
 canonical validation path. This page remains the short orientation route.
@@ -15,8 +15,8 @@ canonical validation path. This page remains the short orientation route.
 
 | Need | File |
 |---|---|
-| Release summary | `docs/BENCHMARK_V0_1_RC2_SUMMARY.md` |
-| Release notes | `docs/RELEASE_NOTES_v0.1-rc2.md` |
+| Current release notes | `docs/RELEASE_NOTES_v0.2-rc1.md` |
+| Previous rc2 summary | `docs/BENCHMARK_V0_1_RC2_SUMMARY.md` |
 | Post-rc2 main status | `docs/POST_RC2_MAIN_STATUS.md` |
 | Post-M9 review checklist | `docs/POST_M9_REVIEW_CHECKLIST.md` |
 | Claim boundaries | `docs/MAIN_PROJECT_CLAIM_LEDGER_V2.md` |
@@ -71,7 +71,7 @@ Current closed wording:
 ## Recommended Review Order
 
 1. Read `README.md` for project orientation.
-2. Read `docs/BENCHMARK_V0_1_RC2_SUMMARY.md` for release scope.
+2. Read `docs/RELEASE_NOTES_v0.2-rc1.md` for release scope.
 3. Read `docs/POST_M9_REVIEW_CHECKLIST.md` for the post-Milestone-9 review path.
 4. Read `docs/MAIN_PROJECT_CLAIM_LEDGER_V2.md` for allowed wording.
 5. Read `manuscript/manuscript_v0_7.md` for the paper narrative.

@@ -40,12 +40,15 @@ package; see the root [`../README.md`](../README.md) for the project overview.
   [BENCHMARK_ARTIFACTS.md](BENCHMARK_ARTIFACTS.md) ·
   [BENCHMARK_RELEASE_CHECKLIST.md](BENCHMARK_RELEASE_CHECKLIST.md)
 
-## Release (current anchor: `benchmark-v0.1-rc2`)
+## Release (current anchor: `benchmark-v0.2-rc1`)
 
+- [RELEASE_NOTES_v0.2-rc1.md](RELEASE_NOTES_v0.2-rc1.md) ·
+  [GITHUB_RELEASE_DRAFT_v0.2-rc1.md](GITHUB_RELEASE_DRAFT_v0.2-rc1.md) ·
+  [POST_RC2_MAIN_STATUS.md](POST_RC2_MAIN_STATUS.md)
 - [RELEASE_NOTES_v0.1-rc2.md](RELEASE_NOTES_v0.1-rc2.md) ·
   [BENCHMARK_V0_1_RC2_SUMMARY.md](BENCHMARK_V0_1_RC2_SUMMARY.md) ·
   [GITHUB_RELEASE_DRAFT_v0.1-rc2.md](GITHUB_RELEASE_DRAFT_v0.1-rc2.md)
-- [POST_RC2_MAIN_STATUS.md](POST_RC2_MAIN_STATUS.md) ·
+- Draft prep retained for traceability:
   [RELEASE_NOTES_v0.2-rc1_DRAFT.md](RELEASE_NOTES_v0.2-rc1_DRAFT.md) ·
   [GITHUB_RELEASE_DRAFT_v0.2-rc1_DRAFT.md](GITHUB_RELEASE_DRAFT_v0.2-rc1_DRAFT.md)
 - [RELEASE_NOTES_v0.1-rc1.md](RELEASE_NOTES_v0.1-rc1.md) — RC1 validation

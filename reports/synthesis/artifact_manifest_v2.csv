@@ -271,10 +271,13 @@ docs/POST_RC2_MAIN_STATUS.md,release_doc,tracked,manual synthesis,BENCHMARK_V0_1
 docs/POST_M9_REVIEW_CHECKLIST.md,release_doc,tracked,manual review checklist,POST_RC2_MAIN_STATUS.md,,n/a,post-M9 review,external-review validation path
 docs/RELEASE_NOTES_v0.2-rc1_DRAFT.md,release_doc,tracked,manual release draft,POST_RC2_MAIN_STATUS.md,,n/a,post-M9 release draft,draft-only v0.2-rc1 release notes
 docs/GITHUB_RELEASE_DRAFT_v0.2-rc1_DRAFT.md,release_doc,tracked,manual release draft,RELEASE_NOTES_v0.2-rc1_DRAFT.md,,n/a,post-M9 release draft,draft-only GitHub release text
+docs/RELEASE_NOTES_v0.2-rc1.md,release_doc,tracked,manual release finalization,POST_RC2_MAIN_STATUS.md,,n/a,post-M9 release,final v0.2-rc1 release notes
+docs/GITHUB_RELEASE_DRAFT_v0.2-rc1.md,release_doc,tracked,manual release finalization,RELEASE_NOTES_v0.2-rc1.md,,n/a,post-M9 release,final GitHub prerelease text
 docs/REPRODUCIBILITY_SMOKE_TEST_PLAN.md,reproducibility_plan,tracked,manual plan,BENCHMARK_REPRODUCIBILITY.md,,n/a,reproducibility smoke tests,future tiny-fixture infrastructure plan
 docs/REVIEWER_FEEDBACK_TEMPLATE.md,review_template,tracked,manual template,POST_M9_REVIEW_CHECKLIST.md,,n/a,review feedback,reviewer feedback classification template
 docs/REPRODUCIBILITY_ISSUE_TEMPLATE.md,review_template,tracked,manual template,REPRODUCIBILITY_SMOKE_TEST_PLAN.md,,n/a,reproducibility feedback,reproducibility issue classification template
 reports/synthesis/post_m9_handoff_check.md,consistency_check,tracked,manual synthesis,benchmark_task_registry_check_v2.md,,n/a,post-M9 handoff,reviewer preflight handoff summary
+docs/experiments/2026-05-29_benchmark_v0_2_rc1_finalization.md,experiment_memo,tracked,manual release finalization,RELEASE_NOTES_v0.2-rc1.md,,n/a,post-M9 release,v0.2-rc1 finalization memo
 configs/benchmark_tasks_v2.yaml,config,tracked,manual task freeze,main_project_claim_matrix_v2.csv,20,benchmark_tasks.v1,benchmark task freeze,post-Milestone-9 task registry
 reports/synthesis/benchmark_task_registry_check_v2.md,consistency_check,tracked,mbp report check-benchmark-tasks,configs/benchmark_tasks_v2.yaml,20,benchmark_tasks.v1,benchmark task freeze,v2 executable task registry check
 reports/synthesis/benchmark_leaderboard_v2.csv,leaderboard,tracked,mbp report check-benchmark-tasks,configs/benchmark_tasks_v2.yaml,20,benchmark_tasks.v1,benchmark task freeze,v2 task-level benchmark leaderboard

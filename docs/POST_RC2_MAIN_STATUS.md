@@ -1,9 +1,11 @@
 # Post-rc2 Main Branch Status
 
-The public release anchor remains `benchmark-v0.1-rc2`. Current `main` contains
-additional post-rc2 maintenance and Milestone 9 evidence.
+This document records the post-rc2 changes that are now packaged in
+`benchmark-v0.2-rc1`. The previous public release anchor was
+`benchmark-v0.1-rc2`; current `main` contains additional post-rc2 maintenance
+and Milestone 9 evidence.
 Use `docs/POST_M9_REVIEW_CHECKLIST.md` for the reviewer-facing validation path
-over this current-main state.
+over this post-Milestone-9 release state.
 
 ## Added After rc2
 
