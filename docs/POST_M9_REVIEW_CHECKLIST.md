@@ -4,6 +4,10 @@ This checklist is for external reviewers, collaborators, or maintainers
 reviewing current `main` after the negative Milestone 9 neural-sequence
 architecture gate. It is a review path, not a new evidence claim.
 
+This is the canonical Milestone 10 validation path. `docs/PUBLIC_REVIEW_ENTRYPOINT.md`
+remains the short orientation page; use this checklist for the full post-M9
+review and preflight sequence.
+
 ## Review Path
 
 1. `README.md`

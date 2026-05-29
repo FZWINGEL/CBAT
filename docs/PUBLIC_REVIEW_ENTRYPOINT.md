@@ -8,6 +8,9 @@ also contains post-rc2 maintenance and the completed negative Milestone 9
 neural sequence architecture gate; see `docs/POST_RC2_MAIN_STATUS.md` for that
 addendum.
 
+For post-Milestone-9 review, `docs/POST_M9_REVIEW_CHECKLIST.md` is the
+canonical validation path. This page remains the short orientation route.
+
 ## Start Here
 
 | Need | File |
@@ -77,16 +80,6 @@ Current closed wording:
 
 ## Validation Commands
 
-```bash
-mbp report check-release-candidate
-mbp report check-manuscript \
-  --manuscript manuscript/manuscript_v0_7.md \
-  --claim-ledger docs/MAIN_PROJECT_CLAIM_LEDGER_V2.md \
-  --traceability manuscript/manuscript_v0_7_traceability.md
-mbp report check-reader-manuscript \
-  --manuscript manuscript/manuscript_v0_7.md \
-  --claim-ledger docs/MAIN_PROJECT_CLAIM_LEDGER_V2.md \
-  --traceability manuscript/manuscript_v0_7_traceability.md
-```
-
-Use `.venv/bin/` prefixes if running inside the project virtual environment.
+Use `docs/POST_M9_REVIEW_CHECKLIST.md` for the canonical post-Milestone-9
+validation command list, including release, v2 task-registry, manuscript,
+reader-manuscript, whitespace, and no-data-staged checks.

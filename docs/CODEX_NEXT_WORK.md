@@ -19,8 +19,8 @@ but true-order sequence candidates did not beat shuffled-order, aggregate-event
 HGB, timestamp-stress HGB, or C-rate `delta_capacity_Ah` controls. Neural
 sequence next-gate readiness and CBAT prototype readiness remain blocked.
 
-Milestone 10 packages that state for external review and submission preflight.
-It authorizes only documentation, release-draft, manuscript-alignment,
+Milestone 10 packages the repository state for external review and submission
+preflight. It authorizes only documentation, release-draft, manuscript-alignment,
 reviewer-packaging, and reproducibility-smoke-test planning work. It does not
 authorize new science, model training, generated data products, release tagging,
 or positive architecture claims.

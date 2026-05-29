@@ -41,17 +41,7 @@ next-gate readiness and CBAT prototype readiness remain blocked.
 
 ## Validation
 
-Run the current release and manuscript checks before publishing:
-
-```bash
-ruff check . --no-cache
-pytest -p no:cacheprovider -q
-mbp report check-release-candidate
-mbp report check-benchmark-tasks --task-registry configs/benchmark_tasks_v2.yaml --claim-ledger docs/MAIN_PROJECT_CLAIM_LEDGER_V2.md --claim-matrix reports/synthesis/main_project_claim_matrix_v2.csv --artifact-manifest reports/synthesis/artifact_manifest_v2.csv --out reports/synthesis/benchmark_task_registry_check_v2.md --leaderboard-out reports/synthesis/benchmark_leaderboard_v2.csv --task-cards-out reports/synthesis/benchmark_task_cards_v2.md --model-cards-out reports/synthesis/benchmark_model_cards_v2.md
-mbp report check-manuscript --manuscript manuscript/manuscript_v0_7.md --claim-ledger docs/MAIN_PROJECT_CLAIM_LEDGER_V2.md --traceability manuscript/manuscript_v0_7_traceability.md
-mbp report check-reader-manuscript --manuscript manuscript/manuscript_v0_7.md --claim-ledger docs/MAIN_PROJECT_CLAIM_LEDGER_V2.md --traceability manuscript/manuscript_v0_7_traceability.md
-git diff --check
-git diff --cached --name-only | rg '(^data/|\.parquet$)'
-```
-
-The final command should return no paths.
+Run the canonical validation command list in
+`docs/POST_M9_REVIEW_CHECKLIST.md` before publishing. It covers release,
+v2 task-registry, manuscript, reader-manuscript, whitespace, and no-data-staged
+checks. The no-data-staged check must return no paths.
