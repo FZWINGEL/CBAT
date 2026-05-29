@@ -11,7 +11,7 @@ is committed.
 
 ## Executive Summary
 
-The repository is in **Milestone 8.8: reconstruction failure forensics and C-rate branch closure**.
+The repository is in **Milestone 9: neural sequence architecture gate before CBAT**.
 Gate 2b LOG_AGE integrity triage, Milestone 0.4 baseline readiness, the first
 bounded Milestone 0.5 capacity baseline ladder, Milestone 0.5b robustness
 diagnostics, Milestone 0.5c synthesis, and Milestone 0.6 stress-feature v1 are
@@ -358,16 +358,50 @@ reference in the voltage-window holdout (`0.344864`). There are 58 degrading
 condition hotspots, support overlap is not available for enough outside-split
 hotspots to reopen the branch, and QA flags are diagnostic context rather than
 a reason to ignore the guardrail. The capacity-level reconstruction branch is
-closed for the current evidence.
+closed for the current evidence. Milestone 9 opens only a narrow pre-CBAT
+neural sequence architecture gate after rereading the charter H7 rule. It adds
+`interval_event_sequence_tensor_v2.parquet`, tensor QA, `mbp baseline
+run-neural-sequence`, `mbp baseline diagnose-neural-sequence`, grouped
+true-order/shuffled-order controls, aggregate-event and timestamp-stress HGB
+reference comparisons, claim-readiness reporting, and SVG result figures. The
+v2 tensor QA passes on all 3,827 intervals, CUDA neural rows ran on the RTX
+5060 Ti through the escalated WSL execution path, and the report generated 144
+metric rows. The result is negative for the architecture gate: true-order
+sequence candidates do not beat aggregate-event HGB, timestamp-stress HGB, or
+C-rate `delta_capacity_Ah` controls, so CBAT prototype readiness remains
+blocked.
 
 No DRT features, EIS embeddings, future EIS state or EIS deltas as non-EIS
-inputs, capacity+PULSE+EIS multimodal models, unscoped sequence models,
-neural architecture, knee prediction, policy ranking, CBAT architecture, or
-broad EIS improvement claims have been started. Milestone 7.1 adds only a
-minimal CUDA Torch MLP diagnostic as a falsification check, not an architecture
-branch.
+inputs, capacity+PULSE+EIS multimodal models, unscoped sequence models, knee
+prediction, policy ranking, CBAT architecture, or broad EIS improvement claims
+have been started. Milestone 7.1 adds only a minimal CUDA Torch MLP diagnostic
+as a falsification check, and Milestone 9 adds only a pre-CBAT neural sequence
+architecture gate. Milestone 9 CUDA evidence is now complete and negative for
+sequence/neural next-gate readiness.
 
 Current state:
+
+- Milestone 9 is a pre-CBAT neural sequence architecture gate. It adds
+  `mbp features build-event-sequence-tensors`,
+  `mbp features event-sequence-tensor-qa`,
+  `mbp baseline run-neural-sequence`, and
+  `mbp baseline diagnose-neural-sequence`. The generated
+  `data/interim/interval_event_sequence_tensor_v2.parquet` is ignored and
+  contains 3,827 rows; QA reports zero missing/extra intervals, zero leakage
+  columns, 3,103 intervals sampled down to the 256-event tensor cap, median
+  source events 627, max source events 247,393, and an estimated tensor memory
+  footprint of 389.6 MiB. The tracked full CUDA report
+  `reports/baselines/neural_sequence_gate_report.json` has 144 metric rows and
+  124,380 ignored prediction rows; CNN, TCN, and CNN-LSTM rows ran on CUDA and
+  generated SVG figures under
+  `reports/baselines/neural_sequence_gate/figures/`. The gate is negative:
+  true sequence versus shuffled has mean gain `0.0161874` but bootstrap p05
+  `-0.0116749`; true sequence versus aggregate-event HGB has mean gain
+  `-0.405717` with `0/96` positive rows; true sequence versus timestamp-stress
+  HGB has mean gain `-0.419318` with `6/88` positive rows; C-rate
+  `delta_capacity_Ah` has `0/10` positive primary comparison rows and mean
+  gain `-0.435394`. Neural sequence next-gate readiness and CBAT prototype
+  readiness remain blocked.
 
 - Milestone 8.8 is a reconstruction failure forensics gate over existing
   Milestone 8.7 prediction artifacts and interval metadata. It adds

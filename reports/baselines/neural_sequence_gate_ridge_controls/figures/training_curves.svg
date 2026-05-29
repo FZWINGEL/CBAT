@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="320" viewBox="0 0 980 320">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="24.0" y="36.0" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#1a202c">Training Curves</text>
+<text x="24.0" y="62.0" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#1a202c">Primary C-rate delta validation losses, first 120 epoch rows.</text>
+<line x1="410" y1="86" x2="410" y2="286" stroke="#555" stroke-width="1"/>
+<text x="24.0" y="109.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#1a202c">no rows</text>
+<rect x="410.0" y="94" width="1.0" height="20" fill="#2f855a" opacity="0.85"/>
+<text x="676.0" y="109.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#1a202c">val loss=0</text>
+</svg>

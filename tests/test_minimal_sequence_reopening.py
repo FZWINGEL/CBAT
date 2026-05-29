@@ -7,12 +7,16 @@ import pytest
 from typer.testing import CliRunner
 
 from mbp.baselines import minimal_sequence
+from mbp.baselines.neural_sequence import run_neural_sequence_gate
 from mbp.baselines.minimal_sequence import run_minimal_sequence_reopening
 from mbp.cli import app
 from mbp.data.products.event_sequences import (
     EVENT_FEATURE_COLUMNS,
+    TENSOR_EVENT_FEATURE_COLUMNS,
     build_interval_event_sequence_table,
+    build_interval_event_sequence_tensor_table,
     write_interval_event_sequence_qa,
+    write_interval_event_sequence_tensor_qa,
 )
 
 
@@ -91,13 +95,21 @@ def _event_row(
         "event_type": event_type,
         "event_duration_h": 0.5 + event_index,
         "mean_voltage_V": 3.7 + 0.01 * event_index,
+        "min_voltage_V": 3.5 + 0.01 * event_index,
+        "max_voltage_V": 3.9 + 0.01 * event_index,
+        "mean_current_A": 0.5 + event_index,
         "mean_abs_current_A": 1.0 + event_index,
         "max_abs_current_A": 2.0 + event_index,
         "mean_temperature_C": 25.0,
+        "max_temperature_C": 26.0,
         "mean_soc": 0.5,
+        "min_soc": 0.4,
+        "max_soc": 0.6,
         "delta_q_Ah": 0.1 * event_index,
         "delta_EFC": 0.2 * event_index,
         "high_voltage_event": event_index % 2 == 0,
+        "cold_event": False,
+        "hot_event": False,
         "high_abs_current_event": event_index % 2 == 1,
         "cold_high_current_event": False,
         "high_voltage_high_current_event": event_index % 2 == 0,
@@ -138,6 +150,28 @@ def test_event_sequence_table_builds_fixed_length_vectors(tmp_path: Path) -> Non
     assert rows[0]["truncated_event_count"] == 1
 
 
+def test_event_sequence_tensor_table_builds_v2_vectors(tmp_path: Path) -> None:
+    interval_path, _, run_events_path = _write_minimal_inputs(tmp_path)
+    out = tmp_path / "interval_event_sequence_tensor_v2.parquet"
+
+    table = build_interval_event_sequence_tensor_table(
+        run_events_path,
+        interval_path,
+        out,
+        max_events=3,
+        seed=7,
+    )
+    rows = table.to_pylist()
+
+    assert table.num_rows == 8
+    assert rows[0]["schema_version"] == "gate90.interval_event_sequence_tensor.v2"
+    assert rows[0]["sampling_policy"] == "time_stratified"
+    assert len(rows[0]["true_sequence_vector"]) == 3 * len(TENSOR_EVENT_FEATURE_COLUMNS)
+    assert len(rows[0]["shuffled_sequence_vector"]) == 3 * len(TENSOR_EVENT_FEATURE_COLUMNS)
+    assert rows[0]["event_mask"] == [1, 1, 1]
+    assert rows[0]["truncated_event_count"] == 1
+
+
 def test_event_sequence_qa_catches_valid_lengths(tmp_path: Path) -> None:
     interval_path, _, run_events_path = _write_minimal_inputs(tmp_path)
     event_sequences = tmp_path / "interval_event_sequence_table_v1.parquet"
@@ -145,6 +179,19 @@ def test_event_sequence_qa_catches_valid_lengths(tmp_path: Path) -> None:
     build_interval_event_sequence_table(run_events_path, interval_path, event_sequences, max_events=4)
 
     report = write_interval_event_sequence_qa(event_sequences, interval_path, qa_out)
+
+    assert report["status"] == "passed"
+    assert report["row_count"] == 8
+    assert report["leakage_check"]["status"] == "passed"
+
+
+def test_event_sequence_tensor_qa_catches_valid_lengths(tmp_path: Path) -> None:
+    interval_path, _, run_events_path = _write_minimal_inputs(tmp_path)
+    event_sequences = tmp_path / "interval_event_sequence_tensor_v2.parquet"
+    qa_out = tmp_path / "event_sequence_tensor_qa.json"
+    build_interval_event_sequence_tensor_table(run_events_path, interval_path, event_sequences, max_events=4)
+
+    report = write_interval_event_sequence_tensor_qa(event_sequences, interval_path, qa_out)
 
     assert report["status"] == "passed"
     assert report["row_count"] == 8
@@ -176,6 +223,30 @@ def test_minimal_sequence_runner_writes_reports(tmp_path: Path) -> None:
     ).exists()
 
 
+def test_neural_sequence_runner_writes_ridge_reports_and_figures(tmp_path: Path) -> None:
+    interval_path, subsets_path, run_events_path = _write_minimal_inputs(tmp_path)
+    sequence_tensors = tmp_path / "interval_event_sequence_tensor_v2.parquet"
+    build_interval_event_sequence_tensor_table(run_events_path, interval_path, sequence_tensors, max_events=4)
+
+    report = run_neural_sequence_gate(
+        interval_path,
+        subsets_path,
+        sequence_tensors,
+        tmp_path / "neural_sequence_report.json",
+        tmp_path / "neural_sequence_predictions.parquet",
+        out_dir=tmp_path / "neural_sequence",
+        model_levels=["NS1_ridge_flat_true_sequence", "NS2_ridge_flat_shuffled_sequence"],
+        targets=["capacity_Ah_k1"],
+        split_views=["condition_fold"],
+    )
+
+    assert report["status"] == "passed"
+    assert report["metrics"]
+    assert (tmp_path / "neural_sequence" / "leaderboard.csv").exists()
+    assert (tmp_path / "neural_sequence" / "neural_sequence_claim_readiness.md").exists()
+    assert (tmp_path / "neural_sequence" / "figures" / "true_vs_shuffled_by_split.svg").exists()
+
+
 def test_minimal_sequence_cli_builds_event_sequences(tmp_path: Path) -> None:
     interval_path, _, run_events_path = _write_minimal_inputs(tmp_path)
     out = tmp_path / "interval_event_sequence_table_v1.parquet"
@@ -200,6 +271,32 @@ def test_minimal_sequence_cli_builds_event_sequences(tmp_path: Path) -> None:
     assert result.exit_code == 0
     assert out.exists()
     assert "Event-sequence table generated" in result.output
+
+
+def test_neural_sequence_cli_builds_event_sequence_tensors(tmp_path: Path) -> None:
+    interval_path, _, run_events_path = _write_minimal_inputs(tmp_path)
+    out = tmp_path / "interval_event_sequence_tensor_v2.parquet"
+    runner = CliRunner()
+
+    result = runner.invoke(
+        app,
+        [
+            "features",
+            "build-event-sequence-tensors",
+            "--run-events",
+            str(run_events_path),
+            "--interval-table",
+            str(interval_path),
+            "--out",
+            str(out),
+            "--max-events",
+            "4",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert out.exists()
+    assert "Event-sequence tensor table generated" in result.output
 
 
 def test_minimal_sequence_cli_runs_ridge_gate(tmp_path: Path) -> None:

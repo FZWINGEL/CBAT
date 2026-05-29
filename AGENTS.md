@@ -16,7 +16,7 @@ data audit, schemas, validation protocol, and baseline ladder are implemented.
 
 ## Current Phase
 
-Milestone 8.8: reconstruction failure forensics and C-rate branch closure.
+Milestone 9: neural sequence architecture gate before CBAT.
 
 Current state:
 - Gate 2b LOG_AGE integrity triage and Milestones 0.4-1.4.1 are implemented
@@ -176,10 +176,24 @@ Current state:
   holdouts, with 58 degrading condition hotspots and no support-overlap basis
   to reopen the repair. It closes the current capacity-level reconstruction
   branch unless a future explicit data-quality correction gate is opened.
+- Milestone 9 opens a narrow pre-CBAT neural sequence architecture gate after
+  rereading the charter H7 rule. It adds a v2 fixed-length event tensor product
+  and grouped neural-sequence runner with true-order versus shuffled-order,
+  aggregate-event HGB, and timestamp-stress HGB controls. Real neural rows
+  must run on CUDA only. The full CUDA run completed on the RTX 5060 Ti and
+  generated 144 metric rows, but no true-order sequence candidate passed the
+  aggregate/stress/C-rate controls. Sequence/neural next-gate readiness and
+  CBAT prototype readiness remain blocked.
 - `docs/REPO_STATUS.md` is the concise source of truth for current artifacts,
   validation results, and remaining blockers.
 
 Allowed work:
+- v2 LOG_AGE run-event sequence tensor products for Milestone 9
+- event-sequence tensor QA and leakage audits
+- CUDA-only CNN/TCN/CNN-LSTM sequence baselines for the Milestone 9 gate
+- true-order versus shuffled-order neural sequence controls
+- aggregate-event and timestamp-stress HGB reference comparisons
+- neural sequence claim-readiness reporting and SVG result figures
 - foundational extraction reproducibility audits
 - raw archive to Parquet rebuild comparisons
 - parser-contract and raw-to-Parquet golden-record checks
@@ -372,8 +386,9 @@ Forbidden work:
 - new model training outside explicitly scoped diagnostic gates
 - new feature engineering outside explicitly scoped diagnostic gates
 - knee prediction models
-- neural models beyond the CUDA-only minimal Torch MLP reopening diagnostic
-- sequence models beyond fixed-length true/shuffled event-sequence diagnostics
+- neural models outside the explicitly scoped CUDA-only Milestone 9
+  sequence-architecture gate
+- sequence models outside fixed-length true/shuffled event-sequence diagnostics
 - transformers
 - CBAT architecture
 - DRT features

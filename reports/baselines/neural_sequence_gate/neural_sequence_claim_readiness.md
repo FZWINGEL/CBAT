@@ -1,0 +1,12 @@
+# Neural Sequence Gate Claim Readiness
+
+| Claim area | Status | Evidence |
+|---|---|---|
+| True neural sequence beats shuffled order | `not_supported` | mean gain=0.0161874; bootstrap p05=-0.0116749; positive rows=22/48. |
+| True neural sequence beats aggregate event HGB | `not_supported` | mean gain=-0.405717; bootstrap p05=-0.711488; positive rows=0/96. |
+| True neural sequence beats timestamp-stress HGB | `not_supported` | mean gain=-0.419318; bootstrap p05=-0.758173; positive rows=6/88. |
+| C-rate neural sequence value | `not_supported` | C-rate delta positive rows=0/10; mean gain=-0.435394; bootstrap p05=-0.578266. |
+| Leakage audit | `supported_for_diagnostics` | Event-sequence tensors use run-event summaries plus F4 current-state features; future diagnostic and target-derived fields are excluded. |
+| GPU neural execution | `supported_for_diagnostics` | CUDA neural sequence rows evaluated for NS3_cnn1d_true_sequence, NS4_tcn_true_sequence, NS5_cnn_lstm_true_sequence, NS6_cnn_lstm_shuffled_sequence. |
+| Neural sequence architecture next-gate readiness | `blocked` | No predeclared neural sequence model beats shuffled, aggregate-event HGB, and timestamp-stress HGB across the required primary checks. |
+| CBAT prototype readiness | `blocked` | CBAT remains blocked because neural sequence value did not pass all controls. |

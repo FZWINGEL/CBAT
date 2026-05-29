@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="366" viewBox="0 0 980 366">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="24.0" y="36.0" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#1a202c">Claim Readiness Summary</text>
+<text x="24.0" y="62.0" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#1a202c">Positive status values indicate diagnostic support; blocked stays negative.</text>
+<line x1="410" y1="86" x2="410" y2="332" stroke="#555" stroke-width="1"/>
+<text x="24.0" y="109.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#1a202c">True neural sequence beats shuffled order</text>
+<rect x="285.0" y="94" width="125.0" height="20" fill="#c53030" opacity="0.85"/>
+<text x="676.0" y="109.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#1a202c">status=-0.5</text>
+<text x="24.0" y="141.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#1a202c">True neural sequence beats aggregate event HGB</text>
+<rect x="285.0" y="126" width="125.0" height="20" fill="#c53030" opacity="0.85"/>
+<text x="676.0" y="141.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#1a202c">status=-0.5</text>
+<text x="24.0" y="173.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#1a202c">True neural sequence beats timestamp-stress HGB</text>
+<rect x="285.0" y="158" width="125.0" height="20" fill="#c53030" opacity="0.85"/>
+<text x="676.0" y="173.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#1a202c">status=-0.5</text>
+<text x="24.0" y="205.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#1a202c">C-rate neural sequence value</text>
+<rect x="285.0" y="190" width="125.0" height="20" fill="#c53030" opacity="0.85"/>
+<text x="676.0" y="205.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#1a202c">status=-0.5</text>
+<text x="24.0" y="237.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#1a202c">Leakage audit</text>
+<rect x="410.0" y="222" width="250.0" height="20" fill="#2f855a" opacity="0.85"/>
+<text x="676.0" y="237.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#1a202c">status=1</text>
+<text x="24.0" y="269.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#1a202c">GPU neural execution</text>
+<rect x="410.0" y="254" width="250.0" height="20" fill="#2f855a" opacity="0.85"/>
+<text x="676.0" y="269.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#1a202c">status=1</text>
+<text x="24.0" y="301.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#1a202c">Neural sequence architecture next-gate readiness</text>
+<rect x="160.0" y="286" width="250.0" height="20" fill="#c53030" opacity="0.85"/>
+<text x="676.0" y="301.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#1a202c">status=-1</text>
+<text x="24.0" y="333.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#1a202c">CBAT prototype readiness</text>
+<rect x="160.0" y="318" width="250.0" height="20" fill="#c53030" opacity="0.85"/>
+<text x="676.0" y="333.0" font-family="Arial, sans-serif" font-size="11" font-weight="400" fill="#1a202c">status=-1</text>
+</svg>

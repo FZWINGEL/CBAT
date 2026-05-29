@@ -1,0 +1,41 @@
+{
+  "estimated_tensor_bytes": 408539904,
+  "estimated_tensor_mib": 389.614013671875,
+  "event_count_summary": {
+    "max": 247393,
+    "mean": 20728.56780768226,
+    "median": 627.0,
+    "min": 13
+  },
+  "event_feature_counts": [
+    26
+  ],
+  "extra_intervals": 0,
+  "intervals": 3827,
+  "leakage_check": {
+    "leakage_columns": [],
+    "status": "passed"
+  },
+  "mask_length_errors": 0,
+  "max_events_values": [
+    256
+  ],
+  "missing_event_intervals": 0,
+  "missing_intervals": 0,
+  "row_count": 3827,
+  "sampling_policies": [
+    "time_stratified"
+  ],
+  "schema_version": "gate90.interval_event_sequence_tensor.v2",
+  "selected_event_count_summary": {
+    "max": 256,
+    "mean": 248.12281160177685,
+    "median": 256.0,
+    "min": 13
+  },
+  "status": "passed",
+  "true_shuffled_equal_rows": 0,
+  "truncated_intervals": 3103,
+  "vector_length_errors": 0,
+  "warnings": []
+}

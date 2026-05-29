@@ -2216,3 +2216,72 @@ Validation rules:
 - If failure spans multiple splits or many conditions, close the current
   capacity-level reconstruction branch and retain only the narrow diagnostic
   `delta_capacity_Ah` repair wording.
+
+## Milestone 9 Neural Sequence Architecture Gate Before CBAT
+
+Milestone 9 authorizes only a narrow pre-CBAT neural sequence architecture
+gate. It tests whether stronger fixed-length LOG_AGE run-event sequence
+baselines can recover temporal-order value that the Milestone 7.1 minimal
+sequence check did not find. This is not a full CBAT milestone and does not
+authorize policy ranking, causal claims, calibrated risk, same-cell
+counterfactuals, or broad multimodal architecture wording.
+
+Required commands:
+
+```bash
+mbp features build-event-sequence-tensors \
+  --run-events data/interim/run_event_table_v1.parquet \
+  --interval-table data/interim/interval_table.parquet \
+  --out data/interim/interval_event_sequence_tensor_v2.parquet \
+  --max-events 256 \
+  --sampling-policy time_stratified \
+  --seed 42
+
+mbp features event-sequence-tensor-qa \
+  --sequence-tensors data/interim/interval_event_sequence_tensor_v2.parquet \
+  --interval-table data/interim/interval_table.parquet \
+  --out reports/audit/event_sequence_tensor_v2_qa_report.json
+
+mbp baseline run-neural-sequence \
+  --interval-table data/interim/interval_table.parquet \
+  --interval-subsets data/splits/interval_subset_registry_v1.parquet \
+  --sequence-tensors data/interim/interval_event_sequence_tensor_v2.parquet \
+  --out reports/baselines/neural_sequence_gate_report.json \
+  --predictions-out data/processed/neural_sequence_gate_predictions.parquet \
+  --out-dir reports/baselines/neural_sequence_gate \
+  --reference-sequence-report reports/baselines/capacity_sequence_value_hgb50_report.json \
+  --reference-stress-report reports/baselines/capacity_stress_features_v1_1_hgb50_report.json \
+  --model-levels NS1_ridge_flat_true_sequence,NS2_ridge_flat_shuffled_sequence,NS3_cnn1d_true_sequence,NS4_tcn_true_sequence,NS5_cnn_lstm_true_sequence,NS6_cnn_lstm_shuffled_sequence \
+  --targets capacity_Ah_k1,delta_capacity_Ah \
+  --split-views condition_fold,temperature_holdout_fold,c_rate_holdout_fold,profile_holdout_fold,voltage_window_holdout_fold \
+  --device cuda
+```
+
+Required artifacts:
+
+- `data/interim/interval_event_sequence_tensor_v2.parquet` (ignored generated data)
+- `reports/audit/event_sequence_tensor_v2_qa_report.json`
+- `reports/baselines/neural_sequence_gate_report.json`
+- `data/processed/neural_sequence_gate_predictions.parquet` (ignored generated data)
+- `reports/baselines/neural_sequence_gate/leaderboard.csv`
+- `reports/baselines/neural_sequence_gate/neural_sequence_diagnostics.md`
+- `reports/baselines/neural_sequence_gate/neural_sequence_claim_readiness.md`
+- `reports/baselines/neural_sequence_gate/neural_sequence_leakage_audit.md`
+- `reports/baselines/neural_sequence_gate/plots/*.csv`
+- `reports/baselines/neural_sequence_gate/figures/*.svg`
+- `docs/experiments/2026-05-28_neural_sequence_architecture_gate.md`
+
+Validation rules:
+
+- CUDA is mandatory for CNN, TCN, and CNN-LSTM rows. CPU fallback is invalid
+  milestone evidence.
+- True-order sequence value is supported only if a true-order candidate beats
+  its shuffled-order counterpart, aggregate-event HGB, and timestamp-stress
+  HGB on primary C-rate `delta_capacity_Ah` and at least three grouped split
+  views.
+- CBAT prototype readiness can be only `partially_supported` and only if the
+  neural sequence-value gate passes. Full CBAT remains a later milestone.
+- `capacity_Ah_k1`, `delta_capacity_Ah`, future PULSE/EIS states, PULSE/EIS
+  deltas, and target-derived fields are forbidden as event tensor inputs.
+- If CUDA is unavailable, only tensor QA and non-neural controls may be run;
+  neural sequence, CBAT, and architecture claims remain blocked.

@@ -1,0 +1,8 @@
+figure_path,exists,nonempty,source_csv_count,nonempty_source_csv_count
+reports/baselines/neural_sequence_gate/figures/neural_sequence_gain_matrix.svg,True,True,7,7
+reports/baselines/neural_sequence_gate/figures/true_vs_shuffled_by_split.svg,True,True,7,7
+reports/baselines/neural_sequence_gate/figures/c_rate_delta_leaderboard.svg,True,True,7,7
+reports/baselines/neural_sequence_gate/figures/condition_error_hotspots.svg,True,True,7,7
+reports/baselines/neural_sequence_gate/figures/training_curves.svg,True,True,7,7
+reports/baselines/neural_sequence_gate/figures/sequence_sampling_coverage.svg,True,True,7,7
+reports/baselines/neural_sequence_gate/figures/claim_readiness_summary.svg,True,True,7,7
